@@ -699,6 +699,7 @@ export const BLIGHTHEART: DungeonModule = {
         id: 'root-gate',
         floor: 'a',
         title: 'The Root-Gate',
+        mechanic: { kind: 'rockfall' },
         waves: [
           { enemies: ['heartrot-treant', 'blight-bloom', 'blight-bloom', 'thorn-archer'] },
           { enemies: ['thorn-court-sprite', 'thorn-court-sprite', 'thorn-court-knight'] },
@@ -710,6 +711,7 @@ export const BLIGHTHEART: DungeonModule = {
         floor: 'c',
         title: 'The Sap Wells',
         checkpoint: true,
+        mechanic: { kind: 'vents', look: 'bile' },
         waves: [
           { enemies: ['blight-bloom', 'blight-bloom', 'blight-bloom', 'thorn-court-sprite'] },
           { enemies: ['rotbloom-matron', 'heartrot-treant', 'thorn-archer'] },
@@ -721,6 +723,7 @@ export const BLIGHTHEART: DungeonModule = {
         id: 'spore-chambers',
         floor: 'e',
         title: 'The Spore Chambers',
+        mechanic: { kind: 'vents' },
         waves: [
           { enemies: ['rotbloom-matron', 'blight-bloom', 'blight-bloom'] },
           { enemies: ['briar-lasher', 'briar-lasher', 'thorn-court-sprite', 'heartrot-treant'] },
@@ -733,6 +736,7 @@ export const BLIGHTHEART: DungeonModule = {
         floor: 'l',
         title: 'The Thorn Gallery',
         checkpoint: true,
+        mechanic: { kind: 'volley', look: 'dart' },
         waves: [
           { enemies: ['briar-lasher', 'briar-lasher', 'thorn-court-sprite', 'thorn-court-sprite'] },
           { enemies: ['heartrot-treant', 'thorn-court-knight', 'rotbloom-matron'] },

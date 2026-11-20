@@ -103,6 +103,7 @@ export const GALLOWS_KEEP: RegionDef = {
       id: 'cellars',
       floor: 'a',
       title: 'The Cellars',
+      mechanic: { kind: 'rockfall' },
       waves: [
         { enemies: ['bandit-cutthroat', 'bandit-cutthroat', 'bandit-cutthroat'] },
         { enemies: ['bandit-cutthroat', 'bandit-cutthroat', 'bandit-archer', 'bandit-archer'] },
@@ -113,6 +114,7 @@ export const GALLOWS_KEEP: RegionDef = {
       id: 'barracks',
       floor: 'c',
       title: 'The Barracks Yard',
+      mechanic: { kind: 'volley' },
       waves: [
         { enemies: ['bandit-enforcer', 'bandit-archer', 'bandit-archer', 'hedge-witch'] },
         { enemies: ['hill-wolf', 'hill-wolf', 'hill-wolf', 'hedge-witch'] },

@@ -587,6 +587,7 @@ export const TOMB_OF_THE_SUN_KING: DungeonModule = {
         id: 'sunken-stair',
         floor: 'a',
         title: 'The Sunken Stair',
+        mechanic: { kind: 'rockfall' },
         waves: [
           { enemies: ['ushabti-guardian', 'scarab-swarm', 'scarab-swarm'] },
           { enemies: ['wrapped-dead', 'wrapped-dead', 'embalmer-priest'] },
@@ -597,6 +598,7 @@ export const TOMB_OF_THE_SUN_KING: DungeonModule = {
         id: 'offerings',
         floor: 'c',
         title: 'The Hall of Offerings',
+        mechanic: { kind: 'vents' },
         waves: [
           { enemies: ['embalmer-priest', 'wrapped-dead', 'wrapped-dead', 'scarab-swarm'] },
           { enemies: ['ushabti-guardian', 'ushabti-guardian', 'sand-wraith'] },
@@ -608,6 +610,7 @@ export const TOMB_OF_THE_SUN_KING: DungeonModule = {
         floor: 'e',
         title: 'The Scarab Galleries',
         checkpoint: true,
+        mechanic: { kind: 'blades' },
         waves: [
           { enemies: ['scarab-swarm', 'scarab-swarm', 'scarab-swarm', 'scarab-swarm'] },
           { enemies: ['sand-wraith', 'scarab-swarm', 'scarab-swarm', 'ushabti-guardian'] },
@@ -619,6 +622,7 @@ export const TOMB_OF_THE_SUN_KING: DungeonModule = {
         id: 'embalmers',
         floor: 'i',
         title: 'The Embalmers’ Rooms',
+        mechanic: { kind: 'volley' },
         waves: [
           { enemies: ['embalmer-priest', 'embalmer-priest', 'wrapped-dead'] },
           { enemies: ['wrapped-dead', 'wrapped-dead', 'wrapped-dead', 'crypt-stalker'] },
@@ -630,6 +634,7 @@ export const TOMB_OF_THE_SUN_KING: DungeonModule = {
         floor: 'l',
         title: 'The Trap Corridor',
         checkpoint: true,
+        mechanic: { kind: 'blades' },
         waves: [
           { enemies: ['sand-wraith', 'sand-wraith', 'scarab-swarm', 'scarab-swarm'] },
           { enemies: ['ushabti-guardian', 'sand-wraith', 'sand-wraith'] },

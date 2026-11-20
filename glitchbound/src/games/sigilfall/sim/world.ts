@@ -38,6 +38,7 @@ import { herdOf, letOut, updateCritters, type Critter } from './critters';
 import { castPace, updateCasting, updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
 import { blowFloor, healPlayer, hurtPlayer, playerSlow, playerStunned, tickPlayerStatuses } from './combat';
 import { breakWall, circleHitsWall, flowField, K, markerPos, moveCircle, parseRegion, pushOut, setDoors, TILE, tileAt, type PlacedMarker, type TileMap } from './map';
+import { roomBannerSub, updateRooms, type RoomPlay } from './rooms';
 import type { Chest, CoopSide, Drop, Enemy, Field, FloatText, Fx, Ghost, Interactable, NpcActor, Pet, Player, Projectile, Telegraph, Trap, Wave, WorldEvent, Callout } from './types';
 import { inCone, inLine } from '../core/math';
 
@@ -436,6 +437,9 @@ export class World {
   pendingExit: Interactable | null = null;
   /** The scene playing (sim/scene.ts), or null. */
   scene: ScenePlay | null = null;
+  /** The mechanic of the dungeon room being fought (sim/rooms.ts), and its own chances (a room's falls never change what else a fight draws). */
+  roomPlay: RoomPlay | null = null;
+  roomRand: () => number;
   private sceneCheck = 0;
   waystones: { x: number; y: number }[] = [];
   exits: { x: number; y: number; to: RegionId; label: string; minLevel?: number; needs?: string; door?: boolean }[] = [];
@@ -549,6 +553,7 @@ export class World {
     this.folkSeed = o.seed;
     this.critterRand = rng(o.seed ^ 0x3c1d);
     this.weatherRand = rng(o.seed ^ 0x5eed);
+    this.roomRand = rng(o.seed ^ 0x2008);
     this.build = buildHero(o.hero);
     this.flow = new Int16Array(this.map.w * this.map.h);
     this.encounters = this.region.encounters.map((def, index) => ({ def, index, state: 'idle', wave: 0, waveT: 0 }));
@@ -948,6 +953,14 @@ export class World {
     const k = this.keyRun;
     if (!k) return TIERS[this.tier]!.hp * (this.mods.includes('fortified') ? 1.4 : 1) * this.measure.hp;
     return keyScale(k.key, k.heroLevel).hp * (k.affixes.includes(boss ? 'tyrannical' : 'fortified') ? 1.3 : 1);
+  }
+
+  /**
+   * What a foe's blows here are taken by (the tier, a Riftstone's might): a dungeon room's own falls follow it
+   * (sim/rooms.ts), so they are as much harder on Heroic as the foes are.
+   */
+  foeDamageMul(): number {
+    return this.dmgMul(false);
   }
 
   /** Damage on top of an enemy's level, likewise. */
@@ -1578,6 +1591,7 @@ export class World {
     this.updateDrops(dt);
     this.updateChests(dt);
     if (!this.puppet) this.updateEncounters(dt);
+    if (!this.puppet) updateRooms(this, dt);
     this.updateHazards(dt);
     this.updateAmbient(dt);
     this.story.update(dt);
@@ -2670,7 +2684,7 @@ export class World {
       this.addFx({ kind: 'rift', x: boss.x, y: boss.y, life: 1, size: 18, color: '#ff3fd2' });
       this.emit({ t: 'bossStart', boss: enc.def.boss });
       revealBoss(this, boss);
-    } else if (enc.def.title) this.emit({ t: 'banner', text: enc.def.title, sub: `${enc.def.waves.length} waves` });
+    } else if (enc.def.title) this.emit({ t: 'banner', text: enc.def.title, sub: roomBannerSub(enc.def, this.region.theme) });
   }
 
   private spawnRoomWave(enc: EncounterState): void {

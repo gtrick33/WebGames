@@ -649,6 +649,7 @@ export const SPIRE_OF_THE_RIFT: DungeonModule = {
         id: 'threshold',
         floor: 'a',
         title: 'The Glass Threshold',
+        mechanic: { kind: 'rockfall' },
         waves: [
           { enemies: ['spire-lancer', 'rift-stalker', 'rift-stalker', 'spire-halfborn'] },
           { enemies: ['spire-cantor', 'shard-golem', 'spire-lancer'] },
@@ -660,6 +661,7 @@ export const SPIRE_OF_THE_RIFT: DungeonModule = {
         floor: 'c',
         title: 'The Hall of Mirrors',
         checkpoint: true,
+        mechanic: { kind: 'rift' },
         waves: [
           { enemies: ['spire-halfborn', 'spire-halfborn', 'rift-shardling', 'rift-shardling', 'spire-lancer'] },
           { enemies: ['spire-anchor', 'spire-lancer', 'spire-cantor'] },
@@ -673,6 +675,7 @@ export const SPIRE_OF_THE_RIFT: DungeonModule = {
         floor: 'i',
         title: 'The Herald’s Scriptorium',
         checkpoint: true,
+        mechanic: { kind: 'volley' },
         waves: [
           { enemies: ['voidcaller', 'voidcaller', 'spire-cantor', 'rift-stalker'] },
           { enemies: ['spire-lancer', 'spire-lancer', 'shard-golem', 'spire-halfborn'] },
@@ -683,6 +686,7 @@ export const SPIRE_OF_THE_RIFT: DungeonModule = {
         id: 'halfthrough',
         floor: 'l',
         title: 'The Halls Half-Through',
+        mechanic: { kind: 'rift' },
         waves: [
           { enemies: ['spire-halfborn', 'spire-halfborn', 'spire-halfborn', 'rift-stalker'] },
           { enemies: ['spire-anchor', 'shard-golem', 'spire-lancer', 'spire-cantor'] },

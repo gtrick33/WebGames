@@ -102,6 +102,7 @@ export const SMUGGLERS_GROTTO: RegionDef = {
       id: 'tunnels',
       floor: 'a',
       title: 'The Flooded Tunnels',
+      mechanic: { kind: 'rockfall' },
       waves: [
         { enemies: ['mirefin-skirmisher', 'mirefin-skirmisher', 'mirefin-skirmisher', 'mirefin-spearthrower'] },
         { enemies: ['mirefin-skirmisher', 'mirefin-skirmisher', 'mirefin-spearthrower', 'mirefin-oracle'] },
@@ -112,6 +113,7 @@ export const SMUGGLERS_GROTTO: RegionDef = {
       id: 'dock',
       floor: 'c',
       title: 'The Smugglers’ Dock',
+      mechanic: { kind: 'volley' },
       waves: [
         { enemies: ['smuggler-cutlass', 'smuggler-cutlass', 'smuggler-bomber'] },
         { enemies: ['smuggler-cutlass', 'shore-crab', 'smuggler-bomber', 'mirefin-spearthrower'] },

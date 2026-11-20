@@ -576,6 +576,7 @@ export const ROTMOTHER_CISTERN: DungeonModule = {
         id: 'tunnels',
         floor: 'a',
         title: 'The Flooded Tunnels',
+        mechanic: { kind: 'blades' },
         waves: [
           { enemies: ['cistern-rat', 'cistern-rat', 'cistern-rat', 'cistern-rat'] },
           { enemies: ['cistern-rat', 'cistern-rat', 'cistern-rat', 'cistern-acolyte'] },
@@ -586,6 +587,7 @@ export const ROTMOTHER_CISTERN: DungeonModule = {
         id: 'vats',
         floor: 'c',
         title: 'The Vat Hall',
+        mechanic: { kind: 'vents' },
         waves: [
           { enemies: ['cistern-vatborn', 'cistern-broodling', 'cistern-broodling', 'cistern-broodling'] },
           { enemies: ['cistern-bloat', 'cistern-bloat', 'cistern-acolyte', 'cistern-broodling', 'cistern-broodling'] },
@@ -597,6 +599,7 @@ export const ROTMOTHER_CISTERN: DungeonModule = {
         floor: 'd',
         title: 'The Drowned Chapel',
         checkpoint: true,
+        mechanic: { kind: 'rockfall' },
         waves: [
           { enemies: ['cistern-acolyte', 'cistern-acolyte', 'cistern-rat', 'cistern-rat', 'cistern-rat'] },
           { enemies: ['cistern-broodling', 'cistern-broodling', 'cistern-broodling', 'cistern-bloat', 'cistern-acolyte'] },
@@ -608,6 +611,7 @@ export const ROTMOTHER_CISTERN: DungeonModule = {
         id: 'sluices',
         floor: 'g',
         title: 'The Sluices',
+        mechanic: { kind: 'blades' },
         waves: [
           { enemies: ['cistern-rat', 'cistern-rat', 'cistern-rat', 'cistern-rat', 'cistern-acolyte'] },
           { enemies: ['cistern-vatborn', 'cistern-bloat', 'cistern-bloat', 'cistern-broodling', 'cistern-broodling'] },

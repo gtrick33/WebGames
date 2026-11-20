@@ -257,4 +257,6 @@ export const OPENED_TABLE: readonly string[] = [
   'kept:forges-on-the-rim', 'kept:the-throne-gate', 'kept:the-drake-roost', 'kept:across-the-mere',
   'kept:the-necropolis', 'kept:a-pilgrims-errand', 'kept:keepsakes-of-elsmere', 'kept:the-duskspire-gate',
   'kept:old-wintersend', 'kept:a-hound-named-bran',
+  // the Crown Catacombs' cache, behind the cracked wall at the foot of the stair
+  'crown-catacombs:cc-cache:30:43',
 ];

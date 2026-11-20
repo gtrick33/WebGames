@@ -582,6 +582,7 @@ export const BARROW_OF_KINGS: DungeonModule = {
         id: 'processional',
         floor: 'a',
         title: 'The Processional Way',
+        mechanic: { kind: 'blades' },
         waves: [
           { enemies: ['oathsworn-guard', 'skeleton', 'skeleton', 'rime-archer'] },
           { enemies: ['crypt-stalker', 'crypt-stalker', 'rime-archer', 'rime-archer'] },
@@ -592,6 +593,7 @@ export const BARROW_OF_KINGS: DungeonModule = {
         id: 'honored-dead',
         floor: 'c',
         title: 'The Halls of the Honored Dead',
+        mechanic: { kind: 'rockfall' },
         waves: [
           { enemies: ['tomb-priest', 'skeleton', 'skeleton', 'bone-hound'] },
           { enemies: ['crypt-stalker', 'crypt-stalker', 'oathsworn-guard', 'rime-archer'] },
@@ -603,6 +605,7 @@ export const BARROW_OF_KINGS: DungeonModule = {
         floor: 'e',
         title: 'The Treasury',
         checkpoint: true,
+        mechanic: { kind: 'volley', look: 'dart' },
         waves: [
           { enemies: ['cursed-hoard', 'cursed-hoard', 'crypt-stalker'] },
           { enemies: ['oathsworn-guard', 'rime-archer', 'rime-archer', 'crypt-stalker'] },
@@ -614,6 +617,7 @@ export const BARROW_OF_KINGS: DungeonModule = {
         id: 'ossuary',
         floor: 'i',
         title: 'The Ossuary',
+        mechanic: { kind: 'vents', look: 'frost' },
         waves: [
           { enemies: ['skeleton', 'skeleton', 'skeleton', 'tomb-priest'] },
           { enemies: ['bone-hound', 'bone-hound', 'crypt-stalker', 'crypt-stalker'] },
