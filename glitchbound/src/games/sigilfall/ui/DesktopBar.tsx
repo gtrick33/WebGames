@@ -10,6 +10,8 @@ import { hasMount } from '../progress/wardrobe';
 import { skillIconUrl } from '../render/sprites';
 import { slotHaste, SUMMON_TIME } from '../sim/world';
 import { useFrame } from './GameScreen';
+import { useHudBox } from './hudBoxes';
+import { Lesson } from './Lesson';
 import { uiIcon } from './uiIcons';
 import { hide, part, say } from './hudWrite';
 import { actionLabel } from '../input/binds';
@@ -28,6 +30,9 @@ export function DesktopBar({ engine }: { engine: SigilEngine }) {
     { slot: 'dodge', key: actionLabel(binds, 'dodge') },
   ];
   const prompt = useRef<HTMLDivElement>(null);
+  const bar = useRef<HTMLDivElement>(null);
+  useHudBox(engine, 'prompt', prompt);
+  useHudBox(engine, 'bar', bar);
   useFrame(engine, (w) => {
     const el = prompt.current;
     if (!el) return;
@@ -41,13 +46,13 @@ export function DesktopBar({ engine }: { engine: SigilEngine }) {
     <>
       <div className="rb-prompt" ref={prompt} hidden />
       {!indoors && (
-        <div className="rb-bar6" role="toolbar" aria-label="Skills">
+        <div className="rb-bar6" role="toolbar" aria-label="Skills" ref={bar}>
           {engine.ui.teach && !engine.ui.tip && (
             // over the key it teaches (each slot 52 px and a 6 px gap, after the bar's 9 px of edge; the ultimate is 10 px
             // wider and 8 px apart each side, Game.css)
-            <div className="rb-teach" role="status" style={{ left: `${teachAt(slots.findIndex((s) => s.slot === engine.ui.teach!.slot))}px` }}>
+            <Lesson engine={engine} className="rb-teach" key={engine.ui.teach.slot} style={{ left: `${teachAt(slots.findIndex((s) => s.slot === engine.ui.teach!.slot))}px` }}>
               {engine.ui.teach.text}
-            </div>
+            </Lesson>
           )}
           {slots.map((s) => (
             <Slot key={s.slot} engine={engine} slot={s.slot} keyLabel={s.key} />

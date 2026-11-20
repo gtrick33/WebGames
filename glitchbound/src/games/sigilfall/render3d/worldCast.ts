@@ -1,3 +1,4 @@
+import { fallOf } from '../data/falls';
 import { damp } from '../core/math';
 import { mountDef, riddenMount } from '../progress/wardrobe';
 import { NPCS } from '../data/quests';
@@ -153,6 +154,8 @@ const FLINCH = 0.22;
 /** The least time between two flinches, and between two of a boss's blows. */
 const FLINCH_EVERY = 0.7;
 const BLOW_EVERY = 0.5;
+/** How long a fallen foe is drawn after it fell (seconds): the longest fall, a great one's, is over by then. */
+const FALL_KEPT = 1.8;
 const bossDazed = (e: Enemy): boolean => !!e.boss && (e.boss.dazed > 0 || e.boss.dying > 0 || e.boss.shift > 0);
 /** A druid's beast makes every blow with its one attack. */
 const BEAST_BLOW: Move = { clip: 'chop', rate: 1.2, lunge: 0.2 };
@@ -231,12 +234,31 @@ export class WorldCast {
     // (only those: a land's whole bestiary went to the card every frame wherever it stood, six to eleven thousand
     // triangles a creature and each drawn twice for its outline. Highwall March's 173 made 2.7 million triangles a
     // frame with none of them on the screen. A boss is always drawn: the camera leans to it from a long way off)
+    // a foe that falls is kept here once the rules let go of it (World keeps a dead foe 0.6 s), so its fall plays out:
+    // every fall had been cut short, the body gone at full strength before it had faded (POLISH_PLAN.md piece 6)
+    if (this.fallenFor !== w) {
+      this.fallen.clear();
+      this.fallenFor = w;
+    }
+    const here = new Set<number>();
     for (const e of w.enemies) {
+      here.add(e.id);
+      if (e.dead && !e.dummy && !this.fallen.has(e.id)) this.fallen.set(e.id, { e, at: time, from: e.deathT });
       if (!e.boss && !shown(e.x, e.y)) {
         this.foes.delete(e.id);
         continue;
       }
       this.syncFoe(cast, e, w, dt, time);
+    }
+    for (const [id, f] of this.fallen) {
+      if (here.has(id)) continue;
+      f.e.deathT = f.from + (time - f.at);
+      if (f.e.deathT > FALL_KEPT || !shown(f.e.x, f.e.y)) {
+        this.fallen.delete(id);
+        this.foes.delete(id);
+        continue;
+      }
+      this.syncFoe(cast, f.e, w, dt, time);
     }
     for (const n of w.npcs) this.syncNpc(cast, n, w, dt, time, Math.min(1, (w.time - (n.since ?? -Infinity)) / 0.8));
     for (const n of w.leftNpcs) {
@@ -447,6 +469,10 @@ export class WorldCast {
   /** A druid's other shape: its own body, moving as the hero's does. */
   private readonly formMotion = new Motion();
 
+  /** Foes fallen and let go of by the rules, kept while their fall plays (FALL_KEPT), and the world they fell in. */
+  private readonly fallen = new Map<number, { e: Enemy; at: number; from: number }>();
+  private fallenFor: World | null = null;
+
   private syncFoe(cast: Cast, e: Enemy, w: World, dt: number, time: number): void {
     if (e.boss && bossHidden(e)) return;
     if (e.dummy) {
@@ -522,11 +548,28 @@ export class WorldCast {
     let rise = 0;
     let sx = 1;
     let sy = 1;
+    let ghostLift = 0;
     if (e.dead) {
       clip = 'die';
       t = e.deathT;
       loop = false;
       alpha = Math.max(0, 1 - Math.max(0, e.deathT - 0.7) / 0.5);
+      // each kind goes down its own way (data/voices.ts fallOf; what it leaves is sim/combat.ts fallFx): a shade rises
+      // and thins away, a slime bursts flat, bones come apart quickly, a great one lies a while where it fell
+      const fall = e.boss || e.def.prop ? 'person' : fallOf(e.def);
+      if (fall === 'ghost') {
+        clip = 'idle';
+        t = time;
+        loop = true;
+        alpha = Math.max(0, 1 - e.deathT / 0.7);
+        ghostLift = e.deathT * 1.6;
+      } else if (fall === 'slime') {
+        const k = Math.min(1, e.deathT / 0.28);
+        sx = 1 + k * 0.7;
+        sy = Math.max(0.12, 1 - k * 0.88);
+        alpha = Math.max(0, 1 - Math.max(0, e.deathT - 0.2) / 0.3);
+      } else if (fall === 'bone') alpha = Math.max(0, 1 - Math.max(0, e.deathT - 0.45) / 0.35);
+      else if (fall === 'heavy') alpha = Math.max(0, 1 - Math.max(0, e.deathT - 1.1) / 0.6);
       if (alpha <= 0) return;
     } else {
       const atk = kit.atk ?? 'chop';
@@ -625,7 +668,7 @@ export class WorldCast {
     // in the dark (night, a crypt) a foe that has seen the hero stands on a faint ring of the danger color: grey-blue foes
     // on grey-blue flagstones were lost in the dark, and an outline of ink is no help against a dark floor
     else if (!e.dead && e.aggro && !e.dummy && !e.boss && dark() > 0.3) cast.ring(x, y, e.r + 3, dangerColor(), 0.32 * Math.min(1, dark() * 1.4));
-    cast.creature(sprite, x, y, anim.turn, h, clip, t, loop, { alpha, flash, rise, sx, sy, enemy: e.def.id, tint: frozen ? FROZEN : chilled ? CHILLED : undefined, ...(anim.from ? { from: anim.from } : {}) });
+    cast.creature(sprite, x, y, anim.turn, h, clip, t, loop, { alpha, flash, rise, sx, sy, enemy: e.def.id, tint: frozen ? FROZEN : chilled ? CHILLED : undefined, ...(ghostLift ? { lift: ghostLift } : {}), ...(anim.from ? { from: anim.from } : {}) });
   }
 
   /**

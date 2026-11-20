@@ -1,9 +1,12 @@
 # Sigilfall: design notes
 
-A single-player, top-down pixel-art action RPG, built for phones first (landscape, two thumbs) and fully playable
-with a keyboard and mouse. Eight classes, gear that changes how skills behave, three talent trees and a
-specialization per class, a capital city and big open zones, dungeons with phased bosses and three difficulty
-tiers. The story, the Hollow King and the plan for all 28 zones and their dungeons are in `WORLD.md`.
+A low-poly 3D action RPG seen from above, built for phones first (landscape, two thumbs) and fully playable with a
+keyboard and mouse, alone or with up to three friends. Eight classes, gear that changes how skills behave, three
+talent trees and a specialization per class, a capital city and open lands, dungeons with phased bosses and three
+difficulty tiers, told as a Prologue, six acts, the finale and an epilogue (`data/acts.ts`). The story and the Hollow
+King are in `STORY_BIBLE.md` and `WORLD.md`; the work to bring the campaign to a small-AAA finish is in
+`POLISH_PLAN.md`. Off the campaign: The Ring (arena duels, `arena/`), The Vigil (a horde to hold out against,
+`vigil/`) and the Rift Trials.
 
 **Name.** The game launched as "Riftbound" on 2026-10-22 and was renamed Sigilfall the same day: Riftbound is
 also Riot Games' League of Legends trading card game. In the story, the sigils that held the Rift shut have
@@ -26,7 +29,10 @@ for players, while admins still see both. It reports `start`/`end` to the arcade
 | `data/` | Content only, typed: a kit per class in `kits/` (its definition, skills as `SkillSpec`s, talents), pets, items, enemies, bosses, regions, quests and NPCs; a module per zone in `zones/` (its region, people, quests and enemies), dungeons in `dungeons/`, the zone generator (`zonegen.ts`), the city builder (`citygen.ts`) and every land's look (`themes.ts`) |
 | `progress/` | The hero (`character.ts`), items and loot, the build resolver (`build.ts`), item and modifier text (`describe.ts`), saves |
 | `sim/` | The world (`world.ts`), casting and projectiles, combat and statuses, companions (`pets.ts`), enemy AI, the boss framework, tile maps and collision |
-| `render/` | Canvas 2D at a low pixel resolution: the ground (chunked, painted on a worker), the paper-doll hero, sprites, lighting, effects |
+| `render/` | `renderer.ts` hosts the 3D stage and draws the 2D layer over it: names, bars and numbers, speech, markers and the minimap's marks. `effects.ts` hands every spell, shot, flame and warning on the ground to the 3D shaders (`render3d/fx3d.ts`). Also the hero's look (`art/hero.ts`), which the 3D models dress from, and item icons (`sprites.ts`) |
+| `render3d/` | The world in 3D (three.js): the land from the rules' own tile map (`land.ts`), everyone on it (`cast.ts`, `worldCast.ts`, `dress.ts`, `armorKit.ts`), what glows and burns (`fx3d.ts`), mounts, portraits, the Ring (`ring3d.ts`) and the Wardens' Sanctum (`hall.ts`) |
+| `arena/`, `vigil/`, `net/` | The Ring, The Vigil, and the live rooms of co-op, the Ring and the Vigil |
+| `audio/` | Sound effects (`samples.ts`), the soundtrack (`tracks.ts`), each land's air (`ambience.ts`), and a procedural score as a stand-in (`songs.ts`) |
 | `input/` | Keyboard and mouse, and the touch state the on-screen controls write into |
 | `ui/` | React screens: title, HUD, touch controls, desktop skill bar, the hero/skills/talents/quests/map panels, settings |
 | `engine.ts` | The loop, the bridge between the world and React, saving, sound and travel |
@@ -95,6 +101,7 @@ three talent trees. `classes.ts`, `skills.ts` and `talents.ts` gather them.
 | Priest | Mana | holy bolts and heals over time, or shadow curses, a drain and fear |
 | Warlock | Mana | curses that tick, a life drain, fear, and demons that fight beside them (Blood Tithe trades health for mana) |
 | Druid | Mana | spells in caster form; Lynx Shape and Bear Shape swap the whole bar for claws or paws |
+| Gloamknight | Umbra | heavy plate and a greatsword; spends its own blood for strength and wins it back with every blow that lands (the Gloamknight Pack) |
 
 Damage types: physical, fire, frost, lightning, poison, arcane, shadow, holy, nature. Statuses add bleed (a
 physical DoT that ignores armor), curse (a DoT of the caster's type; different types stack) and fear (the enemy
@@ -137,33 +144,26 @@ bought pieces stay sold. Bosses pay Sigil Marks (more on Heroic and Mythic). Eve
 
 ## Art
 
-The world is laid out in world pixels (16 per tile) and drawn at twice that resolution (`DETAIL` in
-`render/pixel.ts`), so newer art has finer pixels while the camera, the simulation and the old 1× effects stay
-in world units.
+The world is drawn in 3D over the same tile map the rules walk on (`render3d/`): low-poly models from CC0 packs
+(KayKit, Kenney, Quaternius; who made what is in CREDITS_AND_LICENSES.md), built into the game's own files by
+`scripts/sigilfall-3d-assets.mjs` (`public/games/sigilfall/3d/`, colors baked into the vertices, so a whole dressed
+hero is one draw call and a dye is a few bytes rewritten). The packs stay out of the repository.
 
-- **Ground** (`render/groundPaint.ts`): every art pixel is a pure function of the map and its position: grass
-  with single blades and flowers, worn paths with pebbles and a shadow under the grass edge, water with banks,
-  foam and ripples, cobbles, plank bridges, the forest canopy seen from above (leafy edges, glints, a shadow on
-  the ground) and crypt flagstones and brick. `render/ground.ts` keeps 256 × 256 chunks: the ones in view are
-  painted at once if they aren't ready, the ring around them on a worker (`ground.worker.ts`, or a few
-  milliseconds per frame without one), and far ones are dropped, so a large map costs only what is near.
-- **Heroes and townsfolk** (`render/art/hero.ts`) are paper dolls painted at art resolution in three views
-  with walking frames. Each worn piece is drawn from its style (hood, helm, cap, crown; robe, tunic,
-  breastplate; trousers or greaves; gloves or gauntlets; shoes, boots or sabatons), material (cloth, leather,
-  mail, plate, gold: `mat` on an item, else from its icon), color and rarity (rare: a light trim; epic: gold
-  trim; legendary: gold and a glowing stone; epic and legendary armor adds a cape). Generated armor is dyed per
-  piece from its material's colors (`itemTint`), so two robes rarely match. Empty slots show the class outfit
-  (the mage's hat and robe). The character screen is a paper doll with the hero in the middle (tap to turn).
-- **Trees, bushes, rocks** (`render/art/flora.ts`) are painted at art resolution, each land with its own trees
-  (oaks and pines, palms, snowy pines, dead trees, cacti, mushrooms, crystal spires, willows, jungle trees: the
-  theme's list in `data/themes.ts`), a few dozen variants of each shared across a zone. **Buildings**
-  (`render/art/buildings.ts`) are painted per style (house, tavern, inn, shop, smithy, temple, keep, tower,
-  hall) over their footprint. Other props, creatures and
-  weapons are their text art doubled with Scale2x (smooth diagonals, a fine outline) until they are redrawn.
-  Companions and the druid's cat and bear are in `render/art/companions.ts`.
-- **Icons**: skills and talents use 24 × 24 glyphs (`render/art/icons.ts`, one per skill in `skillGlyphs.ts`)
-  on a tile in the damage type's color. New bolts have their own looks (a spinning shield, a hammer of light, a
-  lance of ice, lashing roots, stars).
+- **The land** (`render3d/land.ts`): the ground painted once near the camera and kept (`groundBake.ts`), solid blocks
+  for walls and cliffs, and trees, houses and furniture placed tile by tile; only what is near the camera is drawn.
+  Things the packs have no good one of (lamps, banners, cave mouths, the gates between lands) are built of plain
+  shapes (`propsBuilt.ts`, `doorways.ts`, `gateways.ts`).
+- **People and gear** (`dress.ts`, `armorKit.ts`): every worn piece picks a model by its kind, color and rarity, so two
+  helmets look different and the same one always looks the same; rarity shows in the cut, dye and trim. The hero's
+  look (`render/art/hero.ts`) is what they dress from; heads by hair style (`heads.ts`); skills have moves of their
+  own (`moves.ts`).
+- **Creatures** (`kits.ts`, `repaint.ts`, `beast.ts`): every creature name has its model; a boss is its soldiers'
+  model repainted part by part and fitted with what it wears.
+- **Effects**: every spell, shot, flame and warning on the ground is drawn by the graphics card in the world
+  (`render/effects.ts` says what each looks like and hands it to `fx3d.ts`), at its true depth: a wall hides what is
+  behind it. Only names, bars, numbers and speech are drawn on the 2D layer over the picture.
+- **Icons**: skills and talents from game-icons.net on tiles in the damage type's color
+  (`scripts/sigilfall-icons.mjs`); items painted in code (`render/sprites.ts`).
 
 Gear has a **legs** slot (trousers, breeches, legguards), sold by the armory.
 
@@ -204,15 +204,13 @@ quests, sights (3 % of a level each) and dungeons are the way up. Roads to new l
 level. Perks from quests: a bigger satchel, a bigger flask, a mount (×1.3 speed outside fights, not in
 dungeons) and the hearthstone.
 
-The world so far is the capital and ten open zones (levels 2 to 32), Acts I and II of the Hollow King's story
-(`WORLD.md`): the Whisperwood, Brackenridge, Thornvale, Greyfen, the Saltmarsh, the Amberfield, Duskfen, Ironpeak,
-the Ashen Barrows and Stormwatch. Each zone module (`data/zones/<id>.ts`, `-quests.ts`, `-foes.ts`, and its art in
+The world is the capital, the open lands and the dungeons that `data/regions.ts` gathers; the lands the story no
+longer goes through are kept in `data/retired.ts`, off the map. Each zone module (`data/zones/<id>.ts`, `-quests.ts`, `-foes.ts`, and its art in
 `render/art/zones/<id>.ts`) holds its spec, townsfolk, quests, enemies and hand-made items; a sight can stand a
 landmark building (Stormwatch's lighthouse). The main story's quests that join the zones are in `data/story.ts`.
 
 **Sigils.** The seven sigils are the main story's rewards (`perk`s): each adds 4% health and power, the hero sheet
-shows them, and Duskspire's last door will open only for all seven. Acts I and II give three: Embers (the
-Regent's council), Tides (the drowned fleet) and Stone (the Deepforge).
+shows them, and Duskspire's last door opens only for all seven (their order and lore are in `data/chronicle.ts`).
 
 Dungeons are chains of rooms that seal while you fight their waves, with checkpoints and phased bosses: the
 Hollow Crypt (Warden Ossric, Morgrave), Gallows Keep (the Hangman, Harlan Blackglove), the Smugglers' Grotto (the
@@ -368,8 +366,8 @@ rating kept on their device, on no ranking.
 - Balance is tuned against the bot; real players will find Normal easier or harder depending on skill.
 - The sounds and music were chosen by description and measured loudness, not by ear: `audio/samples.ts` and
   `audio/tracks.ts` are the places to change what plays.
-- The level cap is 60, but the zones so far reach level 46 (Mythic crypt aside). Act IV in `WORLD.md`, with
-  Duskspire and the Hollow King, is the next stage.
+- What the campaign still lacks against a small-AAA finish, and the pieces that bring it there, are in
+  `POLISH_PLAN.md`.
 - Measured with the bot at level 60 in rare gear, the damage specializations deal about 20-44k a second
   (Retribution and the Beastmaster were cut back from 55-67k; each skill's curse is now its own, so Affliction's
   stack). The bot plays the default bar with the specialization's skill on it, so specs that want another bar

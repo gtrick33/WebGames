@@ -1,3 +1,4 @@
+import type { Mix } from './mix';
 import { firstFiles, laterFiles, SAMPLES, type AmbienceId, type SampleDef } from './samples';
 import { Score } from './score';
 import { SONGS, type SongId } from './songs';
@@ -73,11 +74,21 @@ export const SFX: Record<string, (s: Sound) => void> = {
   scene: (s) => s.tones([{ f: hz(55), dur: 0.6, gain: 0.03, type: 'sine' }, { f: hz(62), dur: 0.8, gain: 0.025, type: 'sine', at: 0.25 }]),
 };
 
+/** The music's low-pass by how much of a fight is on: a little dark out of one (3.2 kHz), wide open in one. */
+const toneOf = (fight: number): number => 3200 * Math.pow(18000 / 3200, Math.max(0, Math.min(1, fight)));
+/** The music's share by the mix: stepped back for the story, a touch softer out of a fight. */
+const musicGainOf = (m: Mix): number => m.duck * (0.86 + 0.14 * Math.max(0, Math.min(1, m.fight)));
+
 export class Sound {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private sfxBus: GainNode | null = null;
   private musicBus: GainNode | null = null;
+  /** The mix (audio/mix.ts): the music's tone (a low-pass, opening in a fight) and its step back for the story. */
+  private musicTone: BiquadFilterNode | null = null;
+  private musicDuck: GainNode | null = null;
+  private ambDuck: GainNode | null = null;
+  private mixNow: Mix = { duck: 1, fight: 0 };
   private noiseBuf: AudioBuffer | null = null;
   private last = new Map<string, number>();
   /** The recordings that have come in, by file. */
@@ -126,9 +137,17 @@ export class Sound {
       limit.attack.value = 0.003;
       limit.release.value = 0.2;
       this.sfxBus.connect(limit).connect(this.master);
-      this.musicBus.connect(this.master);
+      // the music through its tone and its step back (audio/mix.ts), the air through a step back of its own
+      this.musicTone = this.ctx.createBiquadFilter();
+      this.musicTone.type = 'lowpass';
+      this.musicTone.Q.value = 0.5;
+      this.musicTone.frequency.value = toneOf(this.mixNow.fight);
+      this.musicDuck = this.ctx.createGain();
+      this.musicDuck.gain.value = musicGainOf(this.mixNow);
+      this.musicBus.connect(this.musicTone).connect(this.musicDuck).connect(this.master);
       this.ambBus = this.ctx.createGain();
-      this.ambBus.connect(this.master);
+      this.ambDuck = this.ctx.createGain();
+      this.ambBus.connect(this.ambDuck).connect(this.master);
       this.master.connect(this.ctx.destination);
       const len = this.ctx.sampleRate;
       this.noiseBuf = this.ctx.createBuffer(1, len, len);
@@ -144,6 +163,23 @@ export class Sound {
     if (this.ctx.state !== 'running' && !this.suspended) void this.ctx.resume().catch(() => undefined);
     if (this.wanted !== this.music) this.setMusic(this.wanted);
     if (this.ambWanted !== (this.amb?.id ?? null)) this.setAmbience(this.ambWanted);
+  }
+
+  /**
+   * The mix as it should be now (audio/mix.ts mixFor), called every frame: only a change acts, and the music glides to
+   * it, stepping back quickly for words and coming forward again slowly, opening as a fight starts and closing after.
+   */
+  setMix(m: Mix): void {
+    const was = this.mixNow;
+    if (Math.abs(m.duck - was.duck) < 0.01 && Math.abs(m.fight - was.fight) < 0.05) return;
+    this.mixNow = m;
+    const c = this.ctx;
+    if (!c || !this.musicDuck || !this.musicTone) return;
+    const t = c.currentTime;
+    const back = m.duck < was.duck;
+    this.musicDuck.gain.setTargetAtTime(musicGainOf(m), t, back ? 0.12 : 0.6);
+    this.musicTone.frequency.setTargetAtTime(toneOf(m.fight), t, m.fight > was.fight ? 0.25 : 1.2);
+    this.ambDuck?.gain.setTargetAtTime(m.duck < 1 ? 0.6 + 0.4 * m.duck : 1, t, back ? 0.12 : 0.6);
   }
 
   setVolumes(v: { master: number; music: number; sfx: number; muted: boolean }): void {

@@ -1,3 +1,4 @@
+import { mixFor } from './audio/mix';
 import { rankEntries } from './progress/ranks';
 import { readBests } from './vigil/bests';
 import { trialHero, trialsOpen, trialStone } from './progress/trial';
@@ -156,6 +157,8 @@ export interface TitleCard {
 }
 
 const STEP = 1 / 60;
+/** How long a way taken (a door, a road out of a land) takes to go dark before the next place is made (ms). */
+const LEAVE_MS = 260;
 
 /** How long a party waits for a leader who dropped out (their game holds the enemies) before going home. */
 const LEAD_WAIT_MS = 20_000;
@@ -541,6 +544,16 @@ export class SigilEngine {
   private frame(now: number): void {
     const dt = Math.min(0.1, Math.max(0, (now - this.last) / 1000));
     this.last = now;
+    // a way being taken: dark enough, the next place is made (first, so this frame draws it, coming up out of the dark)
+    if (this.leaving) {
+      const k = (now - this.leaving.at) / LEAVE_MS;
+      if (k >= 1 || this.ui.screen !== 'game') {
+        const go = this.leaving.go;
+        this.leaving = null;
+        this.renderer.leaving = 0;
+        if (this.ui.screen === 'game') go();
+      } else this.renderer.leaving = Math.max(0, k);
+    }
     // sound follows the pause, however it was left (the pause menu, a panel opened from it, the title): a
     // minimized game paused itself and used to come back silent
     this.sound.suspend(this.hidden || (this.ui.screen === 'game' && this.ui.pause));
@@ -697,6 +710,8 @@ export class SigilEngine {
     this.sound.setMusic(boss && !boss.dead ? 'boss' : ((w.scene?.music ?? w.storyState?.music ?? REGIONS[w.region.id].music) as MusicId));
     // (the air is the land's own, whatever the story plays over it; a town under siege has none)
     this.sound.setAmbience(ambienceOf(w.storyState?.music ?? REGIONS[w.region.id].music));
+    // the music steps back for the story's words and comes forward in a fight (audio/mix.ts)
+    this.sound.setMix(mixFor(w, this.ui));
   }
 
   private handleEvents(w: World): void {
@@ -1020,6 +1035,11 @@ export class SigilEngine {
       // a Trial's hero is not kept: only how high the calling's stone has been taken
       this.save.rift = { ...this.save.rift, [this.trial]: Math.max(trialStone(this.save, this.trial), this.hero.keystone) };
     } else if (this.hero) {
+      // how far into a dungeon they have come, kept with where they are (Character.at: a reload takes it up again)
+      const w = this.world;
+      const at = this.hero.at;
+      const mark = w && at && at.region === w.region.id ? w.dungeonMark() : null;
+      if (at && mark) this.hero.at = { region: at.region, ...(at.tier ? { tier: at.tier } : {}), ...(at.from ? { from: at.from } : {}), ...mark };
       // whatever the hero carries now, its look is theirs for good
       learnLooks(this.hero, allItems(this.hero));
       // stamped only when something changed: opening a hero without playing doesn't make that copy the newest
@@ -1096,6 +1116,8 @@ export class SigilEngine {
    * (SaveFile.rift), and wherever the story would send them home, they go back to the title.
    */
   trial: ClassId | null = null;
+  /** The place a hero is taken back to as play() begins, while travel() makes it (a dungeon's rooms and checkpoint). */
+  private resumeMark: Character['at'] | null = null;
 
   /** Straight into a Rift Trial from the title, as a calling's ready hero on one of its paths. */
   startRiftTrial(cls: ClassId, spec: 0 | 1 | 2, region: RegionId, pick?: number): void {
@@ -1163,7 +1185,10 @@ export class SigilEngine {
     // back where they were when they last played (Character.at): the land, the town, a dungeon at its door. A place
     // that can't be gone to any more (a land the story left, a way lost) is Briarhollow, as it always was
     const at = h.at;
+    // (a dungeon is taken up where it was left: its rooms cleared, its last checkpoint; World.restoreMark)
+    this.resumeMark = at && REGIONS[at.region]?.kind === 'dungeon' ? at : null;
     if (!at || at.region === HOME || !this.travel(at.region, at.tier ?? 0, [], at.from)) this.travel(HOME, 0, []);
+    this.resumeMark = null;
     this.sound.unlock();
     // still in a party's lobby (back from choosing another hero): the party sees the new one
     if (this.party && !this.invite) this.refreshPartyCard(true);
@@ -1360,10 +1385,14 @@ export class SigilEngine {
     if (prev?.player.riding && region.kind !== 'dungeon' && !region.interior && canRide(h, prev.player.riding)) w.player.riding = prev.player.riding;
     // the quests of a land start when the hero first gets there
     for (const q of startQuests(h)) w.emit({ t: 'questStart', quest: q.id });
+    // a dungeon taken up again after a reload: as it was left (POLISH_PLAN.md piece 3)
+    const resume = this.resumeMark;
+    const resumed = !!resume && resume.region === to && (resume.tier ?? 0) === w.tier && !party && !stone;
+    if (resumed) w.restoreMark(resume);
     // where the hero is now, for the next time they play (not a Riftstone's run, nor a party's: Character.at)
     if (!party && !stone) {
       if (to === HOME) delete h.at;
-      else h.at = { region: to, ...(w.tier ? { tier: w.tier } : {}), ...(from ? { from } : {}) };
+      else h.at = { region: to, ...(w.tier ? { tier: w.tier } : {}), ...(from ? { from } : {}), ...(resumed ? (w.dungeonMark() ?? {}) : {}) };
     }
     this.world = w;
     this.renderer.snap(w);
@@ -1421,8 +1450,28 @@ export class SigilEngine {
     this.run = null;
   }
 
+  /**
+   * A way taken (a door, a road out of a land: POLISH_PLAN.md piece 13): the picture goes dark over LEAVE_MS, then the
+   * next place is made and comes up out of the dark (render/renderer.ts). At once in a party (the worlds keep one
+   * pace) and for a player who asked for less motion.
+   */
+  private leaving: { at: number; go: () => void } | null = null;
+
+  private leave(go: () => void): void {
+    if (this.leaving) return;
+    if (this.coop || this.renderer.reducedMotion) {
+      go();
+      return;
+    }
+    this.kbm?.release();
+    this.touch.release();
+    this.leaving = { at: performance.now(), go };
+  }
+
   /** Talk, travel or leave, depending on what is in front of the hero. */
   interact(it: Interactable): void {
+    // (on the way out already: nothing more is taken up)
+    if (this.leaving) return;
     if (it.kind === 'npc') this.talk(it.id);
     else if (it.kind === 'waystone') this.openPanel('map');
     else if (it.kind === 'exit' && it.door && !it.locked && this.world) {
@@ -1430,7 +1479,9 @@ export class SigilEngine {
       const w = this.world;
       if (this.hero && !this.hero.unlocked.includes(it.to as RegionId)) this.hero.unlocked.push(it.to as RegionId);
       this.sound.play('open');
-      this.travel(it.to as RegionId, w.tier, w.mods, w.region.id);
+      const { tier, mods } = w;
+      const from = w.region.id;
+      this.leave(() => this.travel(it.to as RegionId, tier, mods, from));
     } else if (it.kind === 'exit') {
       this.kbm?.release();
       this.touch.release();
@@ -1448,7 +1499,10 @@ export class SigilEngine {
     }
     // walking there is how a new land is found (its waystone then works for travel)
     if (this.hero && !this.hero.unlocked.includes(t.to)) this.hero.unlocked.push(t.to);
-    this.travel(t.to, w.tier, w.mods, w.region.id);
+    this.setUi({ travel: null });
+    const { tier, mods } = w;
+    const from = w.region.id;
+    this.leave(() => this.travel(t.to, tier, mods, from));
   }
 
   cancelTravel(): void {

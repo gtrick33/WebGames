@@ -22,7 +22,7 @@ import { maybeStartScene, revealBoss, sceneDue, scenesPlayHere, updateScene, typ
 import { buildHero, type HeroBuild } from '../progress/build';
 import { fogOpen, fogShare, loadFog, revealFog, storeFog, type Fog } from '../progress/fog';
 import { turnInNpc } from '../progress/handin';
-import { activeQuests, addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, deliverHeld, giveReward, PERKS, potionCap, questEvent, sigilCount, SIGILS, startQuests, type Character, questState, HOME, currentObjective } from '../progress/character';
+import { activeQuests, addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, deliverHeld, giveReward, PERKS, potionCap, questEvent, sigilCount, SIGILS, startQuests, type Character, type DungeonMark, questState, HOME, currentObjective } from '../progress/character';
 import { potionPrice } from '../progress/shop';
 import { goldDrop, itemName, makeItem, rollLoot, rollRarity, salvageValue, type LootSource } from '../progress/items';
 import { riftFirsts } from '../progress/rift';
@@ -2337,6 +2337,59 @@ export class World {
       this.emit({ t: 'bossStart', boss: def });
     }
     return e;
+  }
+
+  /**
+   * How far into this dungeon the hero has come (progress/character.ts DungeonMark): the rooms cleared, the packs
+   * wiped, the last checkpoint, the way home if it is open. Null anywhere else, and in a Riftstone run or a party's.
+   */
+  dungeonMark(): DungeonMark | null {
+    if (this.region.kind !== 'dungeon' || this.keyRun || this.coop || this.puppet) return null;
+    const rooms = this.encounters.filter((e) => e.state === 'cleared').map((e) => e.def.id);
+    const living = new Set(this.enemies.filter((e) => !e.dead).map((e) => e.id));
+    // (a pack once wiped and then kept gone by a reload has no one left to count: it stays wiped)
+    const packs = this.packs.filter((st) => st.gone || (st.ids.length > 0 && !st.ids.some((id) => living.has(id)))).map((st) => st.index);
+    const at = (v: { x: number; y: number }): [number, number] => [Math.round(v.x), Math.round(v.y)];
+    return { ...(rooms.length ? { rooms } : {}), ...(packs.length ? { packs } : {}), cp: at(this.checkpoint), ...(this.portal ? { portal: at(this.portal) } : {}) };
+  }
+
+  /**
+   * The dungeon as the hero left it (a reload, Character.at): its rooms cleared stay clear (sealed doors open, nobody
+   * in them), the packs wiped stay gone, the hero stands at the last checkpoint, and the way home stands open if its
+   * last boss is down. A room id the dungeon no longer has is passed over; a place no longer walkable is not stood on.
+   */
+  restoreMark(mark: DungeonMark): void {
+    if (this.region.kind !== 'dungeon') return;
+    const rooms = new Set(mark.rooms ?? []);
+    for (const enc of this.encounters) {
+      if (!rooms.has(enc.def.id)) continue;
+      enc.state = 'cleared';
+      setDoors(this.map, enc.index, false);
+      this.enemies = this.enemies.filter((e) => e.room !== enc.index);
+    }
+    const packs = new Set(mark.packs ?? []);
+    for (const st of this.packs) {
+      if (!packs.has(st.index)) continue;
+      const ids = new Set(st.ids);
+      this.enemies = this.enemies.filter((e) => !ids.has(e.id));
+      st.ids = [];
+      st.gone = true;
+    }
+    // (a tile one can stand on, as a checkpoint is: World.clearEncounter picks one)
+    const walkable = (x: number, y: number): boolean => {
+      const i = tileAt(this.map, x, y);
+      return i >= 0 && !this.map.solid[i];
+    };
+    if (mark.cp && walkable(mark.cp[0], mark.cp[1])) {
+      this.checkpoint = { x: mark.cp[0], y: mark.cp[1] };
+      this.player.x = mark.cp[0];
+      this.player.y = mark.cp[1];
+    }
+    if (mark.portal && walkable(mark.portal[0], mark.portal[1])) {
+      this.portal = { x: mark.portal[0], y: mark.portal[1] };
+      this.cleared = true;
+    }
+    if (this.bossId !== null && !this.enemies.some((e) => e.id === this.bossId)) this.bossId = null;
   }
 
   /** Each room's state in one letter (i idle, a active, c cleared), as the host sends it. */
