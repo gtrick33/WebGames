@@ -3278,6 +3278,19 @@ html.rb-touch-playing textarea {
 .rb-look-tile {
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--rc, #6a5a8a) 55%, transparent);
 }
+/* a look is pictured from its model as an item is (render/sprites.ts wardrobePicture), drawn smooth; a painted icon,
+   for what has no model, stays crisp */
+.rb-look-tile img {
+  image-rendering: pixelated;
+}
+.rb-look-tile img.is-smooth {
+  image-rendering: auto;
+}
+/* (a model fills its picture, so one not found yet is dimmed to grey rather than blacked out: blacked out, a helm on
+   a head was a dark square) */
+.rb-look-tile.is-locked img.is-smooth {
+  filter: grayscale(1) brightness(0.38) contrast(0.9);
+}
 .rb-look-tile.is-worn::after,
 .rb-mount-tile.is-worn::after {
   content: '✓';
@@ -11417,6 +11430,14 @@ html.rb-touch-playing textarea {
 .rb-tracker.is-folded img {
   height: 18px;
   image-rendering: pixelated;
+}
+/* the quest and the hero's frame (the sigils in it open the Journal) stand over the joystick's zone (ui/Stick.tsx):
+   on a phone the quest lies under the hero's bars, inside the zone, and a tap meant to open it again took the stick
+   instead (the owner: "if i close it i cant really reopen it again as the joystick turns on"). Everything that
+   comes over the game (a conversation, a window, a lesson) stands higher still. */
+.rb-ui.is-touch > .rb-tracker,
+.rb-ui.is-touch > .rb-hud-hero {
+  z-index: 2;
 }
 
 /* The Ring's keys */

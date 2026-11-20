@@ -764,7 +764,13 @@ export class WorldCast {
     const alpha = pet.dead ? Math.max(0, 1 - pet.deathT / 0.6) : fade;
     if (alpha <= 0) return;
     const person = look ? npcLookOf(look) : null;
-    if (pet.dead) s.m.set('die', false);
+    // one who comes on horseback (Dunmore's riders): the horse at its own gait, the rider in the saddle
+    const steed = person && pet.def.rides ? mountDef(pet.def.rides) : undefined;
+    const mounted = !!steed && !pet.dead && cast.mountReady(steed);
+    // (a rider sits the saddle and nothing else: set to walk or stand and then to ride, every frame, the saddle's clip
+    // began again each frame, and the rider sat frozen in its first pose)
+    if (mounted) s.m.set('ride');
+    else if (pet.dead) s.m.set('die', false);
     else if (pet.actT > 0) {
       // (a new blow starts where the blow is in its clip, not at the lift before it)
       const fresh = s.m.clip !== 'chop' || pet.actT > s.actT + 0.01;
@@ -774,9 +780,7 @@ export class WorldCast {
     s.actT = pet.actT;
     s.m.advance(s.m.clip === 'walk' ? dt * stride('walk', speed, heightFromRadius(pet.r)) : dt);
     const flash = pet.flash > 0 ? 0.7 : 0;
-    // one who comes on horseback (Dunmore's riders): the horse at its own gait, the rider in the saddle
-    const steed = person && pet.def.rides ? mountDef(pet.def.rides) : undefined;
-    if (steed && cast.mountReady(steed)) {
+    if (mounted && steed) {
       const shape = shapeOf(steed);
       const horse = (s.horse ??= new Motion());
       horse.set(moving ? (speed > shape.gallop * 0.55 ? 'run' : 'walk') : 'idle', true, 0.14);
@@ -784,7 +788,6 @@ export class WorldCast {
       const sh = shape.shadow;
       cast.shadow(s.x + Math.sin(s.turn) * sh.ahead, s.y + Math.cos(s.turn) * sh.ahead, sh.r, sh.long, s.turn);
       const saddle = cast.mount(steed, s.x, s.y, s.turn, horse, { alpha, flash });
-      s.m.set('ride');
       if (saddle) cast.person(person!, null, false, saddle.x, saddle.y, s.turn, s.m, { alpha, flash, h: PERSON_H * shape.rider, hipsAt: saddle.high, tip: saddle.tip * 0.55 });
       return;
     }

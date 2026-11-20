@@ -871,8 +871,9 @@ function Tracker({ engine }: { engine: SigilEngine }) {
     box.current = el;
   };
   useHudBox(engine, 'quest', box);
-  // (below the minimap, never across it: on a tablet the quest's name came up under the map's rim)
-  usePlaced(engine, box, (el) => placeDown(engine, el, ['map', 'menu', 'hero'], 'quest'), engine.touchMode);
+  // (below the minimap, never across it: on a tablet the quest's name came up under the map's rim; and below the
+  // sigils under the hero's bars, wherever the hero stands: ui/layout.ts placeDown)
+  usePlaced(engine, box, (el) => placeDown(engine, el, ['map', 'menu', 'hero'], 'quest', true), engine.touchMode);
   useFrame(engine, () => {
     const el = box.current;
     if (!el) return;

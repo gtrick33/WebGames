@@ -163,6 +163,10 @@ export const SAMPLES: Readonly<Record<string, SampleDef>> = {
   checkpoint: { files: ['gong'], gain: 0.26, rate: [1.3, 1.4] },
   bell: { files: ['bell'], gain: 0.6, rate: [0.52, 0.56] },
   'bell-toll': { files: ['bell'], gain: 0.8, rate: [0.4, 0.4] },
+  // a sigil of the Crown won (the Sigil Rite): a warm swell, the game's own (scripts/sigilfall-ring-sounds.mjs). It was
+  // the bell toll with a legendary drop's chime over it, nearly all of it above 3 kHz (the owner: "the sound when
+  // getting a sigil is piercing ... improve it"). Fetched after the fight's sounds: no first blow needs it
+  sigil: { files: ['sigil-won'], gain: 0.6, rate: [1, 1], later: true },
   reset: { files: ['ui-pluck'], gain: 0.4, rate: [1, 1.08] },
   talent: { files: ['ui-select'], gain: 0.34, rate: [1, 1.05] },
   mark: { files: ['ui-tick'], gain: 0.3, rate: [0.95, 1.05] },

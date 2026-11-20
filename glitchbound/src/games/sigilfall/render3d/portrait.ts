@@ -10,7 +10,7 @@ import { shapeOf } from './mountLook';
 import { loadPack, toGeometry, type MeshData, type Pack } from './pack';
 import { busyElsewhere } from './pace';
 import { copyLight, daylight, putLight, rigAnimOf, staticMaterial, type RigAnim } from './toon';
-import type { Item, ItemIcon, SlotId } from '../data/types';
+import type { Item, ItemIcon, Material, Rarity, SlotId } from '../data/types';
 import { itemIcon, itemMat, itemTint } from '../progress/items';
 
 /**
@@ -336,15 +336,39 @@ export function shopLookPicture(look: HeroLook, bust: boolean, w: number, h: num
  * potion): the painted icon stays for those. Null too until the models are in (the screen gate brings them in).
  */
 export function gearPicture(item: Item, size: number): string | null {
+  return shownPicture({ icon: itemIcon(item), tint: itemTint(item), mat: itemMat(item), r: item.r }, size, (slot) => heroLook('warrior', { [slot]: item }));
+}
+
+/** What shows of a Wardrobe look (progress/wardrobe.ts Look): what an item shows, and a set's own models (the shop's, the Ring's). */
+export interface LookShown {
+  icon: ItemIcon;
+  tint: string;
+  mat: Material;
+  r: Rarity;
+  set?: string;
+  colors?: string[];
+}
+
+/**
+ * A Wardrobe look's picture, made as an item's is: in the Wardrobe the equipped piece showed its model and every look
+ * beside it its old painted icon (the owner: "some of the items have 2d icons some of them 3d icons"). A look worn on
+ * the body is pictured on a figure wearing it as the Wardrobe puts it on (a shop or Ring set in its own models).
+ */
+export function lookPicture(look: LookShown, size: number): string | null {
+  return shownPicture(look, size, (slot) => (slot === 'head' || slot === 'chest' ? heroLook('warrior', {}, { [slot]: look }) : null));
+}
+
+/** A piece's picture from what shows of it; `dressed` puts a piece worn on the body on a figure (null: it can't be). */
+function shownPicture(it: { icon: ItemIcon; tint: string; mat: Material; r: Rarity }, size: number, dressed: (slot: SlotId) => HeroLook | null): string | null {
   if (!wardrobe || !ensure()) return null;
-  const icon = itemIcon(item);
-  const kind = CARRIED[icon];
+  const kind = CARRIED[it.icon];
   if (kind) {
-    const m = carriedModel(wardrobe, kind, { tint: itemTint(item), mat: itemMat(item), r: item.r });
+    const m = carriedModel(wardrobe, kind, { tint: it.tint, mat: it.mat, r: it.r });
     return m ? shootThing(m, size, kind) : null;
   }
-  const worn = WORN[icon];
-  return worn ? shootWorn(wardrobe, item, worn, size) : null;
+  const worn = WORN[it.icon];
+  const look = worn ? dressed(worn.slot) : null;
+  return worn && look ? shootWorn(wardrobe, look, worn, size) : null;
 }
 
 /** What is carried, by its icon: the kind of model it is. */
@@ -413,8 +437,7 @@ function shootThing(m: MeshData, size: number, kind: string): string | null {
 }
 
 /** Something worn, on a figure wearing it and nothing else of note, close on where it is worn. */
-function shootWorn(w: Wardrobe, item: Item, worn: Worn, size: number): string | null {
-  const look = heroLook('warrior', { [worn.slot]: item });
+function shootWorn(w: Wardrobe, look: HeroLook, worn: Worn, size: number): string | null {
   const { mesh } = dressedOf(w, look, null, false);
   const r = renderer!;
   r.setPixelRatio(1);

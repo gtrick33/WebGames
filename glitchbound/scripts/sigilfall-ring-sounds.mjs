@@ -11,7 +11,8 @@
  * Deterministic: the same files every run (a seeded random). Run by hand when a sound is changed:
  *   node scripts/sigilfall-ring-sounds.mjs [name ...]
  * It writes public/games/sigilfall/audio/ring-*.mp3 (mono, 64 kbps, as the other effects); the Ring plays them by
- * src/games/sigilfall/audio/samples.ts `ring-*` and render/ring.ts `ringSound`.
+ * src/games/sigilfall/audio/samples.ts `ring-*` and render/ring.ts `ringSound`. The few of the campaign's own made the
+ * same way (CAMPAIGN below) are written under their own names.
  */
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -26,7 +27,7 @@ const FFMPEG = process.env.FFMPEG ?? 'ffmpeg';
  * so the mix in a match stays as it was. Blows that come all the time a little under, a click well under.
  */
 const LOUD = -10.5;
-const LOUD_OF = { hit: -12.5, clash: -12, swing: -12, hurt: -11.5, critBlade: -11, talent: -14, spear: -12 };
+const LOUD_OF = { hit: -12.5, clash: -12, swing: -12, hurt: -11.5, critBlade: -11, talent: -14, spear: -12, 'sigil-won': -12 };
 
 /* ------------------------------------------------------------------ the instruments */
 
@@ -365,6 +366,26 @@ const SOUNDS = {
   },
 };
 
+/**
+ * The campaign's own, made the same way and written under their own names (not `ring-`).
+ *
+ * A sigil of the Crown won (the Sigil Rite, ui/StoryPages.tsx). It was a bell slowed down with a gem's chime over it,
+ * nearly all of it above 3 kHz and the loudest thing in the game (the owner, 2026-11-20: "the sound when getting a
+ * sigil is piercing ... improve it"). Now a warm swell as the sigil rises: a soft drum as it lands, a low horn bed
+ * opening slowly, a choir on a major chord with two voices above it coming in after, and nothing bright: it is kept
+ * under 2.8 kHz, and in the middle a phone's speaker plays (a sound all low was lost on one).
+ */
+const CAMPAIGN = {
+  'sigil-won': () => {
+    const b = buf(3);
+    mix(b, boom(120, 50, 0.6, { body: 0.4, click: 0.04 }), 0, 0.12);
+    mix(b, horn(2.6, [60, 65], { att: 0.5, open: 1300, closed: 450 }), 0.02, 0.22);
+    mix(b, choir(2.6, [65, 69, 72, 77], { peak: 0.26, bright: 0.65 }), 0.04, 1);
+    mix(b, choir(2, [81, 84], { peak: 0.35, bright: 0.35 }), 0.5, 0.35);
+    return hall(biquad(biquad(b, 'hp', 200, 0.7), 'lp', 2800, 0.7), 0.3, 1.5);
+  },
+};
+
 /* ------------------------------------------------------------------ out */
 
 function wav(samples) {
@@ -391,12 +412,16 @@ rmSync(tmp, { recursive: true, force: true });
 mkdirSync(tmp, { recursive: true });
 mkdirSync(OUT, { recursive: true });
 const only = process.argv.slice(2);
-for (const [name, make] of Object.entries(SOUNDS)) {
+// (the Ring's as ring-<name>.mp3, the campaign's under their own names)
+const ALL = [...Object.entries(SOUNDS).map(([name, make]) => [name, make, `ring-${name}`]), ...Object.entries(CAMPAIGN).map(([name, make]) => [name, make, name])];
+let made = 0;
+for (const [name, make, file] of ALL) {
   if (only.length && !only.includes(name)) continue;
   seed = [...name].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 0x5eed);
   const src = join(tmp, `${name}.wav`);
   writeFileSync(src, wav(finish(make(), LOUD_OF[name] ?? LOUD)));
-  const r = spawnSync(FFMPEG, ['-hide_banner', '-y', '-loglevel', 'error', '-i', src, '-codec:a', 'libmp3lame', '-b:a', '64k', '-map_metadata', '-1', join(OUT, `ring-${name}.mp3`)], { encoding: 'utf8' });
+  const r = spawnSync(FFMPEG, ['-hide_banner', '-y', '-loglevel', 'error', '-i', src, '-codec:a', 'libmp3lame', '-b:a', '64k', '-map_metadata', '-1', join(OUT, `${file}.mp3`)], { encoding: 'utf8' });
   if (r.status !== 0) throw new Error(r.stderr);
+  made++;
 }
-console.log(`${only.length || Object.keys(SOUNDS).length} Ring sounds in ${OUT}`);
+console.log(`${made} sounds in ${OUT}`);

@@ -43,6 +43,7 @@ source and the license, and say the work was changed.
 | RPG Voice Starter Pack (2026-11-19) | Cici Fyre, https://opengameart.org/content/female-rpg-voice-starter-pack | CC0 | A woman's voice for a hero (Type 1: efforts, cries, dodges), and two more for the companions who are women (Types 2 and 3: their shouts) (`vo-f*`) |
 | Impact Sounds (2026-11-19) | Kenney, https://kenney.nl/assets/impact-sounds | CC0 | Footsteps on grass, stone, planks and snow (sand is the snow's, pitched up): `step-*`, built from `assets/sigilfall/cc0/` by `scripts/sigilfall-sounds.mjs --only step-` |
 | The Ring's sound effects (`ring-*`) | GlitchBound, made for the game by scripts/sigilfall-ring-sounds.mjs | The game's own | Every effect in a Ring match: blows, spells, falls, the win and the loss, a new rank |
+| A sigil won (`sigil-won`, 2026-11-20) | GlitchBound, made for the game by scripts/sigilfall-ring-sounds.mjs | The game's own | The Sigil Rite: a sigil of the Starlight Crown won |
 | Cure Magic | Someoneman, https://opengameart.org/users/someoneman | CC0 | Healing |
 | Teleport Spell | Ogrebane, https://opengameart.org/users/ogrebane | CC0 | A blink |
 | Ghost breath | qubodup, https://opengameart.org/users/qubodup | CC0 | A drain of life |

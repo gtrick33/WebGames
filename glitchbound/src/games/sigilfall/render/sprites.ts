@@ -1,5 +1,5 @@
 import { FOE_LOOKS } from './art/foeLooks';
-import { bustPicture, creaturePicture, dollPicture, gearPicture, hasGearModel, mountPicture, type DollView } from '../render3d/portrait';
+import { bustPicture, creaturePicture, dollPicture, gearPicture, hasGearModel, lookPicture, mountPicture, type DollView, type LookShown } from '../render3d/portrait';
 import { mountKey } from '../render3d/mountKit';
 import { HAIRS, SKINS, type Face } from '../progress/character';
 import { CLASSES } from '../data/classes';
@@ -478,6 +478,24 @@ export function itemPicture(item: Item): { url: string; smooth: boolean } {
     }
   }
   return { url: itemIconUrl(item, 4), smooth: false };
+}
+
+/**
+ * A Wardrobe look's picture for the menus, made as an item's is (itemPicture): its model where it has one, so a look
+ * beside the equipped piece is drawn the same way; its painted icon where it hasn't, or until the models are in.
+ */
+export function wardrobePicture(look: LookShown): { url: string; smooth: boolean } {
+  if (hasGearModel(look.icon)) {
+    const key = `look:${look.icon}:${look.tint}:${look.mat}:${look.r}:${look.set ?? ''}:${look.colors?.join(',') ?? ''}`;
+    const hit = iconCache.get(key);
+    if (hit) return { url: hit, smooth: true };
+    const shot = lookPicture(look, 96);
+    if (shot) {
+      iconCache.set(key, shot);
+      return { url: shot, smooth: true };
+    }
+  }
+  return { url: itemIconUrl(look, 4), smooth: false };
 }
 
 export function itemIconUrl(item: Item | { icon: ItemIcon; tint: string }, scale = 4): string {
