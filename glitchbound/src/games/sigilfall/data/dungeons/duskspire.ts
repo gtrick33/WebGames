@@ -725,7 +725,8 @@ const HOLLOW_GUARD: BossDef = {
  * he casts the Crown's own grief and the Stone's weight; the Crown reaches for the six Elyra carries, and every one
  * it takes gives him its power. Five phases, each its own trial: the King on his throne with his court kneeling below
  * him; the Crown's call; the throne broken and the hero's own beaten foes remembered; one summer's hour, his family
- * coming up the hall to him; and the Last King's doom.
+ * coming up the hall to him; and the Last King's doom. His spells (spell:*) deal a quarter less than they were
+ * written to, as the sigils' powers do (sim/patterns/hallow-king.ts SIGIL_SPELL_K): the owner, 2026-11-20.
  */
 const VAELOR: BossDef = {
   id: 'vaelor',
@@ -751,7 +752,7 @@ const VAELOR: BossDef = {
       ],
       patterns: [
         // a scythe of souls swinging from the wall behind his throne, back and forth
-        { id: 'spell:pendulum', w: 3, cd: 6, p: { color: '#b07aff', type: 'shadow', time: 3.2, period: 2, amp: 1, width: 16, mul: 0.5 } },
+        { id: 'spell:pendulum', w: 3, cd: 6, p: { color: '#b07aff', type: 'shadow', time: 3.2, period: 2, amp: 1, width: 16, mul: 0.38 } },
         // soul-chains turning round the throne
         { id: 'spell:vortex', w: 2, cd: 5, p: { color: '#b07aff', type: 'shadow', arms: 3, time: 3, spin: 1 } },
         // the court rises at his word, two by two
@@ -784,7 +785,7 @@ const VAELOR: BossDef = {
         { id: 'chop', w: 2, cd: 5, p: { lines: 3, spread: 0.5, len: 170, width: 20, wind: 0.95, mul: 1.5 } },
         { id: 'king:rise', w: 1, cd: 14, p: { count: 2 } },
         // the Crown's own grief: the memory of the plague crawling after the hero
-        { id: 'spell:fissure', w: 2, cd: 8, p: { color: '#c8a8ff', type: 'shadow', count: 8, step: 0.18, stride: 22, rr: 16, mul: 0.9 } },
+        { id: 'spell:fissure', w: 2, cd: 8, p: { color: '#c8a8ff', type: 'shadow', count: 8, step: 0.18, stride: 22, rr: 16, mul: 0.68 } },
       ],
     },
     {
@@ -804,7 +805,7 @@ const VAELOR: BossDef = {
         { id: 'king:call', w: 2, cd: 16, p: { count: 3, speed: 48 } },
         { id: 'dusk:frost-ring', w: 2, cd: 14, p: { steps: 4, from: 150, to: 70, spikes: 3 } },
         // the Crown's rings of ash and rime, bursting every other one, then the rest
-        { id: 'spell:pulse', w: 2, cd: 9, p: { color: '#bfe6ff', type: 'frost', rings: 5, band: 32, mul: 1 } },
+        { id: 'spell:pulse', w: 2, cd: 9, p: { color: '#bfe6ff', type: 'frost', rings: 5, band: 32, mul: 0.75 } },
         { id: 'cleave', w: 2, cd: 3, p: { swings: 2, r: 54, arc: 1, wind: 0.5, gap: 0.08, lunge: 30, mul: 1.3 } },
         // the toll fills the hall: dodge through it as it lands
         { id: 'dusk:toll', w: 1, cd: 16, p: { wind: 1.5, mul: 2.6 } },
@@ -823,14 +824,14 @@ const VAELOR: BossDef = {
       ],
       patterns: [
         // the summer goes out but for one drifting circle of light: outside it, the ash burns
-        { id: 'spell:eclipse', w: 2, cd: 8, p: { color: '#fff2c0', type: 'holy', time: 6, rr: 52, mul: 0.3 } },
+        { id: 'spell:eclipse', w: 2, cd: 8, p: { color: '#fff2c0', type: 'holy', time: 6, rr: 52, mul: 0.22 } },
         { id: 'king:sigil', w: 4, cd: 4.5 },
         { id: 'king:summer', w: 1, cd: 30, p: { speed: 17, hunters: 4 } },
         { id: 'king:call', w: 1, cd: 18, p: { count: 2, speed: 48 } },
         { id: 'dusk:ghouls', w: 1, cd: 14, p: { count: 3 } },
         { id: 'chop', w: 2, cd: 4.5, p: { lines: 4, spread: 0.45, len: 170, width: 20, wind: 0.9, mul: 1.5 } },
         { id: 'cleave', w: 2, cd: 3, p: { swings: 2, r: 54, arc: 1, wind: 0.5, gap: 0.08, lunge: 30, mul: 1.3 } },
-        { id: 'spell:pendulum', w: 1, cd: 10, p: { color: '#b07aff', type: 'shadow', time: 3.2, period: 2, amp: 1, width: 16, mul: 0.5 } },
+        { id: 'spell:pendulum', w: 1, cd: 10, p: { color: '#b07aff', type: 'shadow', time: 3.2, period: 2, amp: 1, width: 16, mul: 0.38 } },
       ],
     },
     {
@@ -849,7 +850,7 @@ const VAELOR: BossDef = {
         { id: 'cleave', w: 3, cd: 2.5, p: { swings: 3, r: 54, arc: 1, wind: 0.45, gap: 0.06, lunge: 30, mul: 1.3 } },
         { id: 'chop', w: 2, cd: 4, p: { lines: 5, spread: 0.4, len: 170, width: 20, wind: 0.85, mul: 1.5 } },
         { id: 'dusk:frost-ring', w: 2, cd: 10, p: { steps: 3, from: 130, to: 70, spikes: 4, step: 1.1 } },
-        { id: 'spell:pulse', w: 1, cd: 9, p: { color: '#bfe6ff', type: 'frost', rings: 5, band: 32, mul: 1 } },
+        { id: 'spell:pulse', w: 1, cd: 9, p: { color: '#bfe6ff', type: 'frost', rings: 5, band: 32, mul: 0.75 } },
         { id: 'tripleCharge', w: 1, cd: 7, p: { count: 3, wind: 0.45, speed: 360, len: 180, stun: 0, mul: 1.2 } },
         { id: 'dusk:toll', w: 2, cd: 10, p: { wind: 1.3, mul: 2.8 } },
       ],

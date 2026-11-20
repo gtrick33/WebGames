@@ -34,7 +34,9 @@ describe('The Ring fights in bursts', () => {
     const combos = Object.values(ABILITIES).filter((a) => a.combo && /% more/.test(a.combo.text));
     expect(combos.length).toBeGreaterThan(15);
     for (const a of combos) {
-      expect(a.combo!.mult, a.id).toBeGreaterThanOrEqual(1.6);
+      // (the Pyre's Cinder Comet the one below: its Conflagration cut to 35% more, the owner, 2026-11-20, as the comet
+      // on a Kindled target took most of a life in one blow)
+      expect(a.combo!.mult, a.id).toBeGreaterThanOrEqual(a.id === 'm-super' ? 1.35 : 1.6);
       // (its words say what it does)
       expect(a.combo!.text, a.id).toContain(`${Math.round((a.combo!.mult - 1) * 100)}% more`);
     }

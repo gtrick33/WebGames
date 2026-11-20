@@ -13,7 +13,7 @@ const LOOK: Record<RingMap['theme'], { floor: [string, string]; top: string; sid
   forge: { floor: ['#5a3426', '#2a1712'], top: '#9a6448', side: '#1c0f0a', edge: '#160a06', ring: 'rgb(255 130 60 / 0.4)' },
 };
 
-/** A ground seen from above: its floor, the entries at each end, the sigil's ring, every stone and the healing spheres. */
+/** A ground seen from above: its floor, the entries at each end, the sigil's ring, and every stone. */
 export function ArenaPicture({ id, className }: { id: string; className?: string }) {
   const map = MAPS[id];
   if (!map) return null;
@@ -43,9 +43,6 @@ export function ArenaPicture({ id, className }: { id: string; className?: string
           {/* (the forge's furnaces burn) */}
           {map.theme === 'forge' && !p.wall && <circle cx={p.x + p.w / 2} cy={p.y + p.h / 2} r={Math.min(p.w, p.h) * 0.3} fill="#ff8a2a" />}
         </g>
-      ))}
-      {map.orbs.map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r="9" fill="#7fe06a" stroke="#eaffd8" strokeWidth="3" />
       ))}
     </svg>
   );

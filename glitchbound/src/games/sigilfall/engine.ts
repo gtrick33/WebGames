@@ -25,8 +25,9 @@ import { SKILLS } from './data/skills';
 import type { ClassId, Item, RegionId, SigilId, SkillIndex, SlotId, SlotKey } from './data/types';
 import { KeyboardMouse, TouchState, type UiKey } from './input/input';
 import { holds } from './sim/story';
-import { SIGILS, abandonQuest, acceptQuest, activeQuests, currentObjective, handInQuest, handInsFor, offeredBy, trackQuest, allItems, bagSize, HOME, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, swapPick, type Body, type Face, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
+import { SIGILS, abandonQuest, acceptQuest, activeQuests, currentObjective, handInQuest, handInsFor, offeredBy, trackQuest, allItems, bagSize, HOME, chooseSpec, cantEquip, equip, learnedSkills, learnTalent, newCharacter, questState, respec, swapPick, type Body, type Face, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
 import { itemName } from './progress/items';
+import { compareGear } from './progress/compare';
 import { canRide, chooseMount, FIRST_RIDE, grantMounts, grantWarden, hasMount, setShelfPoints, syncRift, learnLooks, wearLook, type LookSlot } from './progress/wardrobe';
 import { DEFAULT_SETTINGS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
 import { buyItem, buyPotions, restock } from './progress/shop';
@@ -133,6 +134,11 @@ export interface UiState {
   boss: { name: string; title: string } | null;
   levelUp: { level: number; skills: string[]; id: number } | null;
   /**
+   * On a touch screen, a piece just picked up that is better for this hero as they play (progress/compare.ts): a small
+   * card asks whether to wear it now (ui/EquipAsk.tsx). `id` is when it came up; it goes by itself after a while.
+   */
+  equipAsk?: { uid: string; id: number } | null;
+  /**
    * A quest just finished, as one card (POLISH_PLAN.md piece 10): its name, what it paid (the items it gave, as they
    * are), and the quest it opened. Before, the same moment was three pieces of news one over another.
    */
@@ -234,6 +240,8 @@ function keyResult(w: World): RunSummary['key'] | undefined {
   const k = w.keyRun;
   return k?.end ? { key: k.key, time: k.end.time, par: k.par, up: k.end.up, stone: k.end.stone, best: k.end.best, marks: k.end.marks, deaths: k.deaths } : undefined;
 }
+/** How long the card asking to wear a better piece stays up, unanswered (ms). */
+const EQUIP_ASK_MS = 9000;
 /** How long a finished quest's card stays up (ms). */
 const QUEST_CARD_MS = 5200;
 
@@ -735,6 +743,7 @@ export class SigilEngine {
     else if (!card && this.cards.length && !this.ui.dialogue && !this.ui.panel && !this.ui.death && !w.scene && !(this.renderer as SigilEngine['renderer'] | undefined)?.speechBoxes.length)
       this.setUi({ card: { ...this.cards.shift()!, id: t } });
     if (this.ui.levelUp && t - this.ui.levelUp.id > 3600) this.setUi({ levelUp: null });
+    if (this.ui.equipAsk && t - this.ui.equipAsk.id > EQUIP_ASK_MS) this.setUi({ equipAsk: null });
     if (this.ui.questCard && t - this.ui.questCard.id > QUEST_CARD_MS) this.setUi({ questCard: null });
     if (this.tipQueue.length) this.showTip(w);
     const boss = w.boss();
@@ -771,6 +780,7 @@ export class SigilEngine {
           // (a quest's reward is on the quest's card, not news of its own)
           if (card) card.items.push(ev.item);
           else this.toast(itemName(ev.item), 'loot', ev.item);
+          if (this.offerEquip(ev.item)) changed = true;
           this.queueTip('bag');
           if (this.hero && !this.hero.opened.includes('hint:equip') && Object.keys(this.hero.equip).length < 2) this.hint('equip');
           break;
@@ -1352,7 +1362,7 @@ export class SigilEngine {
     this.cards = [];
     this.tipQueue = [];
     this.pages = [];
-    this.setUi({ screen: 'title', tip: null, panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], levelUp: null, questCard: null, banner: null, teach: null, card: null, story: null });
+    this.setUi({ screen: 'title', tip: null, panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], levelUp: null, equipAsk: null, questCard: null, banner: null, teach: null, card: null, story: null });
     void this.reportRanks();
   }
 
@@ -1869,6 +1879,27 @@ export class SigilEngine {
     if (!this.hero || !equip(this.hero, uid)) return false;
     this.changed('equip');
     return true;
+  }
+
+  /**
+   * On a touch screen, a piece just picked up that this hero would be better off wearing (progress/compare.ts, weighed
+   * for their specialization) asks to be worn (ui/EquipAsk.tsx). The newest better piece takes the card's place.
+   * Whether it asked.
+   */
+  private offerEquip(item: Item): boolean {
+    const h = this.hero;
+    if (!this.touchMode || !h || !h.bag.some((i) => i.uid === item.uid) || cantEquip(h, item)) return false;
+    if (!compareGear(h, item).better) return false;
+    this.ui = { ...this.ui, equipAsk: { uid: item.uid, id: performance.now() } };
+    return true;
+  }
+
+  /** The answer to that card: wear it now, or leave it in the bag. */
+  answerEquip(wear: boolean): void {
+    const ask = this.ui.equipAsk;
+    if (!ask) return;
+    if (wear) this.equipItem(ask.uid);
+    this.setUi({ equipAsk: null });
   }
 
   unequipSlot(slot: SlotId): boolean {

@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { ABILITIES, kitOf, PRESETS, SUPERS, SUPERS2, type Ability } from '../src/games/sigilfall/arena/abilities';
 import { botThink, newBrain } from '../src/games/sigilfall/arena/bot';
 import { ARENA_H, ARENA_W, MAP_IDS, MAPS } from '../src/games/sigilfall/arena/maps';
-import { BASE_SPEED, CLASS_DMG, GATES, HEAL_BY_SIZE, HERO_R, Match, ORB_EVERY, ORB_FIRST, ORB_HEAL, RANGED, type FighterSetup, type MatchEvent, type MoveInput } from '../src/games/sigilfall/arena/sim';
+import { BASE_SPEED, CLASS_DMG, GATES, HEAL_BY_SIZE, HERO_R, Match, RANGED, type FighterSetup, type MatchEvent, type MoveInput } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 
@@ -239,7 +239,6 @@ describe('The Ring: what is placed', () => {
     const copy = new Match({ seed: 5, map: 'sands', fighters: [fighter(0, 'mage', ['m-lash']), fighter(1, 'warrior')] });
     copy.restore(JSON.parse(JSON.stringify(m.snapshot())) as ReturnType<Match['snapshot']>);
     expect(copy.zones).toEqual(m.zones);
-    expect(copy.orbs).toEqual(m.orbs);
     // (between the host's words, a player's own copy lets it keep falling)
     copy.coast(0.3, null, null);
     expect(copy.zones[0]!.t).toBeCloseTo(m.zones[0]!.t - 0.3, 5);
@@ -407,45 +406,19 @@ describe('The Ring: bigger grounds', () => {
     }
   });
 
-  it('healing spheres rise on each, give part of a life to whoever is hurt, and rise again', () => {
-    for (const id of MAP_IDS) {
-      const spots = MAPS[id]!.orbs;
-      expect(spots.length, id).toBe(4);
-      for (const [x, y] of spots) {
-        expect(free(id, x, y, HERO_R + 9), `${id} sphere ${x},${y}`).toBe(true);
-        expect(spots.some(([qx, qy]) => Math.abs(qx - (ARENA_W - x)) < 0.01 && Math.abs(qy - (ARENA_H - y)) < 0.01), `${id} sphere ${x},${y} has its twin`).toBe(true);
-        // (not behind a stone: nothing stands within 70 to its south, in its column)
-        expect(MAPS[id]!.pillars.some((p) => !p.wall && x > p.x - 12 && x < p.x + p.w + 12 && p.y > y && p.y - y < 70), `${id} sphere ${x},${y} is in the open`).toBe(false);
-        // (well inside the walls)
-        expect(x > 50 && x < ARENA_W - 50 && y > 30 && y < ARENA_H - 30, id).toBe(true);
-      }
-    }
+  it('has no healing spheres: a hurt fighter standing anywhere gets nothing back by themself', () => {
+    // (the owner, 2026-11-20: the spheres are gone from the Ring; healing is a healer's alone, and the sigil's)
     const m = new Match({ seed: 3, map: 'sands', fighters: [fighter(0, 'warrior'), fighter(1, 'mage')] });
     m.step(GATES + 0.01, {});
     const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
     foe.x = ARENA_W - 30;
-    const o = m.orbs[0]!;
-    me.x = o.x;
-    me.y = o.y;
     me.hp = Math.round(me.maxHp / 2);
-    // not there yet
-    run(m, 1);
-    expect(me.hp).toBe(Math.round(me.maxHp / 2));
-    me.x = 60;
-    run(m, ORB_FIRST);
-    // unhurt, it is left for someone who needs it
-    me.hp = me.maxHp;
-    me.x = o.x;
-    run(m, 0.2);
-    expect(m.clock).toBeGreaterThanOrEqual(o.at);
-    me.hp = Math.round(me.maxHp / 2);
-    const seen = run(m, 0.1);
-    expect(me.hp - Math.round(me.maxHp / 2)).toBe(Math.round(me.maxHp * ORB_HEAL));
-    expect(seen.some((e) => e.k === 'orb' && e.id === 0)).toBe(true);
-    expect(o.at).toBeGreaterThan(m.clock + ORB_EVERY - 1);
-    // gone until then
-    me.hp = Math.round(me.maxHp / 2);
-    run(m, 1);
+    for (const [x, y] of [[118, ARENA_H / 2], [ARENA_W - 118, ARENA_H / 2], [ARENA_W / 2 - 110, 112]] as const) {
+      me.x = x;
+      me.y = y;
+      const seen = run(m, 13);
+      expect(seen.some((e) => e.k === 'num' && e.kind === 'heal' && e.id === 0)).toBe(false);
+    }
     expect(me.hp).toBe(Math.round(me.maxHp / 2));
   });
 });

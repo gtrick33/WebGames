@@ -7,7 +7,7 @@ import { armored, brace, chainHealer, focusBias, fumble, guard, holdSuper, knows
  * A computer player for The Ring. It plays by the player's rules: it sees what a player sees, and presses the same
  * buttons through Match.press. `skill` from 0 to 1 is how quickly it reacts and how much of the game it plays: a low
  * one stands under what is falling on it, rarely interrupts and sits on its super; a high one steps out from under it,
- * strafes while it casts, races for the sigil and the healing spheres, saves its super for the kill and kicks heals.
+ * strafes while it casts, races for the sigil, saves its super for the kill and kicks heals.
  * What a practised player does beyond that, and a newcomer's slips, are arena/tactics.ts: the ladder's rating sets
  * the skill (arena/ladder.ts `skillAt`).
  */
@@ -645,20 +645,6 @@ function walk(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[],
       return steer(m, f, b, sg.x, sg.y);
     }
   }
-  // a healing sphere, when hurt and one is close (a sharp one goes further for it)
-  if (hpShare(f) < 0.7 && b.rand() < 0.25 + skill * 0.75) {
-    let orb: { x: number; y: number } | null = null;
-    let od = 60 + skill * 70 + (hpShare(f) < 0.35 ? 60 : 0);
-    for (const o of m.orbs) {
-      if (m.clock < o.at) continue;
-      const d = Math.hypot(o.x - f.x, o.y - f.y);
-      if (d < od) {
-        od = d;
-        orb = o;
-      }
-    }
-    if (orb) return steer(m, f, b, orb.x, orb.y);
-  }
   if (m.clock >= b.turnAt) {
     b.side = b.rand() < 0.5 ? 1 : -1;
     b.turnAt = m.clock + 1.3 + b.rand() * 1.8;
@@ -670,7 +656,7 @@ function walk(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[],
     if (hide) return steer(m, f, b, hide.x, hide.y);
   }
   // pillar play, as people do it: hurt, with a caster or an archer free to shoot, a sharp player puts stone between
-  // them and waits for a heal, a sphere or the other's cooldowns (curses and poisons keep burning behind it, which is
+  // them and waits for a heal, the sigil or the other's cooldowns (curses and poisons keep burning behind it, which is
   // what a curse is for). Not a healer's game: they stand where they can be seen by those they keep alive.
   if (!healer && skill >= 0.7 && hpShare(f) < 0.4) {
     const shooter = enemies.find((e) => RANGED.has(e.cls) && !m.held(e) && m.sees(e, f) && Math.hypot(e.x - f.x, e.y - f.y) < 200);

@@ -32,6 +32,7 @@ import { sceneDark } from '../sim/scene';
 import { fmt, ItemIcon, Portrait } from './common';
 import { hudBoxOf, useHudBox } from './hudBoxes';
 import { boxesMeet, type ViewBox } from '../render/speech';
+import { EquipAsk } from './EquipAsk';
 import { DesktopBar } from './DesktopBar';
 import { InviteCards } from './Friends';
 import { Panels } from './Panels';
@@ -197,6 +198,8 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
       {!ui.dialogue && !ui.story && <Toasts engine={engine} />}
       {/* a friend asking the player into their party (ui/Friends.tsx): over everything, a menu too */}
       {!engine.world?.scene && <InviteCards engine={engine} />}
+      {/* a better piece just picked up, on a touch screen: wear it now? (ui/EquipAsk.tsx) */}
+      {ui.equipAsk && !ui.dialogue && !ui.story && !engine.world?.scene && <EquipAsk engine={engine} />}
       {/* a level gained is a moment, not a line of news: the picture's edge warms gold as it comes */}
       {ui.levelUp && <i className="rb-levelglow" key={`glow:${ui.levelUp.id}`} aria-hidden="true" />}
       {/* (on touch the announcements stack in a strip along the top, clear of the hero; on a mouse each keeps its place) */}

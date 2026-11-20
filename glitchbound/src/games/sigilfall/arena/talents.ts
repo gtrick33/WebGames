@@ -223,7 +223,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
         { name: 'Wildfire', text: 'You critically hit 15% more often, and your critical hits burn the target for 100% of the damage dealt, over 4 sec.', icon: 'fire_eye_on_red', does: { k: 'wildfire', share: 1, dur: 4, crit: 0.15 } },
       ],
       [
-        { name: 'Blazing Trail', text: 'Flicker deals 50 damage to enemies near where you left and slows them by 40% for 2 sec.', icon: 'spiral_of_fire_on_orange', tune: { 'm-blink': { foes: [{ k: 'dmg', n: 70 }, { k: 'slow', pct: 40, dur: 2 }] } } },
+        { name: 'Blazing Trail', text: 'Flicker deals 49 damage to enemies near where you left and slows them by 40% for 2 sec.', icon: 'spiral_of_fire_on_orange', tune: { 'm-blink': { foes: [{ k: 'dmg', n: 70 }, { k: 'slow', pct: 40, dur: 2 }] } } },
         { name: 'Long Hex', text: 'Toad Hex casts twice as fast and lasts 33% longer.', icon: 'confused_status_spiral_on_violet', tune: { 'm-toad': { cast: 0.5, dur: 1.33 } } },
         { name: 'Quickfold', text: 'Flicker cooldown reduced by 3 sec. You move 40% faster for 2 sec afterward.', icon: 'spirit_swap_arrows_on_teal', tune: { 'm-blink': { cd: 0.7, self: [{ k: 'speed', pct: 40, dur: 2 }] } } },
       ],
@@ -276,7 +276,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ]),
     ...classRow('ranger', 'r', [
       { name: 'Cover', text: 'After 1.5 sec out of every enemy’s line of sight, you heal 4% of your health each sec.', icon: 'hidden_glade_on_green', does: { k: 'cover', after: 1.5, pct: 0.04 } },
-      { name: 'Forager', text: 'Healing spheres and the sigil heal you for 20% more and increase your movement speed by 15% for 3 sec.', icon: 'fruit_of_life_on_green', does: { k: 'forage', more: 0.2, pct: 15, dur: 3 } },
+      { name: 'Forager', text: 'The sigil heals you for 50% more and increases your movement speed by 15% for 3 sec.', icon: 'fruit_of_life_on_green', does: { k: 'forage', more: 0.5, pct: 15, dur: 3 } },
       { name: 'Antivenom', text: 'Damage-over-time effects deal 25% less damage to you.', icon: 'poison_vial_on_green', does: { k: 'antivenom', pct: 0.25 } },
     ]),
   ],

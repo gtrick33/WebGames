@@ -202,10 +202,14 @@ function moveCard(c: SpeechCard, x: number, y: number, tailX: number | null, tai
   return { ...c, x, y, textY: c.textY - c.y + y, nameY: c.nameY - c.y + y, tailX, tailUp };
 }
 
-/** The same line sized as a subtitle in the lane: as wide as the lane lets it be, no tail (placed by laneSpots). */
+/**
+ * The same line as a small card in the lane: a scene's card made smaller (its speaker's face, their name, the words in
+ * a smaller hand), as wide as the lane lets it be, no tail (placed by packLane). The owner, 2026-11-20: the bubbles
+ * over heads are hard to follow; the lines said outside a scene stand still, centered, as a cutscene's do but smaller.
+ */
 function laneSized(o: SpeechAsk, lane: NonNullable<SpeechRoom['lane']>): SpeechCard {
   const wide = Math.max(120, lane.right - lane.left);
-  return layoutSpeech({ ...o, headX: (lane.left + lane.right) / 2, headY: o.viewH / 2, left: lane.left, right: o.viewW - lane.left - wide });
+  return layoutSpeech({ ...o, small: true, headX: (lane.left + lane.right) / 2, headY: o.viewH / 2, left: lane.left, right: o.viewW - lane.left - wide });
 }
 
 /**
@@ -314,7 +318,9 @@ export function placeSpeech(asks: readonly SpeechAsk[], room: SpeechRoom, hudMap
     // be read (the owner: "their bubbles keep switching from top to bottom screen with their movement and i cant read
     // them"). It moves only when its place is taken, or would cover the fight with another free
     const kept = keptCard(o, shapes, spot);
-    if (kept && free(kept) && calm(kept)) pick = kept;
+    // (a line that isn't a scene's goes to its fixed card in the lane whenever that is free, in a fight or out of one)
+    if (spot && free(spot)) pick = spot;
+    if (!pick && kept && free(kept) && calm(kept)) pick = kept;
     for (let k = 0; k < shapes.length && !pick; k++) {
       pick = first(candidates(shapes[k]!, room, hudMap, spot), (c) => free(c) && calm(c));
       shaped = k;

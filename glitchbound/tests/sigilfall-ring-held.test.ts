@@ -68,14 +68,15 @@ function walked(m: Match, foe: Fighter, seconds: number): number {
 }
 
 describe('The Ring: whoever is held stays where they are', () => {
-  it('a Nightblade’s Dusk Ambush stuns for two seconds: its target does not take a step until it is over', () => {
+  it('a Nightblade’s Dusk Ambush stuns for a second and a half: its target does not take a step until it is over', () => {
     const { m, me, foe } = duel('gloamknight', 'warrior', [1, 0]);
     expect(m.press(me.id, 'g-veil')).toBeNull();
     m.step(STEP, {});
     expect(m.press(me.id, 'g-ambush')).toBeNull();
-    expect(foe.auras.find((a) => a.cc === 'stun')?.dur).toBe(2);
-    expect(AB('g-ambush').text).toContain('stunning for 2 sec');
-    expect(walked(m, foe, 1.9)).toBe(0);
+    // (it was two seconds until the healing spheres went and the Nightblade came out on top: 2026-11-20)
+    expect(foe.auras.find((a) => a.cc === 'stun')?.dur).toBe(1.5);
+    expect(AB('g-ambush').text).toContain('stunning for 1.5 sec');
+    expect(walked(m, foe, 1.4)).toBe(0);
     // (and then they can)
     expect(walked(m, foe, 0.5)).toBeGreaterThan(5);
   });
@@ -91,11 +92,11 @@ describe('The Ring: whoever is held stays where they are', () => {
     expect(m.press(me.id, 'g-ambush')).toBeNull();
     expect(m.events.filter((e) => e.k === 'word' && e.id === foe.id).map((e) => (e as { word: string }).word)).toEqual(expect.arrayContaining(['Stunned', 'Silenced']));
     expect(foe.auras.filter((a) => a.cc).map((a) => [a.cc, a.dur])).toEqual([
-      ['stun', 2],
+      ['stun', 1.5],
       ['silence', 3],
     ]);
     expect(m.held(foe)?.cc).toBe('stun');
-    expect(walked(m, foe, 1.9)).toBe(0);
+    expect(walked(m, foe, 1.4)).toBe(0);
     expect(m.held(foe)?.cc).toBe('stun');
     // the stun runs its two seconds and the silence its three
     expect(walked(m, foe, 0.5)).toBeGreaterThan(5);
@@ -125,13 +126,13 @@ describe('The Ring: whoever is held stays where they are', () => {
     for (const ab of Object.values(ABILITIES)) expect(ab.effects.some((e) => e.k === 'dispel'), ab.name).toBe(false);
   });
 
-  it('used again it holds just as long, as every hold does (no diminishing returns): two seconds, then two', () => {
+  it('used again it holds just as long, as every hold does (no diminishing returns): a second and a half, then the same', () => {
     const { m, me, foe } = duel('gloamknight', 'warrior', [1, 0]);
     inside(m).land(me, AB('g-ambush'), foe, false);
-    expect(foe.auras.find((a) => a.cc === 'stun')?.dur).toBe(2);
+    expect(foe.auras.find((a) => a.cc === 'stun')?.dur).toBe(1.5);
     walked(m, foe, 2.5);
     inside(m).land(me, AB('g-ambush'), foe, false);
-    expect(foe.auras.find((a) => a.cc === 'stun')?.dur).toBe(2);
+    expect(foe.auras.find((a) => a.cc === 'stun')?.dur).toBe(1.5);
     // (what keeps it from coming round again at once is its own cooldown now, not only the shroud)
     expect(AB('g-ambush').cd).toBeGreaterThan(0);
   });

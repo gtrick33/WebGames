@@ -379,9 +379,6 @@ export class RingFx {
         this.flashes.push({ x: e.x, y: e.y, t: 0, dur: 0.45, r: e.r, color: ab.color, ring: true });
         if (!hasSign(ab.id, 'zone')) this.bursts.push({ x: e.x, y: e.y, t: 0, dur: 0.75, school: ab.school, color: ab.color, big: true, heal: false, seed: (e.x * 7 + e.y * 3) % 97 });
         sound(ab.super ? 'slam' : (LANDS[ab.school] ?? 'hit'), ab.super ? 0.9 : 0.55);
-      } else if (e.k === 'orb') {
-        this.flashes.push({ x: e.x, y: e.y, t: 0, dur: 0.5, r: 26, color: '#7fe06a', ring: true });
-        sound('heal', e.id === myId ? 0.7 : 0.4);
       } else if (e.k === 'super') {
         // a super: a great ring of its color, a crowd that roars, and its name called out
         const ab = ABILITIES[e.ab];
@@ -1032,17 +1029,6 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
     q.put({ kind: FX.ring, x: z.x, y: z.y, flat: true, w: z.r * 2 * (0.5 + u * 0.5), a: ab?.color ?? '#ffffff', t: u, alpha: 1 - u, seed: 2 });
     if (ab?.school === 'fire') for (let i = 0; i < 7; i++) q.put({ kind: FX.flame, x: z.x + Math.cos(i * 0.9) * z.r * 0.55, y: z.y + Math.sin(i * 0.9) * z.r * 0.55, up: -2, base: true, w: 13, h: 26 * (1 - u), a: '#f4561f', b: '#ffb02e', seed: i * 0.7 });
     if (ab?.school === 'holy') q.put({ kind: FX.shaft, x: z.x, y: z.y, base: true, w: z.r * 0.9, h: 120, a: ab.color, b: '#ffffff', t: u, alpha: 1 - u });
-  }
-  // the healing spheres: green, bobbing, there for whoever is hurt
-  for (const o of m.orbs) {
-    if (m.phase !== 'fight' || m.clock < o.at) continue;
-    const bob = Math.sin(time * 2.6 + o.x) * 2;
-    q.put({ kind: FX.glow, x: o.x, y: o.y, up: 10 + bob, w: 34, a: '#58e07a', alpha: 0.6 });
-    q.put({ kind: FX.orb, x: o.x, y: o.y, up: 10 + bob, w: 10, a: '#7dff9a', b: '#eafff0', t: 0.3, seed: time + o.x });
-    for (let i = 0; i < 3; i++) {
-      const u = (time * 0.5 + i / 3 + o.y * 0.01) % 1;
-      q.put({ kind: FX.spark, x: o.x + Math.sin(i * 2.1 + o.x) * 6, y: o.y, up: 8 + u * 22, w: 4 - u * 2.4, a: '#c8ffd4', t: 0.2, alpha: 1 - u });
-    }
   }
   // a leap or a rush: a streak of light behind
   for (const f of m.fighters) {

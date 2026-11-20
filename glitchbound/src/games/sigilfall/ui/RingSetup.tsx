@@ -483,9 +483,6 @@ export function RingHelp({ onClose, touch, engine, onTutorial }: { onClose: () =
                 <b>Spells land. Circles can be left.</b> What is aimed at someone always hits them: most quick ones at once, a thrown Frostfang and cast ones after a short flight. What is placed on the ground shows as a circle first, red when it is the other side’s.
               </li>
               <li>
-                <b>Healing spheres.</b> Green spheres rise around the ground. Walk into one when you are hurt and it gives back part of your health, then rises again a little later.
-              </li>
-              <li>
                 <b>Take the sigil.</b> A sigil rises in the middle now and then: it heals, fills your super by a third and speeds you up.
               </li>
               <li>
@@ -495,7 +492,7 @@ export function RingHelp({ onClose, touch, engine, onTutorial }: { onClose: () =
                 <b>Casts, interrupts and holds.</b> Interrupt a cast to lock that school of magic for a few seconds. Stuns, fears, dazes, roots and silences are short, and each one has a cooldown; enough damage breaks a fear, a daze or a root.
               </li>
               <li>
-                <b>Healing fades.</b> From 35 seconds in, all healing and every shield gets weaker every second, until none is left: no match drags on. If only healers are left standing on both sides, it is sudden death: healing is gone at once and everything hits harder every second.
+                <b>Healing fades.</b> From 65 seconds in, all healing and every shield gets weaker every second, until none is left: no match drags on. If only healers are left standing on both sides, it is sudden death: healing is gone at once and everything hits harder every second.
               </li>
               <li>
                 <b>Healers.</b> A healer’s playstyle is for teams: none can enter a 1v1. Healing is 45% stronger in 3v3.
