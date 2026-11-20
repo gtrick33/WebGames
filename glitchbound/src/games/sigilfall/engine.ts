@@ -173,6 +173,10 @@ const LEAVE_MS = 260;
 const LEAD_WAIT_MS = 20_000;
 /** Seconds a new hero sees the gate at dusk before the guard speaks. */
 const GREET_AFTER = 1.4;
+/** A page of the story (a letter found, a sigil won, what a quest came to) waits this long after the last blow given or taken... */
+export const PAGE_AFTER_BLOWS = 1.5;
+/** ...and this long more of calm: a breath after the moment, never in the middle of a fight. */
+export const PAGE_BREATH = 0.6;
 /** How long a title card holds the screen (ms): an act's, a land's. */
 const ACT_CARD_MS = 4200;
 /** How long after a quest's reward its hint waits (ms): the quest's own toasts are read first. */
@@ -272,7 +276,6 @@ export class SigilEngine {
   private pages: StoryPage[] = [];
   /** How long (s) the world has been calm enough for the next page, and how long the next page has waited at all. */
   private pageCalm = 0;
-  private pageWait = 0;
   /** The page up was opened from the Journal (closing it goes back there). */
   private storyFromPanel = false;
   /** Is the page up one read again from the Journal (not just found)? */
@@ -1621,16 +1624,16 @@ export class SigilEngine {
     }
     const p = w.player;
     const fight = w.enemies.some((e) => !e.dead && !e.dummy && e.aggro && Math.abs(e.x - p.x) < 420 && Math.abs(e.y - p.y) < 320);
-    const busy = p.dead || w.story.talking || w.story.fighting || fight;
-    this.pageWait += dt;
+    // (blows still being traded, or a spell on its way, are a fight too, whoever is in sight)
+    const busy = p.dead || w.story.talking || w.story.fighting || fight || p.calm < PAGE_AFTER_BLOWS || !!p.casting || !!p.channel || !!p.windup;
     this.pageCalm = busy ? 0 : this.pageCalm + dt;
-    // a breath after the moment, once nobody is fighting or still saying their last words; or, that going on and on,
-    // the page comes anyway after a while (the world then stands still for it, as for a menu). In a party the world
-    // doesn't stop for a page: it waits for the fight to be over, however long
-    if (this.pageCalm < 0.6 && (this.pageWait < 8 || this.coop)) return;
+    // a breath after the moment, once nobody is fighting or still saying their last words, and never before: however
+    // long a fight goes on, the page waits for it to be over. A page used to come up anyway after eight seconds, and
+    // the world stood still for it in the middle of the fight (the owner: "the pop ups for the story and letters come
+    // out randomly during combat and with some delay")
+    if (this.pageCalm < PAGE_BREATH) return;
     const page = this.pages.shift()!;
     this.pageCalm = 0;
-    this.pageWait = 0;
     if (page.kind === 'find' && this.hero && !this.hero.opened.includes(`kept:${page.quest}`)) this.hero.opened.push(`kept:${page.quest}`);
     this.kbm?.release();
     this.touch.release();
@@ -1642,7 +1645,6 @@ export class SigilEngine {
   closeStory(): void {
     if (!this.ui.story) return;
     this.pageCalm = 0.3;
-    this.pageWait = 0;
     // (one read again from the Journal goes back to it)
     const back = this.storyFromPanel;
     this.storyFromPanel = false;

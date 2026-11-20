@@ -36,7 +36,7 @@ function engine(h: Character): Stub {
   Object.assign(e, {
     ui,
     hero: h,
-    world: { scene: null, keyRun: null, events: [], enemies: [], player: { x: 0, y: 0, dead: false }, story: { talking: false, fighting: false }, region: { id: 'briarhollow' } },
+    world: { scene: null, keyRun: null, events: [], enemies: [], player: { x: 0, y: 0, dead: false, calm: 99 }, story: { talking: false, fighting: false }, region: { id: 'briarhollow' } },
     save: { settings: { ...DEFAULT_SETTINGS }, heroes: [h] },
     sound: { play: vi.fn(), setVolumes: vi.fn(), suspend: vi.fn() },
     renderer: { waiting: false },
@@ -46,7 +46,6 @@ function engine(h: Character): Stub {
     tipQueue: [],
     pages: [],
     pageCalm: 0,
-    pageWait: 0,
     cards: [],
     saveAt: 0,
     version: 0,
@@ -97,6 +96,30 @@ describe('Sigilfall: a quest’s ending is seen', () => {
     real.holdScenes = true;
     maybeStartScene(real);
     expect(real.scene).toBeNull();
+  });
+
+  // the owner: "the pop ups for the story and letters come out randomly during combat and with some delay". A page
+  // came up anyway after eight seconds, and the world stood still for it in the middle of the fight
+  it('never comes up in the middle of a fight, however long it lasts, and comes a breath after it is over', () => {
+    const q = QUESTS.find((x) => x.auto && x.reward.text && !x.quiet && !x.find)!;
+    const e = engine(readyHero('mage', 30));
+    fire(e, { t: 'questDone', quest: q.id });
+    const w = e.world as unknown as { enemies: unknown[]; player: { x: number; y: number; calm: number } };
+    const foe = { dead: false, dummy: false, aggro: true, x: 60, y: 0 };
+    w.enemies = [foe];
+    for (let t = 0; t < 30; t += 0.5) e.turnPage(w, 0.5);
+    expect(e.ui.story).toBeNull();
+    // the foe falls, but blows were traded a moment ago: still a fight
+    foe.dead = true;
+    w.player.calm = 0.5;
+    e.turnPage(w, 0.5);
+    expect(e.ui.story).toBeNull();
+    // calm: the page comes a breath later
+    w.player.calm = 3;
+    e.turnPage(w, 0.3);
+    expect(e.ui.story).toBeNull();
+    e.turnPage(w, 0.4);
+    expect(e.ui.story).toEqual({ kind: 'deed', quest: q.id });
   });
 });
 
