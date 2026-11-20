@@ -72,6 +72,8 @@ export interface Settings {
   /** The Ring, with a mouse: a placed ability's key drops it at the pointer at once (off: its circle comes up, and a click drops it). */
   quickCast: boolean;
   shake: boolean;
+  /** Voices: the hero's efforts and cries, and the companions' shouts in a fight (audio/voice.ts). */
+  voice: boolean;
   /** How far back the camera stands: 1 is the game's own view, more is further out (ZOOM_MIN to ZOOM_MAX). */
   zoom: number;
   numbers: boolean;
@@ -119,6 +121,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoAimSkills: true,
   quickCast: true,
   shake: true,
+  voice: true,
   zoom: 1,
   numbers: true,
   plates: true,
@@ -186,6 +189,7 @@ export function validateSettings(v: unknown): Settings {
     autoAimSkills: bool(o.autoAimSkills, d.autoAimSkills),
     quickCast: bool(o.quickCast, d.quickCast),
     shake: bool(o.shake, d.shake),
+    voice: bool(o.voice, d.voice),
     zoom: num(o.zoom, ZOOM_MIN, ZOOM_MAX, d.zoom),
     numbers: bool(o.numbers, d.numbers),
     plates: bool(o.plates, d.plates),

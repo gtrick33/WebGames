@@ -151,6 +151,8 @@ export class StoryDirector {
       this.speech = this.speech.filter((s) => s.who !== b.who);
       const dur = barkTime(b);
       this.speech.push({ who: b.who, text: b.text, t: 0, dur });
+      // (a companion calling out in a fight is heard as well as read: audio/voice.ts)
+      if (this.fighting && b.who !== 'hero') this.w.emit({ t: 'voice', who: b.who, kind: 'attack' });
       // the next line waits until this one has been read (two bubbles never overlap)
       this.gap = dur;
     }

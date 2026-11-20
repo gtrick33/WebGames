@@ -895,6 +895,11 @@ export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: n
   // rage: being hit makes you angry (10% of your health in one blow is 6 Rage)
   if (w.build.resource?.kind === 'rage') gainResource(w, (d / p.maxHp) * 60 + 1);
   w.sfx('hurt');
+  // (a blow worth crying out at, and not every one of a flurry)
+  if (d >= p.maxHp * 0.08 && w.time - w.hurtVoiceAt > 1.4) {
+    w.hurtVoiceAt = w.time;
+    w.emit({ t: 'voice', who: 'hero', kind: 'hurt' });
+  }
   w.shake(2.2);
   if (o.knock && o.fromX !== undefined && o.fromY !== undefined) {
     const a = Math.atan2(p.y - o.fromY, p.x - o.fromX);

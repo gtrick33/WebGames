@@ -1904,6 +1904,10 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
           {slider('Volume', 'master', 0, 1, 0.05, pct)}
           {slider('Music', 'music', 0, 1, 0.05, pct)}
           {slider('Effects', 'sfx', 0, 1, 0.05, pct)}
+          <label className="rb-check">
+            <input type="checkbox" checked={s.voice} onChange={(e) => set({ voice: e.target.checked })} />
+            <span>Voices (your hero’s efforts and cries, your companions’ shouts)</span>
+          </label>
         </section>
         <section>
           <span className="rb-kicker">Camera</span>

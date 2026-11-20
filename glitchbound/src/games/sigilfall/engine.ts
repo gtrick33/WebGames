@@ -41,6 +41,7 @@ import { paceStride } from './render3d/pace';
 import { actionLabel, codeMap, resolveBinds, type CampAction } from './input/binds';
 import { Sound, type MusicId } from './audio/sound';
 import { Steps } from './audio/steps';
+import { voiceSound } from './audio/voice';
 import type { Interactable } from './sim/types';
 import { emptyInput, World, type InputFrame } from './sim/world';
 import { advanceScene, endScene, sceneDue } from './sim/scene';
@@ -725,6 +726,12 @@ export class SigilEngine {
         case 'sfx':
           this.sound.play(ev.id, ev.vol);
           break;
+        case 'voice': {
+          // (audio/voice.ts: the hero's by the body chosen, a companion's by who they are; Settings › Voices turns them off)
+          const said = this.settings.voice && this.hero ? voiceSound(ev.who, ev.kind, this.hero.body) : null;
+          if (said) this.sound.play(said);
+          break;
+        }
         case 'toast':
           this.toast(ev.text, ev.tone ?? 'info', ev.item);
           break;

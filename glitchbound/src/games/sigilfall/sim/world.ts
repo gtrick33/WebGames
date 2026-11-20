@@ -389,6 +389,11 @@ export class World {
   rand: () => number;
   shakeAmt = 0;
   hitstopT = 0;
+  /** How many skills and dodges the hero has made, for whose voice is heard (castVoice: every few, never by chance). */
+  voiceCasts = 0;
+  voiceDodges = 0;
+  /** When the hero last cried out at a blow (not at every one). */
+  hurtVoiceAt = -9;
   /** Slow motion (a boss's last blow, a story fight's last foe): seconds left (real time), and what it's on. */
   slowT = 0;
   slowAt: { x: number; y: number } | null = null;
@@ -2223,6 +2228,7 @@ export class World {
     for (let i = 0; i < 1 + this.tier; i++) this.dropItem(e.x, e.y, this.rollItem('boss', il));
     for (let i = 0; i < 3; i++) this.dropAt('orb', e.x, e.y, 1);
     this.emit({ t: 'bossDown', boss: def.id });
+    this.emit({ t: 'voice', who: 'hero', kind: 'victory' });
     this.questProgress((o) => o.kind === 'boss' && o.boss === def.id);
     // the room opens
     const enc = this.encounters[e.room];
@@ -2508,6 +2514,7 @@ export class World {
   playerDies(): void {
     const p = this.player;
     if (p.dead) return;
+    this.emit({ t: 'voice', who: 'hero', kind: 'death' });
     p.dead = true;
     p.deadT = 0;
     p.hp = 0;
