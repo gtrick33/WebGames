@@ -18,7 +18,7 @@ import { toLocal } from './turn';
  * - a thumb that lands on a stick that turned out to be held by nobody takes it at once.
  * A second finger on a stick whose thumb really is still there doesn't take it over, as before.
  */
-export function Stick({ settings: s, onMove }: { settings: Pick<SigilEngine['settings'], 'joystick' | 'joyMode' | 'deadzone' | 'sensitivity'>; onMove: (x: number, y: number) => void }) {
+export function Stick({ settings: s, onMove, onBase }: { settings: Pick<SigilEngine['settings'], 'joystick' | 'joyMode' | 'deadzone' | 'sensitivity'>; onMove: (x: number, y: number) => void; /** The stick's ring, for whoever keeps clear of it (ui/Touch.tsx: the HUD's boxes). */ onBase?: (el: HTMLDivElement | null) => void }) {
   const zone = useRef<HTMLDivElement>(null);
   const base = useRef<HTMLDivElement>(null);
   const knob = useRef<HTMLDivElement>(null);
@@ -154,7 +154,14 @@ export function Stick({ settings: s, onMove }: { settings: Pick<SigilEngine['set
 
   return (
     <div className="rb-joyzone" ref={zone} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onLostPointerCapture={up}>
-      <div className="rb-joy" ref={base} style={{ width: R * 2, height: R * 2 }} />
+      <div
+        className="rb-joy"
+        ref={(el) => {
+          base.current = el;
+          onBase?.(el);
+        }}
+        style={{ width: R * 2, height: R * 2 }}
+      />
       <div className="rb-knob" ref={knob} />
     </div>
   );

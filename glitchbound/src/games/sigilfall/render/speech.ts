@@ -21,6 +21,10 @@ export interface SpeechCard {
   textY: number;
   /** Where its tail points down to the speaker (null when it has been moved off them: it has no one to point at). */
   tailX: number | null;
+  /** The tail points up instead, to a speaker the card stands under. */
+  tailUp?: boolean;
+  /** A subtitle in the lane along the bottom of the picture (placeSpeech), not a card over anyone. */
+  lane?: boolean;
 }
 
 /** A box on the view, in its CSS pixels: a card, or a piece of the HUD the picture's words keep clear of. */
@@ -74,10 +78,20 @@ export interface SpeechAsk {
   left?: number;
   right?: number;
   measure: Measure;
+  /** Where the speaker's feet are on the screen, for a card that stands under them (placeSpeech). */
+  footY?: number;
+  /** A scene's line: the one being read, placed first and never sent to the lane. */
+  staged?: boolean;
+  /** How wide a card may grow against its usual measure (placeSpeech tries wider and narrower ones where it is crowded). */
+  wide?: number;
+  /** Smaller words, a last resort where the picture is crowded (placeSpeech). */
+  small?: boolean;
+  /** A foe's bark: where no place is free it gives way (it isn't drawn) rather than lie over a line that matters. */
+  minor?: boolean;
 }
 
 export function layoutSpeech(o: SpeechAsk): SpeechCard {
-  const fs = speechSize(o.viewW, o.viewH);
+  const fs = o.small ? Math.max(11, Math.round(speechSize(o.viewW, o.viewH) * 0.84)) : speechSize(o.viewW, o.viewH);
   const nameFs = Math.round(fs * 0.82 * 10) / 10;
   const lineH = Math.round(fs * 1.32);
   const padX = Math.round(fs * 0.8);
@@ -89,7 +103,7 @@ export function layoutSpeech(o: SpeechAsk): SpeechCard {
   // (a little kept at the right of the card for the mark that the next line can be taken: on a one-line card it
   // sat on the last letter)
   const mark = Math.round(fs * 0.75);
-  const room = Math.max(96, Math.min(o.viewW - left - right - padX * 2 - mark, fs * 21));
+  const room = Math.max(96, Math.min(o.viewW - left - right - padX * 2 - mark, fs * 21 * (o.wide ?? 1)));
   const lines = wrapWords(o.text, room, (s) => o.measure(s, fs, 600));
   const nameW = o.name ? o.measure(o.name, nameFs, 800) : 0;
   const nameH = o.name ? Math.round(nameFs * 1.35) : 0;
@@ -137,4 +151,153 @@ export function layoutSpeechClear(o: SpeechAsk, hud: ReadonlyMap<string, ViewBox
     if (beside.lines.length <= card.lines.length + 1 && !taken.some((b) => boxesMeet(beside, b, 2))) return beside;
   }
   return card;
+}
+
+/**
+ * Where the picture has room for words (POLISH_PLAN.md piece 2: one owner for the screen). The HUD's pieces are drawn
+ * over the picture, so words under any of them are words lost; the fight is the hero and the foes on them, and a card
+ * written across it hides the blow it warns of.
+ */
+export interface SpeechRoom {
+  /** Every piece of the HUD on the screen (ui/hudBoxes.ts measures them). */
+  hud: readonly ViewBox[];
+  /** Where the fight is: the hero and the foes about them (null in a scene, or with nobody near). */
+  action: ViewBox | null;
+  /**
+   * The lane along the bottom of the picture where words go as subtitles in a fight: between `left` and `right`,
+   * standing on `bottom` (null in a scene: its bars keep the words).
+   */
+  lane: { left: number; right: number; bottom: number } | null;
+  /** A fight is on: what is shouted in it goes to the lane first, off the fight. */
+  fight: boolean;
+}
+
+/** A card moved to (x, y), its words with it; its tail kept only if it still stands over (or under) its speaker. */
+function moveCard(c: SpeechCard, x: number, y: number, tailX: number | null, tailUp = false): SpeechCard {
+  return { ...c, x, y, textY: c.textY - c.y + y, tailX, tailUp };
+}
+
+/** The same line sized as a subtitle in the lane: as wide as the lane lets it be, no tail (placed by laneSpots). */
+function laneSized(o: SpeechAsk, lane: NonNullable<SpeechRoom['lane']>): SpeechCard {
+  const wide = Math.max(120, lane.right - lane.left);
+  return layoutSpeech({ ...o, headX: (lane.left + lane.right) / 2, headY: o.viewH / 2, left: lane.left, right: o.viewW - lane.left - wide });
+}
+
+/**
+ * The subtitles of a fight laid out together in the lane, as a reader takes them: side by side along its bottom row
+ * while they fit, each row centered, the next row above. Each line's spot, by its place in `cards` (none can meet
+ * another: they are packed).
+ */
+function packLane(cards: readonly SpeechCard[], lane: NonNullable<SpeechRoom['lane']>): SpeechCard[] {
+  const rows: number[][] = [[]];
+  const room = lane.right - lane.left;
+  let used = 0;
+  cards.forEach((c, i) => {
+    const row = rows[rows.length - 1]!;
+    if (row.length && used + 8 + c.w > room) {
+      rows.push([i]);
+      used = c.w;
+    } else {
+      row.push(i);
+      used += (row.length > 1 ? 8 : 0) + c.w;
+    }
+  });
+  const out: SpeechCard[] = new Array(cards.length);
+  let bottom = lane.bottom;
+  for (const row of rows) {
+    const wide = row.reduce((n, i) => n + cards[i]!.w, 0) + 8 * (row.length - 1);
+    const tall = Math.max(...row.map((i) => cards[i]!.h));
+    let x = Math.max(lane.left, (lane.left + lane.right) / 2 - wide / 2);
+    for (const i of row) {
+      const c = cards[i]!;
+      out[i] = { ...moveCard(c, x, bottom - c.h, null), lane: true };
+      x += c.w + 8;
+    }
+    bottom -= tall + 6;
+  }
+  return out;
+}
+
+/**
+ * Every place a line could go, best first, made one at a time as they are asked for (placeSpeech stops at the first
+ * that is free: over the head, most often, so the rest are never made).
+ */
+function* candidates(o: SpeechAsk, room: SpeechRoom, hudMap: ReadonlyMap<string, ViewBox> | null, spot: SpeechCard | undefined): Generator<SpeechCard> {
+  const over = layoutSpeech(o);
+  if (room.fight && spot) yield spot;
+  yield over;
+  // (beside the quest, as layoutSpeechClear lays it: a phone on its side)
+  if (hudMap) {
+    const beside = layoutSpeechClear(o, hudMap);
+    if (beside !== over) yield beside;
+  }
+  // round the head, nearest first: a step sideways costs less than a step up, and a step up less than going under
+  const step = over.h * 0.5 + 6;
+  const near: [dx: number, dy: number, cost: number][] = [];
+  for (let dy = -4; dy <= 6; dy++) for (let dx = -12; dx <= 12; dx++) if (dx || dy) near.push([dx, dy, Math.abs(dx) * 40 + Math.abs(dy) * step * (dy > 0 ? 3 : 1.5)]);
+  // (under the feet, the tail up to them: dy is 99)
+  if (o.footY !== undefined) for (let dx = -8; dx <= 8; dx++) near.push([dx, 99, 2 * step + Math.abs(dx) * 40]);
+  near.sort((a, b) => a[2] - b[2]);
+  for (const [dx, dy] of near) {
+    const x = clamp(over.x + dx * 40, 2, o.viewW - 2 - over.w);
+    const onHead = o.headX > x + 12 && o.headX < x + over.w - 12;
+    if (dy === 99) yield moveCard(over, x, o.footY! + 10, onHead ? o.headX : null, true);
+    else yield moveCard(over, x, over.y + dy * step, dy === 0 && over.tailX !== null && onHead ? o.headX : null);
+  }
+  if (!room.fight && spot) yield spot;
+}
+
+/** The first of `tries` that passes `ok`. */
+function first(tries: Iterable<SpeechCard>, ok: (c: SpeechCard) => boolean): SpeechCard | undefined {
+  for (const c of tries) if (ok(c)) return c;
+  return undefined;
+}
+
+/**
+ * Where each spoken line goes, all of them at once so none is written over another or under the HUD. A scene's line is
+ * placed first. Each takes the free place nearest over its speaker's head: there if it can (its tail on them), else
+ * beside the quest (a phone on its side, where the quest reaches into the open middle), else the nearest spot round
+ * the head that is clear, over it, beside it or under the feet, and last the lane along the bottom. In a fight a line
+ * that isn't a scene's goes to the lane first, so the blows stay in sight. A place that would cover the fight is taken
+ * only when no other is free; where nothing at all is free a foe's bark gives way (null: not drawn while there is no
+ * room for it), and any other line stays over the head, as it always was, and the HUD piece under it fades until it is
+ * said (ui/GameScreen.tsx). The lines that matter (a scene's, a companion's, a townsperson's, the hero's) are placed
+ * before the foes', so a crowd of barks never takes their room.
+ */
+export function placeSpeech(asks: readonly SpeechAsk[], room: SpeechRoom, hudMap: ReadonlyMap<string, ViewBox> | null = null): (SpeechCard | null)[] {
+  const out: (SpeechCard | null)[] = new Array(asks.length);
+  const placed: ViewBox[] = [];
+  const rank = (o: SpeechAsk): number => (o.staged ? 0 : o.minor ? 2 : 1);
+  const order = asks.map((_, i) => i).sort((i, j) => rank(asks[i]!) - rank(asks[j]!));
+  // the lane's spots, for every line that isn't a scene's: packed together, so in a fight they sit side by side
+  const shouts = asks.map((o, i) => (room.lane && !o.staged ? i : -1)).filter((i) => i >= 0);
+  const packed = room.lane ? packLane(shouts.map((i) => laneSized(asks[i]!, room.lane!)), room.lane) : [];
+  const laneOf = new Map(shouts.map((i, k) => [i, packed[k]!]));
+  for (const i of order) {
+    const o = asks[i]!;
+    const spot = laneOf.get(i);
+    const inView = (c: ViewBox): boolean => c.x >= 2 && c.x + c.w <= o.viewW - 2 && c.y >= o.top && c.y + c.h <= o.viewH - 2;
+    const free = (c: ViewBox): boolean => inView(c) && !room.hud.some((b) => boxesMeet(c, b, 4)) && !placed.some((b) => boxesMeet(c, b, 6));
+    const calm = (c: ViewBox): boolean => !!o.staged || !room.action || !boxesMeet(c, room.action, 0);
+    const over = layoutSpeech(o);
+    // the card as it is first, then wider (fewer lines) and narrower (more) where it is crowded
+    let pick: SpeechCard | undefined;
+    const shapes: SpeechAsk[] = [o, { ...o, wide: 1.6 }, { ...o, wide: 0.7 }, { ...o, small: true, wide: 1.4 }];
+    for (const shape of shapes) {
+      pick = first(candidates(shape, room, hudMap, spot), (c) => free(c) && calm(c));
+      if (pick) break;
+    }
+    for (const shape of shapes) {
+      if (pick) break;
+      pick = first(candidates(shape, room, hudMap, spot), free);
+    }
+    if (!pick && o.minor) {
+      out[i] = null;
+      continue;
+    }
+    pick ??= over;
+    placed.push(pick);
+    out[i] = pick;
+  }
+  return out;
 }

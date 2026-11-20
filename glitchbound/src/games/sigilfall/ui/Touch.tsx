@@ -15,6 +15,7 @@ import { skillHasPicture, skillIconUrl } from '../render/sprites';
 import { slotHaste, SUMMON_TIME, type World } from '../sim/world';
 import { useFrame } from './GameScreen';
 import { useHudBox } from './hudBoxes';
+import { Lesson } from './Lesson';
 import { uiIcon } from './uiIcons';
 import { hide, part, say } from './hudWrite';
 
@@ -49,9 +50,9 @@ export function TouchControls({ engine }: { engine: SigilEngine }) {
       <div ref={cluster} className="rb-cluster">
         {/* the lesson sits over the button it teaches (inside the cluster: its size and side follow the cluster's) */}
         {engine.ui.teach && engine.ui.teach.slot !== 'potion' && !engine.ui.tip && (
-          <div className={`rb-teach is-touch is-at-${engine.ui.teach.slot}`} role="status">
+          <Lesson engine={engine} className={`rb-teach is-touch is-at-${engine.ui.teach.slot}`} key={engine.ui.teach.slot}>
             {engine.ui.teach.text}
-          </div>
+          </Lesson>
         )}
         <SkillButton engine={engine} slot="basic" />
         <SkillButton engine={engine} slot="s1" />
@@ -73,7 +74,18 @@ export function TouchControls({ engine }: { engine: SigilEngine }) {
 }
 
 function Joystick({ engine }: { engine: SigilEngine }) {
-  return <Stick settings={engine.settings} onMove={(x, y) => engine.touch.setMove(x, y)} />;
+  // (where the stick rests is a piece of the HUD: the words said on the picture keep clear of it, render/speech.ts)
+  const ring = useRef<HTMLDivElement | null>(null);
+  useHudBox(engine, 'stick', ring);
+  return (
+    <Stick
+      settings={engine.settings}
+      onMove={(x, y) => engine.touch.setMove(x, y)}
+      onBase={(el) => {
+        ring.current = el;
+      }}
+    />
+  );
 }
 
 /** What a skill's aim looks like on the ground while dragging. */
@@ -244,9 +256,9 @@ function PotionButton({ engine }: { engine: SigilEngine }) {
   return (
     <div className="rb-potion-dock">
       {engine.ui.teach?.slot === 'potion' && !engine.ui.tip && (
-        <div className="rb-teach is-touch is-at-potion" role="status">
+        <Lesson engine={engine} className="rb-teach is-touch is-at-potion">
           {engine.ui.teach.text}
-        </div>
+        </Lesson>
       )}
       <button
         ref={el}

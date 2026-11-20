@@ -37,18 +37,20 @@ export function useHudBox(engine: SigilEngine, id: string, ref: RefObject<HTMLEl
     // (a HUD drawn with no picture under it, as the tests draw one, has nothing to tell)
     const r = engine.renderer as SigilEngine['renderer'] | undefined;
     if (!r) return;
-    const box = el ? hudBoxOf(r.canvas, el, r.viewW, r.viewH) : null;
-    if (box) r.hudBoxes.set(id, box);
-    else r.hudBoxes.delete(id);
+    r.setHudBox(id, el ? hudBoxOf(r.canvas, el, r.viewW, r.viewH) : null);
   };
   const measureRef = useRef(measure);
+  const measureLater = useRef((): void => measureRef.current()).current;
   useLayoutEffect(() => {
     measureRef.current = measure;
     const w = watch.current;
     if (w.el !== ref.current) {
       w.ro?.disconnect();
+      w.el?.removeEventListener('animationend', measureLater);
       w.el = ref.current;
       if (w.el && w.ro) w.ro.observe(w.el);
+      // (a piece that comes in moving is where it will stay once it has come: measured again then)
+      w.el?.addEventListener('animationend', measureLater);
     }
     measure();
   });
@@ -66,7 +68,7 @@ export function useHudBox(engine: SigilEngine, id: string, ref: RefObject<HTMLEl
       w.ro?.disconnect();
       w.ro = null;
       window.removeEventListener('resize', again);
-      (engine.renderer as SigilEngine['renderer'] | undefined)?.hudBoxes.delete(id);
+      (engine.renderer as SigilEngine['renderer'] | undefined)?.setHudBox(id, null);
     };
   }, [engine, id]);
 }
