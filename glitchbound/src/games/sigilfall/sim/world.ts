@@ -269,6 +269,18 @@ export function challenge(level: number, boss: boolean): { hp: number; dmg: numb
 }
 const NO_CHALLENGE = { hp: 1, dmg: 1 };
 
+/**
+ * The campaign's difficulty, chosen in Settings (POLISH_PLAN.md piece 23): what every foe's health and blows are taken
+ * by, the floor of a boss's blow too. Story is for the story (foes go down sooner and hit far softer), Normal is the
+ * campaign as made and measured, Hard asks more of every fight. Heroic, Mythic and the Riftstones are hard by choice
+ * and keep their own measure, and so does a party (one world, one measure for all).
+ */
+export const DIFFICULTY: Readonly<Record<Settings['difficulty'], { hp: number; dmg: number; name: string }>> = {
+  story: { hp: 0.7, dmg: 0.55, name: 'Story' },
+  normal: { hp: 1, dmg: 1, name: 'Normal' },
+  hard: { hp: 1.25, dmg: 1.3, name: 'Hard' },
+};
+
 /** The first dungeon a hero meets (the crypt under Briarhollow's chapel, on the first night). */
 export const FIRST_DUNGEON: RegionId = 'crypt';
 /**
@@ -928,14 +940,14 @@ export class World {
   /** Health on top of an enemy's level: the difficulty tier and rift modifiers, or a Riftstone level's might. */
   private hpMul(boss: boolean): number {
     const k = this.keyRun;
-    if (!k) return TIERS[this.tier]!.hp * (this.mods.includes('fortified') ? 1.4 : 1);
+    if (!k) return TIERS[this.tier]!.hp * (this.mods.includes('fortified') ? 1.4 : 1) * this.measure.hp;
     return keyScale(k.key, k.heroLevel).hp * (k.affixes.includes(boss ? 'tyrannical' : 'fortified') ? 1.3 : 1);
   }
 
   /** Damage on top of an enemy's level, likewise. */
   private dmgMul(boss: boolean): number {
     const k = this.keyRun;
-    if (!k) return TIERS[this.tier]!.dmg;
+    if (!k) return TIERS[this.tier]!.dmg * this.measure.dmg;
     return keyScale(k.key, k.heroLevel).dmg * (k.affixes.includes(boss ? 'tyrannical' : 'fortified') ? 1.15 : 1);
   }
 
@@ -947,6 +959,12 @@ export class World {
    */
   get ownMeasure(): boolean {
     return !!this.keyRun;
+  }
+
+  /** The difficulty chosen in Settings, where it holds: the campaign on Normal's tier, alone (DIFFICULTY). */
+  get measure(): { hp: number; dmg: number } {
+    if (this.keyRun || this.tier > 0 || this.coop || this.puppet) return NO_CHALLENGE;
+    return DIFFICULTY[this.settings.difficulty] ?? NO_CHALLENGE;
   }
 
   /** A boss's BOSS_DAMAGE at its level, in the campaign (ownMeasure). */

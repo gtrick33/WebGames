@@ -24,6 +24,21 @@ export interface Objective {
   via?: RegionId;
 }
 
+/**
+ * A boss standing between the hero and the one their quest names (POLISH_PLAN.md piece 23): in a dungeon, the first
+ * boss whose room isn't cleared, when the quest's boss is another one further in. The tracker names it, so a hero
+ * fighting the Coffin Matron isn't told to defeat Warden Ossric. Null when the way to the quest's boss is clear, or
+ * the quest's boss isn't in this dungeon at all. Only what is shown: the quest's own step is untouched.
+ */
+export function bossInTheWay(w: World, step: { kind: string; boss?: string }): string | null {
+  if (w.region.kind !== 'dungeon' || step.kind !== 'boss' || !step.boss) return null;
+  const rooms = [...w.encounters].sort((a, b) => a.index - b.index);
+  const goal = rooms.find((e) => e.def.boss === step.boss);
+  const next = rooms.find((e) => e.def.boss && e.state !== 'cleared');
+  if (!goal || !next || next === goal || next.index > goal.index) return null;
+  return next.def.boss ?? null;
+}
+
 /** Every quest on the maps (objectiveTargets): which quest, a story one or not, and whether its work is here. */
 export interface QuestMark extends Objective {
   quest: string;

@@ -1910,6 +1910,24 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
           </label>
         </section>
         <section>
+          <span className="rb-kicker">Difficulty</span>
+          <div className="rb-seg" role="radiogroup" aria-label="Difficulty">
+            {(['story', 'normal', 'hard'] as const).map((d) => (
+              <button key={d} role="radio" aria-checked={s.difficulty === d} className={s.difficulty === d ? 'is-on' : ''} onClick={() => set({ difficulty: d })}>
+                {d === 'story' ? 'Story' : d === 'hard' ? 'Hard' : 'Normal'}
+              </button>
+            ))}
+          </div>
+          <span className="rb-small rb-dim">
+            {s.difficulty === 'story'
+              ? 'For the story: foes go down sooner and hit far softer. Your runs stay off the leaderboard.'
+              : s.difficulty === 'hard'
+                ? 'Every fight asks more: foes have a quarter more health and hit harder.'
+                : 'The campaign as it was made: hard enough to lose a fight, and to feel it won.'}{' '}
+            Heroic, Mythic, the Riftstones and runs with friends keep their own measure.
+          </span>
+        </section>
+        <section>
           <span className="rb-kicker">Camera</span>
           {slider('Camera distance', 'zoom', ZOOM_MIN, ZOOM_MAX, 0.05, pct)}
           <span className="rb-small rb-dim">100% is the game's own view. Further out shows more of the land around you; closer shows your hero bigger.</span>

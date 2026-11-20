@@ -125,7 +125,10 @@ export const BOSSES: Record<string, BossDef> = {
     name: 'The Coffin Matron',
     title: 'Mother of the Ossuary',
     sprite: 'coffin-matron',
-    // (the first boss most heroes meet, at level 5 or 6 with two skills: it was 850, a fight of several minutes)
+    // (the first boss most heroes meet, at level 4 to 6 with two or three skills: it was 850, a fight of several minutes.
+    // Found in her coffin she is wounded by a share of her health, the same whoever the hero is (`found`): the fight
+    // goes by the game she plays as well as by the blows, and a healer's is no longer three times a warrior's;
+    // POLISH_PLAN.md piece 23)
     hp: 650,
     dmg: 14,
     radius: 9,
@@ -136,9 +139,9 @@ export const BOSSES: Record<string, BossDef> = {
         at: 1,
         speed: 34,
         rest: [0.9, 1.3],
-        enter: [{ id: 'crypt:coffins', w: 1, cd: 0, p: { n: 4, swaps: 3, swap: 0.95, wait: 11 } }],
+        enter: [{ id: 'crypt:coffins', w: 1, cd: 0, p: { n: 4, swaps: 3, swap: 0.95, wait: 11, found: 0.08 } }],
         patterns: [
-          { id: 'crypt:coffins', w: 3, cd: 16, p: { n: 4, swaps: 3, swap: 0.95, wait: 11 } },
+          { id: 'crypt:coffins', w: 3, cd: 16, p: { n: 4, swaps: 3, swap: 0.95, wait: 11, found: 0.08 } },
           // grave-candle wisps that drift after the hero
           { id: 'spell:seekers', w: 3, cd: 3, p: { count: 3, speed: 50, homing: 1.2, look: 'shadow', color: '#9cff9c', type: 'shadow', mul: 0.8 } },
           // a coffin closing round the hero, one side left open
@@ -150,9 +153,9 @@ export const BOSSES: Record<string, BossDef> = {
         banner: 'The Matron wakes the dead! More coffins open!',
         speed: 38,
         rest: [0.7, 1.1],
-        enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['skeleton', 'skeleton'] } }, { id: 'crypt:coffins', w: 1, cd: 0, p: { n: 5, swaps: 5, swap: 0.75, wait: 9 } }],
+        enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['skeleton', 'skeleton'] } }, { id: 'crypt:coffins', w: 1, cd: 0, p: { n: 5, swaps: 5, swap: 0.75, wait: 9, found: 0.08 } }],
         patterns: [
-          { id: 'crypt:coffins', w: 3, cd: 14, p: { n: 5, swaps: 5, swap: 0.75, wait: 9 } },
+          { id: 'crypt:coffins', w: 3, cd: 14, p: { n: 5, swaps: 5, swap: 0.75, wait: 9, found: 0.08 } },
           // grave-candle wisps that drift after the hero
           { id: 'spell:seekers', w: 2, cd: 3, p: { count: 3, speed: 50, homing: 1.2, look: 'shadow', color: '#9cff9c', type: 'shadow', mul: 0.8 } },
           // a coffin closing round the hero, one side left open
