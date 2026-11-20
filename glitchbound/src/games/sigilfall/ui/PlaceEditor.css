@@ -1,0 +1,124 @@
+/* The placement editor (ui/PlaceEditor.tsx): the dev server only, never in a build. */
+
+.rb-place-catch {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  cursor: crosshair;
+  pointer-events: auto;
+}
+
+.rb-place-mark {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 61;
+  pointer-events: none;
+}
+
+.rb-place-mark polygon {
+  fill: rgba(120, 220, 140, 0.18);
+  stroke: #7fe39a;
+  stroke-width: 2;
+}
+
+.rb-place-mark polygon.is-bad {
+  fill: rgba(230, 90, 80, 0.2);
+  stroke: #f07a6e;
+}
+
+.rb-place {
+  position: absolute;
+  top: 64px;
+  left: 8px;
+  z-index: 62;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 250px;
+  max-height: calc(100% - 140px);
+  padding: 10px;
+  border: 1px solid #5b4a35;
+  border-radius: 6px;
+  background: rgba(20, 16, 12, 0.92);
+  color: #eadfc8;
+  font: 12px/1.35 system-ui, sans-serif;
+  pointer-events: auto;
+}
+
+.rb-place-head,
+.rb-place-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rb-place-head strong {
+  flex: 1;
+  color: #f1c96b;
+}
+
+.rb-place-land code,
+.rb-place-chosen code {
+  color: #9fd3ff;
+}
+
+.rb-place-info {
+  min-height: 1.35em;
+  color: #c9bba0;
+}
+
+.rb-place-find {
+  padding: 4px 6px;
+  border: 1px solid #5b4a35;
+  border-radius: 4px;
+  background: #0f0c09;
+  color: inherit;
+}
+
+.rb-place-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 80px;
+  overflow-y: auto;
+}
+
+.rb-place button {
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rb-place button:hover {
+  border-color: #5b4a35;
+}
+
+.rb-place button.is-on {
+  border-color: #f1c96b;
+  background: rgba(241, 201, 107, 0.16);
+}
+
+.rb-place button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.rb-place-chosen {
+  display: flex;
+  justify-content: space-between;
+}
+
+.rb-place-status {
+  color: #a8e0b4;
+}
+
+.rb-place-help {
+  margin: 0;
+  color: #a89a80;
+}

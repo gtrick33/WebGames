@@ -778,6 +778,18 @@ export class World {
   }
 
   /**
+   * The land's map built again from its definition, with nobody moved: the placement editor (ui/PlaceEditor.tsx)
+   * after it set something down or took it up. Its foes are already out, so none come again.
+   */
+  remap(): void {
+    this.map = parseRegion(this.region);
+    for (const pm of this.map.markers) if (pm.marker.kind === 'pack') this.packed.add(pm);
+    // (whatever was shown, everything is stood again)
+    this.shownKey = '\0';
+    this.refreshStoryState();
+  }
+
+  /**
    * The people come out (or go in): in a town, or round a village's square, while the place is calm (not at
    * night, burning or under a gloom; never indoors or underground).
    */
