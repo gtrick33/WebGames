@@ -1,3 +1,4 @@
+import { mixFor } from './audio/mix';
 import { rankEntries } from './progress/ranks';
 import { readBests } from './vigil/bests';
 import { trialHero, trialsOpen, trialStone } from './progress/trial';
@@ -703,6 +704,8 @@ export class SigilEngine {
     this.sound.setMusic(boss && !boss.dead ? 'boss' : ((w.scene?.music ?? w.storyState?.music ?? REGIONS[w.region.id].music) as MusicId));
     // (the air is the land's own, whatever the story plays over it; a town under siege has none)
     this.sound.setAmbience(ambienceOf(w.storyState?.music ?? REGIONS[w.region.id].music));
+    // the music steps back for the story's words and comes forward in a fight (audio/mix.ts)
+    this.sound.setMix(mixFor(w, this.ui));
   }
 
   private handleEvents(w: World): void {
