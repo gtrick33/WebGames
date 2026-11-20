@@ -338,6 +338,9 @@ mat4 posed() {
 `;
 
 const FRAG_COMMON = /* glsl */ `
+// how much of a night falls on whoever moves in it (the ground takes all of it), and the moon's light along their edges
+const float NIGHT_ON_FIGURES = 0.42;
+const vec3 MOON_RIM = vec3(0.24, 0.32, 0.58);
 uniform vec3 uSun;
 uniform vec3 uLit;
 uniform vec3 uMid;
@@ -510,9 +513,14 @@ export function animMaterial(anim: RigAnim): THREE.ShaderMaterial {
         vec3 toEye = normalize(cameraPosition - vW);
         float rim = pow(1.0 - clamp(dot(n, toEye), 0.0, 1.0), 2.6) * smoothstep(-0.35, 0.5, n.y);
         c += uRim * rim * (0.55 + 0.45 * vCol);
-        // at night, whoever's out in it stands out of it: less of the dark on them, and the moon along their edges
-        c = finishWith(c, 0.6);
-        if (uNight.a > 0.0) c += vec3(0.2, 0.28, 0.5) * pow(1.0 - clamp(dot(n, vec3(0.0, 0.766, 0.643)), 0.0, 1.0), 2.6) * uNight.a;
+        // at night, whoever's out in it stands out of it: less of the dark on them, and the moon along their edges, and
+        // their own rim kept (the Prologue's first quarter hour is a night: small figures were lost on its dark ground;
+        // POLISH_PLAN.md piece 9)
+        c = finishWith(c, NIGHT_ON_FIGURES);
+        if (uNight.a > 0.0) {
+          c += MOON_RIM * pow(1.0 - clamp(dot(n, vec3(0.0, 0.766, 0.643)), 0.0, 1.0), 2.6) * uNight.a;
+          c += uRim * rim * 0.45 * uNight.a;
+        }
         c = mix(c, vec3(1.0, 0.97, 0.9), vFlash);
         gl_FragColor = vec4(c, 1.0);
       }`,
