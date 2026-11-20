@@ -153,6 +153,9 @@ const BOSS_LIFT = 0.45;
 const FLINCH = 0.22;
 /** The least time between two flinches, and between two of a boss's blows. */
 const FLINCH_EVERY = 0.7;
+/** How long a foe struck is knocked back along the blow and comes back (seconds), and how far at the hardest (world px). */
+const RECOIL = 0.16;
+const RECOIL_PX = 5;
 const BLOW_EVERY = 0.5;
 /** How long a fallen foe is drawn after it fell (seconds): the longest fall, a great one's, is over by then. */
 const FALL_KEPT = 1.8;
@@ -656,8 +659,12 @@ export class WorldCast {
       anim.from.t += dt;
       if (anim.from.k <= 0) anim.from = null;
     }
-    const x = anim.x;
-    const y = anim.y;
+    // struck: it is knocked back along the blow and comes back, further the harder the blow (Enemy.hitK; a boss barely
+    // gives; POLISH_PLAN.md piece 5). Only the picture moves: where it stands is the rules' business
+    const struck = e.dead || e.hitT === undefined ? 1 : (w.time - e.hitT) / RECOIL;
+    const recoil = struck >= 0 && struck < 1 && !hasStatus(e, 'freeze') ? Math.sin(Math.PI * Math.sqrt(struck)) * (e.hitK ?? 0.3) * (e.boss ? RECOIL_PX * 0.3 : RECOIL_PX) : 0;
+    const x = anim.x + Math.cos(e.hitA ?? 0) * recoil;
+    const y = anim.y + Math.sin(e.hitA ?? 0) * recoil;
     const frozen = hasStatus(e, 'freeze');
     const chilled = hasStatus(e, 'chill');
     const dying = e.boss && e.boss.dying > 0;

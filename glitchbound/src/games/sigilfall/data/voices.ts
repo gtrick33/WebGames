@@ -15,3 +15,22 @@ export function deathSound(def: { id: string; sprite: string }): string {
   const name = `${def.id} ${def.sprite}`;
   return KINDS.find(([re]) => re.test(name))?.[1] ?? 'die';
 }
+
+/** What a blow sounds like on each kind (by the same names as how it falls): bone clacks, a shell cracks, stone knocks. */
+const STRUCK: Readonly<Record<string, string>> = {
+  dieSlime: 'hitSlime',
+  dieGhost: 'hitGhost',
+  dieBone: 'hitBone',
+  dieBug: 'hitShell',
+  dieOgre: 'hitHeavy',
+  dieBeast: 'hitFlesh',
+  die: 'hitFlesh',
+};
+
+/**
+ * The sound of what a blow meets, laid under the blow's own (POLISH_PLAN.md piece 5): a sword on a skeleton clacks, on a
+ * golem it knocks, on a slime it squelches. Only a sound, as deathSound is.
+ */
+export function hitSound(def: { id: string; sprite: string }): string {
+  return STRUCK[deathSound(def)] ?? 'hitFlesh';
+}

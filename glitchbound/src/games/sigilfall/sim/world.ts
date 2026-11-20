@@ -401,6 +401,12 @@ export class World {
   nextId = 1;
   rand: () => number;
   shakeAmt = 0;
+  /** The red at the screen's edge as the hero is struck, 0 to 1, fading (render/renderer.ts). */
+  hurtPulse = 0;
+  /** A blow's push on the camera, waiting for the renderer to take it (World.kick, render/renderer.ts). */
+  kickX = 0;
+  kickY = 0;
+  /** When a crit last stopped time for a moment (crits stop it at most so often). */
   hitstopT = 0;
   /** How many skills and dodges the hero has made, for whose voice is heard (castVoice: every few, never by chance). */
   voiceCasts = 0;
@@ -1218,6 +1224,22 @@ export class World {
   hitstop(t: number): void {
     this.hitstopT = Math.max(this.hitstopT, t);
   }
+  /**
+   * A blow pushes the camera: `power` world pixels along `angle`, sprung back by the renderer. Only for the eye, and
+   * only with the screen's shake on (Settings), as shake is.
+   */
+  kick(angle: number, power: number): void {
+    if (!this.settings.shake || !(power > 0)) return;
+    this.kickX += Math.cos(angle) * power;
+    this.kickY += Math.sin(angle) * power;
+  }
+  /** The push the blows have given the camera since it was last taken (render/renderer.ts takes it each frame). */
+  takeKick(): { x: number; y: number } {
+    const k = { x: this.kickX, y: this.kickY };
+    this.kickX = 0;
+    this.kickY = 0;
+    return k;
+  }
   /** Time slows for `t` seconds, the camera drawn to `at` (never in a co-op party: the worlds keep one pace). */
   slowmo(t: number, at: { x: number; y: number } | null): void {
     if (this.coop) return;
@@ -1254,7 +1276,7 @@ export class World {
    * stood in a cloud over it (the owner, 2026-11-19: "the ui is a bit overwhelming"). A critical hit stands on its own, as
    * it always has. And no more than DAMAGE_NUMBERS of them at once: the oldest give way.
    */
-  damageNumber(e: { id: number; x: number; y: number; r: number }, dmg: number, color: string, crit: boolean): void {
+  damageNumber(e: { id: number; x: number; y: number; r: number }, dmg: number, color: string, crit: boolean, scale = 1): void {
     // (one draw a blow, as when every blow rose on its own: the fight's chances run as they did)
     const jitter = (this.rand() - 0.5) * 6;
     if (!crit) {
@@ -1262,6 +1284,7 @@ export class World {
       if (o) {
         o.sum = (o.sum ?? 0) + dmg;
         o.text = String(o.sum);
+        o.scale = Math.max(o.scale ?? 1, scale);
         // (a growing number holds on a little longer, and rises from where the enemy is now)
         o.t = Math.min(o.t, 0.12);
         o.x = e.x;
@@ -1271,7 +1294,7 @@ export class World {
     const shown = this.texts.filter((t) => t.src !== undefined);
     if (shown.length >= DAMAGE_NUMBERS) this.texts.splice(this.texts.indexOf(shown[0]!), 1);
     if (this.texts.length > 60) this.texts.shift();
-    this.texts.push({ x: e.x + jitter, y: e.y - e.r - 6, text: String(dmg), color, t: 0, big: crit, vy: -26, src: e.id, sum: dmg });
+    this.texts.push({ x: e.x + jitter, y: e.y - e.r - 6, text: String(dmg), color, t: 0, big: crit, vy: -26, src: e.id, sum: dmg, ...(scale !== 1 ? { scale } : {}) });
   }
   addFx(f: Partial<Fx> & Pick<Fx, 'kind' | 'x' | 'y' | 'life'>): void {
     if (this.fx.length > 420) return;
@@ -1506,6 +1529,7 @@ export class World {
     this.time += dt;
     if (this.keyRun) this.updateKeyRun(rawDt, dt);
     this.shakeAmt = Math.max(0, this.shakeAmt - rawDt * 18);
+    this.hurtPulse = Math.max(0, this.hurtPulse - rawDt * 2.8);
     // the story's staged beats: looked for twice a second, played while the hero stands still
     this.sceneCheck -= rawDt;
     // a staged scene stops one world while the others play on: in a party only the leader's world plays

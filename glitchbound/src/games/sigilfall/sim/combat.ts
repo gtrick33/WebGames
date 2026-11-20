@@ -1,6 +1,7 @@
 import { TAU, clamp, dist2 } from '../core/math';
 import { CLASSES, heroDamage, levelPower } from '../data/classes';
 import type { BuffDef, ComboCond, ComboSpec, DmgType, Effect, ProcDef, SkillSpec, StatKey, Stats, StatusId } from '../data/types';
+import { hitSound } from '../data/voices';
 import { typeBonus } from '../progress/build';
 import { bossHidden } from './boss';
 import { moveCircle } from './map';
@@ -137,8 +138,27 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
     e.vx += Math.cos(a) * k;
     e.vy += Math.sin(a) * k;
   }
-  if (w.settings.numbers || crit) w.damageNumber(e, shown, crit ? '#ffe14d' : o.isDot ? DOT_COLOR[type] : '#ffffff', crit);
-  if (!o.isDot) w.sfx(o.blade ? (crit ? 'critBlade' : 'clash') : crit ? 'crit' : 'hit');
+  // how hard the blow was against this foe (a share of its health): its number, its recoil and the camera follow it
+  // (POLISH_PLAN.md piece 5)
+  const share = Math.min(1, shown / Math.max(1, e.maxHp));
+  const finishing = e.hp <= 0 && !e.dummy && !mirror;
+  if (!o.isDot) {
+    e.hitT = w.time;
+    e.hitA = Math.atan2(e.y - (o.fromY ?? w.player.y), e.x - (o.fromX ?? w.player.x));
+    e.hitK = Math.min(1, 0.25 + share * 3 + (crit ? 0.3 : 0) + (combo ? 0.25 : 0));
+  }
+  // a blow the foe turned much of aside (its armor, or its own resistance) is told in a cooler color
+  const turned = (type === 'physical' && e.def.armor && !hasStatus(e, 'armorBreak') ? e.def.armor : 0) + (e.def.resist?.[type] ?? 0);
+  const color = crit ? '#ffe14d' : o.isDot ? DOT_COLOR[type] : turned >= 0.25 ? RESISTED : '#ffffff';
+  if (w.settings.numbers || crit) w.damageNumber(e, shown, color, crit, o.isDot ? 1 : Math.min(1.6, 1 + share * 1.2 + (finishing ? 0.25 : 0)));
+  if (!o.isDot) {
+    w.sfx(o.blade ? (crit ? 'critBlade' : 'clash') : crit ? 'crit' : 'hit');
+    // (and what it met, under it: bone, a shell, stone; the direct blow only)
+    if (o.depth === 0) w.sfx(hitSound(e.def), 0.8);
+    // a crit, a combo blow or a blow that finishes a foe pushes the camera along it (only the eye's: a crit holds
+    // nothing, as a held world runs slow while a Riftstone's clock doesn't)
+    if (o.depth === 0 && (crit || combo || finishing)) w.kick(e.hitA ?? 0, (crit ? 2.2 : 1.2) + (combo ? 1.2 : 0) + (finishing && !e.boss ? 0.8 : 0));
+  }
   hitJuice(w, e, type, crit, !!o.isDot);
   // ultimate charge: hits worth a typical attack fill about 1/45th (ULT_HITS), but never faster than the charge budget
   // allows (it refills over seconds), so a hero with great gear doesn't cast the ultimate every few hits.
@@ -256,6 +276,8 @@ export function remoteHit(w: World, e: Enemy, dmg: number, kx: number, ky: numbe
   if (e.hp <= 0 && !e.dummy) killEnemy(w, e, 'physical', 1, null);
 }
 
+/** A blow the foe turned much of aside (armor, a resistance): a cool grey-blue, not the plain white of a clean hit. */
+export const RESISTED = '#a9b8c8';
 export const DOT_COLOR: Record<DmgType, string> = { physical: '#ffffff', fire: '#ff9a4d', frost: '#9be7ff', lightning: '#9ad8ff', poison: '#8be36b', arcane: '#d2a8ff', shadow: '#b58aff', holy: '#ffe9a0', nature: '#9cf07a' };
 
 /** Applies a status from the hero (hitDmg sizes damage over time; `src` is the skill it came from). */
@@ -889,6 +911,9 @@ export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: n
   p.hp -= d;
   p.flash = 0.18;
   p.lastHurt = w.time;
+  // the screen's edge goes red with the blow, deeper the harder it was; the camera is shoved away from it
+  w.hurtPulse = Math.max(w.hurtPulse, Math.min(1, 0.35 + (d / p.maxHp) * 4));
+  if (o.fromX !== undefined && o.fromY !== undefined) w.kick(Math.atan2(p.y - o.fromY, p.x - o.fromX), Math.min(4, 1.2 + (d / p.maxHp) * 12));
   p.calm = 0;
   // a hit knocks the hero out of the saddle (and stops a mount being called)
   if (p.riding || p.summon) w.dismount();

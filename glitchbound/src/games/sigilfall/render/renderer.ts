@@ -375,6 +375,11 @@ export class Renderer {
   private threatY = 0;
   private shakeX = 0;
   private shakeY = 0;
+  /** The camera's push from blows (World.kick), on a spring back to rest: where it is and how fast it moves. */
+  private kickX = 0;
+  private kickY = 0;
+  private kickVX = 0;
+  private kickVY = 0;
 
   /** Puts the camera on the hero at once (after loading a region or respawning). */
   snap(w: World): void {
@@ -384,6 +389,31 @@ export class Renderer {
     this.leanVY = 0;
     this.cinemaT = 0;
     this.placeCamera(w);
+  }
+
+  /**
+   * The camera's push from blows: each frame takes what the blows gave (World.takeKick) and springs back to rest, a
+   * quick shove and a soft return. Nothing with reduced motion.
+   */
+  private springKick(w: World, dt: number): void {
+    const k = w.takeKick();
+    if (this.reducedMotion) {
+      this.kickX = this.kickY = this.kickVX = this.kickVY = 0;
+      return;
+    }
+    this.kickVX += k.x * 30;
+    this.kickVY += k.y * 30;
+    // (stiff, and damped nearly to the critical: one shove, no wobble; stepped finely, as the push's spring is)
+    const stiff = 260;
+    const damping = 2 * Math.sqrt(stiff) * 0.9;
+    const steps = Math.max(1, Math.ceil(Math.min(dt, 0.1) / (1 / 120)));
+    const h = Math.min(dt, 0.1) / steps;
+    for (let i = 0; i < steps; i++) {
+      this.kickVX += (-stiff * this.kickX - damping * this.kickVX) * h;
+      this.kickVY += (-stiff * this.kickY - damping * this.kickVY) * h;
+      this.kickX = clamp(this.kickX + this.kickVX * h, -10, 10);
+      this.kickY = clamp(this.kickY + this.kickVY * h, -10, 10);
+    }
   }
 
   private placeCamera(w: World): void {
@@ -683,8 +713,9 @@ export class Renderer {
     const shake = this.reducedMotion ? 0 : w.shakeAmt;
     this.shakeX = shake ? (Math.random() - 0.5) * shake : 0;
     this.shakeY = shake ? (Math.random() - 0.5) * shake : 0;
-    const cx = this.camX + this.vw / 2 + this.shakeX;
-    const cy = this.camY + this.vh / 2 + this.shakeY;
+    this.springKick(w, dt);
+    const cx = this.camX + this.vw / 2 + this.shakeX + this.kickX;
+    const cy = this.camY + this.vh / 2 + this.shakeY + this.kickY;
 
     if (st?.ready) {
       st.look(cx / TILE, cy / TILE);
@@ -785,8 +816,10 @@ export class Renderer {
       for (const t of w.texts) {
         const a = clamp(1.6 - t.t / (t.big ? 0.75 : 0.55), 0, 1);
         const s = st.project(t.x, t.y, 18);
-        const pop = t.big && t.t < 0.12 ? 1.7 : 1;
-        const size = (t.big ? 17 : 13) * pop;
+        // (a blow that takes a big share of a foe, or finishes it, rises bigger, and pops as it comes: World.damageNumber)
+        const scale = t.scale ?? 1;
+        const pop = t.big && t.t < 0.12 ? 1.7 : scale > 1.15 && t.t < 0.1 ? 1.25 : 1;
+        const size = (t.big ? 17 : 13) * pop * scale;
         let y = s.y;
         if (call && t.text.length > 8 && /[a-z]{3}/i.test(t.text)) {
           g.font = `800 ${size}px "Bricolage Grotesque Variable", system-ui, sans-serif`;
@@ -806,6 +839,16 @@ export class Renderer {
     g.setTransform(this.k, 0, 0, this.k, 0, 0);
     const W = this.cssW;
     const H = this.cssH;
+    // struck: the screen's edge goes red with the blow, and fades (World.hurtPulse; POLISH_PLAN.md piece 5)
+    if (!p.dead && w.hurtPulse > 0) {
+      // (strong enough to be read over a bright field at a glance: at a third it was lost on the grass)
+      const a = w.hurtPulse * 0.5;
+      const grd = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.24, W / 2, H / 2, Math.hypot(W, H) * 0.52);
+      grd.addColorStop(0, 'rgba(160,0,24,0)');
+      grd.addColorStop(1, `rgba(190,10,30,${a})`);
+      g.fillStyle = grd;
+      g.fillRect(0, 0, W, H);
+    }
     // hurt vignette
     if (!p.dead && p.hp < p.maxHp * 0.3) {
       const a = 0.25 + Math.sin(time * 6) * 0.08;

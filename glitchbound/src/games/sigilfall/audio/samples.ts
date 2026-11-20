@@ -43,6 +43,13 @@ export const SAMPLES: Readonly<Record<string, SampleDef>> = {
   spear: { files: ['swing3'], gain: 0.38, rate: [1.15, 1.3] },
   windup: { files: ['whoosh3'], gain: 0.22, rate: [0.6, 0.7] },
   hit: { files: hits, gain: 0.34, rate: [0.92, 1.12] },
+  // what the blow meets, laid quietly under it (data/voices.ts hitSound): bone, flesh, a shell, stone, a slime, a shade
+  hitBone: { files: ['wood', 'beads'], gain: 0.2, rate: [1.25, 1.45] },
+  hitFlesh: { files: thuds, gain: 0.2, rate: [1.1, 1.3] },
+  hitShell: { files: ['bite1', 'bite2', 'bite3'], gain: 0.16, rate: [1.3, 1.5] },
+  hitHeavy: { files: ['rock1', 'rock2', 'rock3'], gain: 0.22, rate: [0.95, 1.1] },
+  hitSlime: { files: slimes, gain: 0.16, rate: [1.3, 1.5] },
+  hitGhost: { files: shades, gain: 0.16, rate: [1.4, 1.6] },
   crit: { files: ['metalhit1', 'metalhit2', 'metalhit3', 'metalhit4'], gain: 0.4, rate: [0.9, 1.05] },
   clash: { files: clashes, gain: 0.3, rate: [0.95, 1.15] },
   critBlade: { files: steel, gain: 0.42, rate: [0.9, 1.05] },
