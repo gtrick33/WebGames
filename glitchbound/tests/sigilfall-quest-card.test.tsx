@@ -11,6 +11,9 @@ vi.mock('../src/games/sigilfall/render/sprites', async (original) => ({
   skillIconUrl: () => '',
   talentIconUrl: () => '',
   itemIconUrl: () => '',
+  // (an item's picture is its model's, or its painted icon, once items are pictured from their models: neither can
+  // be made without a page)
+  itemPicture: () => ({ url: '', smooth: false }),
   heroDollUrl: () => '',
 }));
 vi.mock('../src/games/sigilfall/ui/uiIcons', () => ({ uiIcon: () => '' }));
