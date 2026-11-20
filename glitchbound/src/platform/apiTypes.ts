@@ -473,3 +473,158 @@ export interface AuditRow {
   ip: string;
   userAgent: string;
 }
+
+/* ------------------------------------------------------------------ Admin › Sigilfall: the Ring, the Campaign, the Vigil */
+
+/** A player's standing in one of the Ring's formats, as the admin sees it (this season's, as the player sees it). */
+export interface RingAdminStanding {
+  userId: string;
+  nickname: string;
+  email: string;
+  banned: boolean;
+  format: number;
+  rating: number;
+  mmr: number;
+  best: number;
+  wins: number;
+  losses: number;
+  streak: number;
+  season: number;
+  /** What is written, before the season's reset is applied to it (null: never played that format). */
+  stored: { rating: number; season: number } | null;
+  updatedAt: number;
+}
+
+/** A player's own numbers in a rated match, as their game reported them (arena/ranked.ts MatchStats). */
+export interface RingAdminStats {
+  cls: string;
+  secs: number;
+  dmg: number;
+  heal: number;
+  cc: number;
+  kicks: number;
+  combos: number;
+  supers: number;
+}
+
+export interface RingAdminMatch {
+  id: string;
+  format: number;
+  kind: 'bots' | 'people';
+  createdAt: number;
+  settledAt: number | null;
+  /** 't0' (the first side won), 't1', 'draw', 'void', or null while it is open. */
+  result: string | null;
+  note: string | null;
+  /** The computer's rating, against the computer. */
+  rival: number;
+  /** How long it ran, in seconds: by the players' own clocks (`measured`), else from its start to the first report. */
+  secs: number | null;
+  measured: boolean;
+  players: {
+    userId: string;
+    nickname: string;
+    team: 0 | 1;
+    party: boolean;
+    rating: number;
+    mmr: number;
+    report: string | null;
+    reportedAt: number | null;
+    change: number | null;
+    note: string | null;
+    stats: RingAdminStats | null;
+  }[];
+}
+
+export interface RingAdminOverview {
+  season: number;
+  seasonEnds: number;
+  /** Matches not settled yet. */
+  open: number;
+  formats: {
+    format: number;
+    players: number;
+    active7d: number;
+    avgRating: number;
+    topRating: number;
+    matches: number;
+    matches24h: number;
+    matches7d: number;
+    vsPeople: number;
+    /** Reports with the player's numbers in them, the last 30 days, and their averages. */
+    withStats: number;
+    avgSecs: number;
+    avgDmg: number;
+    avgHeal: number;
+  }[];
+  /** Every match by how it ended ('t0', 't1', 'draw', 'void', 'open'), and by why it counted less. */
+  results: Record<string, number>;
+  notes: Record<string, number>;
+  /** Each class in each format, the last 30 days of reports with numbers. */
+  classes: { format: number; cls: string; played: number; wins: number; decided: number; avgDmg: number; avgHeal: number; avgSecs: number }[];
+}
+
+export interface RingAdminPlayer {
+  userId: string;
+  nickname: string;
+  standings: RingAdminStanding[];
+  matches: RingAdminMatch[];
+  total: number;
+}
+
+/** A row on one of Sigilfall's boards, as the admin sees it. */
+export interface BoardAdminRow {
+  userId: string;
+  nickname: string;
+  email: string;
+  banned: boolean;
+  rank: number;
+  score: number;
+  at: number;
+  /** Kept off this board by an admin. */
+  held: boolean;
+  reason?: string;
+  by?: string;
+}
+
+export interface BoardSummary {
+  board: string;
+  players: number;
+  top: number;
+  avg: number;
+}
+
+export interface CampaignAdminOverview {
+  players: number;
+  playedToday: number;
+  heroes: number;
+  /** Heroes jumped ahead with a review preset (they send no scores). */
+  reviewHeroes: number;
+  hoursPlayed: number;
+  avgMinutes: number;
+  avgLevel: number;
+  maxed: number;
+  topParagon: number;
+  kills: number;
+  deaths: number;
+  stoneHeroes: number;
+  topStone: number;
+  avgStone: number;
+  levels: { from: number; to: number; heroes: number }[];
+  tiers: { tier: number; heroes: number }[];
+  /** Where heroes stand now ('' for heroes who haven't travelled yet). */
+  lands: { land: string; heroes: number; avgLevel: number }[];
+  quests: { id: string; done: number; active: number }[];
+  bosses: { id: string; kills: number; heroes: number }[];
+  /** The Rift Trials: each calling's highest stone across players. */
+  trials: { cls: string; players: number; top: number; avg: number }[];
+  boards: BoardSummary[];
+}
+
+export interface VigilAdminOverview {
+  players: number;
+  active7d: number;
+  /** Each land's longest nights, in seconds. */
+  lands: { land: string; players: number; top: number; avg: number; tenMinutes: number; active7d: number }[];
+  boards: BoardSummary[];
+}

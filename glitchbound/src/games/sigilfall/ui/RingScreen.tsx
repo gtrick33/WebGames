@@ -5,7 +5,7 @@ import { fullTalents } from '../arena/talents';
 import { afterMatch, clearLive, COMPS, drawOpponents, LEAVER_K, mateSkill, mmrOf, namedApart, nameFor, readLive, readRing, rivalFor, setsOf, skillAt, stakesOf, standingOf, writeLive, writeRing, type ClassSets, type Comp, type LiveMatch, type RingSave, barredFrom, BARRED_WHY, styleFor } from '../arena/ladder';
 import { MAP_IDS, MAPS } from '../arena/maps';
 import { bestRating, FORMATS, rankOf, seasonOf, type Format, type Standing } from '../arena/ranks';
-import { NOTE_WORDS, partyRating, peopleMatchId, type Report } from '../arena/ranked';
+import { NOTE_WORDS, partyRating, peopleMatchId, type MatchStats, type Report } from '../arena/ranked';
 import { rankedApi, rankedStanding, readRanked, reportAndSettle, sendReport, writeRanked, type RankedCopy, type ShownStanding } from '../net/ranked';
 import { friendsApi } from '../../../platform/friends';
 import { InviteDialog, PlayLayer, type Ladder, type PartyShown } from './RingPlay';
@@ -60,6 +60,14 @@ export function waitForFriend(asked: Record<string, number>, warned: { current: 
   warned.current = 0;
   return false;
 }
+/** The player's numbers in a match that ended, sent with its ranked report for the admin to see (arena/ranked.ts MatchStats). */
+function matchStats(r: MatchResult): MatchStats | undefined {
+  const me = r.match.fighters[r.myId];
+  if (!me) return undefined;
+  const sc = me.score;
+  return { cls: me.cls, secs: Math.round(r.match.clock), dmg: Math.round(sc.dmg), heal: Math.round(sc.heal), cc: Math.round(sc.cc), kicks: sc.kicks, combos: sc.combos ?? 0, supers: sc.supers ?? 0 };
+}
+
 /** One of the arenas, at random. */
 const anyMap = (): string => MAP_IDS[Math.floor(Math.random() * MAP_IDS.length)]!;
 
@@ -497,12 +505,12 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
    * against people waits for everyone's), what it did, handed to `done`. Still waiting after a while: `pending`, and the
    * ladder settles it without them (it is asked again as the Ring next opens).
    */
-  const settleRanked = (ticket: string, report: Report, f: Format, done: (o: RatingOutcome) => void): void => {
+  const settleRanked = (ticket: string, report: Report, f: Format, done: (o: RatingOutcome) => void, stats?: MatchStats): void => {
     clearLive();
     const wasBest = bestRating();
     const was = standingIn(f);
     const waiting: RatingOutcome = { before: was.rating, after: was.rating, bestBefore: was.best, bestAfter: was.best, rankUp: null, streak: was.streak, pending: true };
-    reportAndSettle(ticket, report).then(
+    reportAndSettle(ticket, report, undefined, undefined, stats).then(
       (got) => {
         if (!('settled' in got)) return done(waiting);
         putRanked(got.standing.season, { [f]: got.standing });
@@ -968,11 +976,17 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
     setResult({ r, rating: { before: was.rating, after: was.rating, bestBefore: was.best, bestAfter: was.best, rankUp: null, streak: was.streak, pending: true }, rival, kind, track: null, party });
     setFight(null);
     setRoomFight(null);
-    settleRanked(ticket, r.draw ? 'draw' : r.won ? 'won' : 'lost', f, (rating) => {
-      if (rating.rankUp) engine.sound.play('ring-levelup');
-      const track = keepMatch(r, f, rating.pending ? null : rating, rival);
-      setResult((now) => (now && now.r === r ? { ...now, rating, track } : now));
-    });
+    settleRanked(
+      ticket,
+      r.draw ? 'draw' : r.won ? 'won' : 'lost',
+      f,
+      (rating) => {
+        if (rating.rankUp) engine.sound.play('ring-levelup');
+        const track = keepMatch(r, f, rating.pending ? null : rating, rival);
+        setResult((now) => (now && now.r === r ? { ...now, rating, track } : now));
+      },
+      matchStats(r),
+    );
   };
 
   useEffect(() => {

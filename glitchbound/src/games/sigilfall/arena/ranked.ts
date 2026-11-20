@@ -59,7 +59,7 @@ export const repeatFactor = (n: number): number => (n < 2 ? 1 : n < 4 ? 0.5 : 0)
 export const WIN_CAP = 40;
 
 /** Why a match counted less than in full, or not at all. */
-export type Note = 'repeat' | 'friends' | 'network' | 'dupe' | 'ceiling' | 'disputed' | 'short' | 'guest' | 'offline';
+export type Note = 'repeat' | 'friends' | 'network' | 'dupe' | 'ceiling' | 'disputed' | 'short' | 'guest' | 'offline' | 'admin';
 
 /** What each note tells the player, on the result screen and before the match. */
 export const NOTE_WORDS: Record<Note, string> = {
@@ -72,7 +72,40 @@ export const NOTE_WORDS: Record<Note, string> = {
   short: 'That match ended too quickly to count.',
   guest: 'Sign in to play ranked. Until then your rating is a practice rating, kept on this device.',
   offline: 'Ranked couldn’t be reached, so this match doesn’t count for rating.',
+  admin: 'A game master took this match back. Its rating was returned.',
 };
+
+/**
+ * What a player's own game says of a rated match it played, sent with its report: the class they played, how long
+ * the match ran, and their numbers. Only admins see it (Admin › Sigilfall › The Ring): it never decides a match.
+ */
+export interface MatchStats {
+  cls: string;
+  /** How long the match ran, by its own clock, in seconds. */
+  secs: number;
+  dmg: number;
+  heal: number;
+  cc: number;
+  kicks: number;
+  combos: number;
+  supers: number;
+}
+
+const STAT_MAX: Record<Exclude<keyof MatchStats, 'cls'>, number> = { secs: 3600, dmg: 10_000_000, heal: 10_000_000, cc: 100_000, kicks: 10_000, combos: 10_000, supers: 10_000 };
+
+/** A report's stats as the server keeps them: whole numbers in range, or null for anything else. */
+export function statsOf(raw: unknown): MatchStats | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = raw as Record<string, unknown>;
+  const cls = typeof o.cls === 'string' && /^[a-z]{2,16}$/.test(o.cls) ? o.cls : '';
+  if (!cls) return null;
+  const out = { cls } as MatchStats;
+  for (const [k, max] of Object.entries(STAT_MAX) as [Exclude<keyof MatchStats, 'cls'>, number][]) {
+    const n = o[k];
+    out[k] = typeof n === 'number' && Number.isFinite(n) ? Math.min(max, Math.max(0, Math.round(n))) : 0;
+  }
+  return out;
+}
 
 /** A standing as the server keeps it: in a season, with its matchmaking rating always written down. */
 export interface RankedStanding extends Standing {

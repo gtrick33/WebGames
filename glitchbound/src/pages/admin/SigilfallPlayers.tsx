@@ -5,6 +5,7 @@ import { CLASSES, MAX_LEVEL, xpToNext } from '../../games/sigilfall/data/classes
 import { ITEMS } from '../../games/sigilfall/data/items';
 import { MOUNT_DEFS } from '../../games/sigilfall/data/mounts';
 import { GAME_VERSION } from '../../games/sigilfall/data/version';
+import type { MatchEntry } from '../../games/sigilfall/arena/record';
 import { QUEST_DEFS } from '../../games/sigilfall/data/quests';
 import { REGIONS } from '../../games/sigilfall/data/regions';
 import { SKILLS } from '../../games/sigilfall/data/skills';
@@ -17,6 +18,7 @@ import { validateCharacter } from '../../games/sigilfall/progress/save';
 import { api, ApiError } from '../../platform/account';
 import type { GmOrderView, GmOverview, GmPlayerDetail, GmPlayerRow } from '../../platform/apiTypes';
 import { Link, navigate, useLocation } from '../../router/router';
+import { CampaignAdmin, ModeTabs, PlayerBoards, PlayerRing, RingAdmin, VigilAdmin, viewOf } from './SigilfallModes';
 import { TitleGiver } from './SigilTitles';
 import './SigilfallPlayers.css';
 
@@ -47,8 +49,17 @@ const TIERS = ['Normal', 'Heroic', 'Mythic'];
 /** The section's two pages, by address, so a player's page can be linked and reloaded. */
 export function SigilfallPlayers() {
   const { search } = useLocation();
-  const player = new URLSearchParams(search).get('player');
-  return player ? <PlayerPage key={player} id={player} /> : <PlayerList />;
+  const params = new URLSearchParams(search);
+  const player = params.get('player');
+  if (player) return <PlayerPage key={player} id={player} />;
+  // (the section's pages: Players, and the Campaign, the Ring and the Vigil across every player, SigilfallModes.tsx)
+  const view = viewOf(params.get('view'));
+  return (
+    <>
+      <ModeTabs current={view} />
+      {view === 'campaign' ? <CampaignAdmin /> : view === 'ring' ? <RingAdmin /> : view === 'vigil' ? <VigilAdmin /> : <PlayerList />}
+    </>
+  );
 }
 
 /* ------------------------------------------------------------------ everyone */
@@ -344,6 +355,8 @@ function PlayerPage({ id }: { id: string }) {
       )}
 
       {hero && <HeroSheet key={`${hero.created}-${data.savedAt}`} hero={hero} data={data} order={order} />}
+      <PlayerRing userId={data.id} />
+      <PlayerBoards userId={data.id} nickname={data.nickname} />
       <Orders orders={data.orders} send={send} />
       <Graves graves={data.graves} send={send} />
     </div>
@@ -650,7 +663,8 @@ function Dungeons({ hero: h }: { hero: Character }) {
 }
 
 function Collection({ hero: h, data }: { hero: Character; data: GmPlayerDetail }) {
-  const ring = (data.ring as { standings?: Record<string, { rating?: number; best?: number; wins?: number; losses?: number }> } | null)?.standings ?? {};
+  const raw = (data.ring as { record?: { history?: unknown } } | null)?.record?.history;
+  const history = (Array.isArray(raw) ? raw : []).filter((m): m is MatchEntry => !!m && typeof m === 'object' && typeof (m as MatchEntry).at === 'number').slice(0, 20);
   const vigil = (data.vigil ?? {}) as Record<string, number>;
   return (
     <section className="panel info-block" aria-labelledby="gm-world">
@@ -688,17 +702,44 @@ function Collection({ hero: h, data }: { hero: Character; data: GmPlayerDetail }
         </ul>
       )}
       <p className="info-small">{h.looks.length} looks in the Wardrobe.</p>
-      <h3 className="admin-h3">The Ring</h3>
-      {Object.keys(ring).length === 0 ? (
-        <p className="info-small">No matches saved.</p>
+      <h3 className="admin-h3">The Ring on their device · last {history.length} matches</h3>
+      {history.length === 0 ? (
+        <p className="info-small">No matches saved. Their ranked standing and rated matches are in The Ring below.</p>
       ) : (
-        <ul className="gm-chips">
-          {Object.entries(ring).map(([f, s]) => (
-            <li key={f} className="gm-chip">
-              {f}: {s.rating ?? 0} (best {s.best ?? 0}) {s.wins ?? 0}–{s.losses ?? 0}
-            </li>
-          ))}
-        </ul>
+        <div className="gm-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Format</th>
+                <th>Class</th>
+                <th>Result</th>
+                <th>Rating</th>
+                <th>Damage</th>
+                <th>Healing</th>
+                <th>Combos</th>
+                <th>Interrupts</th>
+                <th>Against</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.map((m, i) => (
+                <tr key={`${m.at}-${i}`}>
+                  <td><span className="info-small">{when(m.at)}</span></td>
+                  <td>{m.format}v{m.format}</td>
+                  <td>{classOf(m.cls)}</td>
+                  <td>{m.draw ? 'draw' : m.won ? 'won' : 'lost'}</td>
+                  <td>{m.change === null ? 'friendly' : `${m.change > 0 ? '+' : ''}${m.change} → ${m.rating ?? '?'}`}</td>
+                  <td>{Math.round(m.dmg).toLocaleString('en-US')}</td>
+                  <td>{Math.round(m.heal).toLocaleString('en-US')}</td>
+                  <td>{m.combos}</td>
+                  <td>{m.kicks}</td>
+                  <td><span className="info-small">{m.rival ?? ''}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
       <h3 className="admin-h3">The Vigil</h3>
       {Object.keys(vigil).length === 0 ? (

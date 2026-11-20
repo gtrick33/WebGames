@@ -88,13 +88,15 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   const body = await readJson(request);
   const list = Array.isArray(body?.entries) ? (body.entries as unknown[]).slice(0, 40) : [];
   const now = Date.now();
+  // (a board an admin keeps this player off: what their device sends for it is left out, Admin › Sigilfall)
+  const held = list.length ? new Set((await env.DB.prepare('SELECT board FROM sigilfall_rank_holds WHERE user_id = ?').bind(user.id).all<{ board: string }>()).results.map((r) => r.board)) : new Set<string>();
   const writes = [];
   for (const e of list) {
     const o = e && typeof e === 'object' ? (e as { board?: unknown; score?: unknown }) : {};
     const b = boardOf(o.board);
     if (!b || typeof o.score !== 'number' || !Number.isFinite(o.score)) continue;
     // (the Ring's boards are the server's ladder's own: server/ring.ts writes them as matches are settled)
-    if (b.board === 'ring' || b.board.startsWith('ring:')) continue;
+    if (b.board === 'ring' || b.board.startsWith('ring:') || held.has(b.board)) continue;
     const score = Math.floor(o.score);
     if (score <= 0 || score > b.max) continue;
     writes.push(

@@ -1,7 +1,7 @@
 import { bad, json, readJson, sameOrigin, type Ctx } from '../../../server/http';
 import { matchFor, openBotMatch, openPeopleMatch, readStandings, reportMatch, roomRoster, settleDue } from '../../../server/ring';
 import { currentUser, requireUser } from '../../../server/session';
-import { isFormat, isReport, MATCH_ID, shownStanding } from '../../../src/games/sigilfall/arena/ranked';
+import { isFormat, isReport, MATCH_ID, shownStanding, statsOf } from '../../../src/games/sigilfall/arena/ranked';
 import { FORMATS, seasonOf } from '../../../src/games/sigilfall/arena/ranks';
 
 /**
@@ -12,7 +12,8 @@ import { FORMATS, seasonOf } from '../../../src/games/sigilfall/arena/ranks';
  *                                                 match of yours as it stands.
  * POST /api/sigilfall/ring { action: 'bots', format }                  a ticket for a match against the computer.
  * POST /api/sigilfall/ring { action: 'people', code, run }             what a match found by a ranked search stands for you.
- * POST /api/sigilfall/ring { action: 'report', match, report }         your report of a match: won, lost, draw, left, void.
+ * POST /api/sigilfall/ring { action: 'report', match, report[, stats] } your report of a match: won, lost, draw, left, void
+ *                                                 (and your numbers in it, which only admins see: arena/ranked.ts MatchStats).
  */
 export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
   const user = await currentUser(env, request);
@@ -30,7 +31,7 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   if (!sameOrigin(request)) return bad('bad_origin', 403);
   const user = await requireUser(env, request);
   if (user instanceof Response) return user;
-  const body = await readJson(request, 1024);
+  const body = await readJson(request, 2048);
   const now = Date.now();
   switch (body?.action) {
     case 'bots': {
@@ -47,7 +48,7 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
     case 'report': {
       const id = typeof body.match === 'string' ? body.match : '';
       if (!MATCH_ID.test(id) || !isReport(body.report)) return bad('bad_request');
-      const out = await reportMatch(env, user.id, id, body.report, now, roomRoster(env));
+      const out = await reportMatch(env, user.id, id, body.report, now, roomRoster(env), statsOf(body.stats));
       return 'error' in out ? bad(out.error, 409) : json(out);
     }
     default:

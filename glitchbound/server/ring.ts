@@ -1,6 +1,6 @@
 import type { D1PreparedStatement, Env } from './http';
 import { roomStub, validCode } from './rooms';
-import { botRival, factorOf, isFormat, leaversOf, MATCH_MAX_MS, MIN_BOT_WIN_MS, moveStanding, outcomeOf, peopleMatchId, REPEAT_MS, seasonal, SETTLE_MS, shownStanding, stakesFor, teamRating, TICKET_MS, verdictOf, VOID_MS, type Fairness, type Note, type Outcome, type RankedStanding, type Report, type Seat } from '../src/games/sigilfall/arena/ranked';
+import { botRival, factorOf, isFormat, leaversOf, MATCH_MAX_MS, MIN_BOT_WIN_MS, moveStanding, outcomeOf, peopleMatchId, REPEAT_MS, seasonal, SETTLE_MS, shownStanding, stakesFor, teamRating, TICKET_MS, verdictOf, VOID_MS, type Fairness, type MatchStats, type Note, type Outcome, type RankedStanding, type Report, type Seat } from '../src/games/sigilfall/arena/ranked';
 import { FORMATS, seasonOf, type Format, type Standing } from '../src/games/sigilfall/arena/ranks';
 import { LEAVER_K } from '../src/games/sigilfall/arena/live';
 
@@ -46,9 +46,9 @@ export const roomRoster =
     return res?.ok ? ((await res.json()) as RingRoster) : null;
   };
 
-const PART: Record<Format, string> = { 1: 'solo', 2: 'duo', 3: 'trio' };
+export const PART: Record<Format, string> = { 1: 'solo', 2: 'duo', 3: 'trio' };
 
-interface StandingRow {
+export interface StandingRow {
   format: number;
   season: number;
   rating: number;
@@ -59,7 +59,7 @@ interface StandingRow {
   streak: number;
 }
 
-const fromRow = (r: StandingRow): RankedStanding => ({ rating: r.rating, mmr: r.mmr, best: r.best, wins: r.wins, losses: r.losses, streak: r.streak, season: r.season });
+export const fromRow = (r: StandingRow): RankedStanding => ({ rating: r.rating, mmr: r.mmr, best: r.best, wins: r.wins, losses: r.losses, streak: r.streak, season: r.season });
 
 /** A player's standing in each format, in this season. */
 export async function readStandings(env: Env, user: string, now: number): Promise<Record<Format, RankedStanding>> {
@@ -359,7 +359,7 @@ export async function openPeopleMatch(env: Env, user: string, code: string, run:
  * a match against people once everyone has reported, or it has waited long enough (then `pending`, and the game asks
  * again in a moment).
  */
-export async function reportMatch(env: Env, user: string, id: string, report: Report, now: number, roster: RosterOf): Promise<Settled | { pending: true } | { error: string }> {
+export async function reportMatch(env: Env, user: string, id: string, report: Report, now: number, roster: RosterOf, stats: MatchStats | null = null): Promise<Settled | { pending: true } | { error: string }> {
   let rows = await matchRows(env, id);
   if (!rows && id.startsWith('r-')) {
     // (a player whose game never asked what the match stood for: it is made now, from the room's roster)
@@ -369,6 +369,8 @@ export async function reportMatch(env: Env, user: string, id: string, report: Re
   }
   const me = rows?.players.find((p) => p.user_id === user);
   if (!rows || !me) return { error: 'not_in_match' };
+  // (their numbers, for the admin alone: kept once, whether or not the match is still open)
+  if (stats) await env.DB.prepare('UPDATE ring_match_players SET stats = ? WHERE match_id = ? AND user_id = ? AND stats IS NULL').bind(JSON.stringify(stats), id, user).run();
   if (rows.m.settled_at !== null) return (await settledFor(env, id, user, now)) ?? { error: 'not_in_match' };
   if (rows.m.kind === 'bots') return (await settleTicket(env, rows.m, me, report, now)) ?? (await settledFor(env, id, user, now)) ?? { pending: true };
   if (me.report === null) await env.DB.prepare('UPDATE ring_match_players SET report = ?, reported_at = ? WHERE match_id = ? AND user_id = ? AND report IS NULL').bind(report, now, id, user).run();
