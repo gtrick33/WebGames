@@ -43,8 +43,13 @@ function goTo(w: World, place: string): void {
   w.player.x = at.x;
   w.player.y = at.y + 8;
 }
-function smite(w: World, keep: string[] = []): void {
-  for (const e of w.enemies) if (!e.dead && e.state !== 'spawn' && !keep.includes(e.def.id)) hitEnemy(w, e, 1e7, 'physical', { depth: 0 });
+/** Strikes down every foe of the land but those kept; or, `fighting`, only what fights the hero (as a player would). */
+function smite(w: World, keep: string[] = [], fighting = false): void {
+  for (const e of w.enemies) {
+    if (e.dead || e.state === 'spawn' || keep.includes(e.def.id)) continue;
+    if (fighting && !e.aggro && Math.hypot(e.x - w.player.x, e.y - w.player.y) >= 100) continue;
+    hitEnemy(w, e, 1e7, 'physical', { depth: 0 });
+  }
 }
 
 describe('Sigilfall: the broken alliance (Act III)', () => {
@@ -121,10 +126,12 @@ describe('Sigilfall: the broken alliance (Act III)', () => {
     const w = newWorld('shattered-vale', heroAt('the-heralds-ambush'));
     goTo(w, 'tear-top');
     run(w, 0.3);
+    // (only what fights the hero falls, as in play: a pack far off in the land comes back on its own clock, and a blow
+    // on it would break the calm the scene waits for)
     for (let i = 0; i < 140 && questState(w.hero, 'the-heralds-ambush') === 'active'; i++) {
       run(w, 1);
       w.player.hp = w.player.maxHp;
-      smite(w, ['the-pale-herald', 'the-tearborn']);
+      smite(w, ['the-pale-herald', 'the-tearborn'], true);
     }
     expect(questState(w.hero, 'the-heralds-ambush')).toBe('done');
     // (what the ambush left standing falls; the hero waits, and the scene comes, with nothing out of the Tear on them)
@@ -133,7 +140,7 @@ describe('Sigilfall: the broken alliance (Act III)', () => {
     for (let i = 0; i < 30 && !played; i++) {
       run(w, 0.5);
       w.player.hp = w.player.maxHp;
-      smite(w, ['the-tearborn']);
+      smite(w, ['the-tearborn'], true);
       if (w.enemies.some((e) => e.def.id === 'the-tearborn' && !e.dead)) tearborn = true;
       played = w.scene?.def.id === 'vale-elyra-taken';
     }
