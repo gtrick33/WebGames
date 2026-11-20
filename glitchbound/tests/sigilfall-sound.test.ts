@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ambienceOf } from '../src/games/sigilfall/audio/ambience';
-import { AMBIENCE_FILES, SAMPLES, sampleFiles } from '../src/games/sigilfall/audio/samples';
+import { AMBIENCE_FILES, firstFiles, laterFiles, SAMPLES, sampleFiles } from '../src/games/sigilfall/audio/samples';
 import { SFX } from '../src/games/sigilfall/audio/sound';
 import { SONGS } from '../src/games/sigilfall/audio/songs';
 import { SEAM, TRACKS } from '../src/games/sigilfall/audio/tracks';
@@ -33,9 +33,12 @@ describe('Sigilfall: its sounds', () => {
   it('the recordings are small', () => {
     const total = readdirSync(AUDIO).reduce((a, f) => a + statSync(join(AUDIO, f)).size, 0);
     expect(total).toBeLessThan(3 * 1024 * 1024);
-    // (what a fight needs comes in first and is a small part of it: the air of a place is fetched when wanted)
-    const fight = sampleFiles().reduce((a, f) => a + statSync(join(AUDIO, `${f}.mp3`)).size, 0);
-    expect(fight).toBeLessThan(1.3 * 1024 * 1024);
+    // (what a fight needs comes in first and is a small part of it: the air of a place is fetched when wanted, and the
+    // footsteps once the fight's sounds are in, SampleDef.later)
+    const size = (files: string[]): number => files.reduce((a, f) => a + statSync(join(AUDIO, `${f}.mp3`)).size, 0);
+    expect(size(firstFiles())).toBeLessThan(1.3 * 1024 * 1024);
+    expect(size(laterFiles())).toBeLessThan(0.25 * 1024 * 1024);
+    expect([...firstFiles(), ...laterFiles()].sort()).toEqual(sampleFiles().sort());
   });
 
   it('a sound is a recording or, for the very few with none, synthesized: never a beep standing in for a recording', () => {

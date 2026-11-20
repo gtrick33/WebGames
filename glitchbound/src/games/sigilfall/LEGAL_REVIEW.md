@@ -3,6 +3,11 @@
 First pass 2026-10-27, fixes the same day. A working record of licenses, names and borrowed material, for the
 owner (and a lawyer, if one is asked). It is **not legal advice** and not a trademark clearance.
 
+## Sounds added for the small-AAA pass (2026-11-19)
+
+Footsteps from Kenney's **Impact Sounds** (CC0, kenney.nl, downloaded from the pack's own page). CC0 asks nothing, and
+the files ship only inside the game, as built MP3s; the pack stays in the ignored `assets/sigilfall/cc0/`.
+
 ## Icons changed (2026-11-03)
 
 The owner replaced the game-icons.net silhouettes with **Nasha's Lumenfall: Skill & Spell Icons Vol. 1**, bought on

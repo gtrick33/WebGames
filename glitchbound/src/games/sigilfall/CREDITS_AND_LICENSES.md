@@ -37,6 +37,7 @@ source and the license, and say the work was changed.
 | Fantasy Sound Effects (Tinysized SFX); Fantasy Weapons and Apparel SFX Library | Vehicle, https://opengameart.org/users/vehicle | CC0 | Steel on steel, lightning, whooshes; arrows |
 | 10 Impact / Shield Blocks | StarNinjas, https://opengameart.org/users/starninjas | CC0 | A shield taking a blow |
 | Interface Sounds | Kenney, https://kenney.nl | CC0 | The menus: clicks, panels opening and closing, a choice made, a refusal |
+| Impact Sounds (2026-11-19) | Kenney, https://kenney.nl/assets/impact-sounds | CC0 | Footsteps on grass, stone, planks and snow (sand is the snow's, pitched up): `step-*`, built from `assets/sigilfall/cc0/` by `scripts/sigilfall-sounds.mjs --only step-` |
 | The Ring's sound effects (`ring-*`) | GlitchBound, made for the game by scripts/sigilfall-ring-sounds.mjs | The game's own | Every effect in a Ring match: blows, spells, falls, the win and the loss, a new rank |
 | Cure Magic | Someoneman, https://opengameart.org/users/someoneman | CC0 | Healing |
 | Teleport Spell | Ogrebane, https://opengameart.org/users/ogrebane | CC0 | A blink |

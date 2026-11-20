@@ -10,6 +10,11 @@
  *   impacts, Kenney's interface sounds, a few single CC0 sounds, and the Fantasy Sound Effects Library by Little Robot
  *   Sound Factory (CC BY 3.0).
  * - ~/Downloads/sigilfall-audio/music (or SIGILFALL_MUSIC): the soundtrack, by Kevin MacLeod (incompetech.com), CC BY 4.0.
+ * - assets/sigilfall/cc0 (or SIGILFALL_CC0; paths below that start with '%/'): the CC0 packs added for the small-AAA
+ *   pass (POLISH_PLAN.md), each in a folder of its own: Kenney's Impact Sounds and RPG Audio (kenney.nl).
+ *
+ * `--only <prefix>` builds just the sounds whose names start with it, into the folder as it is (nothing else is touched,
+ * so a machine with only some of the packs can still add a sound): `node scripts/sigilfall-sounds.mjs --only step`.
  *
  * Each sound comes out mono and small (MP3, which every browser can decode), starting right on its first
  * moment, cut to length where it needs to be, and no louder on average than the rest, so a table of gains
@@ -24,6 +29,9 @@ import { join } from 'node:path';
 const PACK = process.env.SIGILFALL_SOUNDS ?? join(homedir(), 'Downloads/rpg_sound_pack/RPG Sound Pack');
 const MORE = process.env.SIGILFALL_SOUNDS_MORE ?? join(homedir(), 'Downloads/sigilfall-audio/packs');
 const MUSIC = process.env.SIGILFALL_MUSIC ?? join(homedir(), 'Downloads/sigilfall-audio/music');
+const CC0 = process.env.SIGILFALL_CC0 ?? 'assets/sigilfall/cc0';
+/** Just the sounds whose names start with this (`--only <prefix>`), into the folder as it is. */
+const ONLY = process.argv.includes('--only') ? process.argv[process.argv.indexOf('--only') + 1] : null;
 const OUT = 'public/games/sigilfall/audio';
 const MUSIC_OUT = 'public/games/sigilfall/music';
 /** How loud a piece of music is overall (LUFS), and the longest one runs (seconds). */
@@ -35,7 +43,10 @@ const FFMPEG = process.env.FFMPEG ?? '/opt/homebrew/bin/ffmpeg';
 /** How loud a sound is on average, at most (dB). */
 const TARGET = -20;
 
-/** What ships: its name, the file it comes from, and how it is cut (`to`: seconds kept) or lifted (`boost`: dB). */
+/**
+ * What ships: its name, the file it comes from, and how it is cut (`to`: seconds kept) or lifted (`boost`: dB); `kbps` and
+ * `ar` make a small one smaller (a footstep needs no more than 40 kbps).
+ */
 const FILES = {
   // the blade
   swing1: ['battle/swing.wav'],
@@ -193,6 +204,23 @@ const FILES = {
   'ui-pluck': ['@/kenney_interfaceSounds/Audio/pluck_001.ogg'],
   'ui-bong': ['@/kenney_interfaceSounds/Audio/bong_001.ogg'],
   'ui-tick': ['@/kenney_interfaceSounds/Audio/tick_001.ogg'],
+  // footsteps, by the ground underfoot (src/games/sigilfall/audio/steps.ts): grass and earth, stone, planks, snow, sand
+  'step-grass1': ['%/kenney-impact-sounds/Audio/footstep_grass_000.ogg', { kbps: 40 }],
+  'step-grass2': ['%/kenney-impact-sounds/Audio/footstep_grass_001.ogg', { kbps: 40 }],
+  'step-grass3': ['%/kenney-impact-sounds/Audio/footstep_grass_002.ogg', { kbps: 40 }],
+  'step-grass4': ['%/kenney-impact-sounds/Audio/footstep_grass_003.ogg', { kbps: 40 }],
+  'step-stone1': ['%/kenney-impact-sounds/Audio/footstep_concrete_000.ogg', { kbps: 40 }],
+  'step-stone2': ['%/kenney-impact-sounds/Audio/footstep_concrete_001.ogg', { kbps: 40 }],
+  'step-stone3': ['%/kenney-impact-sounds/Audio/footstep_concrete_002.ogg', { kbps: 40 }],
+  'step-stone4': ['%/kenney-impact-sounds/Audio/footstep_concrete_003.ogg', { kbps: 40 }],
+  'step-wood1': ['%/kenney-impact-sounds/Audio/footstep_wood_000.ogg', { kbps: 40 }],
+  'step-wood2': ['%/kenney-impact-sounds/Audio/footstep_wood_001.ogg', { kbps: 40 }],
+  'step-wood3': ['%/kenney-impact-sounds/Audio/footstep_wood_002.ogg', { kbps: 40 }],
+  'step-wood4': ['%/kenney-impact-sounds/Audio/footstep_wood_003.ogg', { kbps: 40 }],
+  'step-snow1': ['%/kenney-impact-sounds/Audio/footstep_snow_000.ogg', { kbps: 40 }],
+  'step-snow2': ['%/kenney-impact-sounds/Audio/footstep_snow_001.ogg', { kbps: 40 }],
+  'step-snow3': ['%/kenney-impact-sounds/Audio/footstep_snow_002.ogg', { kbps: 40 }],
+  'step-snow4': ['%/kenney-impact-sounds/Audio/footstep_snow_003.ogg', { kbps: 40 }],
 };
 
 /** The air of a place, looping quietly under everything (src/games/sigilfall/audio/ambience.ts says where). */
@@ -258,15 +286,16 @@ export const ringOut = (to, ring) => [
   `atrim=end=${(to + ring - 0.1).toFixed(2)}`,
 ];
 
-/** Where a sound comes from: the first pack, or ('@/') the folder of the others. */
-const from = (file) => (file.startsWith('@/') ? join(MORE, file.slice(2)) : join(PACK, file));
+/** Where a sound comes from: the first pack, ('@/') the folder of the others, or ('%/') the CC0 packs' folder. */
+const from = (file) => (file.startsWith('@/') ? join(MORE, file.slice(2)) : file.startsWith('%/') ? join(CC0, file.slice(2)) : join(PACK, file));
 
-rmSync(OUT, { recursive: true, force: true });
+if (!ONLY) rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
 let total = 0;
 for (const [name, [file, o = {}]] of Object.entries(FILES)) {
+  if (ONLY && !name.startsWith(ONLY)) continue;
   const src = from(file);
-  const chain = ['aformat=channel_layouts=mono', 'aresample=44100', 'silenceremove=start_periods=1:start_threshold=-50dB'];
+  const chain = ['aformat=channel_layouts=mono', `aresample=${o.ar ?? 44100}`, 'silenceremove=start_periods=1:start_threshold=-50dB'];
   if (o.to && o.ring) chain.push(...ringOut(o.to, o.ring));
   else if (o.to) chain.push(`atrim=end=${o.to}`, `afade=t=out:st=${o.to - 0.06}:d=0.06`);
   if (o.boost) chain.push(`volume=${o.boost}dB`, 'alimiter=limit=0.9');
@@ -274,10 +303,12 @@ for (const [name, [file, o = {}]] of Object.entries(FILES)) {
   // only ever down, toward the rest: nothing clips
   const gain = Math.min(TARGET - mean, -0.5 - peak, 0);
   const to = join(OUT, `${name}.mp3`);
-  ffmpeg(['-y', '-loglevel', 'error', '-i', src, '-af', [...chain, `volume=${gain.toFixed(2)}dB`].join(','), '-codec:a', 'libmp3lame', '-b:a', '64k', '-map_metadata', '-1', to]);
+  ffmpeg(['-y', '-loglevel', 'error', '-i', src, '-af', [...chain, `volume=${gain.toFixed(2)}dB`].join(','), '-codec:a', 'libmp3lame', '-b:a', `${o.kbps ?? 64}k`, '-map_metadata', '-1', to]);
   total++;
 }
 console.log(`${total} sounds in ${OUT}`);
+// (just the sounds asked for: the air and the music stay as they are)
+if (ONLY) process.exit(0);
 
 // the air of places: a loop each, quiet, with its ends eased so the seam is not heard
 for (const [name, file] of Object.entries(AMBIENCES)) {
