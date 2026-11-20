@@ -1014,6 +1014,11 @@ export class SigilEngine {
       // a Trial's hero is not kept: only how high the calling's stone has been taken
       this.save.rift = { ...this.save.rift, [this.trial]: Math.max(trialStone(this.save, this.trial), this.hero.keystone) };
     } else if (this.hero) {
+      // how far into a dungeon they have come, kept with where they are (Character.at: a reload takes it up again)
+      const w = this.world;
+      const at = this.hero.at;
+      const mark = w && at && at.region === w.region.id ? w.dungeonMark() : null;
+      if (at && mark) this.hero.at = { region: at.region, ...(at.tier ? { tier: at.tier } : {}), ...(at.from ? { from: at.from } : {}), ...mark };
       // whatever the hero carries now, its look is theirs for good
       learnLooks(this.hero, allItems(this.hero));
       // stamped only when something changed: opening a hero without playing doesn't make that copy the newest
@@ -1090,6 +1095,8 @@ export class SigilEngine {
    * (SaveFile.rift), and wherever the story would send them home, they go back to the title.
    */
   trial: ClassId | null = null;
+  /** The place a hero is taken back to as play() begins, while travel() makes it (a dungeon's rooms and checkpoint). */
+  private resumeMark: Character['at'] | null = null;
 
   /** Straight into a Rift Trial from the title, as a calling's ready hero on one of its paths. */
   startRiftTrial(cls: ClassId, spec: 0 | 1 | 2, region: RegionId, pick?: number): void {
@@ -1157,7 +1164,10 @@ export class SigilEngine {
     // back where they were when they last played (Character.at): the land, the town, a dungeon at its door. A place
     // that can't be gone to any more (a land the story left, a way lost) is Briarhollow, as it always was
     const at = h.at;
+    // (a dungeon is taken up where it was left: its rooms cleared, its last checkpoint; World.restoreMark)
+    this.resumeMark = at && REGIONS[at.region]?.kind === 'dungeon' ? at : null;
     if (!at || at.region === HOME || !this.travel(at.region, at.tier ?? 0, [], at.from)) this.travel(HOME, 0, []);
+    this.resumeMark = null;
     this.sound.unlock();
     // still in a party's lobby (back from choosing another hero): the party sees the new one
     if (this.party && !this.invite) this.refreshPartyCard(true);
@@ -1354,10 +1364,14 @@ export class SigilEngine {
     if (prev?.player.riding && region.kind !== 'dungeon' && !region.interior && canRide(h, prev.player.riding)) w.player.riding = prev.player.riding;
     // the quests of a land start when the hero first gets there
     for (const q of startQuests(h)) w.emit({ t: 'questStart', quest: q.id });
+    // a dungeon taken up again after a reload: as it was left (POLISH_PLAN.md piece 3)
+    const resume = this.resumeMark;
+    const resumed = !!resume && resume.region === to && (resume.tier ?? 0) === w.tier && !party && !stone;
+    if (resumed) w.restoreMark(resume);
     // where the hero is now, for the next time they play (not a Riftstone's run, nor a party's: Character.at)
     if (!party && !stone) {
       if (to === HOME) delete h.at;
-      else h.at = { region: to, ...(w.tier ? { tier: w.tier } : {}), ...(from ? { from } : {}) };
+      else h.at = { region: to, ...(w.tier ? { tier: w.tier } : {}), ...(from ? { from } : {}), ...(resumed ? (w.dungeonMark() ?? {}) : {}) };
     }
     this.world = w;
     this.renderer.snap(w);
