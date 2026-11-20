@@ -97,6 +97,7 @@ export interface KeyRun {
   key: number;
   affixes: KeyAffix[];
   par: number;
+  /** Seconds on the clock: the world's own, so a hit-stop or slow motion costs none, but a fall's in full (step). */
   t: number;
   deaths: number;
   end: { time: number; up: number; marks: number; stone: number; best: boolean; forged?: string[] } | null;
@@ -126,7 +127,9 @@ interface Spore {
 /** Seconds the people the story takes away are remembered: long enough for the slowest fade (a death). */
 const LEFT_FOR = 4;
 /** How slow slow motion is. */
-const SLOW = 0.3;
+export const SLOW = 0.3;
+/** How nearly still the world stands in a hit-stop (the few frames a heavy blow holds it). */
+export const HITSTOP = 0.08;
 const POTION_HEAL = 40;
 /** Seconds without fighting before the fast out-of-combat regeneration starts. */
 const CALM_AFTER = 3;
@@ -407,7 +410,7 @@ export class World {
   /** A blow's push on the camera, waiting for the renderer to take it (World.kick, render/renderer.ts). */
   kickX = 0;
   kickY = 0;
-  /** When a crit last stopped time for a moment (crits stop it at most so often). */
+  /** A hit-stop: seconds left (real time) of the world held all but still (HITSTOP). */
   hitstopT = 0;
   /** How many skills and dodges the hero has made, for whose voice is heard (castVoice: every few, never by chance). */
   voiceCasts = 0;
@@ -1543,16 +1546,21 @@ export class World {
     let dt = rawDt;
     if (this.hitstopT > 0) {
       this.hitstopT -= rawDt;
-      dt = rawDt * 0.08;
+      dt = rawDt * HITSTOP;
     }
+    // a Riftstone run's clock keeps the world's pace through a hit-stop and slow motion (time the world stood all but
+    // still is no time the hero lost), but not through a fall: while the hero is down it runs at full speed. In a party
+    // the host's clock is everyone's (net/coop.ts sends it with every frame), so one hero's hit-stops don't part them
+    let clock = dt;
     if (this.player.dead) dt *= 0.35;
     if (this.slowT > 0) {
       this.slowT -= rawDt;
       dt *= SLOW;
+      clock *= SLOW;
       if (this.slowT <= 0) this.slowAt = null;
     }
     this.time += dt;
-    if (this.keyRun) this.updateKeyRun(rawDt, dt);
+    if (this.keyRun) this.updateKeyRun(clock, dt);
     this.shakeAmt = Math.max(0, this.shakeAmt - rawDt * 18);
     this.hurtPulse = Math.max(0, this.hurtPulse - rawDt * 2.8);
     // the story's staged beats: looked for twice a second, played while the hero stands still
@@ -2477,15 +2485,18 @@ export class World {
 
   /* ---------------------------------------------------------- Riftstone */
 
-  /** The clock runs (at full speed even while the hero is down), enemies rage, blood pools heal. */
-  private updateKeyRun(rawDt: number, dt: number): void {
+  /**
+   * The clock runs (`clock` seconds of it this step: the world's pace, but full speed while the hero is down), enemies
+   * rage, blood pools heal.
+   */
+  private updateKeyRun(clock: number, dt: number): void {
     const k = this.keyRun!;
     // (the clock waits for the hero to set off: a step, a blow, a skill, or a fight starting by itself)
     if (!k.going) {
       const i = this.input;
       k.going = !!(i.mx || i.my || i.holdBasic || i.casts.length || this.encounters.some((e) => e.state !== 'idle') || this.coop);
     }
-    if (!k.end && k.going) k.t += rawDt;
+    if (!k.end && k.going) k.t += clock;
     if (k.affixes.includes('raging')) {
       for (const e of this.enemies) {
         if (e.dead || e.boss || e.dummy || this.raged.has(e) || e.hp > e.maxHp * 0.3) continue;
