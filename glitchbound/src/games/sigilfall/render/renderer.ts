@@ -110,6 +110,8 @@ const CINEMA_W = 3.2;
 const CINEMA_AFTER = 1.8;
 /** The spring the camera draws in and out on, while the story holds it (rad/s). */
 const PUSH_W = 2.6;
+/** How long a new place takes to come up out of the dark (seconds). */
+const ARRIVE = 0.6;
 
 /**
  * The foes coming at the hero: how many there are within reach, and where they are on the whole (their middle). Null with
@@ -160,6 +162,8 @@ export class Renderer {
   private heldTill = -Infinity;
   /** Held dark while the models load: the engine holds the world still meanwhile. */
   waiting = false;
+  /** A way taken: how far the picture has gone dark before the next place is made, 0 to 1 (the engine sets it). */
+  leaving = 0;
   /**
    * Where pieces of the HUD sit over the picture, in the view's CSS pixels (ui/hudBoxes.ts keeps them): `quest` is
    * the quest under the hero's bars, `call` a boss's call, `map` the minimap, `thumbs` and `potion` a phone's skills.
@@ -565,6 +569,8 @@ export class Renderer {
         }
       }
       if (fresh) {
+        // (every new place comes up out of the dark, not only one whose models had to load)
+        this.heldTill = time;
         this.setHeroWeapon(w.hero.cls, w);
         this.snap(w);
         this.people.reset();
@@ -804,9 +810,10 @@ export class Renderer {
       g.fillStyle = `rgba(20,0,10,${clamp(p.deadT * 0.5, 0, 0.55)})`;
       g.fillRect(0, 0, W, H);
     }
-    const up = (time - this.heldTill) / 0.6;
-    if (up < 1) {
-      g.globalAlpha = 1 - clamp(up, 0, 1);
+    // a new place comes up out of the dark, and a way taken goes down into it (POLISH_PLAN.md piece 13)
+    const veil = Math.max(1 - clamp((time - this.heldTill) / ARRIVE, 0, 1), clamp(this.leaving, 0, 1));
+    if (veil > 0) {
+      g.globalAlpha = veil;
       g.fillStyle = '#07050d';
       g.fillRect(0, 0, W, H);
       g.globalAlpha = 1;

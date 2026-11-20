@@ -155,6 +155,8 @@ export interface TitleCard {
 }
 
 const STEP = 1 / 60;
+/** How long a way taken (a door, a road out of a land) takes to go dark before the next place is made (ms). */
+const LEAVE_MS = 260;
 
 /** How long a party waits for a leader who dropped out (their game holds the enemies) before going home. */
 const LEAD_WAIT_MS = 20_000;
@@ -538,6 +540,16 @@ export class SigilEngine {
   private frame(now: number): void {
     const dt = Math.min(0.1, Math.max(0, (now - this.last) / 1000));
     this.last = now;
+    // a way being taken: dark enough, the next place is made (first, so this frame draws it, coming up out of the dark)
+    if (this.leaving) {
+      const k = (now - this.leaving.at) / LEAVE_MS;
+      if (k >= 1 || this.ui.screen !== 'game') {
+        const go = this.leaving.go;
+        this.leaving = null;
+        this.renderer.leaving = 0;
+        if (this.ui.screen === 'game') go();
+      } else this.renderer.leaving = Math.max(0, k);
+    }
     // sound follows the pause, however it was left (the pause menu, a panel opened from it, the title): a
     // minimized game paused itself and used to come back silent
     this.sound.suspend(this.hidden || (this.ui.screen === 'game' && this.ui.pause));
@@ -1429,8 +1441,28 @@ export class SigilEngine {
     this.run = null;
   }
 
+  /**
+   * A way taken (a door, a road out of a land: POLISH_PLAN.md piece 13): the picture goes dark over LEAVE_MS, then the
+   * next place is made and comes up out of the dark (render/renderer.ts). At once in a party (the worlds keep one
+   * pace) and for a player who asked for less motion.
+   */
+  private leaving: { at: number; go: () => void } | null = null;
+
+  private leave(go: () => void): void {
+    if (this.leaving) return;
+    if (this.coop || this.renderer.reducedMotion) {
+      go();
+      return;
+    }
+    this.kbm?.release();
+    this.touch.release();
+    this.leaving = { at: performance.now(), go };
+  }
+
   /** Talk, travel or leave, depending on what is in front of the hero. */
   interact(it: Interactable): void {
+    // (on the way out already: nothing more is taken up)
+    if (this.leaving) return;
     if (it.kind === 'npc') this.talk(it.id);
     else if (it.kind === 'waystone') this.openPanel('map');
     else if (it.kind === 'exit' && it.door && !it.locked && this.world) {
@@ -1438,7 +1470,9 @@ export class SigilEngine {
       const w = this.world;
       if (this.hero && !this.hero.unlocked.includes(it.to as RegionId)) this.hero.unlocked.push(it.to as RegionId);
       this.sound.play('open');
-      this.travel(it.to as RegionId, w.tier, w.mods, w.region.id);
+      const { tier, mods } = w;
+      const from = w.region.id;
+      this.leave(() => this.travel(it.to as RegionId, tier, mods, from));
     } else if (it.kind === 'exit') {
       this.kbm?.release();
       this.touch.release();
@@ -1456,7 +1490,10 @@ export class SigilEngine {
     }
     // walking there is how a new land is found (its waystone then works for travel)
     if (this.hero && !this.hero.unlocked.includes(t.to)) this.hero.unlocked.push(t.to);
-    this.travel(t.to, w.tier, w.mods, w.region.id);
+    this.setUi({ travel: null });
+    const { tier, mods } = w;
+    const from = w.region.id;
+    this.leave(() => this.travel(t.to, tier, mods, from));
   }
 
   cancelTravel(): void {

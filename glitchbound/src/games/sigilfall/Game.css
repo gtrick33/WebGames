@@ -1122,14 +1122,19 @@ html.rb-touch-playing textarea {
   gap: 10px;
   align-items: end;
 }
-/* where the screen is tall enough, Begin stays in view while the classes scroll under it */
+/* where the screen is tall enough, Begin stays in view while the classes scroll under it. Its ground is the panel's
+   own and solid where its words are (POLISH_PLAN.md piece 13): it was see-through at its top, so the skills scrolling
+   under it showed through behind "Name", and dark violet on the panel's brown */
 @container (min-height: 431px) {
   .rb-create-go {
     position: sticky;
     bottom: 0;
     z-index: 1;
-    padding: 10px 0 4px;
-    background: linear-gradient(rgb(13 8 32 / 0), #0d0820 28%);
+    margin: 0 -14px -12px;
+    padding: 10px 14px 12px;
+    border-radius: 0 0 7px 7px;
+    background: rgb(34 26 20);
+    box-shadow: 0 -16px 12px -6px rgb(34 26 20);
   }
 }
 .rb-create-go label {
@@ -11084,9 +11089,10 @@ html.rb-touch-playing textarea {
     position: sticky;
     bottom: 0;
     z-index: 3;
-    padding: 6px 0;
-    background: linear-gradient(transparent, #120c22 28%);
-    box-shadow: 0 16px 0 #120c22;
+    margin: 0 -14px -12px;
+    padding: 6px 14px 8px;
+    background: rgb(34 26 20);
+    box-shadow: 0 -12px 10px -6px rgb(34 26 20);
   }
 }
 
