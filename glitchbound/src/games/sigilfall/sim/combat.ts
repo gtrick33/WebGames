@@ -4,6 +4,7 @@ import type { BuffDef, ComboCond, ComboSpec, DmgType, Effect, ProcDef, SkillSpec
 import { typeBonus } from '../progress/build';
 import { bossHidden } from './boss';
 import { moveCircle } from './map';
+import { fallOf } from '../data/falls';
 import { summonPet } from './pets';
 import type { Enemy, Projectile, Status } from './types';
 import type { World } from './world';
@@ -638,8 +639,53 @@ export function killEnemy(w: World, e: Enemy, type: DmgType, depth: number, spec
     const a = (i / 10) * TAU + e.id * 0.7;
     w.addFx({ kind: 'spark', x: e.x, y: e.y - 6, vx: Math.cos(a) * 70 * big, vy: Math.sin(a) * 40 - 40, life: 0.45 + (i % 3) * 0.1, size: 1 + (i % 2), color: i % 3 ? kc : '#ffffff' });
   }
+  fallFx(w, e);
   if (spec && depth === 0) applyEffects(w, spec.onKill, { x: e.x, y: e.y, angle: Math.atan2(e.y - w.player.y, e.x - w.player.x), spec, base: spec.damage, type, depth, target: e, hitDmg: 0, when: 'kill' });
   runProcs(w, 'kill', { x: e.x, y: e.y, target: e, base: 0, type, depth, hitDmg: 0, killType: type, statuses, skill: spec?.id });
+}
+
+/**
+ * What a foe leaves as it goes down, by its kind (data/voices.ts fallOf; the body's own fall is render3d/worldCast.ts):
+ * bones flung apart, a shade's wisps rising, a slime's splash, a shell's chips, a great one's dust. Only for the eye.
+ */
+function fallFx(w: World, e: Enemy): void {
+  const big = e.boss ? 1.7 : e.elite.length ? 1.3 : 1;
+  const spin = e.id * 1.37;
+  const fling = (n: number, colors: readonly string[], speed: number, size: number, life: number): void => {
+    for (let i = 0; i < n; i++) {
+      const a = spin + (i / n) * TAU;
+      const v = speed * (0.6 + (i % 3) * 0.25) * big;
+      w.addFx({ kind: 'shard', x: e.x, y: e.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.7, life: life + (i % 3) * 0.08, size: size * big, color: colors[i % colors.length]!, a });
+    }
+  };
+  switch (fallOf(e.def)) {
+    case 'bone':
+      fling(7, ['#ece4cf', '#c9bfa6', '#f6f0e0'], 70, 1.6, 0.75);
+      break;
+    case 'ghost':
+      for (let i = 0; i < 3; i++) w.addFx({ kind: 'ghost', x: e.x + (i - 1) * 7, y: e.y + (i % 2) * 3, life: 0.8 + i * 0.12, size: 1 });
+      w.addFx({ kind: 'glow', x: e.x, y: e.y, life: 0.6, size: e.r * 1.4 * big, color: '#cfe0ff' });
+      break;
+    case 'slime':
+      w.addFx({ kind: 'burst', x: e.x, y: e.y, life: 0.35, size: e.r * 1.5 * big, color: '#8be36b' });
+      fling(6, ['#8be36b', '#5fbf4a', '#b8f08f'], 60, 1.4, 0.55);
+      break;
+    case 'bug':
+      fling(5, ['#4a3a28', '#6b5434', '#2e2418'], 55, 1.2, 0.6);
+      break;
+    case 'heavy':
+      for (let i = 0; i < 5; i++) {
+        const a = spin + (i / 5) * TAU;
+        w.addFx({ kind: 'smoke', x: e.x + Math.cos(a) * e.r * 0.8, y: e.y + Math.sin(a) * e.r * 0.5, vx: Math.cos(a) * 24, vy: Math.sin(a) * 14, life: 0.9, size: 3 * big, color: '#b8a890' });
+      }
+      w.shake(1.4 * big);
+      break;
+    case 'beast':
+      for (let i = 0; i < 2; i++) w.addFx({ kind: 'smoke', x: e.x + (i ? 6 : -6), y: e.y + 2, vx: (i ? 14 : -14), life: 0.6, size: 2, color: '#a89880' });
+      break;
+    default:
+      break;
+  }
 }
 
 /** The combo waiting on a skill, if one is (data/types.ts Empower), and how many stacks or casts of it there are. */
