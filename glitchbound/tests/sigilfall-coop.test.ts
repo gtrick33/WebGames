@@ -224,6 +224,37 @@ describe('sigilfall: a co-op Riftstone run', () => {
     // each hero's own Riftstone opens the levels
     expect(gw.hero.keystone).toBe(Math.max(5, 2 + gw.keyRun!.end!.up));
   });
+
+  it('a hit-stop costs the party’s clock nothing on either side, and the guest’s clock keeps reading the host’s', () => {
+    const { hw, gw, step } = pair('crypt', 2);
+    step(20);
+    const hk = hw.keyRun!;
+    const gk = gw.keyRun!;
+    expect(hk.going && gk.going).toBe(true);
+    let apart = 0;
+    const tick = (): void => {
+      step(1);
+      apart = Math.max(apart, Math.abs(gk.t - hk.t));
+    };
+    // the host's blow holds the host's world, whose enemies are everyone's: the clock waits with it (sim/world.ts step)
+    let t0 = hk.t;
+    const w0 = hw.time;
+    hw.hitstop(0.25);
+    while (hw.hitstopT > 0) tick();
+    expect(hk.t - t0).toBeCloseTo(hw.time - w0, 9);
+    expect(hk.t - t0).toBeLessThan(0.05);
+    // a guest's blow holds only the guest's world: the host's, and the clock, run on
+    t0 = hk.t;
+    let frames = 0;
+    gw.hitstop(0.25);
+    while (gw.hitstopT > 0) {
+      tick();
+      frames++;
+    }
+    expect(hk.t - t0).toBeCloseTo(frames / 60, 9);
+    // and all the while the guest's clock read the host's: a frame of it behind at most, in tenths (net/coop.ts)
+    expect(apart).toBeLessThan(0.2);
+  });
 });
 
 describe('sigilfall: questing together', () => {
