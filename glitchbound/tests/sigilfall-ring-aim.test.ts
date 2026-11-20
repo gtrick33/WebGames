@@ -346,8 +346,9 @@ describe('The Ring: no class much above or below the rest', () => {
       const share = (wins[c] ?? 0) / games[c]!;
       // (the warrior below the rest by the owner's word, 2026-11-19: "lets nerve the warriors, nerf ult dmg by 25% and make
       // the proc for the bleed spell more rare": players found him strong where the computer plays him weak)
-      expect(share, `${c} wins ${(share * 100).toFixed(1)}% at ${CLASS_DMG[c]}`).toBeGreaterThan(c === 'warrior' ? 0.4 : 0.46);
-      expect(share, `${c} wins ${(share * 100).toFixed(1)}% at ${CLASS_DMG[c]}`).toBeLessThan(0.54);
+      // (since the owner's "make it to 42 %" (2026-11-20), as players' feedback moved classes: 42-58%, the warrior's floor 40%)
+      expect(share, `${c} wins ${(share * 100).toFixed(1)}% at ${CLASS_DMG[c]}`).toBeGreaterThan(c === 'warrior' ? 0.4 : 0.42);
+      expect(share, `${c} wins ${(share * 100).toFixed(1)}% at ${CLASS_DMG[c]}`).toBeLessThan(0.58);
     }
   }, 600_000);
 });

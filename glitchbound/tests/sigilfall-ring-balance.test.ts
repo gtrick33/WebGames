@@ -361,7 +361,7 @@ function shares(size: 2 | 3, games: number): Record<string, number> {
 
 describe('The Ring: no class far above or below the rest in team fights', () => {
   for (const size of [2, 3] as const) {
-    it(`${size}v${size}: each class wins between 46% and 54% when the computer plays random teams`, () => {
+    it(`${size}v${size}: each class wins between 42% and 58% when the computer plays random teams`, () => {
       const got = shares(size, 1500);
       // (the owner's "can we tweak it so the balancing is between 46 and 54%" (2026-11-19): each class's damage and
       // healing in team fights set by TEAM_K. The warrior, left out at first for the players' word of 2026-11-17, is in
@@ -369,8 +369,9 @@ describe('The Ring: no class far above or below the rest in team fights', () => 
       for (const c of CLASS_IDS) {
         // (the warrior below the rest by the owner's word, 2026-11-19: "lets nerve the warriors, nerf ult dmg by 25% and make
         // the proc for the bleed spell more rare": players found him strong where the computer plays him weak)
-        expect(got[c], `${c} ${(got[c]! * 100).toFixed(1)}%`).toBeGreaterThan(c === 'warrior' ? 0.4 : 0.46);
-        expect(got[c], `${c} ${(got[c]! * 100).toFixed(1)}%`).toBeLessThan(0.54);
+        // (since the owner's "make it to 42 %" (2026-11-20), as players' feedback moved classes: 42-58%, the warrior's floor 40%)
+        expect(got[c], `${c} ${(got[c]! * 100).toFixed(1)}%`).toBeGreaterThan(c === 'warrior' ? 0.4 : 0.42);
+        expect(got[c], `${c} ${(got[c]! * 100).toFixed(1)}%`).toBeLessThan(0.58);
       }
     }, 600_000);
   }
