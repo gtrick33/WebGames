@@ -2434,6 +2434,21 @@ html.rb-touch-playing textarea {
 .rb-sb-potion:disabled {
   opacity: 0.45;
 }
+/* ---- the frame-cost meter (ui/PerfMeter.tsx), with ?perf in the address: a few lines in a corner, never in the way */
+.rb-perf {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 40;
+  margin: 0;
+  padding: 4px 7px;
+  border-radius: 6px;
+  background: rgb(10 7 16 / 0.72);
+  color: #c8f0a8;
+  font: 600 10.5px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre;
+  pointer-events: none;
+}
 .rb-minimap-hud {
   position: absolute;
   top: calc(56px + var(--sa-t));

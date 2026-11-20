@@ -292,6 +292,11 @@ export class Renderer {
     this.stageNow()?.setSize(this.cssW, this.cssH, dpr, total * TILE, phone);
   }
 
+  /** What the last frame cost the graphics card (render3d/stage.ts `cost`), or null with no 3D picture. */
+  frameCost(): Stage['cost'] | null {
+    return this.stage?.cost ?? null;
+  }
+
   private stageNow(): Stage | null {
     if (this.stage || this.stageFailed) return this.stage;
     try {
@@ -703,7 +708,10 @@ export class Renderer {
       this.layer?.fx?.(st.fx, st.cast, time);
       st.fx.end();
       st.cast.end();
+      // (what the frame costs the graphics card, every pass of it, for the frame-cost meter: ui/PerfMeter.tsx)
+      st.costFrom();
       st.render(dt);
+      st.costTo();
     }
     const view: LandView = {
       g,

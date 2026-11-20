@@ -236,6 +236,13 @@ export class Stage {
     return g;
   }
 
+  /**
+   * What the last frame cost the graphics card (POLISH_PLAN.md piece 27: the frame-cost meter, ui/PerfMeter.tsx, and
+   * scripts/sigilfall-bench.mjs): its draw calls and triangles, both renderers together, and the share of the full
+   * picture it was drawn with. These go by what is drawn, not by the machine, so they mean the same on any of them.
+   */
+  readonly cost = { calls: 0, tris: 0, quality: 1 };
+
   render(_dt: number): void {
     // (the step in quality is taken before the frame is drawn, never after it: changing a canvas's size empties it,
     // and a step taken after the drawing left that frame with nothing on it, the land and everyone on it gone dark
@@ -276,6 +283,21 @@ export class Stage {
   /** The player's graphics choice (Settings.graphics): applied on the next frame. */
   setGraphics(mode: 'auto' | 'high' | 'low'): void {
     this.pacer.mode = mode;
+  }
+
+  /** A frame begins: each renderer counts its draw calls and triangles from nothing, over every pass of it. */
+  costFrom(): void {
+    for (const r of [this.gl, this.groundGl]) {
+      r.info.autoReset = false;
+      r.info.reset();
+    }
+  }
+
+  /** A frame is drawn: what it cost, both renderers together (`cost`). */
+  costTo(): void {
+    this.cost.calls = this.gl.info.render.calls + this.groundGl.info.render.calls;
+    this.cost.tris = this.gl.info.render.triangles + this.groundGl.info.render.triangles;
+    this.cost.quality = this.pacer.quality;
   }
 
   private applyQuality(): void {

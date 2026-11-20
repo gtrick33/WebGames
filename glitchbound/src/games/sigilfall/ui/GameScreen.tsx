@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { procsNow } from './comboMark';
 import { bossPips, phaseTicks, sixWords, windingUp } from './bossbar';
+import { PerfMeter, perfAsked } from './PerfMeter';
 import { mechanicDue, mechanicShown } from '../progress/tips';
 import type { Callout } from '../sim/types';
 import { GameMenuButton } from '../../../components/GameMenuButton';
@@ -203,6 +204,8 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
       </Announce>
       {!overlay && (engine.touchMode ? <TouchControls engine={engine} /> : <DesktopBar engine={engine} />)}
       <SceneBars engine={engine} />
+      {/* the frame-cost meter, with ?perf in the address (ui/PerfMeter.tsx; POLISH_PLAN.md piece 27) */}
+      {perfAsked() && <PerfMeter engine={engine} />}
       {ui.dialogue && <Dialogue engine={engine} />}
       {ui.travel && <TravelConfirm engine={engine} />}
       {ui.pause && <PauseMenu engine={engine} />}
