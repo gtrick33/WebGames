@@ -65,7 +65,7 @@ const PIECES = [
   ['quest', '.rb-tracker'],
   ['toast', '.rb-toasts > .rb-toast'],
   ['wave', '.rb-encounter'],
-  ['announce', '.rb-announce .rb-banner, .rb-announce .rb-levelup, .rb-announce .rb-tcard-text'],
+  ['announce', '.rb-announce .rb-banner, .rb-announce .rb-levelup, .rb-announce .rb-tcard-text, .rb-announce .rb-qcard'],
   ['boss', '.rb-bossbar'],
   ['cast', '.rb-castbar'],
   ['bar', '.rb-bar6 > .rb-slot6, .rb-bar6 > button'],

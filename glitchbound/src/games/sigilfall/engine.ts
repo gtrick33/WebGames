@@ -13,7 +13,7 @@ import { classOpen, heroSlots } from './progress/paidClasses';
 import { applyOrder, orderToast } from './progress/gm';
 import { announceGm } from './progress/gmArrival';
 import { isMainQuest, questSteps, turnInNpc } from './progress/handin';
-import { rewardSummary } from './progress/rewards';
+import { questRewards, rewardSummary, type RewardLine } from './progress/rewards';
 import { ACTS, type ActDef } from './data/acts';
 import { TALES } from './data/chronicle';
 import { CLASSES, MAX_LEVEL } from './data/classes';
@@ -133,6 +133,11 @@ export interface UiState {
   boss: { name: string; title: string } | null;
   levelUp: { level: number; skills: string[]; id: number } | null;
   /**
+   * A quest just finished, as one card (POLISH_PLAN.md piece 10): its name, what it paid (the items it gave, as they
+   * are), and the quest it opened. Before, the same moment was three pieces of news one over another.
+   */
+  questCard: { quest: string; name: string; lines: RewardLine[]; items: Item[]; next: string | null; id: number } | null;
+  /**
    * A control being taught (the Prologue's first fight): its key on the bar pulses, with these words over
    * the bar, until the hero uses it (`shown` is when it began) or the time runs out.
    */
@@ -225,6 +230,9 @@ function keyResult(w: World): RunSummary['key'] | undefined {
   const k = w.keyRun;
   return k?.end ? { key: k.key, time: k.end.time, par: k.par, up: k.end.up, stone: k.end.stone, best: k.end.best, marks: k.end.marks, deaths: k.deaths } : undefined;
 }
+/** How long a finished quest's card stays up (ms). */
+const QUEST_CARD_MS = 5200;
+
 export class SigilEngine {
   save: SaveFile;
   loadStatus: LoadStatus;
@@ -350,6 +358,7 @@ export class SigilEngine {
       reward: null,
       boss: null,
       levelUp: null,
+      questCard: null,
       teach: null,
       tip: null,
       card: null,
@@ -723,6 +732,7 @@ export class SigilEngine {
     else if (!card && this.cards.length && !this.ui.dialogue && !this.ui.panel && !this.ui.death && !w.scene && !(this.renderer as SigilEngine['renderer'] | undefined)?.speechBoxes.length)
       this.setUi({ card: { ...this.cards.shift()!, id: t } });
     if (this.ui.levelUp && t - this.ui.levelUp.id > 3600) this.setUi({ levelUp: null });
+    if (this.ui.questCard && t - this.ui.questCard.id > QUEST_CARD_MS) this.setUi({ questCard: null });
     if (this.tipQueue.length) this.showTip(w);
     const boss = w.boss();
     this.sound.setMusic(boss && !boss.dead ? 'boss' : ((w.scene?.music ?? w.storyState?.music ?? REGIONS[w.region.id].music) as MusicId));
@@ -738,6 +748,8 @@ export class SigilEngine {
     w.events = [];
     let changed = false;
     const newQuests: string[] = [];
+    // a quest finishing in this batch: its card gathers what it paid and what it opened (the news would say each apart)
+    let card: NonNullable<UiState['questCard']> | null = null;
     for (const ev of events) {
       switch (ev.t) {
         case 'sfx':
@@ -753,7 +765,9 @@ export class SigilEngine {
           this.toast(ev.text, ev.tone ?? 'info', ev.item);
           break;
         case 'loot':
-          this.toast(itemName(ev.item), 'loot', ev.item);
+          // (a quest's reward is on the quest's card, not news of its own)
+          if (card) card.items.push(ev.item);
+          else this.toast(itemName(ev.item), 'loot', ev.item);
           this.queueTip('bag');
           if (this.hero && !this.hero.opened.includes('hint:equip') && Object.keys(this.hero.equip).length < 2) this.hint('equip');
           break;
@@ -774,7 +788,10 @@ export class SigilEngine {
           if (q && this.hero) this.storyOf(q.id, 'done');
           // (a quest whose ending is told on a page of its own has its name and its pay there)
           const paged = this.pages.some((p) => p.kind === 'deed' && p.quest === ev.quest);
-          if (q && this.hero && !q.quiet && !paged) this.toast(`Quest complete: ${q.name}`, 'quest', undefined, rewardSummary(this.hero, q) || q.reward.text);
+          if (q && this.hero && !q.quiet && !paged) {
+            if (card) this.toast(`Quest complete: ${q.name}`, 'quest', undefined, rewardSummary(this.hero, q) || q.reward.text);
+            else card = { quest: q.id, name: q.name, lines: questRewards(this.hero, q).filter((l) => l.kind !== 'item'), items: [], next: null, id: performance.now() };
+          }
           this.sound.play('questDone');
           // the first horses: how to ride, once the mount is in (granted below, shown when the hero is free)
           if (ev.quest === FIRST_RIDE && this.queueTip('riding')) this.tipAfter = performance.now() + TIP_AFTER_REWARD;
@@ -895,7 +912,12 @@ export class SigilEngine {
         changed = true;
       }
     }
-    if (newQuests.length === 1) {
+    if (card) {
+      // the quest it opened goes on its card, the way on
+      if (newQuests.length) card.next = newQuests.length === 1 ? QUEST_DEFS[newQuests[0]!]!.name : `${QUEST_DEFS[newQuests[0]!]!.name} and ${newQuests.length - 1} more`;
+      this.ui = { ...this.ui, questCard: card };
+      changed = true;
+    } else if (newQuests.length === 1) {
       const q = QUEST_DEFS[newQuests[0]!]!;
       this.toast(`New quest: ${q.name}`, 'quest', undefined, q.objective.label);
     } else if (newQuests.length > 1) this.toast(`${newQuests.length} new quests`, 'quest', undefined, newQuests.map((id) => QUEST_DEFS[id]!.name).join(' · '));
@@ -1327,7 +1349,7 @@ export class SigilEngine {
     this.cards = [];
     this.tipQueue = [];
     this.pages = [];
-    this.setUi({ screen: 'title', tip: null, panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], levelUp: null, banner: null, teach: null, card: null, story: null });
+    this.setUi({ screen: 'title', tip: null, panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], levelUp: null, questCard: null, banner: null, teach: null, card: null, story: null });
     void this.reportRanks();
   }
 
