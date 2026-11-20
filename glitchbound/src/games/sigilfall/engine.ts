@@ -44,7 +44,8 @@ import { Steps } from './audio/steps';
 import { voiceSound } from './audio/voice';
 import type { Interactable } from './sim/types';
 import { emptyInput, World, type InputFrame } from './sim/world';
-import { advanceScene, endScene, sceneDue } from './sim/scene';
+import { advanceScene, endScene, previewScene, sceneDue } from './sim/scene';
+import { SCENES } from './data/scenes';
 import { applyPreset, PRESETS } from './progress/presets';
 import { claimInvites, friendsApi } from '../../platform/friends';
 import type { FriendInvite, FriendsView } from '../../platform/apiTypes';
@@ -1916,6 +1917,23 @@ export class SigilEngine {
   /** Review presets are offered on the dev server and with `?review` in the address. */
   get reviewTools(): boolean {
     return import.meta.env.DEV || (typeof location !== 'undefined' && new URLSearchParams(location.search).has('review'));
+  }
+
+  /**
+   * The scene previewer (review tools only: POLISH_PLAN.md piece 12): plays a scene from one of its steps, in its own
+   * land (the hero goes there first). The hero then plays for review, as a preset's does: no arcade scores.
+   */
+  previewScene(id: string, from = 0): boolean {
+    const def = SCENES.find((d) => d.id === id);
+    if (!def || !this.hero || !this.reviewTools) return false;
+    this.hero.review = true;
+    // (a review hero may see any land's scene: its land is opened for them, as a preset's is)
+    if (!this.hero.unlocked.includes(def.region)) this.hero.unlocked.push(def.region);
+    if (this.world?.region.id !== def.region && !this.travel(def.region, 0, [])) return false;
+    this.ui = { ...this.ui, panel: null, pause: false };
+    const ok = !!this.world && previewScene(this.world, id, from);
+    this.bump();
+    return ok;
   }
 
   /** Jumps the hero to a story beat (progress/presets.ts) and takes them there. */

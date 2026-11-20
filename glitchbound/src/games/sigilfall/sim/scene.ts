@@ -420,12 +420,7 @@ export function maybeStartScene(w: World): void {
     }
     // never in a fight, nor with an enemy at the hero's elbow (idle packs further off may watch)
     if (w.player.calm < 3 || w.enemies.some((e) => !e.dead && !e.dummy && (e.aggro || dist(e.x, e.y, w.player.x, w.player.y) < 100))) return;
-    // a companion of the story who speaks in it (Mara, after a fight) is at the hero's side, even after a reload
-    for (const who of new Set(def.steps.flatMap((s) => ('say' in s ? [s.say] : [])))) {
-      if (!PETS[who] || w.npcs.some((n) => n.id === who) || w.pets.some((p) => !p.dead && p.def.id === who)) continue;
-      const at = castRay(w.map, w.player.x, w.player.y, 6, w.rand() * TAU, 18);
-      placePet(w, who, at.x, at.y);
-    }
+    bringSpeakers(w, def);
     play(w, def);
     return;
   }
@@ -501,6 +496,15 @@ export function questBeat(w: World): SceneDef | null {
 const BEAT_REACH = 22 * TILE;
 
 const bossHere = (w: World, boss: string): boolean => w.map.markers.some((pm) => pm.marker.kind === 'boss' && pm.marker.boss === boss);
+
+/** A companion of the story who speaks in a scene (Mara, after a fight) is at the hero's side, even after a reload. */
+function bringSpeakers(w: World, def: SceneDef): void {
+  for (const who of new Set(def.steps.flatMap((s) => ('say' in s ? [s.say] : [])))) {
+    if (!PETS[who] || w.npcs.some((n) => n.id === who) || w.pets.some((p) => !p.dead && p.def.id === who)) continue;
+    const at = castRay(w.map, w.player.x, w.player.y, 6, w.rand() * TAU, 18);
+    placePet(w, who, at.x, at.y);
+  }
+}
 
 function play(w: World, def: SceneDef): void {
   w.scene = { def, step: 0, t: 0, begun: false, focus: null, emotes: [], turns: {}, acts: {}, posed: {} };
@@ -800,6 +804,25 @@ function clearGhosts(w: World, s: ScenePlay): void {
   w.leftNpcs.push(...w.npcs.filter((n) => gone.has(n.id)).map((n) => ({ ...n, left: w.time })));
   w.npcs = w.npcs.filter((n) => !gone.has(n.id));
   s.ghosts = [];
+}
+
+/**
+ * The scene previewer (dev only, the review tools: POLISH_PLAN.md piece 12): plays a scene of this land from any of
+ * its steps, whatever the story says. The steps before it are run through at once, as a reader in a hurry would take
+ * them (each line shown whole and taken, each walk walked, each wait waited), so what stands where at that step is what
+ * the scene had made of it. False if the scene isn't of this land, or it ended before that step.
+ */
+export function previewScene(w: World, id: string, from = 0): boolean {
+  const def = SCENES.find((d) => d.id === id);
+  if (!def || def.region !== w.region.id) return false;
+  if (w.scene) endScene(w, true);
+  bringSpeakers(w, def);
+  play(w, def);
+  for (let guard = 0; w.scene && w.scene.step < from && guard < 20_000; guard++) {
+    updateScene(w, 0.25);
+    advanceScene(w);
+  }
+  return !!w.scene && w.scene.def.id === id;
 }
 
 /** Ends the scene (played through, or skipped): it has been seen, and the camera goes back to the hero. */

@@ -51,6 +51,7 @@ import { StorePanel, useStoreOpen } from './Store';
 import { PRESETS } from '../progress/presets';
 import { clockText, skillHaste } from '../sim/world';
 import { PARA_STATS, PARAGON, paragonFree, paragonSpent, paragonXp } from '../progress/paragon';
+import { ScenePreviewer } from './ScenePreviewer';
 
 const TABS: { id: PanelId; label: string }[] = [
   { id: 'hero', label: 'Hero' },
@@ -2085,6 +2086,7 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
             </div>
           </section>
         )}
+        {engine.reviewTools && engine.hero && <ScenePreviewer engine={engine} />}
       </div>
     </Frame>
   );

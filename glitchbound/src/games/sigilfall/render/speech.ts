@@ -17,14 +17,21 @@ export interface SpeechCard {
   lineH: number;
   padX: number;
   padY: number;
-  /** The baseline of the first line of words. */
+  /** The baseline of the first line of words, and of the name over them. */
   textY: number;
+  nameY: number;
   /** Where its tail points down to the speaker (null when it has been moved off them: it has no one to point at). */
   tailX: number | null;
   /** The tail points up instead, to a speaker the card stands under. */
   tailUp?: boolean;
   /** A subtitle in the lane along the bottom of the picture (placeSpeech), not a card over anyone. */
   lane?: boolean;
+  /**
+   * What stands before the name and the words, from the card's padding: a portrait of the speaker (`face` a side) and
+   * the gap after it, on a scene's line (POLISH_PLAN.md piece 12); 0 with none.
+   */
+  lead: number;
+  face: number;
 }
 
 /** A box on the view, in its CSS pixels: a card, or a piece of the HUD the picture's words keep clear of. */
@@ -88,6 +95,8 @@ export interface SpeechAsk {
   small?: boolean;
   /** A foe's bark: where no place is free it gives way (it isn't drawn) rather than lie over a line that matters. */
   minor?: boolean;
+  /** A portrait of the speaker beside their words, this many pixels a side (a scene's line: POLISH_PLAN.md piece 12). */
+  face?: number;
 }
 
 export function layoutSpeech(o: SpeechAsk): SpeechCard {
@@ -103,13 +112,17 @@ export function layoutSpeech(o: SpeechAsk): SpeechCard {
   // (a little kept at the right of the card for the mark that the next line can be taken: on a one-line card it
   // sat on the last letter)
   const mark = Math.round(fs * 0.75);
-  const room = Math.max(96, Math.min(o.viewW - left - right - padX * 2 - mark, fs * 21 * (o.wide ?? 1)));
+  // (a portrait before the words, where there is room for one beside them: on a narrow view it is left out)
+  const face0 = o.face && o.viewW - left - right > o.face * 5 ? Math.round(o.face) : 0;
+  const lead = face0 ? face0 + Math.round(fs * 0.7) : 0;
+  const room = Math.max(96, Math.min(o.viewW - left - right - padX * 2 - mark - lead, fs * 21 * (o.wide ?? 1)));
   const lines = wrapWords(o.text, room, (s) => o.measure(s, fs, 600));
   const nameW = o.name ? o.measure(o.name, nameFs, 800) : 0;
   const nameH = o.name ? Math.round(nameFs * 1.35) : 0;
   const wide = Math.max(nameW, ...lines.map((l) => o.measure(l, fs, 600)), fs * 4);
-  const w = Math.min(o.viewW - left - right, Math.ceil(wide) + padX * 2 + mark);
-  const h = padY * 2 + nameH + lines.length * lineH;
+  const w = Math.min(o.viewW - left - right, Math.ceil(wide) + padX * 2 + mark + lead);
+  const words = padY * 2 + nameH + lines.length * lineH;
+  const h = face0 ? Math.max(words, face0 + Math.round(padY * 1.4)) : words;
   let x = o.headX - w / 2;
   let y = o.headY - 12 - h;
   const x0 = clamp(x, left, Math.max(left, o.viewW - right - w));
@@ -118,7 +131,9 @@ export function layoutSpeech(o: SpeechAsk): SpeechCard {
   x = x0;
   y = y0;
   const tailX = !moved && o.headX > x + 12 && o.headX < x + w - 12 ? o.headX : null;
-  return { x, y, w, h, lines, fs, nameFs, lineH, padX, padY, textY: y + padY + nameH + Math.round(fs * 0.98), tailX };
+  // (the words stand in the middle of a card a portrait made taller)
+  const top = y + Math.round((h - words) / 2) + padY;
+  return { x, y, w, h, lines, fs, nameFs, lineH, padX, padY, textY: top + nameH + Math.round(fs * 0.98), nameY: top + nameFs * 0.86, tailX, lead, face: face0 };
 }
 
 /** The pieces of the HUD a spoken line looks out for (ui/hudBoxes.ts measures them; a piece not on the screen is absent). */
@@ -174,7 +189,7 @@ export interface SpeechRoom {
 
 /** A card moved to (x, y), its words with it; its tail kept only if it still stands over (or under) its speaker. */
 function moveCard(c: SpeechCard, x: number, y: number, tailX: number | null, tailUp = false): SpeechCard {
-  return { ...c, x, y, textY: c.textY - c.y + y, tailX, tailUp };
+  return { ...c, x, y, textY: c.textY - c.y + y, nameY: c.nameY - c.y + y, tailX, tailUp };
 }
 
 /** The same line sized as a subtitle in the lane: as wide as the lane lets it be, no tail (placed by laneSpots). */
