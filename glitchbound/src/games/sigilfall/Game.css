@@ -414,6 +414,10 @@ html.rb-touch-playing textarea {
 .rb-itemicon img {
   image-rendering: pixelated;
 }
+/* an item pictured from its own model (render3d/portrait.ts gearPicture) is drawn smooth, as the world is */
+.rb-itemicon img.is-smooth {
+  image-rendering: auto;
+}
 .rb-portrait {
   image-rendering: pixelated;
 }

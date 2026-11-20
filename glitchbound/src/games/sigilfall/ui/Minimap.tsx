@@ -1,14 +1,13 @@
 import { useRef } from 'react';
 import { NPCS } from '../data/quests';
-import { mapColors } from '../data/themes';
-import type { Theme } from '../data/types';
 import type { SigilEngine } from '../engine';
-import { K, TILE, type TileMap } from '../sim/map';
+import { TILE } from '../sim/map';
 import { objectiveTarget, objectiveTargets } from '../sim/objective';
 import type { World } from '../sim/world';
 import { useFrame } from './GameScreen';
 import { useHudBox } from './hudBoxes';
 import { drawMapIcon, type MapIcon } from './mapIcons';
+import { groundOf, MAP_PX } from './Panels';
 import { npcMark } from '../render/renderer';
 import { FOG_CELL, fogSeen, type Fog } from '../progress/fog';
 
@@ -22,7 +21,6 @@ const SPAN = 44;
 /** Device-independent size of the minimap, in CSS pixels. */
 const SIZE = 88;
 
-const base = new WeakMap<TileMap, HTMLCanvasElement>();
 const fogs = new WeakMap<Fog, { c: HTMLCanvasElement; count: number }>();
 
 /** One pixel per fog cell: dark where unexplored (redrawn when more is seen). */
@@ -49,41 +47,6 @@ function fogLayer(fog: Fog): HTMLCanvasElement {
     g.putImageData(img, 0, 0);
   }
   return hit.c;
-}
-
-/** One pixel per tile, colored by what the tile is. */
-function baseLayer(map: TileMap, theme: Theme): HTMLCanvasElement {
-  const hit = base.get(map);
-  if (hit) return hit;
-  const c = document.createElement('canvas');
-  c.width = map.w;
-  c.height = map.h;
-  const g = c.getContext('2d')!;
-  const img = g.createImageData(map.w, map.h);
-  const pal = mapColors(theme);
-  const rgb = (hex: string): [number, number, number] => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
-  const cols = { floor: rgb(pal.floor), wall: rgb(pal.wall), path: rgb(pal.path), cobble: rgb(pal.cobble), water: rgb(pal.water), solid: rgb(pal.solid), sand: rgb(pal.sand) };
-  for (let i = 0; i < map.w * map.h; i++) {
-    const k = map.kind[i];
-    const col =
-      k === K.Wall || k === K.Tree || k === K.Cracked || k === K.Illusion
-        ? cols.wall
-        : k === K.Path || k === K.Bridge
-          ? cols.path
-          : k === K.Cobble
-            ? cols.cobble
-            : k === K.Water
-              ? cols.water
-              : k === K.Sand
-                ? cols.sand
-                : map.solid[i]
-                ? cols.solid
-                : cols.floor;
-    img.data.set([col[0], col[1], col[2], 255], i * 4);
-  }
-  g.putImageData(img, 0, 0);
-  base.set(map, c);
-  return c;
 }
 
 export function Minimap({ engine }: { engine: SigilEngine }) {
@@ -126,7 +89,12 @@ function draw(c: HTMLCanvasElement, w: World): void {
   g.fillStyle = '#0d0a18';
   g.fillRect(0, 0, S, S);
   g.globalAlpha = 0.92;
-  g.drawImage(baseLayer(w.map, w.region.theme), ox, oy, SPAN, SPAN, 0, 0, S, S);
+  // the land as the full map paints it (ui/Panels.tsx groundOf: grass with a grain, roads with their edges, woods as
+  // crowns, roofs with a ridge), drawn smooth: one hand for both maps (POLISH_PLAN.md piece 11). It was one flat square
+  // of color a tile, blown up
+  g.imageSmoothingEnabled = true;
+  g.drawImage(groundOf(w.map, w.region.theme), ox * MAP_PX, oy * MAP_PX, SPAN * MAP_PX, SPAN * MAP_PX, 0, 0, S, S);
+  g.imageSmoothingEnabled = false;
   g.globalAlpha = 1;
   // the fog of war: what the hero has not been near yet stays dark (soft at its edge)
   if (!w.fog.all) {

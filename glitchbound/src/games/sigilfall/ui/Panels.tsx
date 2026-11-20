@@ -1514,7 +1514,7 @@ function landMap(id: RegionId): TileMap {
 }
 
 /** How many map pixels a tile is painted with (the map is drawn smooth or crisp at any zoom from these). */
-const MAP_PX = 4;
+export const MAP_PX = 4;
 
 /** A color a little lighter or darker (k: -1 to 1). */
 function shadeHex(hex: string, k: number): string {
@@ -1539,7 +1539,7 @@ const grain = (x: number, y: number, n = 0): number => {
  * a tile, which read as a spreadsheet of a land rather than a place.
  */
 const grounds = new WeakMap<TileMap, HTMLCanvasElement>();
-function groundOf(m: TileMap, theme: RegionDef['theme']): HTMLCanvasElement {
+export function groundOf(m: TileMap, theme: RegionDef['theme']): HTMLCanvasElement {
   const hit = grounds.get(m);
   if (hit) return hit;
   const P = MAP_PX;
