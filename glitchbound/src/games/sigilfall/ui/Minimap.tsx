@@ -1,5 +1,7 @@
-import { useRef } from 'react';
+import { useRef, type CSSProperties } from 'react';
+import { SIGIL_LORE, SIGIL_ORDER } from '../data/chronicle';
 import { NPCS } from '../data/quests';
+import { sigilCount } from '../progress/character';
 import type { SigilEngine } from '../engine';
 import { TILE } from '../sim/map';
 import { objectiveTarget, objectiveTargets } from '../sim/objective';
@@ -63,12 +65,34 @@ export function Minimap({ engine }: { engine: SigilEngine }) {
     last.current = now;
     draw(c, w);
   });
+  const h = engine.hero;
+  const won = h && !engine.world?.keyRun ? sigilCount(h) : 0;
   return (
-    <button ref={hud} className="rb-minimap-hud" onClick={() => engine.openPanel('map')} aria-label="Map (opens the full map)">
+    <button ref={hud} className="rb-minimap-hud" onClick={() => engine.openPanel('map')} aria-label={`Map (opens the full map)${won ? `. Sigils of the Crown: ${won} of 7` : ''}`}>
       {/* (the land's name on a plate over the map, as a phone's map wears it) */}
       {engine.world && <span className="rb-minimap-name">{engine.world.region.name}</span>}
       <canvas ref={ref} width={SIZE * 2} height={SIZE * 2} />
+      {h && won > 0 && <MapCrown perks={h.perks} />}
     </button>
+  );
+}
+
+/**
+ * The sigils won, set in the rim of the minimap like stones in a crown: seven sockets along its foot, each lit once its
+ * sigil is won. They stood under the hero's bars, where the quest belongs (the owner: "the quest log should be more
+ * upwards, where the sigils are, the sigils should be somewhere more hidden, like on the minimap"). The Journal tells
+ * each one's story.
+ */
+function MapCrown({ perks }: { perks: readonly string[] }) {
+  const won = new Set(perks);
+  return (
+    <span className="rb-map-crown" aria-hidden="true">
+      {SIGIL_ORDER.map((id, i) => {
+        // (along the foot of the rim, from lower left to lower right)
+        const a = ((150 - i * 20) * Math.PI) / 180;
+        return <i key={id} className={`rb-crown-gem${won.has(id) ? ' is-won' : ''}`} style={{ left: `${50 + Math.cos(a) * 50}%`, top: `${50 + Math.sin(a) * 50}%`, '--gem': SIGIL_LORE[id].color } as CSSProperties} />;
+      })}
+    </span>
   );
 }
 

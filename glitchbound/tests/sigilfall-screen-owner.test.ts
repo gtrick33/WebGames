@@ -135,6 +135,45 @@ describe('Sigilfall: words said on the picture', () => {
     }
   });
 
+  // the owner: "when i walk alongside npcs, their bubbles keep switching from top to bottom screen with their movement
+  // and i cant read them". Each frame took the best place afresh, so a card went over a walking speaker's head, off it
+  // as they came by the hero, back over it, and so on
+  it('stays where it was put while that place is free, rather than jumping back and forth as people walk', () => {
+    for (const s of SCREENS) {
+      const [W, H] = s.view;
+      const hudMap = new Map(Object.entries(s.hud));
+      const line = 'Stay close to me, the road bends down to the river here and the bridge is out.';
+      const over = placeSpeech([ask(s, line, 0.5, 0.5)], room(s, false, null), hudMap)[0]!;
+      // the hero beside the speaker, now across the card over their head, now not, frame after frame as they walk
+      const across = { x: over.x, y: over.y, w: over.w, h: over.h };
+      let keep = over.keep;
+      let was: ViewBox | null = null;
+      let moves = 0;
+      for (let f = 0; f < 24; f++) {
+        const card = placeSpeech([ask(s, line, 0.5, 0.5, keep ? { keep } : {})], room(s, false, f % 2 ? null : across), hudMap)[0]!;
+        if (was && (Math.abs(card.x - was.x) > 2 || Math.abs(card.y - was.y) > 2)) moves++;
+        was = card;
+        keep = card.keep;
+      }
+      // (it moves off the hero once, and stays)
+      expect(moves, s.id).toBeLessThanOrEqual(1);
+      expect(W > 0 && H > 0).toBe(true);
+    }
+  });
+
+  it('a subtitle in the lane stays in the lane while the fight comes and goes', () => {
+    for (const s of SCREENS) {
+      const hudMap = new Map(Object.entries(s.hud));
+      let keep = placeSpeech([ask(s, 'Hold the line, all of you!', 0.5, 0.4)], room(s, true, null), hudMap)[0]!.keep;
+      expect(keep && 'lane' in keep && keep.lane, s.id).toBe(true);
+      for (let f = 0; f < 10; f++) {
+        const card = placeSpeech([ask(s, 'Hold the line, all of you!', 0.5, 0.4, { keep })], room(s, f % 2 === 0, null), hudMap)[0]!;
+        expect(card.lane, `${s.id} frame ${f}`).toBe(true);
+        keep = card.keep;
+      }
+    }
+  });
+
   it('keeps a scene’s line over its speaker: a scene’s words never go to the lane', () => {
     for (const s of SCREENS) {
       const cards = placeSpeech([ask(s, 'Three of ours died last night, and the courier.', 0.5, 0.45, { staged: true })], room(s, true, null), null);

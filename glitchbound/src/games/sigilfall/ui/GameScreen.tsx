@@ -15,8 +15,7 @@ import type { ClassId, ResourceDef } from '../data/types';
 import type { BoonLook } from '../arena/abilities';
 import { SHAPES } from './RingBoons';
 import type { SigilEngine } from '../engine';
-import { currentObjective, freePoints, HOME, isReplay, levelGated, questProgress, questState, sigilCount, SLOT_LEVELS, trackedQuest } from '../progress/character';
-import { SIGIL_LORE, SIGIL_ORDER } from '../data/chronicle';
+import { currentObjective, freePoints, HOME, isReplay, levelGated, questProgress, questState, SLOT_LEVELS, trackedQuest } from '../progress/character';
 import { SPEC_LEVEL } from '../data/talents';
 import { modLines } from '../progress/describe';
 import { isMainQuest, questSteps, turnInNpc } from '../progress/handin';
@@ -349,7 +348,6 @@ function Hud({ engine }: { engine: SigilEngine }) {
             {region.name}
             {w.keyRun ? <b className="rb-mplus"> · Riftstone +{w.keyRun.key}</b> : w.tier > 0 && <b style={{ color: TIERS[w.tier]!.color }}> · {TIERS[w.tier]!.name}</b>}
           </span>
-          <HudCrown engine={engine} />
         </div>
         {!engine.touchMode && (
           <button className="rb-potion" onClick={() => engine.drinkPotion()} disabled={h.potions <= 0} aria-label={`Drink a potion (${h.potions} left)`}>
@@ -382,25 +380,6 @@ function Hud({ engine }: { engine: SigilEngine }) {
       <Minimap engine={engine} />
       <div className="rb-encounter" ref={enc} hidden />
     </>
-  );
-}
-
-/**
- * The sigils won, under the hero's bars: seven gems, lit as each is won (the owner: "gaining a sigil currently is
- * unknown to me ... in my inventory tab (if i check at all) i see 4/7 sigils"). A tap opens the Journal.
- */
-function HudCrown({ engine }: { engine: SigilEngine }) {
-  const h = engine.hero!;
-  const n = sigilCount(h);
-  if (!n || engine.world?.keyRun) return null;
-  const won = new Set(h.perks);
-  return (
-    <button className="rb-hud-crown" onClick={() => engine.openJournal()} aria-label={`Sigils of the Crown: ${n} of 7. Open the Journal`} title={`Sigils of the Crown: ${n} of 7`}>
-      {SIGIL_ORDER.map((id) => (
-        <i key={id} className={`rb-crown-gem${won.has(id) ? ' is-won' : ''}`} style={{ '--gem': SIGIL_LORE[id].color } as CSSProperties} />
-      ))}
-      <em>{n}/7</em>
-    </button>
   );
 }
 

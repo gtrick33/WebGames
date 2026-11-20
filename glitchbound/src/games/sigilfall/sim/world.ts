@@ -1777,6 +1777,15 @@ export class World {
     updateWindup(this, dt);
     updateChannel(this, dt);
     if (inp.potion) this.drinkPotion();
+    // a speed that is not a number is no speed. One that got in (a dash with no length, a blow from nowhere) never left:
+    // every step after it was not a number too, moving the hero nowhere and blocked by nothing, so they stood where they
+    // were for good, turning to the stick, casting, but never walking again (the owner, with a video: "the character
+    // stuck in floating position"). Whatever let it in, it is let go of here
+    if (!Number.isFinite(p.vx) || !Number.isFinite(p.vy)) {
+      p.vx = 0;
+      p.vy = 0;
+    }
+    if (p.dash && !(Number.isFinite(p.dash.vx) && Number.isFinite(p.dash.vy) && Number.isFinite(p.dash.t))) p.dash = null;
     // movement: quick to start, quick to stop
     if (p.dash) {
       updateDash(this, dt);
