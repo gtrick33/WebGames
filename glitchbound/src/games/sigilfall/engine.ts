@@ -56,6 +56,8 @@ import { heldWeapon, heroLook } from './render/sprites';
 import { wornLooks } from './progress/wardrobe';
 import { giveTips, tipDue, tipShown, tipSteps, type TipId, type TipStep } from './progress/tips';
 import { SPEC_LEVEL } from './data/talents';
+import { track } from '../../platform/analytics';
+import { counted, fallProps, stopProps } from './progress/telemetry';
 
 /**
  * The game around the simulation: heroes and the save, travelling between regions, expeditions
@@ -482,6 +484,7 @@ export class SigilEngine {
   }
 
   detach(): void {
+    this.reportStop();
     this.stopShop();
     window.clearTimeout(this.gmStart);
     window.clearInterval(this.gmTimer);
@@ -512,7 +515,19 @@ export class SigilEngine {
     this.sound.suspend(document.hidden || this.ui.pause);
   };
 
+  /** When this sitting began, for how long a player stayed before they stopped (progress/telemetry.ts). */
+  private sittingFrom = performance.now();
+  private stopSent = false;
+
+  /** Where a player stopped playing, sent once a sitting (the page left, or the game closed). */
+  private reportStop(): void {
+    if (this.stopSent || !counted(this.hero, !!this.trial) || this.ui.screen !== 'game') return;
+    this.stopSent = true;
+    track('game_stop', stopProps(this.hero, this.world?.region.id ?? null, (performance.now() - this.sittingFrom) / 60_000));
+  }
+
   private onPageHide = (): void => {
+    this.reportStop();
     if (this.world) this.collectLeftovers(this.world, true);
     this.persist();
   };
@@ -821,6 +836,11 @@ export class SigilEngine {
           break;
         case 'death':
           this.deathAt = performance.now() + 1500;
+          // where heroes fall, counted without anything personal (progress/telemetry.ts; POLISH_PLAN.md piece 28)
+          if (counted(this.hero, !!this.trial)) {
+            const b = w.boss();
+            track('game_fall', fallProps(this.hero, w.region.id, b && !b.dead ? b.def.id : null));
+          }
           this.endBossBar();
           break;
         case 'cleared':
