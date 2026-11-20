@@ -1,0 +1,189 @@
+/* Admin › Sigilfall: the Campaign, the Ring and the Vigil (SigilfallModes.tsx). Builds on SigilfallPlayers.css. */
+
+.sm-tabs a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: var(--fg-2);
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.sm-tabs a:hover {
+  color: var(--fg);
+}
+.sm-tabs a.is-on {
+  background: var(--cyan);
+  color: var(--ink);
+  box-shadow: var(--hard-sm);
+}
+
+.sm .gm-table-wrap {
+  margin-top: 12px;
+}
+.sm .data-table td {
+  vertical-align: top;
+}
+.sm .data-table a {
+  color: inherit;
+}
+.sm-search {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.sm-banned td {
+  opacity: 0.62;
+}
+.sm-banned td:last-child {
+  opacity: 1;
+}
+
+.sm-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.sm-filters .gm-inline {
+  grid-column: 1 / -1;
+}
+
+.sm-board-pick {
+  width: auto;
+  max-width: 100%;
+}
+.sm-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.sm-held {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.sm-edit-row td {
+  background: var(--well);
+}
+.sm-editor {
+  display: grid;
+  gap: 10px;
+}
+.sm-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+}
+
+.sm-matches {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sm-match {
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--well);
+}
+.sm-match.is-off {
+  opacity: 0.7;
+}
+.sm-match-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sm-match-when {
+  min-width: 108px;
+  font-size: 12.5px;
+}
+.sm-match-who {
+  flex: 1 1 160px;
+  min-width: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.sm-match-body {
+  display: grid;
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+.sm-match-body .gm-table-wrap {
+  margin-top: 0;
+}
+
+.sm-cols {
+  align-items: start;
+}
+.sm-bars {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sm-bars li {
+  display: grid;
+  grid-template-columns: minmax(80px, 34%) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  font-size: 14px;
+}
+.sm-bar-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+.sm-bar-track {
+  height: 10px;
+  border-radius: 999px;
+  background: rgb(29 18 56 / 0.1);
+  overflow: hidden;
+}
+.sm-bar-track i {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: inherit;
+  background: var(--cyan);
+}
+.sm-bar-value {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.sm-bar-value small {
+  color: var(--fg-3);
+}
+
+.btn-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@media (max-width: 560px) {
+  .sm-bars li {
+    grid-template-columns: minmax(70px, 40%) minmax(0, 1fr) auto;
+  }
+}

@@ -6,7 +6,7 @@
  */
 import { api } from '../../../platform/account';
 import { forgetBest, NEW_STANDING, RANKED_KEY, type Format, type Standing } from '../arena/ranks';
-import type { Note, Report } from '../arena/ranked';
+import type { MatchStats, Note, Report } from '../arena/ranked';
 import { clearLive, LEAVER_K, type LiveMatch } from '../arena/live';
 
 export type ShownStanding = Standing & { season: number };
@@ -50,7 +50,7 @@ export const rankedApi = {
   me: (match?: string): Promise<Me> => api<Me>(`${PATH}${match ? `?match=${encodeURIComponent(match)}` : ''}`),
   bots: (format: Format): Promise<Ticket> => api<Ticket>(PATH, { body: { action: 'bots', format } }),
   people: (code: string, run: number): Promise<PeopleStakes> => api<PeopleStakes>(PATH, { body: { action: 'people', code, run } }),
-  report: (match: string, report: Report, keepalive = false): Promise<Settling> => api<Settling>(PATH, { body: { action: 'report', match, report }, ...(keepalive ? { keepalive } : {}) }),
+  report: (match: string, report: Report, keepalive = false, stats?: MatchStats): Promise<Settling> => api<Settling>(PATH, { body: { action: 'report', match, report, ...(stats ? { stats } : {}) }, ...(keepalive ? { keepalive } : {}) }),
 };
 
 /** How long the game waits for a match against people to be settled before it says it will be. */
@@ -61,10 +61,10 @@ const ASK_EVERY_MS = 2_500;
  * A report, sent again a couple of times if it doesn't get through (a ticket the server never hears about is lost as
  * a leaver's, so a bad connection at the wrong moment mustn't cost a win).
  */
-export async function sendReport(match: string, report: Report, sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))): Promise<Settling> {
+export async function sendReport(match: string, report: Report, sleep = (ms: number) => new Promise((r) => setTimeout(r, ms)), stats?: MatchStats): Promise<Settling> {
   for (let i = 0; ; i++) {
     try {
-      return await rankedApi.report(match, report);
+      return await rankedApi.report(match, report, false, stats);
     } catch (e) {
       // (a refusal is an answer: only a report that didn't arrive is sent again)
       const status = (e as { status?: number } | null)?.status ?? 0;
@@ -74,9 +74,9 @@ export async function sendReport(match: string, report: Report, sleep = (ms: num
   }
 }
 
-/** A report, and then the settling: asked again every little while until it comes, or the wait is up. */
-export async function reportAndSettle(match: string, report: Report, wait = WAIT_MS, sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))): Promise<Settling> {
-  let got: Settling = await sendReport(match, report, sleep);
+/** A report (with the player's numbers in it, for the admin), and then the settling: asked again every little while until it comes, or the wait is up. */
+export async function reportAndSettle(match: string, report: Report, wait = WAIT_MS, sleep = (ms: number) => new Promise((r) => setTimeout(r, ms)), stats?: MatchStats): Promise<Settling> {
+  let got: Settling = await sendReport(match, report, sleep, stats);
   const until = Date.now() + wait;
   while (!('settled' in got) && Date.now() < until) {
     await sleep(ASK_EVERY_MS);
