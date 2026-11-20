@@ -1,0 +1,18 @@
+[
+  {"tx":93,"ty":48,"prop":"table","solid":true},
+  {"tx":92,"ty":49,"prop":"stool"},
+  {"tx":93,"ty":49,"prop":"candles"},
+  {"tx":94,"ty":49,"prop":"stool"},
+  {"tx":77,"ty":59,"prop":"cot","solid":true},
+  {"tx":79,"ty":59,"prop":"cot","solid":true},
+  {"tx":81,"ty":59,"prop":"cot","solid":true},
+  {"tx":83,"ty":59,"prop":"table","solid":true},
+  {"tx":103,"ty":59,"prop":"crate-pile","solid":true},
+  {"tx":105,"ty":59,"prop":"barrel-stack","solid":true},
+  {"tx":107,"ty":59,"prop":"sacks","solid":true},
+  {"tx":108,"ty":59,"prop":"small-crates","solid":true},
+  {"tx":111,"ty":59,"prop":"wagon","solid":true},
+  {"tx":78,"ty":60,"prop":"bedroll"},
+  {"tx":80,"ty":60,"prop":"bedroll"},
+  {"tx":82,"ty":60,"prop":"bucket"}
+]
