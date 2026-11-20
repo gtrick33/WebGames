@@ -4,6 +4,7 @@ import { REGIONS } from '../src/games/sigilfall/data/regions';
 import type { RegionId } from '../src/games/sigilfall/data/types';
 import { questState, type Character } from '../src/games/sigilfall/progress/character';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
+import { TILE } from '../src/games/sigilfall/sim/map';
 import type { World } from '../src/games/sigilfall/sim/world';
 import { newWorld, readyHero } from './sigilfall-bot';
 
@@ -32,6 +33,11 @@ const run = (w: World, s: number): void => {
 describe('Sigilfall: Rimeheld, the sledge road', () => {
   it('the drivers follow the hero home through two waves, and Frostgate keeps their sledges', () => {
     const w = newWorld('rimeheld', heroAt('the-last-sledges'));
+    // (the story's own carts, the ones that come and go with it: the land has carts of its own besides)
+    const sledges = (x: typeof w) => x.map.markers.filter((m) => m.marker.kind === 'prop' && m.marker.prop === 'cart' && !!m.when && x.isShown(m));
+    const near = (x: typeof w, m: { tx: number; ty: number }, place: string): number => Math.hypot(x.places[place]!.x - (m.tx + 0.5) * TILE, x.places[place]!.y - (m.ty + 0.5) * TILE);
+    // the sledges stand at their camp
+    expect(sledges(w).map((m) => near(w, m, 'sledge-fire') < near(w, m, 'frostgate-square'))).toEqual([true]);
     const fire = w.places['sledge-fire']!;
     // the camp's own packs first
     for (const e of w.enemies) if (Math.hypot(e.x - fire.x, e.y - fire.y) < 200) e.dead = true;
@@ -56,8 +62,8 @@ describe('Sigilfall: Rimeheld, the sledge road', () => {
     }
     expect(questState(w.hero, 'the-last-sledges')).toBe('done');
     expect(questState(w.hero, 'the-giants-hearth')).not.toBe('locked');
+    // now they stand in Frostgate, and only there
     const after = newWorld('rimeheld', w.hero);
-    const carts = after.map.markers.filter((m) => m.marker.kind === 'prop' && m.marker.prop === 'cart' && after.isShown(m));
-    expect(carts.length).toBe(1);
+    expect(sledges(after).map((m) => near(after, m, 'frostgate-square') < near(after, m, 'sledge-fire'))).toEqual([true]);
   });
 });
