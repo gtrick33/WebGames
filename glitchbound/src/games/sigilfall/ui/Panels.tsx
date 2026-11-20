@@ -17,7 +17,7 @@ import { buildHero, heroUlt, typeBonus } from '../progress/build';
 import { comboVsText, DMG_NAME, fmtStat, modLines, STAT_LABEL, costText } from '../progress/describe';
 import { itemClass, itemMods, itemName, itemScore, itemSlot, salvageValue } from '../progress/items';
 import { npcMark, rarityColor } from '../render/renderer';
-import { heldWeapon, heroDollUrl, heroLook, itemIconUrl, mountPictureUrl, talentIconUrl, watchMountPictures } from '../render/sprites';
+import { heldWeapon, heroDollUrl, heroLook, mountPictureUrl, talentIconUrl, wardrobePicture, watchMountPictures } from '../render/sprites';
 import type { HeroLook } from '../render/art/hero';
 import { MOUNTS } from '../data/mounts';
 import { authoredLooks, BARE_LOOK, canRide, LOOK_SLOTS, lookFits, lookOf, lookSource, mountDef, riddenMount, ridingLocked, ridingOpen, wornId, wornLooks, type Look, type LookSlot } from '../progress/wardrobe';
@@ -2124,6 +2124,12 @@ function HeroDoll({ look, held = null, shield = false, area = 'doll' }: { look: 
 
 /* ----------------------------------------------------------- wardrobe */
 
+/** A look's tile picture: its model, as the equipped piece beside it is drawn (render/sprites.ts wardrobePicture). */
+function LookPicture({ look }: { look: Look }) {
+  const pic = wardrobePicture(look);
+  return <img className={pic.smooth ? 'is-smooth' : undefined} src={pic.url} alt="" width={40} height={40} draggable={false} />;
+}
+
 const LOOK_LABEL: Record<LookSlot, string> = { head: 'Head', chest: 'Chest', weapon: 'Weapon' };
 const RARITY_RANK: Record<string, number> = { legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
 
@@ -2237,7 +2243,7 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
             )}
             {tiles.map(({ look: l, owned }) => (
               <button key={l.id} className={`rb-bslot rb-look-tile${pick === l.id ? ' is-sel' : ''}${current === l.id ? ' is-worn' : ''}${owned ? '' : ' is-locked'}${l.shop ? ' is-shop' : ''}`} onClick={() => setPick(l.id)} aria-label={owned ? l.name : `Locked: ${l.name}`} style={{ ['--rc' as string]: rarityColor(l.r) }}>
-                <img src={itemIconUrl({ icon: l.icon, tint: l.tint }, 4)} alt="" width={40} height={40} draggable={false} />
+                <LookPicture look={l} />
                 {l.shop && <span className="rb-look-tag is-shop">Shop</span>}
               </button>
             ))}

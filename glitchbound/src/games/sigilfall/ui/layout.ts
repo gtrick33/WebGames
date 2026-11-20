@@ -73,7 +73,11 @@ export function keepInside(box: ViewBox, lo: number, hi: number): number {
 function scaleOf(engine: SigilEngine, el: HTMLElement): { x: number; y: number; flip: boolean } {
   const r = engine.renderer as SigilEngine['renderer'] | undefined;
   const c = r?.canvas.getBoundingClientRect();
-  const view = r && c && c.width > 0 ? r.viewW / c.width : 1;
+  // (on an upright phone the game is laid out on its side and turned a quarter: the canvas's width on the screen is
+  // the game's height. Taken as its width, every piece measured 1.8 times its size and moved half as far as it was
+  // told, and the quest stayed across the sigils under the hero's bars on an iPhone)
+  const across = c && r?.canvas.parentElement?.classList.contains('is-turned') ? c.height : c?.width;
+  const view = r && across && across > 0 ? r.viewW / across : 1;
   let sx = Number(getComputedStyle(el).zoom) || 1;
   let sy = sx;
   let flip = false;
@@ -136,12 +140,16 @@ function taken(engine: SigilEngine, ids: readonly string[], self: string): ViewB
  * Places an element that comes and goes (an announcement, the wave's count): down from where its CSS stands it until
  * none of `avoid` is under it, inside the picture, and never down onto the hero (slideLimit). Placed when it appears,
  * when the HUD's pieces move (`version`), and when the window changes; never every frame.
+ *
+ * `pastHero`: a piece of the HUD that stays (the quest) slides as far as the slide's own limit, wherever the hero
+ * stands. Held above the hero's head like an announcement, it couldn't get clear of the sigils under the hero's bars
+ * whenever the hero stood near its edge, and so it stayed across them.
  */
-export function placeDown(engine: SigilEngine, el: HTMLElement, avoid: readonly string[], self = ''): void {
+export function placeDown(engine: SigilEngine, el: HTMLElement, avoid: readonly string[], self = '', pastHero = false): void {
   const r = engine.renderer as SigilEngine['renderer'] | undefined;
   const box = natural(engine, el);
   if (!r || !box) return;
-  const dy = slideClear(box, taken(engine, avoid, self), slideLimit(box, r.viewH, figureOf(engine)));
+  const dy = slideClear(box, taken(engine, avoid, self), slideLimit(box, r.viewH, pastHero ? null : figureOf(engine)));
   shift(engine, el, keepInside({ ...box, y: box.y + dy }, 8, r.viewW - 8), dy, self);
 }
 

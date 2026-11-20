@@ -1634,8 +1634,7 @@ export class SigilEngine {
     if (page.kind === 'find' && this.hero && !this.hero.opened.includes(`kept:${page.quest}`)) this.hero.opened.push(`kept:${page.quest}`);
     this.kbm?.release();
     this.touch.release();
-    this.sound.play(page.kind === 'sigil' ? 'bell-toll' : page.kind === 'find' ? 'pickupBig' : page.kind === 'tale' ? 'bell' : 'quest');
-    if (page.kind === 'sigil') this.sound.play('legendary', 0.8);
+    this.sound.play(page.kind === 'sigil' ? 'sigil' : page.kind === 'find' ? 'pickupBig' : page.kind === 'tale' ? 'bell' : 'quest');
     this.setUi({ story: page });
   }
 
