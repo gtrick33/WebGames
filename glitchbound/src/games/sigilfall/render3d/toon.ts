@@ -369,8 +369,9 @@ void seeThrough() {
   float s = dot(vW - uSee.xyz, dir);
   if (s <= 0.2) return;
   float d = length(vW - (uSee.xyz + dir * s));
-  // (wide enough for a fight round the hero, not only the hero: the canopy hid the foes at their feet)
-  float R = 1.6 + s * 0.15;
+  // (wide enough for a fight round the hero, not only the hero: the canopy hid the foes at their feet; wider still while
+  // a fight is on, uSee.w above 1: render/renderer.ts)
+  float R = (1.6 + s * 0.15) * uSee.w;
   float k = smoothstep(R, R * 0.3, d) * smoothstep(0.2, 1.1, s) * 0.86;
   if (k <= 0.0) return;
   float dx = mod(gl_FragCoord.x, 4.0);
