@@ -349,7 +349,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...styleRows('warlock', 'k', 'curses', [
       [
         { name: 'Ripening', text: 'Each tick of the Creeping Agony from your Blight Dart generates Rot, up to 5. Hex Bloom spends it to deal 20% more damage per Rot.', icon: 'plague_cloud_on_dark_green', points: { name: 'Rot', one: 'Rot', max: 5, color: '#9ae85a' }, tune: { 'k-dart': { build: { n: 1, on: 'tick' } }, 'k-bloom': { spend: { per: 0.2 } } } },
-        { name: 'Gathering Dark', text: 'Each tick of the Creeping Agony from your Blight Dart has a 50% chance to trigger Gathering Dark (stacks twice): your next Blight Dart is instant and deals double damage.', icon: 'dark_lotus_on_black', tune: { 'k-dart': { gives: [{ boon: 'gathering', chance: 0.5, on: 'tick' }], uses: [{ boon: 'gathering', instant: true, mult: 2 }] } } },
+        { name: 'Gathering Dark', text: 'Each tick of the Creeping Agony from your Blight Dart has a 35% chance to trigger Gathering Dark (stacks twice): your next Blight Dart is instant and deals double damage.', icon: 'dark_lotus_on_black', tune: { 'k-dart': { gives: [{ boon: 'gathering', chance: 0.35, on: 'tick' }], uses: [{ boon: 'gathering', instant: true, mult: 2 }] } } },
         { name: 'Pit Imp', text: 'An imp on your shoulder attacks your target every 2 sec for 36 damage.', icon: 'shadow_imp_summon_on_black', does: { k: 'imp', n: 36, every: 2, range: 185 } },
       ],
       [
@@ -360,7 +360,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ]),
     ...styleRows('warlock', 'k', 'grave', [
       [
-        { name: 'Grave Chill', text: 'Each hit by an ashbound from your Call the Ashbound or Grave Legion has a 15% chance to trigger Grave Chill (stacks twice): your next Gloom Bolt is instant and deals 50% more damage.', icon: 'ghoul_claw_on_green', tune: { 'k-raise': { gives: [{ boon: 'chill', chance: 0.15, on: 'tick' }] }, 'k-super2': { gives: [{ boon: 'chill', chance: 0.15, on: 'tick' }] }, 'k-bolt': { uses: [{ boon: 'chill', instant: true, mult: 1.5 }] } } },
+        { name: 'Grave Chill', text: 'Each hit by an ashbound from your Call the Ashbound or Grave Legion has a 10% chance to trigger Grave Chill (stacks twice): your next Gloom Bolt is instant and deals 50% more damage.', icon: 'ghoul_claw_on_green', tune: { 'k-raise': { gives: [{ boon: 'chill', chance: 0.1, on: 'tick' }] }, 'k-super2': { gives: [{ boon: 'chill', chance: 0.1, on: 'tick' }] }, 'k-bolt': { uses: [{ boon: 'chill', instant: true, mult: 1.5 }] } } },
         { name: 'Third Grave', text: 'Call the Ashbound summons a third ashbound, and they hit twice as hard. Cooldown reduced by 8 sec.', icon: 'twin_summon_of_two_spirits_on_teal', tune: { 'k-raise': { more: 1, cd: 0.7, power: 2 } } },
         { name: 'Ashburst', text: 'When one of your ashbound dies or expires, it explodes for 54 damage to nearby enemies.', icon: 'dark_crystal_skull_on_violet', does: { k: 'corpse', n: 60, reach: 46 } },
       ],

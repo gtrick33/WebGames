@@ -369,7 +369,9 @@ describe('The Ring: no class far above or below the rest in team fights', () => 
       for (const c of CLASS_IDS) {
         // (the warrior below the rest by the owner's word, 2026-11-19: "lets nerve the warriors, nerf ult dmg by 25% and make
         // the proc for the bleed spell more rare": players found him strong where the computer plays him weak)
-        expect(got[c], `${c} ${(got[c]! * 100).toFixed(1)}%`).toBeGreaterThan(c === 'warrior' ? 0.4 : 0.46);
+        // (the Gloamknight's floor 42%, its super cut by players' word: the owner, 2026-11-20, "make it to 42 %", "just for the
+        // gloamknight"; the warrior's 40%)
+        expect(got[c], `${c} ${(got[c]! * 100).toFixed(1)}%`).toBeGreaterThan(c === 'warrior' ? 0.4 : c === 'gloamknight' ? 0.42 : 0.46);
         expect(got[c], `${c} ${(got[c]! * 100).toFixed(1)}%`).toBeLessThan(0.54);
       }
     }, 600_000);
