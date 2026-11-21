@@ -744,6 +744,58 @@ a.lp-cta {
     }
   }
 }
+/* The game menu (exit, full screen: components/GameMenuButton) is the last icon in the row, and during a round on an
+   ordinary phone the clock pushed it past the screen's edge: there was no way out (2026-11-21). The tools never
+   shrink and always fit; the tabs give way instead, and below a phone's width everything in the row tightens. */
+.lp-tools {
+  flex: none;
+}
+.lp-tabs {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+@container (max-width: 440px) {
+  .lp-tab-num {
+    display: none;
+  }
+  .lp-tab {
+    padding: 6px 9px;
+    font-size: 13px;
+  }
+  .lp-tools {
+    gap: 0;
+  }
+  .lp-tools:has(.lp-clock) .lp-streak {
+    display: none;
+  }
+}
+@media (pointer: coarse) {
+  @container (max-width: 440px) {
+    .lp-icon,
+    .lp-close {
+      width: 40px;
+      min-width: 40px;
+    }
+  }
+  @container (max-width: 350px) {
+    .lp-top {
+      gap: 4px;
+    }
+    .lp-icon {
+      width: 34px;
+      min-width: 34px;
+    }
+    .lp-tab {
+      padding: 6px 6px;
+      font-size: 12px;
+    }
+    .lp-clock {
+      margin-right: 0;
+      font-size: 11px;
+    }
+  }
+}
 
 /* ---------------------------------------------------------------- phone on its side */
 /* Short and wide: the board on the left, the keyboard on the right, so the tiles get the full height. */
