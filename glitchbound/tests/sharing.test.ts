@@ -224,7 +224,7 @@ describe('shared links preview as a picture of the invite', () => {
     ] as const) {
       const res = await ogImage({ request: new Request(`${ORIGIN}/og/${kind}/${file}`), env, params: { kind, file } });
       expect(res.status).toBe(302);
-      expect(res.headers.get('location')).toBe(`${ORIGIN}/og.png`);
+      expect(res.headers.get('location')).toBe(`${ORIGIN}/og-home.jpg`);
     }
   });
 });

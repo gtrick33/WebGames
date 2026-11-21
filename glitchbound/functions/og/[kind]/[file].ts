@@ -13,12 +13,12 @@ const KEYS: Record<InviteKind, RegExp> = { c: /^[A-Za-z0-9]{5,12}$/, r: /^[A-Za-
 export async function onRequestGet({ request, env, params, waitUntil }: Ctx): Promise<Response> {
   const kind = String(params?.kind ?? '') as InviteKind;
   const key = /^(.+)\.png$/.exec(String(params?.file ?? ''))?.[1] ?? '';
-  if (!Object.hasOwn(KEYS, kind) || !KEYS[kind].test(key)) return Response.redirect(new URL('/og.png', request.url).toString(), 302);
+  if (!Object.hasOwn(KEYS, kind) || !KEYS[kind].test(key)) return Response.redirect(new URL('/og-home.jpg', request.url).toString(), 302);
   const cache = (globalThis as { caches?: { default?: Cache } }).caches?.default;
   const hit = await cache?.match(request).catch(() => undefined);
   if (hit) return hit;
   const invite = await inviteFor(env, kind, key).catch(() => null);
-  if (!invite) return Response.redirect(new URL('/og.png', request.url).toString(), 302);
+  if (!invite) return Response.redirect(new URL('/og-home.jpg', request.url).toString(), 302);
   const png = await renderOgCard(invite.card);
   // A versioned address can be kept for long; a bare one changes with the challenge or room.
   const versioned = new URL(request.url).searchParams.has('v');
