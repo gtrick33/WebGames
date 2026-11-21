@@ -21,7 +21,8 @@ import { shieldOf } from '../render3d/worldCast';
 import { buildLabel } from '../../../buildLabel';
 
 /** How far apart the others stand, on the stage's own grid. */
-const PLINTHS = { dx: 184, y: 286 };
+/** The others' places either side of the dais (render3d/hall.ts placeOf: 2.05 across), nearer than the banners. */
+const PLINTHS = { dx: 150, y: 286 };
 const clock = (t: number): string => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
 const farthest = (unlocked: RegionId[]) => unlocked.map((id) => REGIONS[id]).reduce((a, b) => (b.levels[1] > a.levels[1] ? b : a), REGIONS.emberwick);
@@ -99,6 +100,47 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
     };
   }, [engine]);
 
+  /* ------------------------------------------------- the others' places, clear of the banners */
+  // The ring of heroes is drawn over the hall (its plus for an empty place, a name over each one waiting), and the
+  // banners hang in the hall: where one of those would lie over a banner it steps down to just under the banner's
+  // foot, and the place's own reach stops taking the banner's clicks (the owner, 2026-11-21: "the + buttons are on top
+  // of the banners", on a phone, a computer and a 4K screen alike: measured on the screen, whatever its size).
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const hall = hallRef.current;
+      const c = canvasRef.current;
+      const box = boxRef.current;
+      if (!hall || !c || !box) return;
+      const cr = c.getBoundingClientRect();
+      const banners: { l: number; t: number; r: number; b: number }[] = [];
+      for (let i = 0; i < 4; i++) {
+        const b = hall.bannerBox(i);
+        if (b) banners.push({ l: cr.left + b.x * cr.width, t: cr.top + b.y * cr.height, r: cr.left + (b.x + b.w) * cr.width, b: cr.top + (b.y + b.h) * cr.height });
+      }
+      for (const fig of box.querySelectorAll<HTMLElement>('.cs-figure')) {
+        const away = fig.classList.contains('is-away');
+        for (const part of fig.querySelectorAll<HTMLElement>('.cs-plus, .cs-tag, .cs-body')) {
+          const rect = part.getBoundingClientRect();
+          const k = rect.height / (part.offsetHeight || 1) || 1;
+          const was = Number(part.dataset.dy ?? 0);
+          // (where it would be without the step it has taken)
+          const top = rect.top - was * k;
+          const bottom = rect.bottom - was * k;
+          const over = away ? banners.filter((b) => rect.left < b.r && rect.right > b.l && top < b.b && bottom > b.t) : [];
+          if (part.classList.contains('cs-body')) {
+            part.style.pointerEvents = over.length ? 'none' : '';
+            continue;
+          }
+          const dy = over.length ? Math.max(...over.map((b) => (b.b + 6 - top) / k)) : 0;
+          if (Math.abs(dy - was) < 0.5) continue;
+          part.dataset.dy = String(dy);
+          part.style.translate = dy ? `0 ${dy}px` : '';
+        }
+      }
+    }, 120);
+    return () => window.clearInterval(id);
+  }, []);
+
   /* ------------------------------------------------- walking the ring */
   const go = useCallback(
     (d: number) => {
@@ -123,7 +165,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
     { id: 'vigil', name: 'The Vigil', sub: night > 0 ? `The endless horde · best ${clock(night)}` : 'Hold out against the endless horde', color: '#9a3a1a', icon: iconPicture(VIGIL_ICON.vigil!), go: onVigil },
     // (the Trials are the account's, not a hero's: open once any hero has reached level 20, played as a calling's own
     // ready champion: progress/trial.ts)
-    { id: 'rift', name: 'Rift Trials', sub: trials ? `Dungeons against the clock · best stone +${Math.max(1, ...Object.values(engine.save.rift))}` : `Opens when a hero reaches level ${TRIALS_OPEN_AT}`, color: '#5a36b0', icon: iconPicture(VIGIL_ICON.rift!), locked: !trials, go: () => onRift(at) },
+    { id: 'rift', name: 'Rift Trials', sub: trials ? `Dungeons against the clock · best stone +${Math.max(1, ...Object.values(engine.save.rift))}` : `Opens at level ${TRIALS_OPEN_AT}`, color: '#5a36b0', icon: iconPicture(VIGIL_ICON.rift!), locked: !trials, go: () => onRift(at) },
   ];
   const specs = ways.map(({ go: _go, ...s }) => s);
   const specKey = JSON.stringify(specs);

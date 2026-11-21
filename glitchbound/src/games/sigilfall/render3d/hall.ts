@@ -42,7 +42,8 @@ function placeOf(off: number): { x: number; z: number; turn: number } {
   if (off === 0) return { x: 0, z: 0, turn: 0 };
   const side = Math.sign(off);
   const n = Math.abs(off);
-  return { x: side * (2.5 + (n - 1) * 1.7), z: -1.5 - (n - 1) * 1.5, turn: -side * 0.45 };
+  // (nearer the dais than they stood, 2.5: the banners hang beyond them)
+  return { x: side * (2.05 + (n - 1) * 1.7), z: -1.5 - (n - 1) * 1.5, turn: -side * 0.45 };
 }
 
 export class Hall3D {

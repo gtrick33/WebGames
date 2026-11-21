@@ -6352,10 +6352,11 @@ html.rb-touch-playing textarea {
   filter: brightness(0) drop-shadow(0 0 7px rgb(255 255 255 / 0.1));
   opacity: 0.85;
 }
+/* (on the floor at the place's feet, under the banners: 2026-11-21, "move the plus buttons") */
 .cs-plus {
   position: absolute;
   left: -19px;
-  bottom: 62px;
+  bottom: 4px;
   display: grid;
   place-items: center;
   width: 38px;
@@ -16233,5 +16234,23 @@ html.rb-touch-playing textarea {
 @media (prefers-reduced-motion: reduce) {
   .rb-equipask {
     animation: none;
+  }
+}
+
+/* ---- The hall's own small pieces grow with a big screen (a 1440 or 4K monitor in full screen): the cog, the build's
+   mark and the dots under the hero's name were drawn at a laptop's size and read as specks there (2026-11-21). The
+   hall itself, its banners and the hero's name grow with it already. ---- */
+@container (min-height: 1250px) {
+  .cs-top-btns,
+  .cs-dots,
+  .cs-version {
+    zoom: 1.5;
+  }
+}
+@container (min-height: 1700px) {
+  .cs-top-btns,
+  .cs-dots,
+  .cs-version {
+    zoom: 2;
   }
 }
