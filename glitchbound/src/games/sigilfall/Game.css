@@ -6487,231 +6487,18 @@ html.rb-touch-playing textarea {
   transform: rotate(135deg);
 }
 
-/* ---- The hall's banners: the ways in, hanging two either side of the hero (the owner, 2026-11-21: "too many buttons,
-   would be nice if those buttons are somehow integrated within the screen itself, like banners"). Each is cloth of
-   its mode's color on a gold rod, cut in a swallowtail, with a gold border stitched inside it, its emblem in a gold
-   disc, its name and a line; it sways a little from its rod, and swings out and lights up under the pointer. ---- */
-.cs-banners {
+/* ---- The ways in hang in the hall itself, in 3D (render3d/hallBanners.ts): these are their buttons for the keyboard
+   and screen readers, unseen; the banner in the picture lights up as one takes the focus. ---- */
+.cs-ways {
   position: absolute;
-  inset: 0;
-  z-index: 5;
-  pointer-events: none;
-}
-.cs-banner-side {
-  position: absolute;
-  top: calc(clamp(86px, 23cqh, 160px) + var(--sa-t, 0px));
-  display: flex;
-  gap: clamp(6px, 1.6cqw, 22px);
-}
-.cs-banner-side.is-left {
-  left: calc(clamp(10px, 3cqw, 46px) + var(--sa-l, 0px));
-}
-.cs-banner-side.is-right {
-  right: calc(clamp(10px, 3cqw, 46px) + var(--sa-r, 0px));
-}
-.cs-banner {
-  --m: #f6c453;
-  position: relative;
-  display: grid;
-  justify-items: center;
-  width: clamp(76px, 10.5cqw, max(150px, 8.4cqw));
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: #fff6e0;
-  cursor: pointer;
-  pointer-events: auto;
-  transform-origin: 50% 0;
-  animation: cs-sway 6s ease-in-out infinite alternate;
-  filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.55));
-  transition: filter 0.2s ease;
-}
-.cs-banner:nth-child(2) {
-  animation-delay: -2.4s;
-}
-.cs-banner-side.is-right .cs-banner {
-  animation-delay: -1.2s;
-}
-.cs-banner-side.is-right .cs-banner:nth-child(2) {
-  animation-delay: -3.6s;
-}
-@keyframes cs-sway {
-  from {
-    transform: rotate(-1.4deg);
-  }
-  to {
-    transform: rotate(1.4deg);
-  }
-}
-.cs-banner:hover:not(:disabled),
-.cs-banner:focus-visible {
-  animation: cs-swing 0.9s ease-in-out;
-  filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.55)) drop-shadow(0 0 16px color-mix(in srgb, var(--m) 70%, transparent)) brightness(1.12);
-  outline: none;
-}
-@keyframes cs-swing {
-  30% {
-    transform: rotate(4deg);
-  }
-  60% {
-    transform: rotate(-2.5deg);
-  }
-  to {
-    transform: rotate(0);
-  }
-}
-.cs-banner:active:not(:disabled) .cs-banner-cloth {
-  transform: translateY(3px);
-}
-/* the rod, wider than the cloth, with a knob at each end */
-.cs-banner-rod {
-  position: relative;
-  z-index: 1;
-  width: 118%;
-  height: clamp(6px, 1cqh, 9px);
-  border: 1.5px solid #3a2208;
-  border-radius: 99px;
-  background: linear-gradient(180deg, #ffe7a8, #f6c453 50%, #a8701c);
-}
-.cs-banner-rod::before,
-.cs-banner-rod::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  width: clamp(9px, 1.5cqh, 13px);
-  aspect-ratio: 1;
-  border: 1.5px solid #3a2208;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fff2c0, #f6c453 55%, #a8701c);
-  translate: 0 -50%;
-}
-.cs-banner-rod::before {
-  left: -6px;
-}
-.cs-banner-rod::after {
-  right: -6px;
-}
-.cs-banner-cloth {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  align-content: start;
-  gap: clamp(3px, 0.8cqh, 7px);
-  width: 100%;
-  min-height: clamp(120px, 31cqh, max(270px, 22cqh));
-  margin-top: -2px;
-  padding: clamp(10px, 2.4cqh, 20px) clamp(5px, 0.8cqw, 10px) clamp(26px, 6cqh, 46px);
-  background:
-    radial-gradient(ellipse at 50% 0, rgb(255 255 255 / 0.18), transparent 60%),
-    linear-gradient(180deg, color-mix(in srgb, var(--m) 72%, #1a0d2e), color-mix(in srgb, var(--m) 34%, #0c0718) 85%);
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%);
-  text-align: center;
-  transition: transform 0.12s ease;
-}
-/* the gold border stitched inside it, cut as the cloth is */
-.cs-banner-cloth::before {
-  content: '';
-  position: absolute;
-  inset: 4px 4px 0;
-  border: 2px solid rgb(255 214 120 / 0.85);
-  border-bottom: 0;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%);
-  pointer-events: none;
-}
-.cs-banner-cloth::after {
-  /* (the swallowtail's own gold edge: two strokes along the cut) */
-  content: '';
-  position: absolute;
-  inset: auto 4px 3px;
-  height: 18%;
-  background:
-    linear-gradient(to top right, transparent calc(50% - 1.5px), rgb(255 214 120 / 0.85) calc(50% - 1px), rgb(255 214 120 / 0.85) calc(50% + 1px), transparent calc(50% + 1.5px)) left / 50% 100% no-repeat,
-    linear-gradient(to top left, transparent calc(50% - 1.5px), rgb(255 214 120 / 0.85) calc(50% - 1px), rgb(255 214 120 / 0.85) calc(50% + 1px), transparent calc(50% + 1.5px)) right / 50% 100% no-repeat;
-  pointer-events: none;
-}
-.cs-banner-emblem {
-  display: grid;
-  place-items: center;
-  width: clamp(34px, 6cqw, max(64px, 4.6cqw));
-  aspect-ratio: 1;
-  border: 2px solid #ffd878;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--m) 40%, #2a1a40), #120a20);
-  box-shadow: 0 0 0 2px rgb(5 3 11 / 0.7), 0 3px 8px rgb(0 0 0 / 0.5);
-  color: #fff2c0;
-  font: 700 clamp(15px, 2.6cqw, 26px) system-ui, sans-serif;
+  width: 1px;
+  height: 1px;
   overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
-.cs-banner-emblem img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.cs-banner strong {
-  font: 800 clamp(11.5px, 1.7cqw, max(18px, 1.25cqw)) / 1.08 Georgia, 'Times New Roman', serif;
-  letter-spacing: 0.01em;
-  text-shadow: 0 2px 0 #000, 0 0 8px rgb(0 0 0 / 0.8);
-  overflow-wrap: anywhere;
-}
-.cs-banner small {
-  color: color-mix(in srgb, var(--m) 35%, #fff);
-  font-size: clamp(9px, 1.25cqw, max(12px, 0.85cqw));
-  line-height: 1.2;
-  text-shadow: 0 1px 2px #000;
-  overflow-wrap: anywhere;
-}
-.cs-banner.is-story {
-  --m: #f6c453;
-}
-.cs-banner.is-rift {
-  --m: #b48cff;
-}
-.cs-banner.is-vigil {
-  --m: #ff7a3d;
-}
-.cs-banner.is-party {
-  --m: #3fc8b8;
-}
-.cs-banner.is-locked {
-  --m: #6d6580;
-  cursor: default;
-  animation: none;
-  filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.55)) grayscale(0.7) brightness(0.8);
-}
-/* a short stage (a phone on its side): shorter cloth, no line under the name */
-@container (max-height: 420px) {
-  .cs-banner-cloth {
-    min-height: clamp(90px, 30cqh, 140px);
-    padding-bottom: 20px;
-  }
-  .cs-banner small {
-    display: none;
-  }
-}
-/* a narrow stage (a phone held upright): one banner a side, side by side under the name, the rest the same */
-@container (max-width: 560px) {
-  .cs-banner-side {
-    flex-direction: column;
-    gap: 6px;
-  }
-  .cs-banner {
-    width: clamp(64px, 18cqw, 90px);
-  }
-  .cs-banner-cloth {
-    min-height: 0;
-    padding: 8px 4px 18px;
-  }
-  .cs-banner small,
-  .cs-banner-emblem {
-    display: none;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .cs-banner,
-  .cs-banner:hover:not(:disabled) {
-    animation: none;
-  }
+.cs.is-pointing {
+  cursor: pointer;
 }
 
 /* the cog's menu, under it */
@@ -6770,10 +6557,12 @@ html.rb-touch-playing textarea {
 }
 
 /* who stands here, at the top of the hall; the actions along the foot; the hero clear between them */
+/* (at the foot of the hall since the ways in became its banners, 2026-11-21: where the Ring's button was, the hero's
+   name, level and calling, and the title they wear or the land they've reached) */
 .cs-id {
   position: absolute;
   left: 50%;
-  top: calc(clamp(6px, 2cqh, 16px) + var(--sa-t, 0px));
+  bottom: calc(clamp(8px, 2.6cqh, 20px) + var(--sa-b, 0px));
   z-index: 6;
   display: grid;
   justify-items: center;
@@ -6789,7 +6578,7 @@ html.rb-touch-playing textarea {
 @keyframes cs-plate-in {
   from {
     opacity: 0;
-    transform: translate(-50%, -8px);
+    transform: translate(-50%, 8px);
   }
 }
 .cs-name {

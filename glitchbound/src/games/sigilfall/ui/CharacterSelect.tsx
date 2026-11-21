@@ -16,6 +16,7 @@ import { iconPicture, iconsReady } from '../render/art/gameIcons';
 import { VIGIL_ICON } from '../render/art/iconPicks';
 import { heldWeapon, heroLook } from '../render/sprites';
 import { Hall3D, type HallHero } from '../render3d/hall';
+import type { BannerSpec } from '../render3d/hallBanners';
 import { shieldOf } from '../render3d/worldCast';
 import { buildLabel } from '../../../buildLabel';
 
@@ -61,6 +62,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
     liveRef.current.cast = cast;
     liveRef.current.at = at;
   }, [cast, at]);
+  const hallRef = useRef<Hall3D | null>(null);
   useEffect(() => {
     const c = canvasRef.current!;
     const box = c.parentElement!;
@@ -70,6 +72,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
     } catch {
       return undefined;
     }
+    hallRef.current = hall;
     const fit = (): void => {
       if (box.clientWidth && box.clientHeight) hall.fit(box.clientWidth, box.clientHeight, Math.min(2, window.devicePixelRatio || 1));
     };
@@ -91,6 +94,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      hallRef.current = null;
       hall.dispose();
     };
   }, [engine]);
@@ -109,6 +113,37 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
     if (hero) engine.play(at);
     else engine.newHeroScreen(at);
   }, [at, engine, hero]);
+
+  /* ------------------------------------------------- the hall's four banners: the ways in */
+  // (render3d/hallBanners.ts hangs them in the hall itself; these say what each says and does, left to right)
+  const trials = trialsOpen(engine.save);
+  const ways: (BannerSpec & { go: () => void })[] = [
+    { id: 'ring', name: 'The Ring', sub: `Arena duels · ${standing.rating} ${rankOf(standing.best).name}`, color: '#a82034', icon: iconPicture(VIGIL_ICON.ring!), go: onRing },
+    { id: 'story', name: hero ? 'Campaign' : 'New hero', sub: hero ? `The story · ${farthest(hero.unlocked).name}` : 'Eight callings, one Crown', color: '#2a56b0', icon: iconPicture(VIGIL_ICON.story!), go: primary },
+    { id: 'vigil', name: 'The Vigil', sub: night > 0 ? `The endless horde · best ${clock(night)}` : 'Hold out against the endless horde', color: '#9a3a1a', icon: iconPicture(VIGIL_ICON.vigil!), go: onVigil },
+    // (the Trials are the account's, not a hero's: open once any hero has reached level 20, played as a calling's own
+    // ready champion: progress/trial.ts)
+    { id: 'rift', name: 'Rift Trials', sub: trials ? `Dungeons against the clock · best stone +${Math.max(1, ...Object.values(engine.save.rift))}` : `Opens when a hero reaches level ${TRIALS_OPEN_AT}`, color: '#5a36b0', icon: iconPicture(VIGIL_ICON.rift!), locked: !trials, go: () => onRift(at) },
+  ];
+  const specs = ways.map(({ go: _go, ...s }) => s);
+  const specKey = JSON.stringify(specs);
+  useEffect(() => {
+    hallRef.current?.setBanners(JSON.parse(specKey) as BannerSpec[]);
+  }, [specKey]);
+  const [lit, setLit] = useState(-1);
+  const light = (i: number): void => {
+    setLit(i);
+    hallRef.current?.hoverBanner(i);
+  };
+  /** The banner under the pointer, or -1 (the canvas's own corner is the hall's). */
+  const bannerAt = (e: ReactPointerEvent): number => {
+    const c = canvasRef.current;
+    if (!c || !hallRef.current) return -1;
+    if ((e.target as HTMLElement).closest('button, a, [role="menu"]')) return -1;
+    const r = c.getBoundingClientRect();
+    return hallRef.current.pickBanner(e.clientX - r.left, e.clientY - r.top);
+  };
+
   useEffect(() => {
     const key = (e: KeyboardEvent): void => {
       if (e.target instanceof HTMLInputElement) return;
@@ -155,9 +190,22 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
     if (!d || d.onHero) return;
     const dx = e.clientX - d.x;
     if (Math.abs(dx) > 44) go(dx < 0 ? 1 : -1);
+    // a tap or a click on one of the hall's banners: its way in
+    else if (Math.abs(dx) < 10) {
+      const i = bannerAt(e);
+      const way = ways[i];
+      if (way && !way.locked) {
+        engine.sound.play('quest', 0.3);
+        way.go();
+      }
+    }
   };
   const dragMove = (e: ReactPointerEvent): void => {
     move(e);
+    if (!drag.current && e.pointerType === 'mouse') {
+      const i = bannerAt(e);
+      if (i !== lit) light(i);
+    }
     const d = drag.current;
     if (!d?.onHero) return;
     const dx = e.clientX - d.x;
@@ -167,7 +215,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
   };
 
   return (
-    <div className="cs" ref={boxRef} onPointerMove={dragMove} onPointerDown={(e) => down(e, false)} onPointerUp={up} style={{ ['--cc' as string]: color }}>
+    <div className={`cs${lit >= 0 && !ways[lit]?.locked ? ' is-pointing' : ''}`} ref={boxRef} onPointerMove={dragMove} onPointerDown={(e) => down(e, false)} onPointerUp={up} onPointerLeave={() => light(-1)} style={{ ['--cc' as string]: color }}>
       <canvas ref={canvasRef} className="cs-hall" aria-hidden="true" />
       <div className="cs-stage">
         {heroes.map((h, i) => {
@@ -231,6 +279,11 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
                     <img src={uiIcon('store', 2)} alt="" draggable={false} /> Shop
                   </button>
                 )}
+                {hero && (
+                  <button role="menuitem" onClick={() => (setMenu(false), engine.playTogether(at))}>
+                    <span aria-hidden="true">⚑</span> Play together
+                  </button>
+                )}
                 <button role="menuitem" onClick={() => (setMenu(false), onSettings())}>
                   <span aria-hidden="true">⚙</span> Settings
                 </button>
@@ -276,33 +329,16 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
         </ol>
       </div>
 
-      {/* The ways in. The Ring, the game's first, is the great button at the foot of the hall; the others hang in the hall
-          itself as its banners, two either side (the owner, 2026-11-21: "too many buttons, would be nice if those buttons
-          are somehow integrated within the screen itself, like banners"). Each says what it is, and where this hero
-          stands in it. */}
-      <nav className="cs-banners" aria-label="Ways to play">
-        <div className="cs-banner-side is-left">
-          <Banner kind="story" icon={VIGIL_ICON.story!} name={hero ? 'Campaign' : 'New hero'} sub={hero ? farthest(hero.unlocked).name : 'Eight callings, one Crown'} onClick={primary} />
-          {/* (the Trials are the account's, not a hero's: open once any hero has reached level 20, played as a calling's
-              own ready champion: progress/trial.ts) */}
-          <Banner kind="rift" icon={VIGIL_ICON.rift!} name="Rift Trials" sub={trialsOpen(engine.save) ? `Best stone +${Math.max(1, ...Object.values(engine.save.rift))}` : `Opens at level ${TRIALS_OPEN_AT}`} locked={!trialsOpen(engine.save)} onClick={() => onRift(at)} />
-        </div>
-        <div className="cs-banner-side is-right">
-          <Banner kind="vigil" icon={VIGIL_ICON.vigil!} name="The Vigil" sub={night > 0 ? `Best ${clock(night)}` : 'The endless horde'} onClick={onVigil} />
-          <Banner kind="party" glyph="⚑" name="Together" sub={hero ? 'Up to four friends' : 'Make a hero first'} locked={!hero} onClick={() => engine.playTogether(at)} />
-        </div>
+      {/* The ways in hang in the hall itself (render3d/hallBanners.ts): four banners of the same weight, the Ring, the
+          Campaign, the Vigil and the Rift Trials, pointed at and clicked in the picture. These buttons are theirs for the
+          keyboard and for a screen reader: unseen, they light their banner up as they take the focus. */}
+      <nav className="cs-ways" aria-label="Ways to play">
+        {ways.map((w, i) => (
+          <button key={w.id} disabled={w.locked} onClick={w.go} onFocus={() => light(i)} onBlur={() => light(-1)} aria-label={`${w.name}: ${w.sub}`}>
+            {w.name}
+          </button>
+        ))}
       </nav>
-      <div className="cs-actions">
-        <button className="cs-enter is-ring" onClick={onRing} autoFocus>
-          <img className="cs-enter-glyph" src={iconPicture(VIGIL_ICON.ring!)} alt="" draggable={false} />
-          <span className="cs-enter-words">
-            <span>Enter the Ring</span>
-            <small>
-              Arena duels · {standing.rating} {rankOf(standing.best).name}
-            </small>
-          </span>
-        </button>
-      </div>
 
       {hero && confirmDelete === at && (
         <div className="rb-ring-dialog-wrap" role="dialog" aria-label={`Delete ${hero.name}`}>
@@ -349,24 +385,5 @@ function Arrows({ go }: { go: (d: number) => void }) {
         <i />
       </button>
     </>
-  );
-}
-
-/**
- * One of the hall's banners, a way in: cloth of its mode's color on a gold rod, its emblem in a gold disc, its name and a
- * line under it, swaying a little. A locked one hangs grey and does nothing.
- */
-function Banner({ kind, icon, glyph, name, sub, locked, onClick }: { kind: string; icon?: string; glyph?: string; name: string; sub: string; locked?: boolean; onClick: () => void }) {
-  return (
-    <button className={`cs-banner is-${kind}${locked ? ' is-locked' : ''}`} disabled={locked} onClick={onClick}>
-      <i className="cs-banner-rod" aria-hidden="true" />
-      <span className="cs-banner-cloth">
-        <span className="cs-banner-emblem" aria-hidden="true">
-          {icon ? <img src={iconPicture(icon)} alt="" draggable={false} /> : glyph}
-        </span>
-        <strong>{name}</strong>
-        <small>{sub}</small>
-      </span>
-    </button>
   );
 }
