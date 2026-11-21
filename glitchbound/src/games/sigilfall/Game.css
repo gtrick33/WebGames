@@ -16086,61 +16086,54 @@ html.rb-touch-playing textarea {
   }
 }
 
-/* ---- A better piece, picked up on a touch screen: wear it now? (ui/EquipAsk.tsx, the owner 2026-11-20). Small, at the
-   top of the picture in the middle, under the row of buttons there, clear of the stick and the thumbs; its rim in the
-   piece's rarity. ---- */
+/* ---- A better piece, picked up on a touch screen: wear it now? (ui/EquipAsk.tsx, the owner 2026-11-20). One small
+   strip at the top of the picture in the middle, under the row of buttons there, clear of the stick and the thumbs; its
+   rim in the piece's rarity (2026-11-21: "make the item pop up way smaller"). ---- */
 .rb-equipask {
   position: absolute;
-  top: calc(56px + var(--sa-t));
+  top: calc(54px + var(--sa-t));
   left: 50%;
   z-index: 30;
-  display: grid;
+  display: flex;
+  align-items: center;
   gap: 6px;
-  width: min(280px, calc(100% - 24px));
-  padding: 7px 9px;
-  border: 2px solid var(--rc, #ffd257);
-  border-radius: 12px;
-  background: rgb(18 12 8 / 0.94);
-  box-shadow: 0 0 0 1px #05030b, 0 6px 18px rgb(0 0 0 / 0.55), 0 0 16px color-mix(in srgb, var(--rc, #ffd257) 35%, transparent);
+  max-width: min(290px, calc(100% - 24px));
+  padding: 3px 4px;
+  border: 1.5px solid var(--rc, #ffd257);
+  border-radius: 9px;
+  background: rgb(18 12 8 / 0.9);
+  box-shadow: 0 0 0 1px #05030b, 0 3px 10px rgb(0 0 0 / 0.5);
   transform: translateX(-50%);
-  animation: rb-equipask-in 0.22s ease-out;
+  animation: rb-equipask-in 0.2s ease-out;
   pointer-events: auto;
 }
 @keyframes rb-equipask-in {
   from {
     opacity: 0;
-    transform: translate(-50%, -10px);
+    transform: translate(-50%, -6px);
   }
-}
-.rb-equipask-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
 }
 .rb-equipask-name {
   display: grid;
   min-width: 0;
+  line-height: 1.15;
 }
 .rb-equipask-name strong {
   overflow: hidden;
   color: var(--rc, #ffd257);
-  font-size: 14px;
+  font-size: 11.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.rb-equipask-name span {
-  color: #cfc4b0;
-  font-size: 11.5px;
-}
 .rb-equipask-deltas {
   display: flex;
-  flex-wrap: wrap;
-  gap: 3px 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: 12px;
+  gap: 6px;
+  overflow: hidden;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.rb-equipask-deltas i {
+  font-style: normal;
 }
 .rb-equipask-deltas .is-up {
   color: #7bd65a;
@@ -16148,13 +16141,27 @@ html.rb-touch-playing textarea {
 .rb-equipask-deltas .is-down {
   color: #ff7a6a;
 }
-.rb-equipask-btns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
+.rb-equipask-yes,
+.rb-equipask-no {
+  flex: none;
+  height: 26px;
+  margin: 0;
+  border: 1.5px solid #3a2208;
+  border-radius: 7px;
+  font: 700 11px system-ui, sans-serif;
+  cursor: pointer;
 }
-.rb-equipask-btns .rb-btn {
-  min-height: 34px;
+.rb-equipask-yes {
+  padding: 0 9px;
+  background: linear-gradient(180deg, #ffe7a8, #f6c453 55%, #cf8a2d);
+  color: #2a1406;
+}
+.rb-equipask-no {
+  width: 24px;
+  padding: 0;
+  background: rgb(255 255 255 / 0.08);
+  border-color: rgb(255 255 255 / 0.18);
+  color: #cfc4b0;
 }
 @media (prefers-reduced-motion: reduce) {
   .rb-equipask {
