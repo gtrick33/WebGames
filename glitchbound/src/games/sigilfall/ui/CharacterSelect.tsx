@@ -50,6 +50,8 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
   const color = hero ? CLASSES[hero.cls].colors.main : '#8d6bff';
   const [night] = useState(longestNight);
   const [standing] = useState(topStanding);
+  // the small menu behind the cog, top right: the rankings, the shop, the settings and deleting a hero
+  const [menu, setMenu] = useState(false);
 
   /* ------------------------------------------------- the hall, in 3D, with everyone in it */
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -211,39 +213,45 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
             {buildLabel()}
           </small>
         </div>
+        {/* (one cog for the hall's own things, beside the arcade's menu: the owner, 2026-11-21, "too many buttons") */}
         <div className="cs-top-btns">
-          {hero && (
-            <button className="rb-iconbtn cs-delete" onClick={() => setConfirmDelete(at)} aria-label={`Delete ${hero.name}`} title={`Delete ${hero.name}`}>
-              🗑
-            </button>
-          )}
-          {/* (the game's own shop, where there is one: a small button among the others, never more) */}
-          {onStore && (
-            <button className="rb-iconbtn cs-store" onClick={onStore} aria-label="Shop" title="Shop">
-              <img src={uiIcon('store', 2)} alt="" draggable={false} />
-            </button>
-          )}
-          <button className="rb-iconbtn" onClick={onRanks} aria-label="Rankings" title="Rankings">
-            ♛
-          </button>
-          <button className="rb-iconbtn" onClick={onSettings} aria-label="Settings">
+          <button className={`rb-iconbtn cs-cog${menu ? ' is-on' : ''}`} onClick={() => setMenu((m) => !m)} aria-label="Options" aria-expanded={menu} title="Options">
             ⚙
           </button>
           <GameMenuButton className="rb-iconbtn" />
+          {menu && (
+            <>
+              <button className="cs-menu-shade" aria-label="Close options" onClick={() => setMenu(false)} />
+              <div className="cs-menu" role="menu">
+                <button role="menuitem" onClick={() => (setMenu(false), onRanks())}>
+                  <span aria-hidden="true">♛</span> Rankings
+                </button>
+                {onStore && (
+                  <button role="menuitem" onClick={() => (setMenu(false), onStore())}>
+                    <img src={uiIcon('store', 2)} alt="" draggable={false} /> Shop
+                  </button>
+                )}
+                <button role="menuitem" onClick={() => (setMenu(false), onSettings())}>
+                  <span aria-hidden="true">⚙</span> Settings
+                </button>
+                {hero && (
+                  <button role="menuitem" className="is-danger" onClick={() => (setMenu(false), setConfirmDelete(at))}>
+                    <span aria-hidden="true">🗑</span> Delete {hero.name}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
-
-      <button className="cs-arrow is-left" onClick={() => go(-1)} aria-label="Previous hero">
-        <i />
-      </button>
-      <button className="cs-arrow is-right" onClick={() => go(1)} aria-label="Next hero">
-        <i />
-      </button>
 
       <div className="cs-id" key={at}>
         {hero ? (
           <>
-            <h2 className="cs-name">{hero.name}</h2>
+            <div className="cs-plate">
+              <Arrows go={go} />
+              <h2 className="cs-name">{hero.name}</h2>
+            </div>
             {/* (their level and calling on a line of their own, large: the owner could not read them on a big screen) */}
             <p className="cs-line">
               <b className="cs-class" style={{ color: CLASSES[hero.cls].colors.accent }}>
@@ -254,7 +262,10 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
           </>
         ) : (
           <>
-            <h2 className="cs-name">A place waits</h2>
+            <div className="cs-plate">
+              <Arrows go={go} />
+              <h2 className="cs-name">A place waits</h2>
+            </div>
             <p className="cs-line">Eight callings, six acts, one Crown. Who will you be?</p>
           </>
         )}
@@ -265,26 +276,23 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
         </ol>
       </div>
 
-      {/* the ways in: the Ring in the middle, the game's first way in (the owner, 2026-11-20: the Ring is the main mode,
-          the story, the Vigil and the Rift beside it); the story, the Rift, the Vigil and playing with friends round
-          it. Each says in a line what it is, and where this hero stands in it. */}
+      {/* The ways in. The Ring, the game's first, is the great button at the foot of the hall; the others hang in the hall
+          itself as its banners, two either side (the owner, 2026-11-21: "too many buttons, would be nice if those buttons
+          are somehow integrated within the screen itself, like banners"). Each says what it is, and where this hero
+          stands in it. */}
+      <nav className="cs-banners" aria-label="Ways to play">
+        <div className="cs-banner-side is-left">
+          <Banner kind="story" icon={VIGIL_ICON.story!} name={hero ? 'Campaign' : 'New hero'} sub={hero ? farthest(hero.unlocked).name : 'Eight callings, one Crown'} onClick={primary} />
+          {/* (the Trials are the account's, not a hero's: open once any hero has reached level 20, played as a calling's
+              own ready champion: progress/trial.ts) */}
+          <Banner kind="rift" icon={VIGIL_ICON.rift!} name="Rift Trials" sub={trialsOpen(engine.save) ? `Best stone +${Math.max(1, ...Object.values(engine.save.rift))}` : `Opens at level ${TRIALS_OPEN_AT}`} locked={!trialsOpen(engine.save)} onClick={() => onRift(at)} />
+        </div>
+        <div className="cs-banner-side is-right">
+          <Banner kind="vigil" icon={VIGIL_ICON.vigil!} name="The Vigil" sub={night > 0 ? `Best ${clock(night)}` : 'The endless horde'} onClick={onVigil} />
+          <Banner kind="party" glyph="⚑" name="Together" sub={hero ? 'Up to four friends' : 'Make a hero first'} locked={!hero} onClick={() => engine.playTogether(at)} />
+        </div>
+      </nav>
       <div className="cs-actions">
-        <button className={`cs-mode is-story`} onClick={primary}>
-          <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.story!)} alt="" draggable={false} />
-          <span>
-            <strong>{hero ? 'The Campaign' : 'Create a hero'}</strong>
-            <small>{hero ? `The story · ${farthest(hero.unlocked).name}` : 'Eight callings, six acts, one Crown'}</small>
-          </span>
-        </button>
-        {/* (the Trials are the account's, not a hero's: open once any hero has reached level 20, played as a calling's
-            own ready champion: progress/trial.ts) */}
-        <button className={`cs-mode is-rift${trialsOpen(engine.save) ? '' : ' is-locked'}`} disabled={!trialsOpen(engine.save)} onClick={() => onRift(at)}>
-          <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.rift!)} alt="" draggable={false} />
-          <span>
-            <strong>Rift Trials</strong>
-            <small>{trialsOpen(engine.save) ? `Dungeons against the clock · best stone +${Math.max(1, ...Object.values(engine.save.rift))}` : `Opens when a hero reaches level ${TRIALS_OPEN_AT}`}</small>
-          </span>
-        </button>
         <button className="cs-enter is-ring" onClick={onRing} autoFocus>
           <img className="cs-enter-glyph" src={iconPicture(VIGIL_ICON.ring!)} alt="" draggable={false} />
           <span className="cs-enter-words">
@@ -292,22 +300,6 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
             <small>
               Arena duels · {standing.rating} {rankOf(standing.best).name}
             </small>
-          </span>
-        </button>
-        <button className="cs-mode is-vigil" onClick={onVigil}>
-          <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.vigil!)} alt="" draggable={false} />
-          <span>
-            <strong>The Vigil</strong>
-            <small>{night > 0 ? `Hold out against the horde · best ${clock(night)}` : 'Hold out against the endless horde'}</small>
-          </span>
-        </button>
-        <button className={`cs-mode is-party${hero ? '' : ' is-locked'}`} disabled={!hero} onClick={() => engine.playTogether(at)}>
-          <span className="cs-mode-glyph is-party" aria-hidden="true">
-            ⚑
-          </span>
-          <span>
-            <strong>Play together</strong>
-            <small>{hero ? 'The story or a Rift, with up to three friends' : 'Make a hero first'}</small>
           </span>
         </button>
       </div>
@@ -344,4 +336,37 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
 function HeroPlace({ engine, hero }: { engine: SigilEngine; hero: Character }) {
   const title = wornTitleShown(hero, engine.ringRating());
   return <span className="cs-place">{title ? <TitleFx fx={title.fx}>{title.text}</TitleFx> : farthest(hero.unlocked).name}</span>;
+}
+
+/** The arrows either side of the hero's name: the ring of heroes walks round by one. */
+function Arrows({ go }: { go: (d: number) => void }) {
+  return (
+    <>
+      <button className="cs-arrow is-left" onClick={() => go(-1)} aria-label="Previous hero">
+        <i />
+      </button>
+      <button className="cs-arrow is-right" onClick={() => go(1)} aria-label="Next hero">
+        <i />
+      </button>
+    </>
+  );
+}
+
+/**
+ * One of the hall's banners, a way in: cloth of its mode's color on a gold rod, its emblem in a gold disc, its name and a
+ * line under it, swaying a little. A locked one hangs grey and does nothing.
+ */
+function Banner({ kind, icon, glyph, name, sub, locked, onClick }: { kind: string; icon?: string; glyph?: string; name: string; sub: string; locked?: boolean; onClick: () => void }) {
+  return (
+    <button className={`cs-banner is-${kind}${locked ? ' is-locked' : ''}`} disabled={locked} onClick={onClick}>
+      <i className="cs-banner-rod" aria-hidden="true" />
+      <span className="cs-banner-cloth">
+        <span className="cs-banner-emblem" aria-hidden="true">
+          {icon ? <img src={iconPicture(icon)} alt="" draggable={false} /> : glyph}
+        </span>
+        <strong>{name}</strong>
+        <small>{sub}</small>
+      </span>
+    </button>
+  );
 }
