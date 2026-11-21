@@ -123,7 +123,6 @@ describe('The Ring for newcomers: hints and lessons', () => {
     expect(lessonOf({ ...newLog(), fought: 60, circlesTaken: 3, outOfReach: 40 }, me, KEYS)).toMatch(/3 red circles/);
     expect(lessonOf({ ...newLog(), fought: 60, outOfReach: 40 }, me, KEYS)).toMatch(/up close.*Bull Rush/);
     expect(lessonOf({ ...newLog(), fought: 60, superIdle: 20 }, me, KEYS)).toMatch(/press Q/i);
-    expect(lessonOf({ ...newLog(), fought: 60, hurtBySphere: 12 }, me, KEYS)).toMatch(/sphere/);
     expect(lessonOf({ ...newLog(), fought: 20 }, me, KEYS)).toMatch(/combo/);
     me.score.combos = 2;
     me.score.supers = 1;
@@ -224,7 +223,6 @@ describe('The Ring for newcomers: the tutorial', () => {
     expect(view().next).toBe(true);
     expect(view().labels!.map((l) => l.spot)).toEqual(expect.arrayContaining(['plates', 'foes', 'clock', 'target', 'bar', 'super']));
     expect(view().text).toMatch(/red circle/);
-    expect(view().text).toMatch(/spheres/);
     expect(view().text).toMatch(/sigil/);
     expect(view().text).toMatch(/Pillars/);
     expect(view().text).toMatch(/Healing weakens/);

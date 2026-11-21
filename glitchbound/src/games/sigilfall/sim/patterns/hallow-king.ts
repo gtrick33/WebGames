@@ -121,6 +121,11 @@ function showCrown(w: World, s: Reign, e: Enemy): void {
 }
 /** How much harder he hits for each sigil the Crown has taken. */
 const DMG_PER_SIGIL = 0.1;
+/**
+ * What the sigils' powers deal against what they are written to (their `mul`s): a quarter off, the owner, 2026-11-20,
+ * on the Hallow King's spells hitting too hard. His blows (cleave, chop, charge) are as they were.
+ */
+export const SIGIL_SPELL_K = 0.75;
 /** The powers the Crown casts by itself, over his own fighting (none of them moves him). */
 const CROWN_OWN: SigilId[] = ['stone', 'thorns', 'frost', 'tides'];
 
@@ -136,7 +141,7 @@ function crownCasts(w: World, e: Enemy, s: Reign, dt: number): void {
       use: { id: 'king:sigil', w: 1, cd: 0 },
       pt: own.pt,
       aimAt: () => Math.atan2(w.player.y - e.y, w.player.x - e.x),
-      num: (_key, d) => d,
+      num: (key, d) => (key === 'mul' ? d * SIGIL_SPELL_K : d),
       str: (_key, d) => d,
       end: () => {
         own.done = true;
@@ -664,7 +669,7 @@ const sigil: PatternFn = (w, e, dt, k) => {
   const id = ORDER[k.pt.data.pw!]!;
   const sub: PatternKit = {
     ...k,
-    num: (key, d) => k.num(`${id}.${key}`, k.num(key, d)),
+    num: (key, d) => k.num(`${id}.${key}`, k.num(key, d)) * (key === 'mul' ? SIGIL_SPELL_K : 1),
     str: (key, d) => k.str(`${id}.${key}`, k.str(key, d)),
   };
   POWERS[id](w, e, sub);

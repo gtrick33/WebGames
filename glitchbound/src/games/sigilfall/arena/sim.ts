@@ -52,7 +52,7 @@ export const HEAL_BY_SIZE: readonly number[] = [1, 1, 1, 1.45];
  * duel and do less among six), and one number can't set a class right in all three. The owner, 2026-11-19: "can we
  * tweak it so the balancing is between 46 and 54%". Set by tests/sigilfall-ring-balance.test.ts.
  */
-export const TEAM_K: Readonly<Partial<Record<ClassId, readonly [number, number]>>> = { mage: [0.895, 0.955], ranger: [1.005, 1.1], paladin: [1.02, 1], warlock: [1, 1.08], gloamknight: [1, 0.97], warrior: [0.985, 0.935] };
+export const TEAM_K: Readonly<Partial<Record<ClassId, readonly [number, number]>>> = { priest: [0.95, 0.975], mage: [0.895, 0.955], ranger: [1.005, 1.1], paladin: [1.02, 1], warlock: [1, 1.08], gloamknight: [1, 0.97], warrior: [0.985, 0.935] };
 /**
  * Only healers left standing, on both sides: sudden death. Healing is gone within `fade` seconds of it, and everything
  * hits `grow` harder for every second since (the owner, 2026-11-17: "in 2v2 if both dps die, the healers take ages to
@@ -67,10 +67,6 @@ export const SUDDEN = { fade: 3, grow: 0.85 } as const;
  * 2 rogue gloamknights fight theyre always invisible".
  */
 export const DARK = { after: 3, rest: 9 } as const;
-/** Healing spheres: the first rise at this, each comes back this long after it's taken, and gives this share of a life. */
-export const ORB_FIRST = 12;
-export const ORB_EVERY = 24;
-export const ORB_HEAL = 0.14;
 const QUEUE = 0.35;
 /** Two presses of a basic ability this close together break off the channel under way (one press waits for its end). */
 export const DOUBLE_TAP = 0.4;
@@ -78,13 +74,17 @@ export const DOUBLE_TAP = 0.4;
 export const CAST_SLOW = 0.55;
 /**
  * Dampening: none for this long, then healing fades by this share each second until none is left (all of it gone at
- * DAMP_FROM + 1 / DAMP_RATE, 115 seconds in). It stopped at three quarters gone while the Gloam was there to end a
- * match; now it is what ends one.
+ * DAMP_FROM + 1 / DAMP_RATE, 125 seconds in, 25 before the clock ends a match). It stopped at three quarters gone
+ * while the Gloam was there to end a match; now it is what ends one. It starts 30 sec later than it did (35, at 1/80 a
+ * second) since the healing spheres went (the owner, 2026-11-20), and fades over 60 sec rather than 80 so a match
+ * still ends before the clock does: a healer's own spells are all the healing there is now.
  */
-export const DAMP_FROM = 35;
-export const DAMP_RATE = 0.0125;
+export const DAMP_FROM = 65;
+export const DAMP_RATE = 1 / 60;
 /** The sigil in the middle: first at this, then this long after it's taken. */
 export const SIGIL_FIRST = 15;
+/** The share of a life the sigil gives back to whoever takes it (its healing fades as all healing does). */
+export const SIGIL_HEAL = 0.2;
 const SIGIL_EVERY = 22;
 /** The super meter fills by this much dealt (healing counts the same), and a little by what's taken. */
 const SUPER_DEALT = 900;
@@ -96,6 +96,11 @@ export const BURST_K = 1.35;
 export const CRIT_K = 1.7;
 /** Healing over its ability's number: a little under, so that a healer slows a kill rather than stopping it. */
 export const HEAL_K = 0.85;
+/**
+ * A healer's healing (one whose bar opens with a heal for a friend) over that: the owner, 2026-11-20, buffing the
+ * healers as the healing spheres went. Only theirs: a fighter's own heals (a super's, a talent's) stay as they were.
+ */
+export const HEALER_K = 1.12;
 /** A cast no blow knocks back: a heal for a friend (the healers' Knit Wounds, Dawn's Touch and Green Mending). */
 export const steadyCast = (ab: Ability | undefined): boolean => !!ab && ab.role === 'heal' && ab.aim === 'friend';
 /** The gates of a ladder match against the computer lift sooner: there is nobody to wait for. */
@@ -439,13 +444,6 @@ export interface Field {
   k: number;
 }
 
-/** A healing sphere's place, and when it next rises (it is there to take once the clock has passed this). */
-export interface Orb {
-  x: number;
-  y: number;
-  at: number;
-}
-
 export interface SigilStone {
   x: number;
   y: number;
@@ -474,8 +472,6 @@ export type MatchEvent =
   | { k: 'miss'; x: number; y: number; ab: string }
   /** A placed ability lands on its patch of ground. */
   | { k: 'zone'; x: number; y: number; r: number; ab: string }
-  /** Someone takes a healing sphere. */
-  | { k: 'orb'; id: number; x: number; y: number }
   /** The sigil rises (id -1), or someone takes it. */
   | { k: 'sigil'; id: number; x: number; y: number }
   /** A super goes off. */
@@ -669,14 +665,13 @@ export class Match {
   traps: Trap[] = [];
   zones: Zone[] = [];
   fields: Field[] = [];
-  orbs: Orb[] = [];
   /** How much stronger healing is in this match (HEAL_BY_SIZE, by the bigger side). */
   readonly healK: number;
   /** The sigil, while it stands waiting to be taken, and when the next one rises. */
   sigil: SigilStone | null = null;
   sigilAt = SIGIL_FIRST;
   /**
-   * The clock stands still while this is set: no fading of healing, no sigil or sphere rising by itself and no end by
+   * The clock stands still while this is set: no fading of healing, no sigil rising by itself and no end by
    * time. The Ring's tutorial (arena/tutorial.ts) holds it while it teaches, and lets it go for the last fight.
    */
   hold = false;
@@ -693,7 +688,6 @@ export class Match {
     this.map = setup.map;
     const map = MAPS[setup.map] ?? Object.values(MAPS)[0]!;
     this.pillars = map.pillars;
-    this.orbs = map.orbs.map(([x, y]) => ({ x, y, at: ORB_FIRST }));
     const size = Math.max(setup.fighters.filter((f) => f.team === 0).length, setup.fighters.filter((f) => f.team === 1).length);
     this.healK = HEAL_BY_SIZE[Math.min(size, HEAL_BY_SIZE.length - 1)] ?? 1;
     const count: [number, number] = [0, 0];
@@ -753,7 +747,9 @@ export class Match {
     const faded = (this.clock - DAMP_FROM) * DAMP_RATE;
     // (sudden death: what is left of it goes in a few seconds)
     const sudden = this.suddenAt === null ? 0 : (this.clock - this.suddenAt) / SUDDEN.fade;
-    return Math.max(0, Math.min(1, Math.max(faded, sudden)));
+    // (snapped to all of it within a hair: (clock - DAMP_FROM) * DAMP_RATE lands a float's breadth short of 1)
+    const gone = Math.max(faded, sudden);
+    return gone > 1 - 1e-9 ? 1 : Math.max(0, gone);
   }
 
   /** Sudden death (SUDDEN): how much harder everything hits by now, 1 when it isn't. */
@@ -2189,7 +2185,7 @@ export class Match {
     return best;
   }
 
-  /** Nobody heals a lingering spirit, nor a revenant but the revenant (`by` null: a sphere, the sigil). */
+  /** Nobody heals a lingering spirit, nor a revenant but the revenant (`by` null: the sigil). */
   private healable(t: Fighter, by: Fighter | null): boolean {
     return !t.dead && !t.auras.some((a) => a.kind === 'spirit' || (a.kind === 'revenant' && by !== t));
   }
@@ -2330,7 +2326,7 @@ export class Match {
 
   private heal(src: Fighter, t: Fighter, amount: number, direct = true): void {
     if (!this.healable(t, src)) return;
-    let n = amount * HEAL_K * src.mods.heal * this.healK * (1 - this.dampening) * this.taken(t);
+    let n = amount * HEAL_K * (healerBar(src.bar) ? HEALER_K : 1) * src.mods.heal * this.healK * (1 - this.dampening) * this.taken(t);
     // (sun and moon: a heal after a hit is stronger, and makes the next hit so)
     const tides = src.perks.does.tides;
     if (tides && direct) {
@@ -2470,7 +2466,6 @@ export class Match {
     this.tendFields(dt);
     this.tripTraps(dt);
     this.tendSigil();
-    this.tendOrbs();
     this.judge();
     if (this.phase !== 'fight') return;
     this.lastHealers();
@@ -2524,7 +2519,7 @@ export class Match {
     // (a forager takes more of it, and is quickened again by their own talent)
     const forage = by.perks.does.forage;
     // (its healing fades as all healing does: its might and its speed don't)
-    const n = this.healable(by, null) ? Math.round(Math.min(by.maxHp * 0.2 * (1 + (forage?.more ?? 0)) * (1 - this.dampening) * this.taken(by), by.maxHp - by.hp)) : 0;
+    const n = this.healable(by, null) ? Math.round(Math.min(by.maxHp * SIGIL_HEAL * (1 + (forage?.more ?? 0)) * (1 - this.dampening) * this.taken(by), by.maxHp - by.hp)) : 0;
     if (n > 0) {
       by.hp += n;
       this.events.push({ k: 'num', id: by.id, n, kind: 'heal', crit: false });
@@ -2923,24 +2918,6 @@ export class Match {
     fd.vy = d ? (dy / d) * v : 0;
   }
 
-  /** The healing spheres: whoever is hurt and walks into one takes it, and it rises again later. */
-  private tendOrbs(): void {
-    // (they fade as all healing does, and with none left there is nothing in them to take)
-    if (this.dampening >= 1) return;
-    for (const o of this.orbs) {
-      if (this.clock < o.at) continue;
-      const by = this.fighters.find((f) => !f.pet && this.healable(f, null) && f.hp < f.maxHp && Math.hypot(f.x - o.x, f.y - o.y) < HERO_R + 9);
-      if (!by) continue;
-      o.at = this.clock + ORB_EVERY;
-      const forage = by.perks.does.forage;
-      const n = Math.round(Math.min(by.maxHp * ORB_HEAL * (1 + (forage?.more ?? 0)) * (1 - this.dampening) * this.taken(by), by.maxHp - by.hp));
-      by.hp += n;
-      this.events.push({ k: 'num', id: by.id, n, kind: 'heal', crit: false });
-      this.events.push({ k: 'orb', id: by.id, x: o.x, y: o.y });
-      if (forage) this.addAura(by, { ab: abOfDoing(by.cls, 'forage').id, src: by.id, dur: forage.dur, magic: false, n: forage.pct / 100, kind: 'speed', harmful: false });
-    }
-  }
-
   private tripTraps(dt: number): void {
     for (let i = this.traps.length - 1; i >= 0; i--) {
       const tr = this.traps[i]!;
@@ -3024,7 +3001,6 @@ export class Match {
       tr: this.traps,
       z: this.zones,
       ...(this.fields.length ? { fl: this.fields } : {}),
-      o: this.orbs.map((o) => Math.round(o.at * 10) / 10),
       sg: this.sigil,
       sa: this.sigilAt,
       ...(this.suddenAt !== null ? { sd: Math.round(this.suddenAt * 100) / 100 } : {}),
@@ -3043,9 +3019,6 @@ export class Match {
     this.traps = s.tr;
     this.zones = s.z ?? [];
     this.fields = s.fl ?? [];
-    s.o?.forEach((at, i) => {
-      if (this.orbs[i]) this.orbs[i]!.at = at;
-    });
     this.sigil = s.sg ?? null;
     this.sigilAt = s.sa ?? this.sigilAt;
     this.suddenAt = s.sd ?? null;
@@ -3171,8 +3144,6 @@ export interface Snapshot {
   z?: Zone[];
   /** What is left on the ground (Field). */
   fl?: Field[];
-  /** When each healing sphere next rises, in the map's order. */
-  o?: number[];
   sg?: SigilStone | null;
   sa?: number;
   /** When sudden death began (Match.suddenAt), once it has. */

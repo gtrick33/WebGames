@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS, type Ability, type CcKind } from '../src/games/sigilfall/arena/abilities';
 import { lookOf } from '../src/games/sigilfall/arena/look';
 import { ARM, NEAR, TALENT_BY_ID, TALENTS, type Doing, type Talent } from '../src/games/sigilfall/arena/talents';
-import { BASE_SPEED, GATES, Match, ORB_HEAL, type Fighter, type MoveInput } from '../src/games/sigilfall/arena/sim';
+import { BASE_SPEED, GATES, Match, SIGIL_HEAL, type Fighter, type MoveInput } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 
@@ -292,21 +292,19 @@ describe('The Ring talents: the ranger', () => {
     expect(r.hp).toBeGreaterThan(hp + r.maxHp * 0.05);
   });
 
-  it('Forager: a healing sphere heals more and quickens', () => {
+  it('Forager: the sigil heals more and quickens', () => {
     const sphere = (talents: string[]): [number, boolean] => {
       const m = fight([{ team: 0, cls: 'ranger', talents }, { team: 1, cls: 'warrior', at: [600, 125] }]);
       const r = m.fighters[0]!;
-      const o = m.orbs[0]!;
-      o.at = 0;
-      [r.x, r.y] = [o.x, o.y];
+      m.sigil = { x: r.x, y: r.y };
       r.hp = Math.round(r.maxHp / 2);
       const hp = r.hp;
       m.step(STEP, {});
       return [r.hp - hp, has(r, 'r-3b', 'speed')];
     };
     const [plain] = sphere([]);
-    expect(plain).toBeCloseTo(1260 * ORB_HEAL, -0.5);
-    expect(sphere(['r-3b'])).toEqual([Math.round(1260 * ORB_HEAL * (1 + doing('r-3b', 'forage').more)), true]);
+    expect(plain).toBeCloseTo(1260 * SIGIL_HEAL, -0.5);
+    expect(sphere(['r-3b'])).toEqual([Math.round(1260 * SIGIL_HEAL * (1 + doing('r-3b', 'forage').more)), true]);
   });
 
   it('Antivenom: what burns over time hurts less', () => {
@@ -393,13 +391,11 @@ describe('The Ring talents: the priest', () => {
   it('Open Heart: healing given to them is stronger', () => {
     const m = fight([{ team: 0, cls: 'priest', talents: ['p-3c'] }, { team: 1, cls: 'warrior', at: [600, 125] }]);
     const p = m.fighters[0]!;
-    const o = m.orbs[0]!;
-    o.at = 0;
-    [p.x, p.y] = [o.x, o.y];
+    m.sigil = { x: p.x, y: p.y };
     p.hp = Math.round(p.maxHp / 2);
     const hp = p.hp;
     m.step(STEP, {});
-    expect(p.hp - hp).toBe(Math.round(p.maxHp * ORB_HEAL * (1 + doing('p-3c', 'open').pct)));
+    expect(p.hp - hp).toBe(Math.round(p.maxHp * SIGIL_HEAL * (1 + doing('p-3c', 'open').pct)));
   });
 });
 
@@ -553,13 +549,11 @@ describe('The Ring talents: the warlock', () => {
     const hit = (x: Match): number => inside(x).damage(x.fighters[1]!, x.fighters[0]!, 100, true, AB('w-hew'));
     expect(hit(m)).toBeCloseTo(hit(n) * (1 - TALENT_BY_ID['k-3b']!.guard!), -0.5);
     const k = m.fighters[0]!;
-    const o = m.orbs[0]!;
-    o.at = 0;
-    [k.x, k.y] = [o.x, o.y];
+    m.sigil = { x: k.x, y: k.y };
     k.hp = Math.round(k.maxHp / 2);
     const hp = k.hp;
     m.step(STEP, {});
-    expect(k.hp - hp).toBe(Math.round(k.maxHp * ORB_HEAL * (1 - doing('k-3b', 'bargain').pct)));
+    expect(k.hp - hp).toBe(Math.round(k.maxHp * SIGIL_HEAL * (1 - doing('k-3b', 'bargain').pct)));
   });
 
   it('Soul Shield: dealing damage wards them, a little at a time, to a cap', () => {
@@ -690,9 +684,7 @@ describe('The Ring talents: the Gloamknight', () => {
     const healed = (talents: string[]): number => {
       const m = fight([{ team: 0, cls: 'gloamknight', talents, at: [130, 156] }, { team: 1, cls: 'warrior' }]);
       const foe = m.fighters[1]!;
-      const o = m.orbs[0]!;
-      o.at = 0;
-      [foe.x, foe.y] = [o.x, o.y];
+      m.sigil = { x: foe.x, y: foe.y };
       foe.hp = Math.round(foe.maxHp * 0.3);
       const hp = foe.hp;
       m.step(STEP, {});

@@ -16,6 +16,7 @@ import { ZOOM_MAX, ZOOM_MIN } from '../progress/save';
 import { buildHero, heroUlt, typeBonus } from '../progress/build';
 import { comboVsText, DMG_NAME, fmtStat, modLines, STAT_LABEL, costText } from '../progress/describe';
 import { itemClass, itemMods, itemName, itemScore, itemSlot, salvageValue } from '../progress/items';
+import { compareGear } from '../progress/compare';
 import { npcMark, rarityColor } from '../render/renderer';
 import { heldWeapon, heroDollUrl, heroLook, mountPictureUrl, talentIconUrl, wardrobePicture, watchMountPictures } from '../render/sprites';
 import type { HeroLook } from '../render/art/hero';
@@ -217,7 +218,7 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
         </div>
         <div className="rb-bag-grid">
           {bag.map((it) => {
-            const better = itemSlot(it) && !cantEquip(h, it) && isUpgrade(h.equip[itemSlot(it)], it);
+            const better = itemSlot(it) && !cantEquip(h, it) && isUpgrade(h, it);
             return (
               <button key={it.uid} className={`rb-bslot${sel?.uid === it.uid ? ' is-sel' : ''}${cantEquip(h, it) ? ' is-other' : ''}`} onClick={() => pick('bag', it.uid)} aria-label={itemName(it)}>
                 <ItemIcon item={it} size={46} />
@@ -256,10 +257,9 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
   );
 }
 
-/** A rough "is this better" for the upgrade arrow: more stats or new behaviour. */
-export function isUpgrade(cur: Item | undefined, it: Item): boolean {
-  if (!cur) return true;
-  return itemScore(it) > itemScore(cur) + 5;
+/** "Is this better" for the upgrade arrow: weighed for how this hero plays (progress/compare.ts), as on the phone's card. */
+export function isUpgrade(h: Character, it: Item): boolean {
+  return compareGear(h, it).better;
 }
 
 /** Where a title comes from, for the list's headings. */

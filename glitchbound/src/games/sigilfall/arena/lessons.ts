@@ -3,7 +3,7 @@ import { DAMP_FROM, RANGED, type Fighter, type Match, type MatchEvent } from './
 
 /**
  * What a newcomer is taught by the Ring itself, outside the tutorial (arena/tutorial.ts): a hint the first time
- * something happens in a match (a red circle under them, a lit ability, a full super, a sphere while hurt, the sigil,
+ * something happens in a match (a red circle under them, a lit ability, a full super, the sigil,
  * healing beginning to fade), and
  * after a lost match one thing to try next time, worked out from how the match went. The owner, 2026-11-14: "i wanna
  * make this game mode accessible for every type of player".
@@ -19,12 +19,9 @@ export interface HintKeys {
 
 const superWord = (k: HintKeys): string => (k.touch ? 'tap the gold button' : `press ${k.super}`);
 
-export type HintId = 'circle' | 'combo' | 'super' | 'sphere' | 'sigil' | 'damp';
+export type HintId = 'circle' | 'combo' | 'super' | 'sigil' | 'damp';
 
-export const HINT_IDS: readonly HintId[] = ['circle', 'combo', 'super', 'sphere', 'sigil', 'damp'];
-
-/** A sphere standing ready to be taken. */
-export const sphereUp = (m: Match): boolean => m.orbs.some((o) => m.clock >= o.at);
+export const HINT_IDS: readonly HintId[] = ['circle', 'combo', 'super', 'sigil', 'damp'];
 
 /** Is `f` standing under one of the other side's circles? */
 export const underCircle = (m: Match, f: Fighter): boolean => m.zones.some((z) => z.team !== f.team && Math.hypot(f.x - z.x, f.y - z.y) <= z.r);
@@ -42,7 +39,6 @@ export function hintNow(m: Match, me: Fighter | null, seen: readonly string[], k
     if (ready) return { id: 'combo', text: `${ready.name} is glowing: it lands its combo right now and does much more. Use it!` };
   }
   if (fresh('super') && me.charge >= 1) return { id: 'super', text: `Your super is full. ${superWord(keys)[0]!.toUpperCase()}${superWord(keys).slice(1)} to unleash it.` };
-  if (fresh('sphere') && me.hp < me.maxHp * 0.5 && sphereUp(m)) return { id: 'sphere', text: 'You’re hurt. Walk into a green healing sphere to get some health back.' };
   if (fresh('sigil') && m.sigil) return { id: 'sigil', text: 'A sigil rose in the middle. Grab it: it heals you, fills your super and speeds you up.' };
   if (fresh('damp') && m.clock >= DAMP_FROM + 1) return { id: 'damp', text: 'From here on, healing gets weaker every second until none is left. Finish the fight.' };
   return null;
@@ -58,13 +54,11 @@ export interface MatchLog {
   circlesTaken: number;
   /** Seconds their super sat full. */
   superIdle: number;
-  /** Seconds under half health while a healing sphere stood ready. */
-  hurtBySphere: number;
   /** Abilities refused because a pillar stood in the way. */
   outOfSight: number;
 }
 
-export const newLog = (): MatchLog => ({ fought: 0, outOfReach: 0, circlesTaken: 0, superIdle: 0, hurtBySphere: 0, outOfSight: 0 });
+export const newLog = (): MatchLog => ({ fought: 0, outOfReach: 0, circlesTaken: 0, superIdle: 0, outOfSight: 0 });
 
 /** How near a fighter has to be to an enemy to fight them: arm's length for a class that closes in, a long shot for the rest. */
 export const reachOf = (f: Fighter): number => (RANGED.has(f.cls) ? 195 : 70);
@@ -95,7 +89,6 @@ export function keepLog(log: MatchLog, m: Match, me: Fighter | null, h: number, 
   const near = Math.min(Infinity, ...m.enemiesOf(me).filter((o) => !o.pet && !m.unseen(o, me)).map((o) => Math.hypot(o.x - me.x, o.y - me.y)));
   if (Number.isFinite(near) && near > reachOf(me) && !m.held(me)) log.outOfReach += h;
   if (me.charge >= 1) log.superIdle += h;
-  if (me.hp < me.maxHp * 0.5 && sphereUp(m)) log.hurtBySphere += h;
 }
 
 /**
@@ -111,7 +104,6 @@ export function lessonOf(log: MatchLog, me: Fighter, keys: HintKeys): string | n
     return `You spent ${secs(log.outOfReach)} too far away to hit. Your class fights up close: walk right up to your target${rush ? `, or use ${rush.name} to close the gap` : ''}.`;
   }
   if (log.superIdle >= 8) return `Your super sat full for ${secs(log.superIdle)}. ${superWord(keys)[0]!.toUpperCase()}${superWord(keys).slice(1)} as soon as it’s ready: it fills again as you fight.`;
-  if (log.hurtBySphere >= 8) return `You were badly hurt for ${secs(log.hurtBySphere)} while a green healing sphere was up. Walk into one to heal.`;
   if ((me.score.combos ?? 0) === 0) {
     const c = barCombos(me.cls, me.bar, me.ult)[0];
     if (c) return `You didn’t land a combo. Use ${c.from.name}, then ${c.to.name}, for ${c.name}: it does much more.`;

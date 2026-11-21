@@ -7382,6 +7382,38 @@ html.rb-touch-playing textarea {
 .cs-mode.is-party {
   --m: #5ad6c8;
 }
+.cs-mode.is-story {
+  --m: #f6c453;
+}
+/* The Ring is the way in in the middle now (the owner, 2026-11-20: the Ring first, the story, the Vigil and the Rift
+   beside it): the great button in the Ring's crimson and gold, its crossed blades before the words */
+.cs .cs-enter.is-ring {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, 1.2cqw, 14px);
+  min-width: clamp(150px, 25cqw, max(290px, 20cqw));
+  min-height: clamp(46px, 13.5cqh, max(76px, 8.6cqh));
+  border-color: #3a0a10;
+  background: linear-gradient(180deg, #ffe7a8, #f6c453 34%, #e0623a 78%, #b8283a);
+}
+.cs-enter-glyph {
+  flex: none;
+  width: clamp(26px, 6cqh, 44px);
+  height: clamp(26px, 6cqh, 44px);
+  border: 2px solid #3a0a10;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgb(255 231 168 / 0.6);
+}
+.cs-enter-words {
+  display: grid;
+  justify-items: start;
+  gap: 1px;
+  min-width: 0;
+}
+.cs .cs-enter.is-ring small {
+  color: #3a0a10;
+}
 .cs-mode-glyph.is-party {
   background: rgb(8 34 38 / 0.9);
   color: #9ff2e8;
@@ -16051,5 +16083,88 @@ html.rb-touch-playing textarea {
 @media (prefers-reduced-motion: reduce) {
   .rb-levelglow {
     animation-duration: 0.8s;
+  }
+}
+
+/* ---- A better piece, picked up on a touch screen: wear it now? (ui/EquipAsk.tsx, the owner 2026-11-20). One small
+   strip at the top of the picture in the middle, under the row of buttons there, clear of the stick and the thumbs; its
+   rim in the piece's rarity (2026-11-21: "make the item pop up way smaller"). ---- */
+.rb-equipask {
+  position: absolute;
+  top: calc(54px + var(--sa-t));
+  left: 50%;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: min(290px, calc(100% - 24px));
+  padding: 3px 4px;
+  border: 1.5px solid var(--rc, #ffd257);
+  border-radius: 9px;
+  background: rgb(18 12 8 / 0.9);
+  box-shadow: 0 0 0 1px #05030b, 0 3px 10px rgb(0 0 0 / 0.5);
+  transform: translateX(-50%);
+  animation: rb-equipask-in 0.2s ease-out;
+  pointer-events: auto;
+}
+@keyframes rb-equipask-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+}
+.rb-equipask-name {
+  display: grid;
+  min-width: 0;
+  line-height: 1.15;
+}
+.rb-equipask-name strong {
+  overflow: hidden;
+  color: var(--rc, #ffd257);
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rb-equipask-deltas {
+  display: flex;
+  gap: 6px;
+  overflow: hidden;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.rb-equipask-deltas i {
+  font-style: normal;
+}
+.rb-equipask-deltas .is-up {
+  color: #7bd65a;
+}
+.rb-equipask-deltas .is-down {
+  color: #ff7a6a;
+}
+.rb-equipask-yes,
+.rb-equipask-no {
+  flex: none;
+  height: 26px;
+  margin: 0;
+  border: 1.5px solid #3a2208;
+  border-radius: 7px;
+  font: 700 11px system-ui, sans-serif;
+  cursor: pointer;
+}
+.rb-equipask-yes {
+  padding: 0 9px;
+  background: linear-gradient(180deg, #ffe7a8, #f6c453 55%, #cf8a2d);
+  color: #2a1406;
+}
+.rb-equipask-no {
+  width: 24px;
+  padding: 0;
+  background: rgb(255 255 255 / 0.08);
+  border-color: rgb(255 255 255 / 0.18);
+  color: #cfc4b0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-equipask {
+    animation: none;
   }
 }

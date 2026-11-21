@@ -5,7 +5,7 @@ import type { SigilEngine } from '../engine';
 import { keyLoot } from '../data/keystones';
 import type { Item } from '../data/types';
 import { bagSize, cantEquip, potionCap } from '../progress/character';
-import { itemName, itemSlot, salvageValue } from '../progress/items';
+import { itemName, salvageValue } from '../progress/items';
 import { rarityColor } from '../render/renderer';
 import { cantWager, FORGED_LEVEL, WAGER_PRICE, WAGER_SLOTS, wagerOdds } from '../progress/rift';
 import { cantBuy, potionPrice, stockFor, type ShopItem } from '../progress/shop';
@@ -50,7 +50,7 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
     show({ text: `Equipped ${itemName(it)}`, item: it });
   };
   // Equip on the receipt: the piece is still in the bag, the hero can wear it, and it beats what is worn (or the slot is empty)
-  const canEquip = (it: Item): boolean => h.bag.some((i) => i.uid === it.uid) && !cantEquip(h, it) && isUpgrade(h.equip[itemSlot(it)], it);
+  const canEquip = (it: Item): boolean => h.bag.some((i) => i.uid === it.uid) && !cantEquip(h, it) && isUpgrade(h, it);
   const title = (
     <span className="rb-shop-title">
       {npc && <Portrait kind="npc" id={npc.id} size={30} />}

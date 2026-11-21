@@ -46,8 +46,6 @@ export interface RingMap {
   pillars: Pillar[];
   /** Where each team stands when the gates open: team 0 left, team 1 right. */
   spawns: [[number, number][], [number, number][]];
-  /** Where the healing spheres rise: the same for both ends. */
-  orbs: [number, number][];
 }
 
 const MID_Y = ARENA_H / 2;
@@ -66,17 +64,6 @@ const pair = (x: number, y: number, w: number, h: number): Pillar[] => [
   { x, y, w, h },
   { x: ARENA_W - x - w, y: ARENA_H - y - h, w, h },
 ];
-/**
- * Four spheres: one toward each end, and two between, one north-west of the middle and its twin south-east. None
- * stands just north of a stone: the ground there is behind the stone, to an eye that looks from the south.
- */
-const ORBS = (side: number, dx: number, up: number): [number, number][] => [
-  [side, MID_Y],
-  [ARENA_W - side, MID_Y],
-  [ARENA_W / 2 - dx, up],
-  [ARENA_W / 2 + dx, ARENA_H - up],
-];
-
 export const MAPS: Record<string, RingMap> = {
   sands: {
     id: 'sands',
@@ -86,7 +73,6 @@ export const MAPS: Record<string, RingMap> = {
     color: '#d8a860',
     pillars: [...pair(176, 70, 30, 26), ...pair(176, 216, 30, 26), ...pair(327, 34, 30, 26), ...pair(262, 143, 30, 26), ...ENTRY_WALLS],
     spawns: [LEFT, RIGHT],
-    orbs: ORBS(118, 110, 112),
   },
   frost: {
     id: 'frost',
@@ -97,7 +83,6 @@ export const MAPS: Record<string, RingMap> = {
     // (a boulder is 26 wide and under 40 deep; anything else is a wall of ice: render3d/ringDress.ts)
     pillars: [...pair(236, 30, 22, 82), { x: 329, y: 139, w: 26, h: 34 }, ...pair(132, 214, 30, 24), ...pair(132, 74, 30, 24), ...pair(250, 238, 26, 32), ...ENTRY_WALLS],
     spawns: [LEFT, RIGHT],
-    orbs: ORBS(96, 42, 100),
   },
   forge: {
     id: 'forge',
@@ -108,7 +93,6 @@ export const MAPS: Record<string, RingMap> = {
     // (the anvil is the one over 40 wide; the rest are furnaces)
     pillars: [{ x: 314, y: 129, w: 56, h: 54 }, ...pair(170, 54, 26, 24), ...pair(170, 234, 26, 24), ...pair(329, 46, 26, 24), ...ENTRY_WALLS],
     spawns: [LEFT, RIGHT],
-    orbs: ORBS(112, 92, 110),
   },
 };
 

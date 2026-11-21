@@ -112,11 +112,11 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
       if (e.target instanceof HTMLInputElement) return;
       if (e.code === 'ArrowLeft') go(-1);
       else if (e.code === 'ArrowRight') go(1);
-      else if (e.code === 'Enter' && !(e.target instanceof HTMLButtonElement)) primary();
+      else if (e.code === 'Enter' && !(e.target instanceof HTMLButtonElement)) onRing();
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [go, primary]);
+  }, [go, onRing]);
 
   /* ------------------------------------------------- the stage follows the pointer a little, for depth */
   const boxRef = useRef<HTMLDivElement>(null);
@@ -265,9 +265,17 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
         </ol>
       </div>
 
-      {/* the ways in: the story in the middle, the three other modes and playing with friends beside it. Each says in
-          a line what it is, and where this hero stands in it. */}
+      {/* the ways in: the Ring in the middle, the game's first way in (the owner, 2026-11-20: the Ring is the main mode,
+          the story, the Vigil and the Rift beside it); the story, the Rift, the Vigil and playing with friends round
+          it. Each says in a line what it is, and where this hero stands in it. */}
       <div className="cs-actions">
+        <button className={`cs-mode is-story`} onClick={primary}>
+          <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.story!)} alt="" draggable={false} />
+          <span>
+            <strong>{hero ? 'The Campaign' : 'Create a hero'}</strong>
+            <small>{hero ? `The story · ${farthest(hero.unlocked).name}` : 'Eight callings, six acts, one Crown'}</small>
+          </span>
+        </button>
         {/* (the Trials are the account's, not a hero's: open once any hero has reached level 20, played as a calling's
             own ready champion: progress/trial.ts) */}
         <button className={`cs-mode is-rift${trialsOpen(engine.save) ? '' : ' is-locked'}`} disabled={!trialsOpen(engine.save)} onClick={() => onRift(at)}>
@@ -277,18 +285,14 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
             <small>{trialsOpen(engine.save) ? `Dungeons against the clock · best stone +${Math.max(1, ...Object.values(engine.save.rift))}` : `Opens when a hero reaches level ${TRIALS_OPEN_AT}`}</small>
           </span>
         </button>
-        <button className="cs-mode is-ring" onClick={onRing}>
-          <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.ring!)} alt="" draggable={false} />
-          <span>
-            <strong>The Ring</strong>
+        <button className="cs-enter is-ring" onClick={onRing} autoFocus>
+          <img className="cs-enter-glyph" src={iconPicture(VIGIL_ICON.ring!)} alt="" draggable={false} />
+          <span className="cs-enter-words">
+            <span>Enter the Ring</span>
             <small>
               Arena duels · {standing.rating} {rankOf(standing.best).name}
             </small>
           </span>
-        </button>
-        <button className="cs-enter" onClick={primary} autoFocus>
-          <span>{hero ? 'Enter the world' : 'Create your hero'}</span>
-          {hero && <small>The story · {farthest(hero.unlocked).name}</small>}
         </button>
         <button className="cs-mode is-vigil" onClick={onVigil}>
           <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.vigil!)} alt="" draggable={false} />
