@@ -16254,3 +16254,102 @@ html.rb-touch-playing textarea {
     zoom: 2;
   }
 }
+
+/* ---- The places as a picker (2026-11-21, the owner's phone: "the + signs are very badly organized"). Each dot under
+   the hero's name is a button to that place, an empty one a small gold plus; a thumb gets a target bigger than the
+   dot. On a phone the others standing in the hall are no longer buttons, and their pluses and names go: the dots and
+   the arrows walk the ring there. ---- */
+.cs-dots {
+  gap: 2px;
+  pointer-events: auto;
+}
+.cs-dots li {
+  display: grid;
+  place-items: center;
+  width: auto;
+  height: auto;
+  border: 0;
+  background: none;
+  transform: none;
+}
+.cs-dots button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.cs-dots button::before {
+  content: '';
+  grid-area: 1 / 1;
+  width: 9px;
+  height: 9px;
+  border: 1px solid #d9b65e;
+  background: #1c1130;
+  transform: rotate(45deg);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.cs-dots button:hover::before,
+.cs-dots button:focus-visible::before {
+  transform: rotate(45deg) scale(1.3);
+}
+.cs-dots li.is-on,
+.cs-dots li.is-free {
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+.cs-dots li.is-on button::before {
+  border-color: #fff;
+  background: var(--cc);
+  box-shadow: 0 0 8px var(--cc);
+  transform: rotate(45deg) scale(1.2);
+}
+.cs-dots li.is-free button::before {
+  width: 15px;
+  height: 15px;
+  border-color: #b8923e;
+  border-radius: 3px;
+  background: rgb(20 12 34 / 0.85);
+}
+.cs-dots button span {
+  grid-area: 1 / 1;
+  position: relative;
+  color: #ffe39a;
+  font: 700 14px/1 Georgia, serif;
+}
+/* (on every screen the others' pluses and names go: the dots are the way to a place; on a bigger one the others
+   standing in the hall can still be clicked) */
+.cs-figure.is-away .cs-plus,
+.cs-figure.is-away .cs-tag {
+  display: none;
+}
+@container (max-height: 520px) {
+  .cs-figure.is-away {
+    display: none;
+  }
+  /* (an empty place's plus on the dais lay behind its name there; its banner says "New hero") */
+  .cs-plus {
+    display: none;
+  }
+  /* (more room for the name: it was cut to "Guitartr…" between its arrows) */
+  .cs-id {
+    width: min(52%, calc(100% - 2 * (max(var(--sa-l, 0px), var(--sa-r, 0px)) + 8px)));
+  }
+  .cs-name {
+    font-size: clamp(20px, 3.6cqw, 30px);
+  }
+  .cs-plate {
+    gap: 6px;
+  }
+}
+@media (pointer: coarse) {
+  .cs-dots button {
+    width: 32px;
+    height: 32px;
+  }
+}

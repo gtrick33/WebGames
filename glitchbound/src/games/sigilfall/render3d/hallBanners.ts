@@ -379,6 +379,9 @@ export class HallBanners {
   private readonly chainMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.16, 0.14, 0.2) });
   private readonly ray = new THREE.Raycaster();
   private hovered = -1;
+  /** What the screen keeps for itself at each side, as a share of half its width (0 to 1 across: a phone's island). */
+  private safeL = 0;
+  private safeR = 0;
   /** Where each banner hangs this frame, in the hall: for the shadows under them. */
   readonly feet: { x: number; z: number; w: number }[] = [];
   private w = 1;
@@ -495,10 +498,15 @@ export class HallBanners {
     const depth = DEPTH_NEAR;
     // (a phone on its side: a little lower, clear of the mark in the corner)
     const rodY = camera.aspect > 1.95 ? ROD_Y - 0.1 : ROD_Y;
-    const half = camera.aspect > 1.5 ? WIDTH_SHARE : WIDTH_SHARE * 0.9;
-    const outer = EDGE - half;
-    const inner = outer - 2 * half - PAIR_GAP;
-    const across = [-outer, -inner, inner, outer];
+    // Each side's outer edge kept inside what the screen keeps for itself there (a phone's island or notch on its
+    // side: the owner, 2026-11-21, "my phone island just fucks the ring banner up"), the pair a little narrower if
+    // that leaves too little room to clear the hero.
+    const edgeL = EDGE - this.safeL;
+    const edgeR = EDGE - this.safeR;
+    const half = Math.min(camera.aspect > 1.5 ? WIDTH_SHARE : WIDTH_SHARE * 0.9, (Math.min(edgeL, edgeR) - PAIR_GAP - 0.3) / 4);
+    const outerL = edgeL - half;
+    const outerR = edgeR - half;
+    const across = [-outerL, -(outerL - 2 * half - PAIR_GAP), outerR - 2 * half - PAIR_GAP, outerR];
     const dist = camera.position.z - depth;
     const viewW = 2 * dist * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect;
     const w = viewW * half;
@@ -551,6 +559,12 @@ export class HallBanners {
     const hits = this.ray.intersectObjects(this.hung.map((b) => b.cloth), false);
     const hit = hits[0];
     return hit ? this.hung.findIndex((b) => b.cloth === hit.object) : -1;
+  }
+
+  /** What each side of the screen keeps for itself (a phone's island, its rounded corners), in CSS pixels. */
+  safe(left: number, right: number, width: number): void {
+    this.safeL = (Math.max(0, left) / Math.max(1, width)) * 2;
+    this.safeR = (Math.max(0, right) / Math.max(1, width)) * 2;
   }
 
   /** Lights one up (the pointer over it, or the keyboard on its button); -1 for none. */

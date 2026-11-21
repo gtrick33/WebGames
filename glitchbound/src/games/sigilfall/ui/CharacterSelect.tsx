@@ -74,8 +74,14 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
       return undefined;
     }
     hallRef.current = hall;
+    // (what the screen keeps for itself at its sides, a phone's island: read off a probe padded by it)
+    const probe = document.createElement('i');
+    probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;padding-left:var(--sa-l,0px);padding-right:var(--sa-r,0px)';
+    box.appendChild(probe);
     const fit = (): void => {
       if (box.clientWidth && box.clientHeight) hall.fit(box.clientWidth, box.clientHeight, Math.min(2, window.devicePixelRatio || 1));
+      const s = getComputedStyle(probe);
+      hall.setSafe(parseFloat(s.paddingLeft) || 0, parseFloat(s.paddingRight) || 0);
     };
     fit();
     const ro = new ResizeObserver(fit);
@@ -95,6 +101,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      probe.remove();
       hallRef.current = null;
       hall.dispose();
     };
@@ -119,7 +126,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
       }
       for (const fig of box.querySelectorAll<HTMLElement>('.cs-figure')) {
         const away = fig.classList.contains('is-away');
-        for (const part of fig.querySelectorAll<HTMLElement>('.cs-plus, .cs-tag, .cs-body')) {
+        for (const part of fig.querySelectorAll<HTMLElement>('.cs-body')) {
           const rect = part.getBoundingClientRect();
           const k = rect.height / (part.offsetHeight || 1) || 1;
           const was = Number(part.dataset.dy ?? 0);
@@ -364,9 +371,15 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
             <p className="cs-line">Eight callings, six acts, one Crown. Who will you be?</p>
           </>
         )}
+        {/* the places, one each: tapped, the ring walks to it (on a phone the only way to an empty place: the others
+            standing in the hall aren't buttons there) */}
         <ol className="cs-dots" aria-label={`Hero ${at + 1} of ${n}`}>
           {heroes.map((h, i) => (
-            <li key={i} className={`${i === at ? 'is-on' : ''}${h ? '' : ' is-free'}`} />
+            <li key={i} className={`${i === at ? 'is-on' : ''}${h ? '' : ' is-free'}`}>
+              <button type="button" onClick={() => i !== at && go(((i - at + n + Math.floor(n / 2)) % n) - Math.floor(n / 2))} aria-label={h ? `Choose ${h.name}` : 'Choose an empty place'} title={h ? h.name : 'New hero'} aria-current={i === at}>
+                {!h && <span aria-hidden="true">+</span>}
+              </button>
+            </li>
           ))}
         </ol>
       </div>

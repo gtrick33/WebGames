@@ -56,6 +56,8 @@ export class Hall3D {
   /** The ways into the game, hung in the hall (hallBanners.ts): made with the hall, shown once they're told what to say. */
   private banners: HallBanners | null = null;
   private bannerSpecs: BannerSpec[] = [];
+  private safeL = 0;
+  private safeR = 0;
   /** The color the hall is in, on its way to the hero's. */
   private readonly tint: [number, number, number] = [NO_ONE[0], NO_ONE[1], NO_ONE[2]];
   private tinted = false;
@@ -80,6 +82,7 @@ export class Hall3D {
     this.canvas.style.width = `${this.cssW}px`;
     this.canvas.style.height = `${this.cssH}px`;
     this.stage.setSize(this.cssW, this.cssH, dpr, 60);
+    this.banners?.safe(this.safeL, this.safeR, this.cssW);
     // the dark closing in round the edge of the picture: painted once, over everything
     const g = this.g;
     g.setTransform(1, 0, 0, 1, 0, 0);
@@ -110,6 +113,7 @@ export class Hall3D {
       this.dress = dressHall(st, st.landPacks!);
       this.banners = new HallBanners(st.scene, this.dress.fires);
       this.banners.set(this.bannerSpecs);
+      this.banners.safe(this.safeL, this.safeR, this.cssW);
     }
     LIGHT.uTime.value = time;
     LIGHT.uSun.value.set(SUN[0], SUN[1], SUN[2]).normalize();
@@ -186,6 +190,13 @@ export class Hall3D {
   /** The banner under a point of the canvas (CSS pixels from its corner), or -1. */
   pickBanner(x: number, y: number): number {
     return this.banners?.pick(this.stage.camera, x, y, this.cssW, this.cssH) ?? -1;
+  }
+
+  /** What each side of the screen keeps for itself (a phone's island), in CSS pixels: the banners hang inside it. */
+  setSafe(left: number, right: number): void {
+    this.safeL = left;
+    this.safeR = right;
+    this.banners?.safe(left, right, this.cssW);
   }
 
   /** Lights a banner up, as the pointer or the keyboard comes to it (-1: none). */
