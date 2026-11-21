@@ -9,63 +9,228 @@
 }
 
 /*
- * A banner of Sigilfall's key art, full width, whichever theme the site is in. The picture's left third is dark for the
- * words. Its height follows the width (41vw keeps the whole picture across), so the heroes never slide under them, and
- * the screen's height, so the arcade shows under it on a laptop too.
+ * Sigilfall on a card, the arcade's star (the owner, 2026-11-21: smaller and narrower, with the arcade's graphics round
+ * it). The section is the arcade's own stage, in the page's colors: a halo of gold and violet light turning behind the
+ * card, and the site's toys (ring, pill, triangle, star, ball, plus, sparks) drifting about it. The card is at most 940
+ * wide: its key art, dark at the left for the words, in an ink border with the site's hard shadow and a gold rim that a
+ * glint runs along now and then.
  */
 .sfh {
   --gold: #f6c453;
   --gold-2: #ffe39a;
   --parch: #efe6d0;
-  --sfh-ink: #05030b;
-  --sfh-edge: clamp(20px, 5vw, 96px);
+  --sfh-ink: #07040f;
   position: relative;
   isolation: isolate;
   overflow: hidden;
+  padding: clamp(20px, 3.4vw, 46px) var(--gutter) clamp(22px, 3.6vw, 48px);
+}
+.sfh-stage {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  /* (fading out at its foot, into the arcade below, with no line where the stage ends) */
+  -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent);
+  mask-image: linear-gradient(180deg, #000 72%, transparent);
+}
+/* a pool of light behind the card: gold at its heart, violet and magenta at its rim */
+.sfh-halo {
+  position: absolute;
+  inset: 4% 6%;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, rgb(255 201 40 / 0.5), rgb(255 79 200 / 0.18) 55%, transparent 78%),
+    radial-gradient(closest-side at 30% 60%, rgb(123 77 255 / 0.28), transparent 70%);
+  filter: blur(8px);
+  animation: sfh-breathe 7s ease-in-out infinite alternate;
+}
+@keyframes sfh-breathe {
+  to {
+    transform: scale(1.06);
+    opacity: 0.85;
+  }
+}
+/* rays turning slowly from behind the card, faded at their ends */
+.sfh-rays {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(1400px, 130%);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: repeating-conic-gradient(from 0deg, rgb(255 201 40 / 0.16) 0deg 7deg, transparent 7deg 22deg);
+  -webkit-mask-image: radial-gradient(closest-side, #000 18%, transparent 70%);
+  mask-image: radial-gradient(closest-side, #000 18%, transparent 70%);
+  animation: sfh-turn 90s linear infinite;
+}
+@keyframes sfh-turn {
+  to {
+    rotate: 360deg;
+  }
+}
+:root[data-theme='dark'] .sfh-rays {
+  background: repeating-conic-gradient(from 0deg, rgb(255 201 40 / 0.1) 0deg 7deg, transparent 7deg 22deg);
+}
+
+/* the toys: each bobs and turns on its own clock, in ink outline with a hard shadow, as the site draws its shapes */
+.sfh-toy {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--s);
+  height: var(--s);
+  translate: -50% -50%;
+  rotate: var(--r);
+  animation: sfh-bob var(--t) ease-in-out var(--d) infinite alternate;
+}
+@keyframes sfh-bob {
+  to {
+    transform: translateY(-14px) rotate(14deg);
+  }
+}
+.sfh-toy.is-ring {
+  border: calc(var(--s) * 0.26) solid var(--c);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2.5px var(--ink),
+    inset 0 0 0 2.5px var(--ink),
+    4px 4px 0 var(--ink);
+}
+.sfh-toy.is-pill {
+  height: calc(var(--s) * 0.42);
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c), #fff 30%), var(--c) 55%);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.sfh-toy.is-ball {
+  border: 2.5px solid var(--ink);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--c), #fff 55%) 0 14%, var(--c) 16%);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.sfh-toy.is-tri,
+.sfh-toy.is-star,
+.sfh-toy.is-plus {
+  background: var(--ink);
+  filter: drop-shadow(4px 4px 0 var(--ink));
+}
+.sfh-toy.is-tri {
+  clip-path: polygon(50% 4%, 97% 92%, 3% 92%);
+}
+.sfh-toy.is-tri::after,
+.sfh-toy.is-star::after,
+.sfh-toy.is-plus::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  background: var(--c);
+  clip-path: inherit;
+}
+.sfh-toy.is-tri::after {
+  inset: 5px 4px 3px;
+}
+.sfh-toy.is-star {
+  clip-path: polygon(50% 0, 61% 33%, 96% 25%, 70% 52%, 92% 84%, 57% 70%, 44% 100%, 38% 66%, 4% 76%, 28% 48%, 6% 18%, 40% 30%);
+}
+.sfh-toy.is-plus {
+  clip-path: polygon(36% 0, 64% 0, 64% 36%, 100% 36%, 100% 64%, 64% 64%, 64% 100%, 36% 100%, 36% 64%, 0 64%, 0 36%, 36% 36%);
+}
+/* a four-pointed twinkle */
+.sfh-toy.is-spark {
+  background: var(--c);
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+  animation: sfh-twinkle var(--t) ease-in-out var(--d) infinite;
+}
+@keyframes sfh-twinkle {
+  0%,
+  100% {
+    transform: scale(0.3);
+    opacity: 0.2;
+  }
+  50% {
+    transform: scale(1) rotate(45deg);
+    opacity: 1;
+  }
+}
+
+/* ------------------------------------------------------------------------------------------------ the card */
+.sfh-card {
+  position: relative;
+  isolation: isolate;
   display: grid;
   align-items: center;
-  min-height: clamp(400px, min(calc(68svh - var(--header-h)), 41vw), 620px);
-  border-bottom: 3px solid var(--gold);
+  max-width: 940px;
+  min-height: clamp(220px, 27vw, 300px);
+  margin-inline: auto;
+  overflow: hidden;
+  border: 3px solid var(--ink);
+  border-radius: var(--r-lg);
   background: var(--sfh-ink);
+  box-shadow:
+    var(--hard-lg),
+    0 0 0 6px rgb(246 196 83 / 0.0),
+    0 18px 60px rgb(255 160 40 / 0.28);
   color: var(--parch);
+}
+/* the gold rim inside the ink, and a glint that runs along the card now and then */
+.sfh-card::before,
+.sfh-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: calc(var(--r-lg) - 3px);
+  pointer-events: none;
+}
+.sfh-card::before {
+  box-shadow:
+    inset 0 0 0 2px var(--gold),
+    inset 0 0 0 4px rgb(7 4 15 / 0.6);
+}
+.sfh-card::after {
+  background: linear-gradient(105deg, transparent 40%, rgb(255 236 180 / 0.28) 50%, transparent 60%);
+  transform: translateX(-120%);
+  animation: sfh-glint 7s ease-in-out 1.5s infinite;
+}
+@keyframes sfh-glint {
+  0%,
+  78% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
 }
 .sfh-art {
   position: absolute;
   inset: 0;
   z-index: -1;
-  max-width: 2000px;
-  margin-inline: auto;
   overflow: hidden;
-  pointer-events: none;
 }
 .sfh-art img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 100% 62%;
-  transform-origin: 64% 45%;
-  animation: sfh-drift 30s ease-in-out infinite alternate;
+  object-position: 78% 58%;
+  transition: transform 0.9s var(--out);
 }
-@keyframes sfh-drift {
-  from {
-    transform: none;
-  }
-  to {
-    transform: scale(1.045);
-  }
+.sfh-card:hover .sfh-art img {
+  transform: scale(1.04);
 }
-/* wider than the picture: its sides fall away into the dark */
-@media (min-width: 2001px) {
-  .sfh-art {
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-  }
+/* the left of the picture darkened for the words */
+.sfh-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgb(7 4 15 / 0.94) 0%, rgb(7 4 15 / 0.82) 30%, rgb(7 4 15 / 0.2) 58%, transparent 72%);
 }
 .sfh-ember {
   position: absolute;
   left: var(--x);
-  bottom: 6%;
+  bottom: 4%;
   width: 3px;
   height: 3px;
   border-radius: 50%;
@@ -80,265 +245,185 @@
   }
   to {
     opacity: 0;
-    transform: translate(22px, -420px);
+    transform: translate(10px, -220px);
   }
 }
-.sfh-inner {
-  display: grid;
-  width: 100%;
-  max-width: 2000px;
-  margin-inline: auto;
-  padding: clamp(18px, 2.2vw, 32px) var(--sfh-edge) clamp(36px, 3.4vw, 52px);
+/* a marquee's badge in the top corner: the arcade's own */
+.sfh-ribbon {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 4;
+  padding: 5px 10px 5px 8px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe7a8, var(--gold) 60%, #d9962e);
+  color: #2a1406;
+  font: 800 10.5px/1 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.sfh-ribbon::before {
+  content: '★ ';
 }
 .sfh-copy {
+  position: relative;
   display: grid;
-  justify-items: start;
-  gap: clamp(8px, 0.9vw, 14px);
-  width: min(460px, 34vw);
+  gap: 6px;
+  max-width: min(420px, 56%);
+  padding: clamp(18px, 2.6vw, 30px) clamp(18px, 3vw, 36px);
 }
 .sfh-kicker {
   margin: 0;
   color: var(--gold-2);
-  font: 700 12.5px/1.35 var(--mono);
-  letter-spacing: 0.12em;
+  font: 700 11px/1.2 var(--mono);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 .sfh-title {
-  width: 100%;
   margin: 0;
   line-height: 0;
 }
 .sfh-title img {
-  display: block;
-  width: 100%;
+  width: clamp(190px, 25vw, 290px);
   height: auto;
-  filter: drop-shadow(0 8px 22px rgb(0 0 0 / 0.65));
+  filter: drop-shadow(0 4px 10px rgb(0 0 0 / 0.6));
 }
 .sfh-hook {
-  max-width: 36ch;
-  margin: 0;
-  color: #fff6e0;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(15.5px, 1.25vw, 19px);
-  font-style: italic;
-  line-height: 1.36;
-  text-shadow: 0 2px 10px #000;
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 2px 0 4px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--parch);
+  font: italic 500 clamp(13px, 1.25vw, 15.5px) / 1.4 Georgia, 'Times New Roman', serif;
+  text-shadow: 0 1px 3px #000;
 }
 .sfh-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 18px;
-  margin-top: 4px;
+  gap: 8px 12px;
 }
 .sfh-cta {
-  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  min-height: 54px;
-  padding: 0 28px;
-  overflow: hidden;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 18px;
   border: 2px solid #3a2208;
-  border-radius: 10px;
+  border-radius: 12px;
   background: linear-gradient(180deg, #ffe7a8, var(--gold) 52%, #cf8a2d);
-  box-shadow: 0 0 0 2px #15101f, 0 0 0 3px rgb(246 196 83 / 0.55), 0 7px 0 #15101f, 0 0 34px rgb(246 196 83 / 0.3);
+  box-shadow:
+    0 0 0 2px rgb(246 196 83 / 0.35),
+    0 4px 0 #2a1406;
   color: #2a1406;
-  font-size: 19px;
   font-weight: 800;
-  letter-spacing: -0.01em;
+  font-size: 15.5px;
   text-decoration: none;
-  transition: transform 0.18s var(--out), box-shadow 0.18s var(--out);
-}
-/* light running over the gold */
-.sfh-cta::after {
-  content: '';
-  position: absolute;
-  inset: -30% -60%;
-  background: linear-gradient(115deg, transparent 44%, rgb(255 255 255 / 0.65) 50%, transparent 56%);
-  transform: translateX(-60%);
-  animation: sfh-shine 4.4s ease-in-out 1.2s infinite;
-  pointer-events: none;
-}
-@keyframes sfh-shine {
-  40%,
-  100% {
-    transform: translateX(60%);
-  }
+  transition: transform 0.15s var(--spring), box-shadow 0.15s;
 }
 .sfh-cta:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 0 2px #15101f, 0 0 0 3px var(--gold), 0 9px 0 #15101f, 0 0 48px rgb(246 196 83 / 0.55);
+  box-shadow:
+    0 0 0 3px rgb(246 196 83 / 0.55),
+    0 6px 0 #2a1406,
+    0 0 26px rgb(246 196 83 / 0.45);
 }
 .sfh-cta:active {
-  transform: translateY(4px);
-  box-shadow: 0 0 0 2px #15101f, 0 0 0 3px var(--gold), 0 3px 0 #15101f;
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #2a1406;
 }
 .sfh-cta:focus-visible {
-  outline: 3px solid #fff;
-  outline-offset: 5px;
-}
-.sfh-note {
-  color: var(--parch);
-  font-size: 13.5px;
-  font-weight: 600;
+  outline: 3px solid var(--cyan);
+  outline-offset: 3px;
 }
 .sfh-facts {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin: 8px 0 0;
+  gap: 5px;
+  margin: 0;
   padding: 0;
   list-style: none;
-  color: var(--gold-2);
-  font: 700 12px/1.3 var(--mono);
 }
 .sfh-facts li {
-  padding: 4px 9px;
-  border: 1px solid rgb(246 196 83 / 0.4);
+  padding: 3px 7px;
+  border: 1px solid rgb(246 196 83 / 0.45);
   border-radius: 6px;
-  background: rgb(5 3 11 / 0.55);
-  white-space: nowrap;
+  background: rgb(7 4 15 / 0.55);
+  color: var(--gold-2);
+  font: 700 10px/1.2 var(--mono);
 }
-@media (prefers-reduced-motion: reduce) {
-  .sfh-art img,
-  .sfh-ember,
-  .sfh-cta::after {
-    animation: none;
-  }
-}
-/* A short screen (a phone on its side): the same, with less to read. */
-@media (max-height: 520px) and (min-width: 761px) and (min-aspect-ratio: 13/10) {
+
+/* a phone, or a narrow window: the picture on top, the words under it, all on the card */
+@media (max-width: 680px) {
   .sfh {
-    min-height: min(300px, calc(100svh - var(--header-h)));
+    padding: 14px 22px 22px;
   }
-  .sfh-hook,
-  .sfh-facts {
-    display: none;
-  }
-  .sfh-inner {
-    padding-block: 14px 30px;
-  }
-  .sfh-cta {
-    min-height: 48px;
-  }
-}
-/* There's more below: a cue on the banner's bottom edge. It stays in the page, so it never covers a game. */
-.sfh-more {
-  position: relative;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  width: max-content;
-  min-height: 38px;
-  margin: -21px auto 0;
-  padding: 0 16px;
-  border: 2px solid var(--gold, #f6c453);
-  border-radius: 999px;
-  background: #15101f;
-  color: #ffe39a;
-  font-weight: 700;
-  font-size: 13.5px;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-.sfh-more:hover {
-  background: #2a1f40;
-}
-.sfh-more:focus-visible {
-  outline: 3px solid var(--ink, #fff);
-  outline-offset: 2px;
-}
-.sfh-more svg {
-  animation: sfh-more 1.5s ease-in-out infinite;
-}
-@keyframes sfh-more {
-  50% {
-    transform: translateY(3px);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .sfh-more svg {
-    animation: none;
-  }
-}
-/* A phone or anything tall: the picture composed for it first, the words under it on the dark. */
-@media (max-width: 760px), (max-aspect-ratio: 13/10) {
-  .sfh {
+  .sfh-card {
     display: block;
     min-height: 0;
+    box-shadow:
+      6px 6px 0 var(--ink),
+      0 12px 40px rgb(255 160 40 / 0.25);
   }
   .sfh-art {
     position: relative;
-    inset: auto;
-    z-index: auto;
-    max-width: none;
-    aspect-ratio: 5 / 4;
-    max-height: 56svh;
-    width: 100%;
+    display: block;
+    aspect-ratio: 16 / 7;
   }
   .sfh-art img {
-    object-position: 50% 42%;
-    transform-origin: 50% 40%;
+    object-position: 70% 58%;
   }
   .sfh-art::after {
-    content: '';
-    position: absolute;
-    inset: 62% 0 0;
-    background: linear-gradient(transparent, var(--sfh-ink));
+    background: linear-gradient(180deg, transparent 55%, rgb(7 4 15 / 0.9) 96%);
   }
-  .sfh-inner {
-    position: relative;
-    margin-top: clamp(-96px, -17vw, -56px);
-    padding: 0 var(--gutter) 40px;
-  }
+  /* (the name over the foot of the picture, then one line and the button: about a third of the phone's height) */
   .sfh-copy {
+    max-width: none;
+    gap: 4px;
+    margin-top: -34px;
+    padding: 0 14px 14px;
     justify-items: center;
-    gap: 10px;
-    width: 100%;
-    max-width: 520px;
-    margin-inline: auto;
     text-align: center;
   }
-  .sfh-kicker {
-    order: 1;
-    font-size: 12px;
-    letter-spacing: 0.08em;
+  .sfh-kicker,
+  .sfh-facts {
+    display: none;
   }
-  .sfh-title {
-    width: min(92%, 400px);
+  .sfh-title img {
+    width: min(200px, 56vw);
   }
   .sfh-hook {
-    order: 2;
-    font-size: 15.5px;
+    margin: 0 0 4px;
+    font-size: 13px;
   }
   .sfh-actions {
-    order: 3;
     justify-content: center;
-    width: 100%;
   }
   .sfh-cta {
-    flex: 1 1 100%;
-    justify-content: center;
+    min-height: 40px;
+    padding: 0 28px;
   }
-  .sfh-facts {
-    order: 4;
-    justify-content: center;
-    gap: 5px;
-    width: 100%;
-    margin-top: 2px;
-    font-size: 11px;
+  .sfh-ribbon {
+    top: 10px;
+    right: 10px;
+    font-size: 9px;
   }
-  .sfh-facts li {
-    padding: 3px 7px;
+  .sfh-toy {
+    scale: 0.7;
   }
 }
-/* A small phone: the button before the story. */
-@media (max-width: 760px) and (max-height: 640px) {
-  .sfh-hook {
+@media (prefers-reduced-motion: reduce) {
+  .sfh-halo,
+  .sfh-rays,
+  .sfh-toy,
+  .sfh-card::after,
+  .sfh-ember {
+    animation: none;
+  }
+  .sfh-card::after {
     display: none;
   }
 }
-

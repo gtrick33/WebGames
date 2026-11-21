@@ -35,20 +35,19 @@ describe('the home page asks for the banner at once', () => {
   const home = pageSpecs('https://example.test')[0]!;
   const template = readFileSync(join(process.cwd(), 'index.html'), 'utf8');
 
-  it('preloads the pictures the banner shows, by the same rule, and they exist', () => {
+  it('preloads the pictures the banner shows, by the same sizes, and they exist', () => {
     const html = renderPage(template, home, 'https://example.test');
     const banner = readFileSync(join(process.cwd(), 'src/components/SigilfallHero.tsx'), 'utf8');
-    const tall = /const TALL = '([^']+)'/.exec(banner)![1]!;
-    expect(html).toContain(`media="${tall}"`);
-    for (const file of ['key-art-phone.avif', 'key-art-1600.avif', 'key-art-2400.avif', 'logo.svg']) {
+    const sizes = /export const SIZES = '([^']+)'/.exec(banner)![1]!;
+    expect(html).toContain(`imagesizes="${sizes}"`);
+    for (const file of ['key-art-1600.avif', 'key-art-2400.avif', 'logo.svg']) {
       expect(html).toContain(`/games/sigilfall/${file}`);
       expect(existsSync(inPublic(`/games/sigilfall/${file}`)), file).toBe(true);
     }
-    for (const file of ['key-art-phone.webp', 'key-art-1600.webp', 'key-art-2400.webp']) expect(existsSync(inPublic(`/games/sigilfall/${file}`)), file).toBe(true);
+    for (const file of ['key-art-1600.webp', 'key-art-2400.webp']) expect(existsSync(inPublic(`/games/sigilfall/${file}`)), file).toBe(true);
   });
 
   it('keeps the banner picture light enough to be the first thing to paint', () => {
-    expect(statSync(inPublic('/games/sigilfall/key-art-phone.avif')).size).toBeLessThan(60_000);
     expect(statSync(inPublic('/games/sigilfall/key-art-1600.avif')).size).toBeLessThan(60_000);
   });
 

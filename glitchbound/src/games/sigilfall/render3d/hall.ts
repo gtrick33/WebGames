@@ -4,6 +4,7 @@ import { Motion } from './cast';
 import type { Held } from './dress';
 import { FX } from './fx3d';
 import { dressHall, type HallDress } from './hallDress';
+import { HallBanners, type BannerSpec } from './hallBanners';
 import { hexRgb } from './kits';
 import { Stage } from './stage';
 import { LIGHT } from './toon';
@@ -41,7 +42,8 @@ function placeOf(off: number): { x: number; z: number; turn: number } {
   if (off === 0) return { x: 0, z: 0, turn: 0 };
   const side = Math.sign(off);
   const n = Math.abs(off);
-  return { x: side * (2.5 + (n - 1) * 1.7), z: -1.5 - (n - 1) * 1.5, turn: -side * 0.45 };
+  // (nearer the dais than they stood, 2.5: the banners hang beyond them)
+  return { x: side * (2.05 + (n - 1) * 1.7), z: -1.5 - (n - 1) * 1.5, turn: -side * 0.45 };
 }
 
 export class Hall3D {
@@ -51,6 +53,9 @@ export class Hall3D {
   private turn = 0.2;
   private readonly places: { x: number; z: number }[] = [];
   private dress: HallDress | null = null;
+  /** The ways into the game, hung in the hall (hallBanners.ts): made with the hall, shown once they're told what to say. */
+  private banners: HallBanners | null = null;
+  private bannerSpecs: BannerSpec[] = [];
   /** The color the hall is in, on its way to the hero's. */
   private readonly tint: [number, number, number] = [NO_ONE[0], NO_ONE[1], NO_ONE[2]];
   private tinted = false;
@@ -103,6 +108,8 @@ export class Hall3D {
     if (!this.built) {
       this.built = true;
       this.dress = dressHall(st, st.landPacks!);
+      this.banners = new HallBanners(st.scene, this.dress.fires);
+      this.banners.set(this.bannerSpecs);
     }
     LIGHT.uTime.value = time;
     LIGHT.uSun.value.set(SUN[0], SUN[1], SUN[2]).normalize();
@@ -120,6 +127,7 @@ export class Hall3D {
     c.lookAt(0, wide > 1.2 ? 1.16 : 1.5, 0);
     c.updateMatrixWorld(true);
     st.syncCamera();
+    this.banners?.frame(c, dt, time);
     this.turn += (turn - this.turn) * Math.min(1, dt * 12);
     const n = heroes.length;
     const half = Math.floor(n / 2);
@@ -160,9 +168,34 @@ export class Hall3D {
         st.cast.shadow(pl.x * TILE, pl.z * TILE, 9);
       }
     });
+    // the banners' shadows on the floor under them, long and soft (the window's light is high behind them)
+    for (const f of this.banners?.feet ?? []) {
+      st.cast.shadow(f.x * TILE, (f.z + 0.35) * TILE, 7 + f.w * 6);
+    }
     st.cast.end();
     this.air(time);
     st.render(dt);
+  }
+
+  /** What the hall's four banners say (hallBanners.ts): the ways into the game, left to right. */
+  setBanners(specs: BannerSpec[]): void {
+    this.bannerSpecs = specs;
+    this.banners?.set(specs);
+  }
+
+  /** The banner under a point of the canvas (CSS pixels from its corner), or -1. */
+  pickBanner(x: number, y: number): number {
+    return this.banners?.pick(this.stage.camera, x, y, this.cssW, this.cssH) ?? -1;
+  }
+
+  /** Lights a banner up, as the pointer or the keyboard comes to it (-1: none). */
+  hoverBanner(i: number): void {
+    this.banners?.hover(i);
+  }
+
+  /** Where a banner is on the canvas, as shares of it (0 to 1), for the keyboard's buttons over them. */
+  bannerBox(i: number): { x: number; y: number; w: number; h: number } | null {
+    return this.banners?.boxOf(this.stage.camera, i) ?? null;
   }
 
   /**
@@ -272,6 +305,7 @@ export class Hall3D {
   dispose(): void {
     // (the world has its own sun)
     LIGHT.uSun.value.set(WORLD_SUN[0], WORLD_SUN[1], WORLD_SUN[2]).normalize();
+    this.banners?.dispose();
     this.dress?.dispose();
     this.stage.dispose();
   }

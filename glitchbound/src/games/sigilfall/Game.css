@@ -6352,10 +6352,11 @@ html.rb-touch-playing textarea {
   filter: brightness(0) drop-shadow(0 0 7px rgb(255 255 255 / 0.1));
   opacity: 0.85;
 }
+/* (on the floor at the place's feet, under the banners: 2026-11-21, "move the plus buttons") */
 .cs-plus {
   position: absolute;
   left: -19px;
-  bottom: 62px;
+  bottom: 4px;
   display: grid;
   place-items: center;
   width: 38px;
@@ -6431,45 +6432,52 @@ html.rb-touch-playing textarea {
   zoom: var(--hud, 1);
 }
 
-/* the great arrows either side of the hero */
+/* the arrows either side of the hero's name (they stood at the hall's edges, where its banners hang now) */
+.cs-plate {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(6px, 1.4cqw, 16px);
+  max-width: 100%;
+}
+.cs-plate .cs-name {
+  order: 1;
+}
 .cs-arrow {
-  position: absolute;
-  top: 44%;
-  z-index: 6;
   display: grid;
   place-items: center;
-  width: clamp(44px, 7cqw, max(62px, 4.4cqw));
+  width: clamp(32px, 4.6cqw, max(46px, 3.2cqw));
   aspect-ratio: 1;
   padding: 0;
   border: 2px solid #8a6a2a;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #3d2f55, #120b24);
-  box-shadow: 0 0 0 2px #05030b, 0 8px 18px rgb(0 0 0 / 0.6), inset 0 1px 0 rgb(255 255 255 / 0.12);
+  box-shadow: 0 0 0 2px #05030b, 0 6px 14px rgb(0 0 0 / 0.6), inset 0 1px 0 rgb(255 255 255 / 0.12);
   cursor: pointer;
-  transform: translateY(-50%);
+  pointer-events: auto;
   transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 .cs-arrow.is-left {
-  left: clamp(8px, 3cqw, 36px);
+  order: 0;
 }
 .cs-arrow.is-right {
-  right: clamp(8px, 3cqw, 36px);
+  order: 2;
 }
 .cs-arrow:hover,
 .cs-arrow:focus-visible {
   border-color: #f6c453;
   box-shadow: 0 0 0 2px #05030b, 0 0 18px rgb(246 196 83 / 0.55);
-  transform: translateY(-50%) scale(1.08);
+  transform: scale(1.08);
 }
 .cs-arrow:active {
-  transform: translateY(-50%) scale(0.95);
+  transform: scale(0.95);
 }
 .cs-arrow i {
   display: block;
-  width: 34%;
+  width: 32%;
   aspect-ratio: 1;
-  border-top: 4px solid #ffe39a;
-  border-left: 4px solid #ffe39a;
+  border-top: 3px solid #ffe39a;
+  border-left: 3px solid #ffe39a;
 }
 .cs-arrow.is-left i {
   margin-left: 16%;
@@ -6480,11 +6488,82 @@ html.rb-touch-playing textarea {
   transform: rotate(135deg);
 }
 
+/* ---- The ways in hang in the hall itself, in 3D (render3d/hallBanners.ts): these are their buttons for the keyboard
+   and screen readers, unseen; the banner in the picture lights up as one takes the focus. ---- */
+.cs-ways {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.cs.is-pointing {
+  cursor: pointer;
+}
+
+/* the cog's menu, under it */
+.cs-top-btns {
+  position: relative;
+}
+.cs-cog.is-on {
+  border-color: #f6c453;
+}
+.cs-menu-shade {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+.cs-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 2;
+  display: grid;
+  min-width: 170px;
+  padding: 5px;
+  border: 2px solid #8a6a2a;
+  border-radius: 10px;
+  background: rgb(18 11 30 / 0.97);
+  box-shadow: 0 0 0 2px #05030b, 0 10px 24px rgb(0 0 0 / 0.6);
+}
+.cs-menu button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: #fff4de;
+  font: 600 14px system-ui, sans-serif;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.cs-menu button:hover,
+.cs-menu button:focus-visible {
+  background: rgb(246 196 83 / 0.14);
+}
+.cs-menu button span,
+.cs-menu button img {
+  width: 18px;
+  text-align: center;
+}
+.cs-menu button.is-danger {
+  color: #ff9a9a;
+}
+
 /* who stands here, at the top of the hall; the actions along the foot; the hero clear between them */
+/* (at the foot of the hall since the ways in became its banners, 2026-11-21: where the Ring's button was, the hero's
+   name, level and calling, and the title they wear or the land they've reached) */
 .cs-id {
   position: absolute;
   left: 50%;
-  top: calc(clamp(6px, 2cqh, 16px) + var(--sa-t, 0px));
+  bottom: calc(clamp(8px, 2.6cqh, 20px) + var(--sa-b, 0px));
   z-index: 6;
   display: grid;
   justify-items: center;
@@ -6500,7 +6579,7 @@ html.rb-touch-playing textarea {
 @keyframes cs-plate-in {
   from {
     opacity: 0;
-    transform: translate(-50%, -8px);
+    transform: translate(-50%, 8px);
   }
 }
 .cs-name {
@@ -7271,13 +7350,10 @@ html.rb-touch-playing textarea {
 .cs-actions {
   position: absolute;
   left: 50%;
-  bottom: calc(clamp(6px, 2.2cqh, 16px) + var(--sa-b, 0px));
+  bottom: calc(clamp(8px, 3cqh, 22px) + var(--sa-b, 0px));
   z-index: 6;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto minmax(0, 1fr) minmax(0, 1fr);
-  align-items: stretch;
-  gap: clamp(4px, 1cqw, 10px);
-  width: min(98%, max(1120px, 80cqw));
+  display: flex;
+  justify-content: center;
   transform: translateX(-50%);
 }
 .cs-mode {
@@ -7463,17 +7539,6 @@ html.rb-touch-playing textarea {
 }
 .cs-mode-gap {
   min-width: 0;
-}
-/* a narrow stage: the way into the world on its own row, the four others under it */
-@container (max-width: 760px) {
-  .cs-actions {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .cs .cs-enter {
-    grid-column: 1 / -1;
-    grid-row: 1;
-    min-height: clamp(30px, 8cqh, 44px);
-  }
 }
 /* a stage of middling width: the cards stand up, picture over words, so no name is ever cut short */
 @container (max-width: 1000px) {
@@ -11634,24 +11699,27 @@ html.rb-touch-playing textarea {
    potion: at the foot of the screen just inside the skills, in the right thumb's reach with a gap a thumb doesn't
    cross by mistake, and bigger than a skill (it is the button pressed in a panic). The mount: under the map, in the
    corner the eye goes to for where it is, and out of the fight's way. Both in the cluster's gold rim. */
+/* (2026-11-21, the owner: "move the potion above the basic attack so its more easily accessible": it stands in the
+   basic attack's own column, over the skill above it, 10 points clear, and grows and shrinks with the cluster:
+   right 6 + 23k, bottom 6 + 173k for the cluster's scale k) */
 .rb-potion-dock {
   position: absolute;
-  right: calc(242px + var(--sa-r));
-  bottom: calc(14px + var(--sa-b));
-  width: 56px;
-  height: 56px;
+  right: calc(29px + var(--sa-r));
+  bottom: calc(179px + var(--sa-b));
+  width: 52px;
+  height: 52px;
   pointer-events: none;
   transform-origin: bottom right;
 }
 .is-lefty .rb-potion-dock {
   right: auto;
-  left: calc(242px + var(--sa-l));
+  left: calc(29px + var(--sa-l));
   transform-origin: bottom left;
 }
 .rb-potion-dock > .rb-sb-potion {
   inset: 0;
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
 }
 .rb-potion-dock > .rb-sb-potion img {
   width: 24px;
@@ -11659,7 +11727,7 @@ html.rb-touch-playing textarea {
 }
 .rb-ui.is-touch > .rb-sb-mount {
   top: calc(124px + var(--sa-t));
-  right: calc(27px + var(--sa-r));
+  right: calc(84px + var(--sa-r));
   bottom: auto;
   width: 46px;
   height: 46px;
@@ -11673,71 +11741,71 @@ html.rb-touch-playing textarea {
     inset 0 0 0 2px rgb(0 0 0 / 0.35),
     inset 0 2px 0 rgb(255 255 255 / 0.28);
 }
-/* the pointer over the potion (low on health the first time): over it, its arrow down to it, the words reaching away
-   from the skills so that none of them is covered */
+/* the pointer at the potion (low on health the first time): beside it, toward the middle of the picture, so that no
+   skill is covered */
 .rb-teach.is-touch.is-at-potion {
-  right: 0;
-  bottom: calc(100% + 12px);
+  right: calc(100% + 12px);
+  bottom: 0;
   left: auto;
 }
+/* (beside it now, at its height: the arrow under the words would point at nothing) */
 .rb-teach.is-touch.is-at-potion::after {
-  right: 21px;
-  left: auto;
+  display: none;
 }
 .is-lefty .rb-teach.is-touch.is-at-potion {
   right: auto;
-  left: 0;
-}
-.is-lefty .rb-teach.is-touch.is-at-potion::after {
-  right: auto;
-  left: 21px;
+  left: calc(100% + 12px);
 }
 /* on a short phone the skills are drawn smaller (the cluster's scaling, above): the potion keeps beside them, a little
    smaller too but never under 40 points; with no map on a very short one the mount takes its corner, under the menu */
 @container (max-height: 400px) {
   .rb-potion-dock {
-    right: calc(209px + var(--sa-r));
-    transform: scale(0.9);
-  }
-  .is-lefty .rb-potion-dock {
-    right: auto;
-    left: calc(209px + var(--sa-l));
-  }
-}
-@container rb-stage (max-height: 340px) {
-  .rb-potion-dock {
-    right: calc(194px + var(--sa-r));
+    right: calc(26px + var(--sa-r));
+    bottom: calc(155px + var(--sa-b));
     transform: scale(0.86);
   }
   .is-lefty .rb-potion-dock {
     right: auto;
-    left: calc(194px + var(--sa-l));
+    left: calc(26px + var(--sa-l));
   }
 }
-@container rb-stage (max-height: 280px) {
+@container rb-stage (max-height: 340px) {
   .rb-potion-dock {
-    right: calc(161px + var(--sa-r));
+    right: calc(24px + var(--sa-r));
+    bottom: calc(144px + var(--sa-b));
     transform: scale(0.8);
   }
   .is-lefty .rb-potion-dock {
     right: auto;
-    left: calc(161px + var(--sa-l));
+    left: calc(24px + var(--sa-l));
+  }
+}
+@container rb-stage (max-height: 280px) {
+  .rb-potion-dock {
+    right: calc(21px + var(--sa-r));
+    bottom: calc(120px + var(--sa-b));
+    transform: scale(0.66);
+  }
+  .is-lefty .rb-potion-dock {
+    right: auto;
+    left: calc(21px + var(--sa-l));
   }
   .rb-ui.is-touch > .rb-sb-mount {
     top: calc(54px + var(--sa-t));
-    right: calc(10px + var(--sa-r));
+    right: calc(62px + var(--sa-r));
     width: 40px;
     height: 40px;
   }
 }
 @container rb-stage (max-height: 230px) {
   .rb-potion-dock {
-    right: calc(139px + var(--sa-r));
-    transform: scale(0.72);
+    right: calc(19px + var(--sa-r));
+    bottom: calc(103px + var(--sa-b));
+    transform: scale(0.56);
   }
   .is-lefty .rb-potion-dock {
     right: auto;
-    left: calc(139px + var(--sa-l));
+    left: calc(19px + var(--sa-l));
   }
 }
 /* a place not filled yet: an empty ring, the level it opens at in it */
@@ -16166,5 +16234,23 @@ html.rb-touch-playing textarea {
 @media (prefers-reduced-motion: reduce) {
   .rb-equipask {
     animation: none;
+  }
+}
+
+/* ---- The hall's own small pieces grow with a big screen (a 1440 or 4K monitor in full screen): the cog, the build's
+   mark and the dots under the hero's name were drawn at a laptop's size and read as specks there (2026-11-21). The
+   hall itself, its banners and the hero's name grow with it already. ---- */
+@container (min-height: 1250px) {
+  .cs-top-btns,
+  .cs-dots,
+  .cs-version {
+    zoom: 1.5;
+  }
+}
+@container (min-height: 1700px) {
+  .cs-top-btns,
+  .cs-dots,
+  .cs-version {
+    zoom: 2;
   }
 }

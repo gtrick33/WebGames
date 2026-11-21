@@ -16,11 +16,13 @@ import { iconPicture, iconsReady } from '../render/art/gameIcons';
 import { VIGIL_ICON } from '../render/art/iconPicks';
 import { heldWeapon, heroLook } from '../render/sprites';
 import { Hall3D, type HallHero } from '../render3d/hall';
+import type { BannerSpec } from '../render3d/hallBanners';
 import { shieldOf } from '../render3d/worldCast';
 import { buildLabel } from '../../../buildLabel';
 
 /** How far apart the others stand, on the stage's own grid. */
-const PLINTHS = { dx: 184, y: 286 };
+/** The others' places either side of the dais (render3d/hall.ts placeOf: 2.05 across), nearer than the banners. */
+const PLINTHS = { dx: 150, y: 286 };
 const clock = (t: number): string => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
 const farthest = (unlocked: RegionId[]) => unlocked.map((id) => REGIONS[id]).reduce((a, b) => (b.levels[1] > a.levels[1] ? b : a), REGIONS.emberwick);
@@ -50,6 +52,8 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
   const color = hero ? CLASSES[hero.cls].colors.main : '#8d6bff';
   const [night] = useState(longestNight);
   const [standing] = useState(topStanding);
+  // the small menu behind the cog, top right: the rankings, the shop, the settings and deleting a hero
+  const [menu, setMenu] = useState(false);
 
   /* ------------------------------------------------- the hall, in 3D, with everyone in it */
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -59,6 +63,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
     liveRef.current.cast = cast;
     liveRef.current.at = at;
   }, [cast, at]);
+  const hallRef = useRef<Hall3D | null>(null);
   useEffect(() => {
     const c = canvasRef.current!;
     const box = c.parentElement!;
@@ -68,6 +73,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
     } catch {
       return undefined;
     }
+    hallRef.current = hall;
     const fit = (): void => {
       if (box.clientWidth && box.clientHeight) hall.fit(box.clientWidth, box.clientHeight, Math.min(2, window.devicePixelRatio || 1));
     };
@@ -89,9 +95,51 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      hallRef.current = null;
       hall.dispose();
     };
   }, [engine]);
+
+  /* ------------------------------------------------- the others' places, clear of the banners */
+  // The ring of heroes is drawn over the hall (its plus for an empty place, a name over each one waiting), and the
+  // banners hang in the hall: where one of those would lie over a banner it steps down to just under the banner's
+  // foot, and the place's own reach stops taking the banner's clicks (the owner, 2026-11-21: "the + buttons are on top
+  // of the banners", on a phone, a computer and a 4K screen alike: measured on the screen, whatever its size).
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const hall = hallRef.current;
+      const c = canvasRef.current;
+      const box = boxRef.current;
+      if (!hall || !c || !box) return;
+      const cr = c.getBoundingClientRect();
+      const banners: { l: number; t: number; r: number; b: number }[] = [];
+      for (let i = 0; i < 4; i++) {
+        const b = hall.bannerBox(i);
+        if (b) banners.push({ l: cr.left + b.x * cr.width, t: cr.top + b.y * cr.height, r: cr.left + (b.x + b.w) * cr.width, b: cr.top + (b.y + b.h) * cr.height });
+      }
+      for (const fig of box.querySelectorAll<HTMLElement>('.cs-figure')) {
+        const away = fig.classList.contains('is-away');
+        for (const part of fig.querySelectorAll<HTMLElement>('.cs-plus, .cs-tag, .cs-body')) {
+          const rect = part.getBoundingClientRect();
+          const k = rect.height / (part.offsetHeight || 1) || 1;
+          const was = Number(part.dataset.dy ?? 0);
+          // (where it would be without the step it has taken)
+          const top = rect.top - was * k;
+          const bottom = rect.bottom - was * k;
+          const over = away ? banners.filter((b) => rect.left < b.r && rect.right > b.l && top < b.b && bottom > b.t) : [];
+          if (part.classList.contains('cs-body')) {
+            part.style.pointerEvents = over.length ? 'none' : '';
+            continue;
+          }
+          const dy = over.length ? Math.max(...over.map((b) => (b.b + 6 - top) / k)) : 0;
+          if (Math.abs(dy - was) < 0.5) continue;
+          part.dataset.dy = String(dy);
+          part.style.translate = dy ? `0 ${dy}px` : '';
+        }
+      }
+    }, 120);
+    return () => window.clearInterval(id);
+  }, []);
 
   /* ------------------------------------------------- walking the ring */
   const go = useCallback(
@@ -107,6 +155,37 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
     if (hero) engine.play(at);
     else engine.newHeroScreen(at);
   }, [at, engine, hero]);
+
+  /* ------------------------------------------------- the hall's four banners: the ways in */
+  // (render3d/hallBanners.ts hangs them in the hall itself; these say what each says and does, left to right)
+  const trials = trialsOpen(engine.save);
+  const ways: (BannerSpec & { go: () => void })[] = [
+    { id: 'ring', name: 'The Ring', sub: `Arena duels · ${standing.rating} ${rankOf(standing.best).name}`, color: '#d8304a', icon: iconPicture(VIGIL_ICON.ring!), go: onRing },
+    { id: 'story', name: hero ? 'Campaign' : 'New hero', sub: hero ? `The story · ${farthest(hero.unlocked).name}` : 'Eight callings, one Crown', color: '#3a6ad8', icon: iconPicture(VIGIL_ICON.story!), go: primary },
+    { id: 'vigil', name: 'The Vigil', sub: night > 0 ? `The endless horde · best ${clock(night)}` : 'Hold out against the endless horde', color: '#d0602a', icon: iconPicture(VIGIL_ICON.vigil!), go: onVigil },
+    // (the Trials are the account's, not a hero's: open once any hero has reached level 20, played as a calling's own
+    // ready champion: progress/trial.ts)
+    { id: 'rift', name: 'Rift Trials', sub: trials ? `Dungeons against the clock · best stone +${Math.max(1, ...Object.values(engine.save.rift))}` : `Opens at level ${TRIALS_OPEN_AT}`, color: '#8a5ae8', icon: iconPicture(VIGIL_ICON.rift!), locked: !trials, go: () => onRift(at) },
+  ];
+  const specs = ways.map(({ go: _go, ...s }) => s);
+  const specKey = JSON.stringify(specs);
+  useEffect(() => {
+    hallRef.current?.setBanners(JSON.parse(specKey) as BannerSpec[]);
+  }, [specKey]);
+  const [lit, setLit] = useState(-1);
+  const light = (i: number): void => {
+    setLit(i);
+    hallRef.current?.hoverBanner(i);
+  };
+  /** The banner under the pointer, or -1 (the canvas's own corner is the hall's). */
+  const bannerAt = (e: ReactPointerEvent): number => {
+    const c = canvasRef.current;
+    if (!c || !hallRef.current) return -1;
+    if ((e.target as HTMLElement).closest('button, a, [role="menu"]')) return -1;
+    const r = c.getBoundingClientRect();
+    return hallRef.current.pickBanner(e.clientX - r.left, e.clientY - r.top);
+  };
+
   useEffect(() => {
     const key = (e: KeyboardEvent): void => {
       if (e.target instanceof HTMLInputElement) return;
@@ -153,9 +232,22 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
     if (!d || d.onHero) return;
     const dx = e.clientX - d.x;
     if (Math.abs(dx) > 44) go(dx < 0 ? 1 : -1);
+    // a tap or a click on one of the hall's banners: its way in
+    else if (Math.abs(dx) < 10) {
+      const i = bannerAt(e);
+      const way = ways[i];
+      if (way && !way.locked) {
+        engine.sound.play('quest', 0.3);
+        way.go();
+      }
+    }
   };
   const dragMove = (e: ReactPointerEvent): void => {
     move(e);
+    if (!drag.current && e.pointerType === 'mouse') {
+      const i = bannerAt(e);
+      if (i !== lit) light(i);
+    }
     const d = drag.current;
     if (!d?.onHero) return;
     const dx = e.clientX - d.x;
@@ -165,7 +257,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
   };
 
   return (
-    <div className="cs" ref={boxRef} onPointerMove={dragMove} onPointerDown={(e) => down(e, false)} onPointerUp={up} style={{ ['--cc' as string]: color }}>
+    <div className={`cs${lit >= 0 && !ways[lit]?.locked ? ' is-pointing' : ''}`} ref={boxRef} onPointerMove={dragMove} onPointerDown={(e) => down(e, false)} onPointerUp={up} onPointerLeave={() => light(-1)} style={{ ['--cc' as string]: color }}>
       <canvas ref={canvasRef} className="cs-hall" aria-hidden="true" />
       <div className="cs-stage">
         {heroes.map((h, i) => {
@@ -211,39 +303,50 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
             {buildLabel()}
           </small>
         </div>
+        {/* (one cog for the hall's own things, beside the arcade's menu: the owner, 2026-11-21, "too many buttons") */}
         <div className="cs-top-btns">
-          {hero && (
-            <button className="rb-iconbtn cs-delete" onClick={() => setConfirmDelete(at)} aria-label={`Delete ${hero.name}`} title={`Delete ${hero.name}`}>
-              🗑
-            </button>
-          )}
-          {/* (the game's own shop, where there is one: a small button among the others, never more) */}
-          {onStore && (
-            <button className="rb-iconbtn cs-store" onClick={onStore} aria-label="Shop" title="Shop">
-              <img src={uiIcon('store', 2)} alt="" draggable={false} />
-            </button>
-          )}
-          <button className="rb-iconbtn" onClick={onRanks} aria-label="Rankings" title="Rankings">
-            ♛
-          </button>
-          <button className="rb-iconbtn" onClick={onSettings} aria-label="Settings">
+          <button className={`rb-iconbtn cs-cog${menu ? ' is-on' : ''}`} onClick={() => setMenu((m) => !m)} aria-label="Options" aria-expanded={menu} title="Options">
             ⚙
           </button>
           <GameMenuButton className="rb-iconbtn" />
+          {menu && (
+            <>
+              <button className="cs-menu-shade" aria-label="Close options" onClick={() => setMenu(false)} />
+              <div className="cs-menu" role="menu">
+                <button role="menuitem" onClick={() => (setMenu(false), onRanks())}>
+                  <span aria-hidden="true">♛</span> Rankings
+                </button>
+                {onStore && (
+                  <button role="menuitem" onClick={() => (setMenu(false), onStore())}>
+                    <img src={uiIcon('store', 2)} alt="" draggable={false} /> Shop
+                  </button>
+                )}
+                {hero && (
+                  <button role="menuitem" onClick={() => (setMenu(false), engine.playTogether(at))}>
+                    <span aria-hidden="true">⚑</span> Play together
+                  </button>
+                )}
+                <button role="menuitem" onClick={() => (setMenu(false), onSettings())}>
+                  <span aria-hidden="true">⚙</span> Settings
+                </button>
+                {hero && (
+                  <button role="menuitem" className="is-danger" onClick={() => (setMenu(false), setConfirmDelete(at))}>
+                    <span aria-hidden="true">🗑</span> Delete {hero.name}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
-
-      <button className="cs-arrow is-left" onClick={() => go(-1)} aria-label="Previous hero">
-        <i />
-      </button>
-      <button className="cs-arrow is-right" onClick={() => go(1)} aria-label="Next hero">
-        <i />
-      </button>
 
       <div className="cs-id" key={at}>
         {hero ? (
           <>
-            <h2 className="cs-name">{hero.name}</h2>
+            <div className="cs-plate">
+              <Arrows go={go} />
+              <h2 className="cs-name">{hero.name}</h2>
+            </div>
             {/* (their level and calling on a line of their own, large: the owner could not read them on a big screen) */}
             <p className="cs-line">
               <b className="cs-class" style={{ color: CLASSES[hero.cls].colors.accent }}>
@@ -254,7 +357,10 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
           </>
         ) : (
           <>
-            <h2 className="cs-name">A place waits</h2>
+            <div className="cs-plate">
+              <Arrows go={go} />
+              <h2 className="cs-name">A place waits</h2>
+            </div>
             <p className="cs-line">Eight callings, six acts, one Crown. Who will you be?</p>
           </>
         )}
@@ -265,52 +371,16 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
         </ol>
       </div>
 
-      {/* the ways in: the Ring in the middle, the game's first way in (the owner, 2026-11-20: the Ring is the main mode,
-          the story, the Vigil and the Rift beside it); the story, the Rift, the Vigil and playing with friends round
-          it. Each says in a line what it is, and where this hero stands in it. */}
-      <div className="cs-actions">
-        <button className={`cs-mode is-story`} onClick={primary}>
-          <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.story!)} alt="" draggable={false} />
-          <span>
-            <strong>{hero ? 'The Campaign' : 'Create a hero'}</strong>
-            <small>{hero ? `The story · ${farthest(hero.unlocked).name}` : 'Eight callings, six acts, one Crown'}</small>
-          </span>
-        </button>
-        {/* (the Trials are the account's, not a hero's: open once any hero has reached level 20, played as a calling's
-            own ready champion: progress/trial.ts) */}
-        <button className={`cs-mode is-rift${trialsOpen(engine.save) ? '' : ' is-locked'}`} disabled={!trialsOpen(engine.save)} onClick={() => onRift(at)}>
-          <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.rift!)} alt="" draggable={false} />
-          <span>
-            <strong>Rift Trials</strong>
-            <small>{trialsOpen(engine.save) ? `Dungeons against the clock · best stone +${Math.max(1, ...Object.values(engine.save.rift))}` : `Opens when a hero reaches level ${TRIALS_OPEN_AT}`}</small>
-          </span>
-        </button>
-        <button className="cs-enter is-ring" onClick={onRing} autoFocus>
-          <img className="cs-enter-glyph" src={iconPicture(VIGIL_ICON.ring!)} alt="" draggable={false} />
-          <span className="cs-enter-words">
-            <span>Enter the Ring</span>
-            <small>
-              Arena duels · {standing.rating} {rankOf(standing.best).name}
-            </small>
-          </span>
-        </button>
-        <button className="cs-mode is-vigil" onClick={onVigil}>
-          <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.vigil!)} alt="" draggable={false} />
-          <span>
-            <strong>The Vigil</strong>
-            <small>{night > 0 ? `Hold out against the horde · best ${clock(night)}` : 'Hold out against the endless horde'}</small>
-          </span>
-        </button>
-        <button className={`cs-mode is-party${hero ? '' : ' is-locked'}`} disabled={!hero} onClick={() => engine.playTogether(at)}>
-          <span className="cs-mode-glyph is-party" aria-hidden="true">
-            ⚑
-          </span>
-          <span>
-            <strong>Play together</strong>
-            <small>{hero ? 'The story or a Rift, with up to three friends' : 'Make a hero first'}</small>
-          </span>
-        </button>
-      </div>
+      {/* The ways in hang in the hall itself (render3d/hallBanners.ts): four banners of the same weight, the Ring, the
+          Campaign, the Vigil and the Rift Trials, pointed at and clicked in the picture. These buttons are theirs for the
+          keyboard and for a screen reader: unseen, they light their banner up as they take the focus. */}
+      <nav className="cs-ways" aria-label="Ways to play">
+        {ways.map((w, i) => (
+          <button key={w.id} disabled={w.locked} onClick={w.go} onFocus={() => light(i)} onBlur={() => light(-1)} aria-label={`${w.name}: ${w.sub}`}>
+            {w.name}
+          </button>
+        ))}
+      </nav>
 
       {hero && confirmDelete === at && (
         <div className="rb-ring-dialog-wrap" role="dialog" aria-label={`Delete ${hero.name}`}>
@@ -344,4 +414,18 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
 function HeroPlace({ engine, hero }: { engine: SigilEngine; hero: Character }) {
   const title = wornTitleShown(hero, engine.ringRating());
   return <span className="cs-place">{title ? <TitleFx fx={title.fx}>{title.text}</TitleFx> : farthest(hero.unlocked).name}</span>;
+}
+
+/** The arrows either side of the hero's name: the ring of heroes walks round by one. */
+function Arrows({ go }: { go: (d: number) => void }) {
+  return (
+    <>
+      <button className="cs-arrow is-left" onClick={() => go(-1)} aria-label="Previous hero">
+        <i />
+      </button>
+      <button className="cs-arrow is-right" onClick={() => go(1)} aria-label="Next hero">
+        <i />
+      </button>
+    </>
+  );
 }

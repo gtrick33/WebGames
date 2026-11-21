@@ -26,6 +26,6 @@ export function usePageMeta(meta: { title?: string; description?: string; path: 
     setMeta('meta[property="og:title"]', 'content', full);
     setMeta('meta[property="og:description"]', 'content', description);
     setMeta('meta[property="og:url"]', 'content', url);
-    setMeta('meta[property="og:image"]', 'content', `${SITE_URL}${image ?? '/og.png'}`);
+    setMeta('meta[property="og:image"]', 'content', `${SITE_URL}${image ?? '/og-home.jpg'}`);
   }, [title, description, path, image]);
 }
