@@ -104,7 +104,7 @@ void main() {
   // the rose window's cold light, from in front and above, and the dim of the hall
   vec3 moonDir = normalize(vec3(0.0, 0.55, 0.85));
   float moon = max(dot(n, moonDir), 0.0);
-  vec3 lit = tex.rgb * (vec3(0.42, 0.44, 0.58) + vec3(0.7, 0.74, 0.92) * moon);
+  vec3 lit = tex.rgb * (vec3(0.62, 0.62, 0.72) + vec3(0.62, 0.66, 0.82) * moon);
   // the fire bowls, flickering
   for (int k = 0; k < 4; k++) {
     vec3 d = uFires[k].xyz - vWorld;
@@ -121,7 +121,10 @@ void main() {
   // a light of its own color along its edges, as if lit from behind: it stands out of the dark of the hall
   float ex = min(vUv.x, 1.0 - vUv.x);
   float edge = 1.0 - smoothstep(0.0, 0.09, ex);
-  lit += uColor * edge * (0.35 + uHover * 0.5);
+  // (and a slow pulse of it, every banner alike, so each reads as something to press)
+  float pulse = 0.5 + 0.5 * sin(uTime * 2.2 + uPhase);
+  lit += uColor * edge * (0.6 + pulse * 0.35 + uHover * 0.6);
+  lit += uColor * 0.12 * (0.6 + pulse * 0.4);
   lit *= 1.0 + uHover * 0.25;
   // what's stitched in gold (its name, its line, the border, the emblem's ring) shines by itself, so it reads in any
   // light; a glint runs down it now and then, and under the pointer it blazes
@@ -129,8 +132,8 @@ void main() {
   vec3 gold = glow.rgb * glow.a * (1.0 + sweep * 0.9 + uHover * 0.45);
   // a locked banner hangs grey and dim, its gold too
   float grey = dot(lit, vec3(0.3, 0.55, 0.15));
-  lit = mix(lit, vec3(grey) * 0.7, uLocked * 0.75);
-  gold *= 1.0 - uLocked * 0.45;
+  lit = mix(lit, vec3(grey) * 0.85, uLocked * 0.35);
+  gold *= 1.0 - uLocked * 0.2;
   gl_FragColor = vec4(lit * (1.0 - glow.a * 0.85) + gold, tex.a);
 }`;
 
@@ -151,7 +154,7 @@ void main() {
   // (falling to nothing at every edge of its sheet: a sheet that ended still lit drew a line across the hall)
   float a = (1.0 - smoothstep(0.35, 1.0, abs(d.x))) * (1.0 - smoothstep(0.3, 1.0, abs(d.y)));
   float breathe = 0.85 + 0.15 * sin(uTime * 1.3 + uPhase);
-  gl_FragColor = vec4(uColor * a * (0.9 + uHover * 0.8) * breathe, 1.0);
+  gl_FragColor = vec4(uColor * a * (1.25 + uHover * 0.8) * breathe, 1.0);
 }`;
 
 /** The cloth: a grid hung from its top edge's middle, cut in a swallowtail at its foot. */
@@ -415,7 +418,6 @@ export class HallBanners {
       h.glow.needsUpdate = true;
       (h.cloth.material.uniforms.uColor!.value as THREE.Color).set(spec.color);
       (h.halo.material.uniforms.uColor!.value as THREE.Color).set(spec.color).lerp(new THREE.Color(1, 0.9, 0.75), 0.4);
-      h.halo.visible = !spec.locked;
     });
   }
 
