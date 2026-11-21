@@ -55,17 +55,23 @@
   transform: translate(2px, 2px);
   transition-duration: 0.08s;
 }
+/* (its own rounded top, as the arcade's cards have: the card's rounding alone didn't clip it on an iPhone, where the
+   picture's zoom made it a plain square, 2026-11-21) */
 .flagship-art {
   position: relative;
   aspect-ratio: 1;
   overflow: hidden;
   border-bottom: 2px solid var(--ink);
+  border-radius: calc(var(--r-lg) - 2px) calc(var(--r-lg) - 2px) 0 0;
+  isolation: isolate;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
 }
 .flagship-art img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: inherit;
   transition: transform 0.6s var(--out);
 }
 .flagship:hover .flagship-art img {

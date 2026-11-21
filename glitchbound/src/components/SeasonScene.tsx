@@ -149,17 +149,21 @@ function EventArt({ kind }: { kind: string }) {
       );
     case 'sleigh':
       return (
-        <svg viewBox="0 0 140 40" className="sc-art">
-          {/* two reindeer at a gallop and the sleigh behind on its runners */}
-          {[0, 30].map((dx) => (
+        <svg viewBox="0 0 146 40" className="sc-art">
+          {/* two reindeer at a gallop out in front, facing the way they go (right, as drawn), and the sleigh behind
+              them on its runners, its curled runners to the front (the reindeer were drawn behind the sleigh, and it flew
+              backwards: 2026-11-21) */}
+          {[76, 106].map((dx) => (
             <g key={dx} transform={`translate(${dx} 0)`}>
               <path d="M8 22 C12 18 22 18 26 21 L30 15 L28 9 L31 13 L33 8 L33 14 L36 16 L32 19 L29 24 L30 32 L27 32 L25 26 L14 27 L11 33 L8 33 L10 26 Z" />
             </g>
           ))}
-          <path d="M60 20 L74 22" stroke="currentColor" strokeWidth="1.2" />
-          <path d="M74 14 L100 14 C104 14 106 18 104 22 L110 22 L112 12 L118 12 L116 26 L76 26 Z" />
-          <path d="M72 30 L120 30 C126 30 128 26 126 24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
-          <circle cx="104" cy="9" r="4" />
+          <path d="M40 20 L86 21" stroke="currentColor" strokeWidth="1.2" />
+          <g transform="translate(-70 0)">
+            <path d="M74 14 L100 14 C104 14 106 18 104 22 L110 22 L112 12 L118 12 L116 26 L76 26 Z" />
+            <path d="M72 30 L120 30 C126 30 128 26 126 24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
+            <circle cx="104" cy="9" r="4" />
+          </g>
         </svg>
       );
     case 'balloon':
