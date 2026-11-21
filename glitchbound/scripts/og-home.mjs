@@ -83,7 +83,7 @@ writeFileSync(tmp, html);
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 });
 await page.goto(pathToFileURL(tmp).href, { waitUntil: 'load' });
-await page.evaluate(() => document.fonts.ready);
+await page.evaluate('document.fonts.ready');
 await page.waitForTimeout(300);
 const png = await page.screenshot();
 await browser.close();

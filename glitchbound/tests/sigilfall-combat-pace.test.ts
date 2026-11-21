@@ -281,13 +281,14 @@ describe('Sigilfall: what changed for saves and screens', () => {
       expect(n(r, 'bottom') + n(r, 'height'), s).toBeLessThanOrEqual(182);
     }
     // the potion and the mount apart from them (the owner: "potion should be somewhere accessible, mount should be
-    // somewhere visible"): the potion at the foot of the screen beside the skills, a thumb's gap from the dodge, and
-    // big; the mount under the map
+    // somewhere visible"): the potion over the basic attack, in its column, clear above the skill over it (2026-11-21:
+    // "move the potion above the basic attack so its more easily accessible"); the mount under the map
     expect(rule('.rb-cluster .rb-sb-potion')).toBe('');
     expect(rule('.rb-cluster .rb-sb-mount')).toBe('');
     const dock = rule('.rb-potion-dock');
-    expect(n(dock, 'right')).toBeGreaterThanOrEqual(6 + 220 + 12);
-    expect(n(dock, 'bottom')).toBeLessThanOrEqual(20);
+    // (the basic attack's column: the cluster's 6 plus the top skill's 23; over that skill's top, 6 + 111 + 52)
+    expect(n(dock, 'right')).toBe(6 + 23);
+    expect(n(dock, 'bottom')).toBeGreaterThanOrEqual(6 + 111 + 52 + 8);
     expect(n(dock, 'width')).toBeGreaterThanOrEqual(52);
     // (its place: the first rule for it; a later one gives it, with the potion, the cluster's rim)
     const at = css.indexOf('\n.rb-ui.is-touch > .rb-sb-mount {');
