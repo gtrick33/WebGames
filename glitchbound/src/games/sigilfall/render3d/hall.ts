@@ -260,7 +260,7 @@ export class Hall3D {
       const y = 3.2 + Math.sin(time * 0.7 + i * 1.7) * 0.05;
       const won = here?.sigils?.[i];
       const c = won ? hexRgb(SIGIL_LIGHT[i]!) : IRON;
-      const k = won ? 1.35 : 1;
+      const k = won ? 1 : 0.85;
       s.put(x, y, z, time * 0.12 + i, 0.46, 0.46, 0.46, c[0] * k, c[1] * k, c[2] * k, 0);
       this.crownAt[i] = { x, y, z, won: !!won };
     }
@@ -276,7 +276,7 @@ export class Hall3D {
       for (let i = 0; i < 7; i++) {
         const c = this.crownAt[i];
         if (!c) continue;
-        q.put({ kind: FX.glow, x: c.x * TILE, y: c.z * TILE, up: c.y * TILE, w: c.won ? 34 : 18, a: c.won ? SIGIL_LIGHT[i]! : '#b8c4ff', alpha: c.won ? 0.8 : 0.6 });
+        q.put({ kind: FX.glow, x: c.x * TILE, y: c.z * TILE, up: c.y * TILE, w: c.won ? 26 : 16, a: c.won ? SIGIL_LIGHT[i]! : '#b8c4ff', alpha: c.won ? 0.45 : 0.35 });
       }
       for (const e of d.eyes) q.put({ kind: FX.glow, x: e.x * TILE, y: e.z * TILE, up: e.y * TILE, w: 14 + Math.sin(time * 0.7 + e.x) * 2, a: '#9ad8ff', alpha: 0.55 });
       for (const f of d.fires) {

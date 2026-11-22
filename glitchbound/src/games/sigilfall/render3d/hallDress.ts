@@ -743,15 +743,16 @@ export function dressHall(st: Stage, packs: LandPacks): HallDress {
     const a0 = (i / N) * Math.PI * 2;
     const a1 = ((i + 1) / N) * Math.PI * 2;
     const c = colors[i % colors.length]!;
-    // the outer wedges, the inner ones, and the pale heart: the same glass as ever
-    glass.m.quad(pt(a0, 0.47 * R), pt(a0, 0.95 * R), pt(a1, 0.95 * R), pt(a1, 0.47 * R), nz, bright(c, 1.1), bright(c, 1.55));
-    glass.m.quad(pt(a0, 0.08 * R), pt(a0, 0.42 * R), pt(a1, 0.42 * R), pt(a1, 0.08 * R), nz, [1.5, 1.5, 1.35]);
+    // the outer wedges, the inner ones, and the pale heart: lit, but under the glow's threshold (the owner, 2026-11-22:
+    // "remove the glow in the main screen its too bright and it hurts my eyes"; it was 1.1-1.55 and a 1.5 heart)
+    glass.m.quad(pt(a0, 0.47 * R), pt(a0, 0.95 * R), pt(a1, 0.95 * R), pt(a1, 0.47 * R), nz, bright(c, 0.6), bright(c, 0.8));
+    glass.m.quad(pt(a0, 0.08 * R), pt(a0, 0.42 * R), pt(a1, 0.42 * R), pt(a1, 0.08 * R), nz, [0.78, 0.78, 0.72]);
   }
   // little diamonds at the very middle
   for (let i = 0; i < 6; i++) {
     const a0 = (i / 6) * Math.PI * 2;
     const a1 = ((i + 1) / 6) * Math.PI * 2;
-    glass.m.quad(pt(a0, 0), pt(a0, 0.1 * R), pt(a1, 0.1 * R), pt(a1, 0), nz, bright(colors[i % colors.length]!, 1.3));
+    glass.m.quad(pt(a0, 0), pt(a0, 0.1 * R), pt(a1, 0.1 * R), pt(a1, 0), nz, bright(colors[i % colors.length]!, 0.75));
   }
   // the tracery: stone over the glass
   const trace = rgb('#2c2748');
@@ -977,15 +978,15 @@ export function dressHall(st: Stage, packs: LandPacks): HallDress {
   // ---- what you can see of the light
   const shafts = new Shafts();
   // the round of light on the wall about the window, then the fall of moonlight down to the dais
-  shafts.halo(cx, cy, wz + 0.5, R * 2.6, [0.42, 0.5, 1], 0.2);
-  shafts.halo(cx, cy, wz + 0.5, R * 1.3, [0.6, 0.66, 1], 0.1);
+  shafts.halo(cx, cy, wz + 0.5, R * 2.6, [0.42, 0.5, 1], 0.07);
+  shafts.halo(cx, cy, wz + 0.5, R * 1.3, [0.6, 0.66, 1], 0.03);
   const moon = [0.62, 0.72, 1];
   const fall = (w0: number, w1: number, a: number): void => {
     shafts.add([-w1, 0.03, 0.9], [w1, 0.03, 0.9], [w0, cy, wz + 0.5], [-w0, cy, wz + 0.5], moon, a);
   };
-  fall(1.5, 3.1, 0.16);
-  fall(1.0, 2.1, 0.2);
-  fall(0.5, 1.1, 0.16);
+  fall(1.5, 3.1, 0.08);
+  fall(1.0, 2.1, 0.1);
+  fall(0.5, 1.1, 0.08);
   // and the cold slants from the lancets, down across the columns toward the middle
   for (const s of [-1, 1]) {
     for (const x of [7.15, 9.3]) {
