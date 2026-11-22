@@ -273,10 +273,9 @@ function Wagers({ engine, onWon }: { engine: SigilEngine; onWon: (item: Item) =>
   const pct = (v: number): string => `${Math.round(v * 100)}%`;
   // a tap picks the slot; the marks go only on the second, deliberate one (the owner, 2026-11-22: "buying a sigil item
   // requires only tapping, it needs a confirmation")
-  const [ask, setAsk] = useState<(typeof WAGER_SLOTS)[number] | null>(null);
-  useEffect(() => {
-    if (why) setAsk(null);
-  }, [why]);
+  const [picked, setAsk] = useState<(typeof WAGER_SLOTS)[number] | null>(null);
+  // (nothing to confirm when no wager can be laid)
+  const ask = why ? null : picked;
   return (
     <div className="rb-wagers">
       <div className="rb-wager-grid">
