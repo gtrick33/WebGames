@@ -152,8 +152,9 @@ describe('sigilfall: Riftstone', () => {
     expect(w.keyRun!.t).toBeCloseTo(1, 1);
   });
 
-  it('the Riftstone comes from clearing Duskspire on Mythic; a hero who already had is given one on load', () => {
-    expect(QUEST_DEFS['postgame-crownfall-mythic']!.reward.keystone).toBe(1);
+  it('the Riftstone comes from the Riftward\'s quest after the story; a hero who already had is given one on load', () => {
+    expect(QUEST_DEFS['postgame-the-riftward']!.reward.keystone).toBe(1);
+    expect(QUEST_DEFS['postgame-the-riftward']!.opens).toBe('riftward');
     const hero = readyHero('mage', 60, 'rare');
     expect(hero.keystone).toBe(0);
     hero.quests['postgame-crownfall-mythic'] = { state: 'done', n: 1 };

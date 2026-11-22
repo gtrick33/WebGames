@@ -77,15 +77,20 @@ describe('Sigilfall: Mythic and the Riftstones are for heroes at the top level',
     expect(engine).toContain('if (this.run && this.run.tier >= 2 && h.level < MAX_LEVEL) this.run.tier = 1;');
   });
 
-  it('the map offers neither below it', () => {
-    expect(panels).toContain('const keyed = top && h.keystone >= KEY_MIN && r.kind === \'dungeon\';');
-    expect(panels).toContain('TIERS.slice(0, Math.min(h.tier, top ? 2 : 1) + 1)');
+  // (Heroic and Mythic are gone, and the Riftstone starts only at the Riftgate in the Riftward: the owner, 2026-11-22)
+  it('the map offers no difficulty and no Riftstone: the Riftgate is the only way into a run', () => {
+    expect(panels).not.toContain('TIERS.slice(');
+    expect(panels).not.toContain("engine.travel(sel, pick, mods");
+    expect(panels).toContain('function RiftGatePanel(');
+    expect(panels).toContain('engine.travel(sel, 2, [], undefined, stone)');
+    // and only one place starts a run from the hero's own stone: the Gate's panel (the end of a run starts it again)
+    expect(panels.match(/engine\.travel\([^)]*stone\)/g)).toHaveLength(1);
   });
 
-  it('the quest that asks for a Mythic clear is offered at the top level, not at 17', () => {
-    expect(QUEST_DEFS.mythic!.level).toBe(MAX_LEVEL);
+  it('no quest asks for Heroic or Mythic, and none opens a difficulty', () => {
     for (const q of Object.values(QUEST_DEFS)) {
-      for (const o of [q.objective, ...(q.then ?? [])]) if (o.kind === 'clear' && o.tier >= 2) expect(q.level ?? MAX_LEVEL, q.id).toBeGreaterThanOrEqual(MAX_LEVEL);
+      for (const o of [q.objective, ...(q.then ?? [])]) if (o.kind === 'clear') expect(o.tier, q.id).toBe(0);
+      expect(q.reward.tier, q.id).toBeUndefined();
     }
   });
 });

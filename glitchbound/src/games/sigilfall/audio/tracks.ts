@@ -75,6 +75,8 @@ export const TRACKS: Readonly<Partial<Record<SongId, TrackId>>> = {
   blightwood: 'darkwood',
   'shattered-vale': 'darkwood',
   riftscar: 'rift',
+  // (the Riftward plays the Riftscar's piece: the same tear in the world; its own score is its own song)
+  riftward: 'rift',
   // under the ground
   crypt: 'crypt',
   cave: 'cave',

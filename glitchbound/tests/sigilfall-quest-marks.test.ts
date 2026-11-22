@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { activeQuests, readyQuests, trackQuest } from '../src/games/sigilfall/progress/character';
+import { acceptAll, activeQuests, readyQuests, trackQuest } from '../src/games/sigilfall/progress/character';
 import { applyPreset, PRESETS } from '../src/games/sigilfall/progress/presets';
 import { objectiveTarget, objectiveTargets, questCounts, questTarget } from '../src/games/sigilfall/sim/objective';
 import type { RegionId } from '../src/games/sigilfall/data/types';
@@ -14,6 +14,9 @@ function hearthstead() {
   const p = PRESETS.find((x) => x.id === 'hearthstead')!;
   const h = readyHero('warrior', p.level);
   applyPreset(h, p);
+  // (every quest offered there taken: more than the one story beat to mark. The crypt's Heroic quest was the other
+  // before Heroic went, 2026-11-22)
+  acceptAll(h);
   return newWorld(p.region as RegionId, h);
 }
 

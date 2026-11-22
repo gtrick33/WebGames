@@ -1,4 +1,3 @@
-import { MAX_LEVEL } from './classes';
 import { EVENTS } from './events';
 import { storyLive } from './retired';
 import { balanceQuestXp } from './progression';
@@ -109,32 +108,9 @@ export const QUESTS: QuestDef[] = [
     reward: {
       xp: 700,
       gold: 200,
-      tier: 1,
       perk: 'sigil-embers',
-      text: 'Morgrave is dead, and the sigil he came for is safe. When Elyra touched it, it sank into her hand, and it burns in her now like a coal. Elyra holds one sigil of seven, and the Host holds none. Morgrave’s journal names who sent the raiders. It was the Pale Herald, who serves the Hallow King. (Heroic difficulty is open.)',
+      text: 'Morgrave is dead, and the sigil he came for is safe. When Elyra touched it, it sank into her hand, and it burns in her now like a coal. Elyra holds one sigil of seven, and the Host holds none. Morgrave’s journal names who sent the raiders. It was the Pale Herald, who serves the Hallow King.',
     },
-  },
-  {
-    id: 'heroic',
-    name: 'Heroic Deeds',
-    giver: 'maren',
-    text: 'The dead in the Chapel Crypt have risen again, stronger than before. Clear the crypt on Heroic difficulty.',
-    objective: { kind: 'clear', region: 'crypt', tier: 1, label: 'Clear the Chapel Crypt on Heroic' },
-    after: ['close-the-rift'],
-    level: 12,
-    reward: { xp: 1500, gold: 400, item: 'amulet-of-echoes', tier: 2, text: 'You cleared the crypt on Heroic. Mythic difficulty opens for you at level 60.' },
-  },
-  {
-    id: 'mythic',
-    name: 'Beneath the Bell',
-    giver: 'maren',
-    text: 'Mythic is the hardest difficulty there is. Clear the Chapel Crypt on Mythic.',
-    objective: { kind: 'clear', region: 'crypt', tier: 2, label: 'Clear the Chapel Crypt on Mythic' },
-    after: ['heroic'],
-    // (Mythic is for heroes at the top level: the owner, "mythic and riftstones should be solely for max level
-    // characters"; it was offered at 17)
-    level: MAX_LEVEL,
-    reward: { xp: 4000, gold: 1000, item: 'glitch-shard' },
   },
 ];
 QUESTS.push(...STORY_QUESTS, ...ZONES.filter((z) => storyLive(z.region.id)).flatMap((z) => z.quests));
@@ -170,8 +146,6 @@ export const NPCS: Record<string, NpcDef> = {
     sprite: 'mystic',
     service: 'respec',
     talk: [
-      { when: { quest: 'heroic', state: 'active' }, lines: ['The dead in the crypt under Briarhollow have grown stronger since you cleared it.', 'Choose Heroic difficulty at the waystone when you travel to the Chapel Crypt.'] },
-      { when: { quest: 'mythic', state: 'active' }, lines: ['Mythic is the hardest difficulty. Choose it at the waystone when you travel to the Chapel Crypt.'] },
       { lines: ['I can reset your talents for a little gold.', 'Open your talents and choose Reset to try another path.'] },
     ],
   },
@@ -212,8 +186,8 @@ export const NPCS: Record<string, NpcDef> = {
     shop: 'quartermaster',
     pal: { g: '#6b4bd6', G: '#3b2a8a', w: '#3a3a4a', W: '#24242e' },
     talk: [
-      { when: { quest: 'the-wall-burns', state: 'started' }, lines: ['The market is a muster ground now. Every sword in the city is going north to Highwall.', 'I still sell the Crown’s best gear for Sigil Marks and gold. Heroic and Mythic bosses drop more marks.'] },
-      { lines: ['Every boss you defeat drops Sigil Marks. Bring them here.', 'I sell the Crown’s best gear for Sigil Marks and gold. Heroic and Mythic bosses drop more marks.'] },
+      { when: { quest: 'the-wall-burns', state: 'started' }, lines: ['The market is a muster ground now. Every sword in the city is going north to Highwall.', 'I still sell the Crown’s best gear for Sigil Marks and gold.'] },
+      { lines: ['Every boss you defeat drops Sigil Marks. Bring them here.', 'I sell the Crown’s best gear for Sigil Marks and gold. The Riftstone pays them out best of all.'] },
     ],
   },
   pell: {

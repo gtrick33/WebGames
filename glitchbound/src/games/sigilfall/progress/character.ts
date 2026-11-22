@@ -533,6 +533,7 @@ export function startQuests(c: Character): QuestDef[] {
       if (needsAccept(q)) c.quests[q.id] = { state: 'offered', n: 0 };
       else {
         c.quests[q.id] = { state: 'active', n: 0 };
+        openWay(c, q);
         started.push(q);
       }
     }
@@ -560,6 +561,7 @@ export function acceptQuests(c: Character, npc: string): QuestDef[] {
     if (questState(c, q.id) !== 'offered') continue;
     c.quests[q.id] = { state: 'active', n: 0 };
     closeChoice(c, q);
+    openWay(c, q);
     taken.push(q);
   }
   return taken;
@@ -659,7 +661,13 @@ export function acceptQuest(c: Character, id: string): QuestDef | null {
   if (!q || questState(c, id) !== 'offered') return null;
   c.quests[id] = { state: 'active', n: 0 };
   closeChoice(c, q);
+  openWay(c, q);
   return q;
+}
+
+/** The land a quest leads to opens when it is taken (QuestDef.opens). */
+function openWay(c: Character, q: QuestDef): void {
+  if (q.opens && !c.unlocked.includes(q.opens)) c.unlocked.push(q.opens);
 }
 
 /**

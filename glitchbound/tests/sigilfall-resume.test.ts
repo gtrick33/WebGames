@@ -49,13 +49,14 @@ function engineWith(h: Character): SigilEngine & Record<string, unknown> {
 }
 
 describe('where a hero is, kept', () => {
-  it('is written each time they travel: the land, its difficulty, and the land they came from', () => {
+  it('is written each time they travel: the land and the land they came from (no difficulty: Heroic and Mythic are gone)', () => {
     const h = hero(['whisperwood', 'crypt']);
     const e = engineWith(h);
     expect(e.travel('whisperwood', 0, [], HOME)).toBe(true);
     expect(h.at).toEqual({ region: 'whisperwood', from: HOME });
+    // (a difficulty asked for is Normal: 2026-11-22)
     expect(e.travel('crypt', 1, [], HOME)).toBe(true);
-    expect(h.at).toEqual({ region: 'crypt', tier: 1, from: HOME });
+    expect(h.at).toEqual({ region: 'crypt', from: HOME });
     // home again: nothing to remember (a hero begins there anyway)
     expect(e.travel(HOME, 0, [])).toBe(true);
     expect(h.at).toBeUndefined();
@@ -91,13 +92,13 @@ describe('beginning to play', () => {
     expect(e.world?.region.id).toBe('whisperwood');
   });
 
-  it('a hero who was in a dungeon is at its door, on the difficulty they had', () => {
+  it('a hero who was in a dungeon is at its door, on Normal (an old save\'s Heroic comes back at Normal)', () => {
     const h = hero(['crypt']);
     h.at = { region: 'crypt', tier: 1 };
     const e = engineWith(h);
     e.play(0);
     expect(e.world?.region.id).toBe('crypt');
-    expect(e.world?.tier).toBe(1);
+    expect(e.world?.tier).toBe(0);
     const start = e.world!.map.markers.find((m) => m.marker.kind === 'start')!;
     expect(Math.hypot(e.world!.player.x / 26 - start.tx, e.world!.player.y / 26 - start.ty)).toBeLessThan(4);
   });

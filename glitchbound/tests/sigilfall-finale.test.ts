@@ -214,17 +214,19 @@ describe('Sigilfall: the Epilogue and the postgame', () => {
     expect(heard.filter((id) => id === 'bell').length).toBeGreaterThanOrEqual(3);
   });
 
-  it('after the bell: Heroic and Mythic open, the threads are offered, the stair and the Tear give up their secrets', () => {
+  it('after the bell: the Riftward\'s quest starts and opens it, the threads are offered, the stair and the Tear give up their secrets', () => {
     const c = heroAt('epilogue-the-bell', 60);
     c.quests['epilogue-the-bell'] = { state: 'done', n: 1 };
-    c.tier = Math.max(c.tier, QUEST_DEFS['epilogue-the-bell']!.reward.tier ?? 0);
+    // (no difficulty comes with it any more: Heroic and Mythic are gone, 2026-11-22)
+    expect(QUEST_DEFS['epilogue-the-bell']!.reward.tier).toBeUndefined();
     startQuests(c);
-    expect(c.tier).toBe(2);
-    for (const id of ['postgame-crownfall-heroic', 'thread-wren', 'thread-the-chancellor', 'thread-under-the-tear']) expect(questState(c, id), id).not.toBe('locked');
+    expect(questState(c, 'postgame-the-riftward')).toBe('active');
+    expect(c.unlocked).toContain('riftward');
+    for (const id of ['thread-wren', 'thread-the-chancellor', 'thread-under-the-tear']) expect(questState(c, id), id).not.toBe('locked');
     expect(newWorld('emberwick', c).exits.some((x) => x.to === 'crown-catacombs')).toBe(true);
     expect(newWorld('shattered-vale', c).enemies.some((e) => e.def.id === 'the-heralds-first-face' && !e.dead)).toBe(true);
     // the prestige mount has explicit, deterministic criteria
-    expect(MOUNT_DEFS['crownfall-destrier']!.source).toEqual({ kind: 'clears', regions: ['duskspire'], tier: 1 });
+    expect(MOUNT_DEFS['crownfall-destrier']!.source).toEqual({ kind: 'rift', stone: 5 });
     expect(MOUNT_DEFS['crownfall-destrier']!.tier).toBe('prestige');
   });
 

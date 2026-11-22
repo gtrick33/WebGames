@@ -69,7 +69,77 @@ function bossOf(r: RegionDef): string | null {
  * ring and the vigil"): the callings across the top, the champion on a dais with what they are beside them, the
  * dungeons to choose from, and one gold button at the foot. It wears the Vigil lobby's own styles (rb-vlobby).
  */
+/**
+ * The Riftstone from the main menu: with one of your own heroes, who wakes in the Riftward and runs the stone there as in
+ * the campaign, or with a calling's ready champion, as the Trials always were (the owner, 2026-11-22: "from the riftstone
+ * mode from the main menu you should be able to select your existing character and use it, if you use personal
+ * character, then just spawn them in the campaign at the zone, if you use premade char, keep the same logic").
+ */
 export function RiftScreen({ engine, onBack }: { engine: SigilEngine; onBack: () => void }) {
+  const ready = engine.heroes().some((h) => !!h && h.unlocked.includes('riftward'));
+  const [mode, setMode] = useState<'mine' | 'champion'>(ready ? 'mine' : 'champion');
+  const tabs = (
+    <div className="rb-seg rb-rlobby-mode" role="tablist" aria-label="Who goes in">
+      <button role="tab" aria-selected={mode === 'mine'} className={mode === 'mine' ? 'is-on' : ''} onClick={() => setMode('mine')}>
+        Your heroes
+      </button>
+      <button role="tab" aria-selected={mode === 'champion'} className={mode === 'champion' ? 'is-on' : ''} onClick={() => setMode('champion')}>
+        Champions
+      </button>
+    </div>
+  );
+  if (mode === 'mine') return <OwnHeroes engine={engine} onBack={onBack} tabs={tabs} />;
+  return <Champions engine={engine} onBack={onBack} tabs={tabs} />;
+}
+
+/** Your own heroes: whoever has finished the story is taken to the Riftward, where the Gate is; the others say what's left. */
+function OwnHeroes({ engine, onBack, tabs }: { engine: SigilEngine; onBack: () => void; tabs: React.ReactNode }) {
+  const heroes = engine.heroes();
+  return (
+    <ScreenGate label="Opening the Rift">
+      <div className="rb-vlobby rb-rlobby" style={{ ['--land' as string]: '#a06aff', ['--cls' as string]: '#c58cff' }}>
+        <header className="rb-vlobby-head">
+          <button className="rb-iconbtn" onClick={onBack} aria-label="Back">
+            ←
+          </button>
+          <div>
+            <h2>The Riftstone</h2>
+            <p>Take one of your own heroes to the Riftward, and run the stone at its Gate with everything they carry.</p>
+          </div>
+          {tabs}
+          <GameMenuButton className="rb-iconbtn" />
+        </header>
+        <ul className="rb-rlobby-own">
+          {heroes.map((h, slot) => {
+            if (!h) return null;
+            const open = h.unlocked.includes('riftward');
+            const c = CLASSES[h.cls];
+            return (
+              <li key={slot} className={`rb-rlobby-own-card${open ? '' : ' is-locked'}`} style={{ ['--cls' as string]: c.colors.accent }}>
+                <Doll className="rb-rlobby-own-doll" src={heroDollUrl(heroLook(h.cls, h.equip, undefined, h.body, h.face), 'down', 3, heldWeapon(h.cls, h.equip.weapon), h.cls === 'warrior' || h.cls === 'paladin')} alt="" />
+                <span className="rb-rlobby-own-text">
+                  <strong>{h.name}</strong>
+                  <small>
+                    Level {h.level} {c.name}
+                    {h.keystone >= 1 ? ` · Riftstone +${h.keystone}` : ''}
+                  </small>
+                  {!open && <small className="rb-dim">Finish the story to open the Riftward.</small>}
+                </span>
+                <button className="rb-btn is-gold" disabled={!open} onClick={() => engine.playInRiftward(slot)}>
+                  To the Riftward
+                </button>
+              </li>
+            );
+          })}
+          {!heroes.some(Boolean) && <li className="rb-dim">You have no heroes yet. Make one in the hall, or take a champion in.</li>}
+        </ul>
+      </div>
+    </ScreenGate>
+  );
+}
+
+/** A calling's ready champion, at the stone that calling has reached on this account (the Rift Trials). */
+function Champions({ engine, onBack, tabs }: { engine: SigilEngine; onBack: () => void; tabs: React.ReactNode }) {
   const { me } = useAccount();
   const [pick, setPick] = useState(() => {
     const last = lastPick();
@@ -132,6 +202,7 @@ export function RiftScreen({ engine, onBack }: { engine: SigilEngine; onBack: ()
             <h2>The Rift Trials</h2>
             <p>A dungeon as the Crown remembers it, against the clock. Beat it and your stone rises.</p>
           </div>
+          {tabs}
           <GameMenuButton className="rb-iconbtn" />
         </header>
 

@@ -83,7 +83,9 @@ export interface QuestOnMap {
 export function questOnMap(h: World['hero'], q: QuestDef, onMap: (id: RegionId) => boolean, here?: RegionId): QuestOnMap | undefined {
   const where = questWhere(h, q) ?? questRegion(q) ?? npcRegion(q.giver, h) ?? npcRegion(q.giver);
   if (!where) return undefined;
-  const land = onMap(where) ? where : nearestRegions(where, onMap)[0];
+  // (a land with no road, the Riftward, shows its quest on the giver's land until the map draws it)
+  const giver = npcRegion(q.giver, h) ?? npcRegion(q.giver);
+  const land = onMap(where) ? where : (nearestRegions(where, onMap)[0] ?? (giver && onMap(giver) ? giver : undefined));
   if (!land) return undefined;
   if (h.unlocked.includes(land)) return { land };
   const near = nearestRegions(land, (id) => onMap(id) && h.unlocked.includes(id));
@@ -209,7 +211,10 @@ export function questTarget(w: World, q: QuestDef, steady = false): Objective | 
     const next = nextRegion(here, region, (q) => questState(h, q) === 'done');
     // (indoors, whatever it is, it's outside: a building isn't on the roads, it has a door)
     const x = next ? w.exits.find((e) => e.to === next) : w.region.interior ? w.exits[0] : undefined;
-    return x ? { ...place(x.x, x.y), via: x.to as RegionId } : null;
+    if (x) return { ...place(x.x, x.y), via: x.to as RegionId };
+    // a land no road goes to, the hero has the way to (the Riftward): the waystone here, which travels there
+    const stone = !next && h.unlocked.includes(region) ? w.waystones[0] : undefined;
+    return stone ? { ...place(stone.x, stone.y), via: region } : null;
   };
 
   // handed in: to the one who takes it back

@@ -108,7 +108,8 @@ describe('Sigilfall systems fixes', () => {
       c.bag = [];
       for (let i = 0; i < n; i++) c.bag.push(rollGear('warrior', 20, 'common', r));
     };
-    const heroic = QUEST_DEFS['heroic']!;
+    // (any quest that pays a named piece: it was the crypt's Heroic quest, gone with Heroic, 2026-11-22)
+    const heroic = { ...QUEST_DEFS['close-the-rift']!, reward: { xp: 0, gold: 0, item: 'amulet-of-echoes' } };
     // a full bag (30/30): into the overflow
     fill(bagSize(c));
     w.completeQuests([heroic]);

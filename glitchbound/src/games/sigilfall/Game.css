@@ -16353,3 +16353,198 @@ html.rb-touch-playing textarea {
     height: 32px;
   }
 }
+
+/* ---- What the hero carries, in the Hero panel (ui/Panels.tsx Purse, 2026-11-22): a tile for each coin or token, in
+   its own color, its picture in a round well, the count large and the name small under it. ---- */
+.rb-purse {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: 6px;
+  margin: 8px 0 10px;
+  padding: 0;
+  list-style: none;
+}
+.rb-purse-tile {
+  --pc: #ffd257;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 9px 6px 6px;
+  overflow: hidden;
+  border: 1.5px solid color-mix(in srgb, var(--pc) 70%, #000);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 18% 50%, color-mix(in srgb, var(--pc) 32%, transparent), transparent 55%),
+    linear-gradient(160deg, color-mix(in srgb, var(--pc) 22%, #1c1428), #120c1c 85%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1), 0 2px 0 rgb(0 0 0 / 0.4);
+}
+.rb-purse-tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgb(255 255 255 / 0.12) 50%, transparent 60%);
+  transform: translateX(-120%);
+  animation: rb-purse-shine 7s ease-in-out infinite;
+  pointer-events: none;
+}
+.rb-purse-tile.is-marks::after {
+  animation-delay: 1.4s;
+}
+.rb-purse-tile.is-potions::after {
+  animation-delay: 2.8s;
+}
+.rb-purse-tile.is-stone::after {
+  animation-delay: 4.2s;
+}
+@keyframes rb-purse-shine {
+  0%,
+  80% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+.rb-purse-tile.is-marks {
+  --pc: #a07bff;
+}
+.rb-purse-tile.is-potions {
+  --pc: #ff5a6a;
+}
+.rb-purse-tile.is-stone {
+  --pc: #c58cff;
+}
+.rb-purse-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, rgb(255 255 255 / 0.16), rgb(0 0 0 / 0.35) 70%);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--pc) 60%, transparent);
+}
+.rb-purse-icon svg {
+  width: 24px;
+  height: 24px;
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.6));
+}
+.rb-purse-text {
+  display: grid;
+  min-width: 0;
+  line-height: 1.1;
+}
+.rb-purse-text b {
+  overflow: hidden;
+  color: color-mix(in srgb, var(--pc) 35%, #fff);
+  font: 800 17px/1.1 Georgia, 'Times New Roman', serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px #000;
+}
+.rb-purse-text small {
+  color: color-mix(in srgb, var(--pc) 45%, #cfc4b0);
+  font-size: 11px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-purse-tile::after {
+    animation: none;
+  }
+}
+
+/* ---- The Riftstone from the main menu (ui/RiftScreen.tsx): your heroes or a champion, and your heroes as cards, each
+   to the Riftward (2026-11-22). ---- */
+.rb-rlobby-mode {
+  margin-left: auto;
+}
+.rb-rlobby-own {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+  align-content: start;
+  margin: 0;
+  padding: 14px clamp(12px, 3cqw, 32px);
+  overflow: auto;
+  list-style: none;
+}
+.rb-rlobby-own-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 2px solid color-mix(in srgb, var(--cls) 60%, #000);
+  border-radius: 12px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--cls) 20%, #1a1228), #0e0918 85%);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--cls) 22%, transparent);
+}
+.rb-rlobby-own-card.is-locked {
+  filter: grayscale(0.6) brightness(0.8);
+}
+.rb-rlobby-own-doll {
+  width: 56px;
+  height: auto;
+  flex: none;
+}
+.rb-rlobby-own-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+.rb-rlobby-own-text strong {
+  overflow: hidden;
+  color: #fff4de;
+  font: 700 17px Georgia, 'Times New Roman', serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rb-rlobby-own-text small {
+  color: #d8cdea;
+  font-size: 12px;
+}
+
+/* ---- The Rift Gate, in the Riftward (ui/Panels.tsx RiftGatePanel): the memories the stone reaches on the left, the
+   level, the clock and Start on the right. ---- */
+.rb-riftgate {
+  display: grid;
+  grid-template-columns: minmax(200px, 0.8fr) minmax(0, 1.4fr);
+  gap: 14px;
+}
+.rb-riftgate-list {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+}
+.rb-riftgate-row {
+  display: grid;
+  gap: 1px;
+  padding: 7px 10px;
+  border: 1.5px solid #4a3a6a;
+  border-radius: 9px;
+  background: rgb(20 12 34 / 0.7);
+  color: #fff4de;
+  text-align: left;
+  cursor: pointer;
+}
+.rb-riftgate-row.is-on {
+  border-color: #c58cff;
+  background: linear-gradient(150deg, rgb(120 70 220 / 0.35), rgb(20 12 34 / 0.85));
+  box-shadow: 0 0 14px rgb(197 140 255 / 0.3);
+}
+.rb-riftgate-pick {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+.rb-riftgate-go {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+@container (max-width: 700px) {
+  .rb-riftgate {
+    grid-template-columns: 1fr;
+  }
+}

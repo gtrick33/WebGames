@@ -24,7 +24,7 @@ export const SHOPS: Record<ShopId, ShopDef> = {
   quartermaster: {
     id: 'quartermaster',
     name: 'The Sigil Quartermaster',
-    blurb: 'Epic and legendary gear at the highest item level, for Sigil Marks. Bosses pay them out; harder tiers pay more.',
+    blurb: 'Epic and legendary gear at the highest item level, for Sigil Marks. Bosses pay them out; the Riftstone pays more.',
   },
 };
 

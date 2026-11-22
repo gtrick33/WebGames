@@ -156,7 +156,7 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
       </div>
     );
   }
-  if (rift !== null && trialsOpen(engine.save)) {
+  if (rift !== null && (trialsOpen(engine.save) || heroes.some((h) => !!h && h.unlocked.includes('riftward')))) {
     // (on its own, as the Vigil's lobby and the Ring's are: it is laid out as they are)
     return <RiftScreen engine={engine} onBack={() => setRift(null)} />;
   }

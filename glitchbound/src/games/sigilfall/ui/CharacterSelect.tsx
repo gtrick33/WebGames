@@ -166,13 +166,15 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
   /* ------------------------------------------------- the hall's four banners: the ways in */
   // (render3d/hallBanners.ts hangs them in the hall itself; these say what each says and does, left to right)
   const trials = trialsOpen(engine.save);
+  // (a hero of the player's own who has reached the Riftward can take the Riftstone from here too: ui/RiftScreen.tsx)
+  const riftward = heroes.some((x) => !!x && x.unlocked.includes('riftward'));
   const ways: (BannerSpec & { go: () => void })[] = [
     { id: 'ring', name: 'The Ring', sub: `Arena duels · ${standing.rating} ${rankOf(standing.best).name}`, color: '#d8304a', icon: iconPicture(VIGIL_ICON.ring!), go: onRing },
     { id: 'story', name: hero ? 'Campaign' : 'New hero', sub: hero ? `The story · ${farthest(hero.unlocked).name}` : 'Eight callings, one Crown', color: '#3a6ad8', icon: iconPicture(VIGIL_ICON.story!), go: primary },
     { id: 'vigil', name: 'The Vigil', sub: night > 0 ? `The endless horde · best ${clock(night)}` : 'Hold out against the endless horde', color: '#d0602a', icon: iconPicture(VIGIL_ICON.vigil!), go: onVigil },
     // (the Trials are the account's, not a hero's: open once any hero has reached level 20, played as a calling's own
     // ready champion: progress/trial.ts)
-    { id: 'rift', name: 'Rift Trials', sub: trials ? `Dungeons against the clock · best stone +${Math.max(1, ...Object.values(engine.save.rift))}` : `Opens at level ${TRIALS_OPEN_AT}`, color: '#8a5ae8', icon: iconPicture(VIGIL_ICON.rift!), locked: !trials, go: () => onRift(at) },
+    { id: 'rift', name: 'The Riftstone', sub: riftward ? `Your heroes or a champion · best +${Math.max(1, ...heroes.map((x) => x?.keystone ?? 0), ...Object.values(engine.save.rift))}` : trials ? `Champions against the clock · best +${Math.max(1, ...Object.values(engine.save.rift))}` : `Opens when a hero reaches level ${TRIALS_OPEN_AT}`, color: '#8a5ae8', icon: iconPicture(VIGIL_ICON.rift!), locked: !trials && !riftward, go: () => onRift(at) },
   ];
   const specs = ways.map(({ go: _go, ...s }) => s);
   const specKey = JSON.stringify(specs);

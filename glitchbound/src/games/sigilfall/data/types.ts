@@ -657,6 +657,8 @@ export type RegionId =
   /** The finale's memory of Vaelmoor and the postgame's catacombs. */
   | 'vaelmoor-remembered'
   | 'crown-catacombs'
+  /** The postgame's sanctuary round the Rift Gate, where the Riftstone is run (data/zones/riftward.ts). */
+  | 'riftward'
   | 'emberwick'
   | 'briarhollow'
   /** Interiors (data/interiors.ts). */
@@ -1020,6 +1022,7 @@ export type MusicTrack =
   | 'blightwood'
   | 'emberdeep'
   | 'hollowmere'
+  | 'riftward'
   | 'riftscar'
   | 'pale-reach'
   | 'tavern'
@@ -1116,6 +1119,8 @@ export interface QuestDef {
    * Door", not "a rare item"), shown on the quest's page and given to the piece.
    */
   reward: { xp: number; gold: number; item?: string | { rarity: Rarity; name?: string }; unlock?: RegionId; tier?: number; text?: string; perk?: PerkId; keystone?: number };
+  /** A land opened the moment the quest is taken (the way to where it leads: the Riftward, for the stone's quest). */
+  opens?: RegionId;
 }
 
 /* -------------------------------------------------------------------- npcs */
@@ -1128,7 +1133,7 @@ export interface NpcDef {
   /** Lines by quest state, first matching wins ('started': offered, active or done). */
   talk: { when?: { quest: string; state: 'locked' | 'offered' | 'active' | 'ready' | 'done' | 'started' | 'taken' }; lines: string[] }[];
   /** What the NPC offers besides talk. */
-  service?: 'respec' | 'smith' | 'waystone';
+  service?: 'respec' | 'smith' | 'waystone' | 'rift';
   /** A vendor: the shop they open, and its name over the door (else the shop's own name). */
   shop?: ShopId;
   shopName?: string;

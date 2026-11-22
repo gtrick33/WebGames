@@ -170,13 +170,11 @@ describe('Sigilfall: while the story waits for a level', () => {
     for (const id of before) c.quests[id] = { state: 'done', n: 1 };
     while (c.level < gate.level! - 1) addXp(c, xpToNext(c.level));
     for (const id of Object.keys(REGIONS) as RegionId[]) if (!c.unlocked.includes(id)) c.unlocked.push(id);
-    c.quests['heroic'] = { state: 'active', n: 0 };
     startQuests(c);
     expect(levelGated(c).some((q) => main.has(q.id))).toBe(true);
     const m = meanwhile(c);
     expect(m, 'something to do').not.toBeNull();
     expect(main.has(m!.q.id)).toBe(false);
-    expect(m!.q.id).not.toBe('heroic');
     // taken, it is what the tracker follows, before the replay
     c.quests[m!.q.id] = { state: 'active', n: 0 };
     expect(trackedQuest(c)?.id).toBe(m!.q.id);
@@ -212,13 +210,15 @@ describe('Sigilfall: a quest never sends a hero to a door they can’t open', ()
 
 describe('Sigilfall: inside the dungeon a quest sent the hero to clear', () => {
   it('the arrow leads through its rooms, not back out to the story', () => {
+    // (a quest whose work is in the crypt, its boss: the crypt's Heroic clear was the one, gone with Heroic, 2026-11-22)
+    const inside = QUESTS.find((q) => q.objective.kind === 'boss' && objectiveRegion(q, q.objective) === 'crypt')!;
+    expect(inside, 'a quest at the crypt').toBeDefined();
     const h = readyHero('warrior', 30);
-    h.quests['heroic'] = { state: 'active', n: 0 };
+    h.quests[inside.id] = { state: 'active', n: 0 };
     // a story quest elsewhere, which would otherwise come first
-    const story = QUESTS.find((q) => mainStory(QUEST_DEFS).has(q.id) && q.objective.kind === 'talk')!;
+    const story = QUESTS.find((q) => mainStory(QUEST_DEFS).has(q.id) && q.objective.kind === 'talk' && q.id !== inside.id)!;
     h.quests[story.id] = { state: 'active', n: 0 };
-    h.tier = 1;
-    const w = newWorld('crypt', h, 1, 1);
-    expect(objectiveTarget(w)?.quest).toBe('heroic');
+    const w = newWorld('crypt', h, 1, 0);
+    expect(objectiveTarget(w)?.quest).toBe(inside.id);
   });
 });

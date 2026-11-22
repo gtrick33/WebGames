@@ -196,12 +196,12 @@ function beat(walk: Walk): boolean {
       walk.roam = undefined;
       walkTo(w, t.x, t.y, 60);
     }
-    // at a waystone the arrow led to: the map, and the difficulty a quest wants
+    // at a waystone the arrow led to: the map, to a land no road goes to (the Riftward, 2026-11-22; it was the
+    // difficulty a quest wanted, before Heroic and Mythic went)
     const stone = w.waystones.find((s) => Math.hypot(s.x - w.player.x, s.y - w.player.y) < 30);
-    const hardStep = activeQuests(h).map((q) => currentObjective(h, q)).find((o) => o.kind === 'clear' && o.tier > w.tier && o.tier <= h.tier);
     // (not in the middle of a story fight: the game won't travel then, world.ts)
-    if (stone && hardStep && hardStep.kind === 'clear' && !w.story.fighting) {
-      enter(walk, hardStep.region, undefined, hardStep.tier);
+    if (stone && t.via && !w.exits.some((e) => e.to === t.via) && !w.story.fighting) {
+      enter(walk, t.via, undefined);
       return true;
     }
     // at the person the arrow points to: the hero talks

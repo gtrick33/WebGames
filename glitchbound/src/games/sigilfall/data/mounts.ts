@@ -17,6 +17,8 @@ export type MountSource =
   | { kind: 'perk'; perk: PerkId }
   /** Clear every one of these dungeons on this difficulty tier (or higher). */
   | { kind: 'clears'; regions: RegionId[]; tier: number }
+  /** This Riftstone level opened (data/keystones.ts): the Rift's prestige, since Heroic and Mythic went (2026-11-22). */
+  | { kind: 'rift'; stone: number }
   /** Finish the whole story as this class. */
   | { kind: 'campaign'; cls: ClassId }
   /** This many points on the site's Trophy Shelf. */
@@ -182,8 +184,8 @@ export const MOUNTS: MountDef[] = [
     id: 'ashen-nightmare',
     name: 'Ashen Nightmare',
     lore: 'A charger of the Barrow’s honor guard that would not lie down when its rider did. Its mane still smolders.',
-    from: 'Challenge: clear the Barrow of Kings on Heroic',
-    source: { kind: 'clears', regions: ['barrow-of-kings'], tier: 1 },
+    from: 'Challenge: open Riftstone +2',
+    source: { kind: 'rift', stone: 2 },
     body: 'horse',
     coat: '#24202a',
     mane: '#3a3440',
@@ -196,8 +198,8 @@ export const MOUNTS: MountDef[] = [
     id: 'crownfall-destrier',
     name: 'Crownfall Destrier',
     lore: 'The Hallow King’s own warhorse, which waited in Duskspire’s stable for three hundred years for someone worth carrying. Ash on its barding, starlight in its mane.',
-    from: 'Challenge: clear Duskspire, the Hallow King and all, on Heroic, after the story’s end',
-    source: { kind: 'clears', regions: ['duskspire'], tier: 1 },
+    from: 'Challenge: open Riftstone +5',
+    source: { kind: 'rift', stone: 5 },
     body: 'horse',
     coat: '#1a1822',
     mane: '#e8dca8',
@@ -211,8 +213,8 @@ export const MOUNTS: MountDef[] = [
     id: 'starlit-charger',
     name: 'Starlit Charger',
     lore: 'They say the first king of Aster rode it out of the night sky. They say a lot of things about the first king.',
-    from: 'Challenge: clear every dungeon of Acts II to IV on Mythic',
-    source: { kind: 'clears', regions: ['barrow-of-kings', 'tomb-of-the-sun-king', 'rimeheld-vault', 'siege-of-highwall'], tier: 2 },
+    from: 'Challenge: open Riftstone +10',
+    source: { kind: 'rift', stone: 10 },
     body: 'horse',
     coat: '#2b3a6e',
     mane: '#8ad0ff',

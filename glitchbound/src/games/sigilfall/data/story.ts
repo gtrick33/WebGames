@@ -204,32 +204,26 @@ export const STORY_QUESTS: QuestDef[] = [
       xp: 3000,
       gold: 1500,
       item: { rarity: 'legendary' },
-      tier: 2,
-      text: 'The bell rang over the whole Vale, and people in every village stopped to listen. The sigils took a great deal from Elyra, and most of it is not coming back. The bell gave her back her mother’s song. Heroic and Mythic are now open in every land, and a few loose threads are left to follow.',
+      text: 'The bell rang over the whole Vale, and people in every village stopped to listen. The sigils took a great deal from Elyra, and most of it is not coming back. The bell gave her back her mother’s song. A few loose threads are left to follow.',
     },
   },
   /* --------------------------------------------- Postgame */
+  // (Heroic and Mythic are gone, the owner, 2026-11-22: "remove heroic and mythic dungeons completely - once you complete
+  // the main story, get a quest for riftstones ... the quest should lead you there". The Riftstone is the endgame, and it
+  // is found and run in one place: the Riftward, data/zones/riftward.ts.)
   {
-    id: 'postgame-crownfall-heroic',
-    name: 'Crownfall, Again',
+    id: 'postgame-the-riftward',
+    name: 'The Stone That Remembers',
     giver: 'maren',
+    auto: true,
     zone: 'briarhollow',
-    text: 'The Ash Crown is gone, but Duskspire was its home for three hundred years, and the citadel remembers. On dark nights its halls fill with the dead again, and an echo of the King sits on the throne. Clear Duskspire on Heroic, all the way to the throne room. Hearthstead’s riders say a horse waits in its stable for whoever does.',
-    objective: { kind: 'clear', region: 'duskspire', tier: 1, label: 'Clear Duskspire on Heroic' },
+    text: 'The morning after the bell, a warm violet stone was tied to its rope. Maren knows what it is: a splinter of the Ash Crown, which remembers every place it fed on. The wardens who keep such things wait at the Riftward. Travel there by any waystone and show the stone to the Keeper of the Riftgate.',
+    objective: { kind: 'talk', npc: 'riftkeeper', label: 'Show the stone to the Keeper of the Riftgate, at the Riftward' },
     after: ['epilogue-the-bell'],
+    opens: 'riftward',
+    turnIn: 'riftkeeper',
     level: 60,
-    reward: { xp: 8000, gold: 3000, item: { rarity: 'legendary' }, text: 'In Duskspire’s stable, a black horse in starlit armor stands waiting. It is the Crownfall Destrier, Vaelor’s own warhorse, and it is yours.' },
-  },
-  {
-    id: 'postgame-crownfall-mythic',
-    name: 'The Last King’s Hardest Hour',
-    giver: 'maren',
-    zone: 'briarhollow',
-    text: 'On the darkest nights, Duskspire’s echoes grow stronger still, as strong as the Hallow King’s army would have been with all seven sigils in his crown. Clear Duskspire on Mythic.',
-    objective: { kind: 'clear', region: 'duskspire', tier: 2, label: 'Clear Duskspire on Mythic' },
-    after: ['postgame-crownfall-heroic'],
-    level: 60,
-    reward: { xp: 12000, gold: 5000, item: 'glitch-shard', keystone: 1, text: 'That night, Briarhollow’s bell rings once by itself. In the morning, a warm violet stone is tied to its rope: a Riftstone. Riftstone +1. Every dungeon in the Vale can now be run again, against the clock.' },
+    reward: { xp: 8000, gold: 3000, item: 'glitch-shard', keystone: 1, text: 'The Keeper turns the stone over in her hands. “It remembers. Hold it at the gate, and you will walk into any dungeon the Crown fed on, as it was, against the clock.” Riftstone +1. The Riftgate here is yours to use.' },
   },
 ];
 
