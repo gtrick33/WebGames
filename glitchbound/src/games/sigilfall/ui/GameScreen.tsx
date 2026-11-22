@@ -1265,6 +1265,8 @@ function RewardScreen({ engine }: { engine: SigilEngine }) {
   const mins = Math.floor(r.seconds / 60);
   const secs = Math.floor(r.seconds % 60);
   const h = engine.hero!;
+  // (where the dungeon's portal goes, which is where this button goes)
+  const way = engine.world?.portalWay().to ?? HOME;
   return (
     <div className="rb-modal">
       <div className="rb-card rb-reward" role="dialog" aria-modal="true" aria-label="Dungeon cleared">
@@ -1322,8 +1324,8 @@ function RewardScreen({ engine }: { engine: SigilEngine }) {
             </button>
           )}
           {engine.canGoHome && (
-            <button className="rb-btn is-gold" onClick={() => engine.returnHome()} autoFocus>
-              Return to {REGIONS[HOME].name}
+            <button className="rb-btn is-gold" onClick={() => engine.leaveCleared()} autoFocus>
+              Return to {REGIONS[way].name.replace(/^The /, 'the ')}
             </button>
           )}
         </div>

@@ -4,6 +4,7 @@ import { SKILLS } from '../src/games/sigilfall/data/skills';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
 import { isRetired } from '../src/games/sigilfall/data/retired';
 import type { RegionId } from '../src/games/sigilfall/data/types';
+import { SigilEngine } from '../src/games/sigilfall/engine';
 import { HOME } from '../src/games/sigilfall/progress/character';
 import { aimReach, AUTO_AIM_REACH, seekReach } from '../src/games/sigilfall/sim/cast';
 import { newWorld, readyHero } from './sigilfall-bot';
@@ -43,6 +44,19 @@ describe("Sigilfall: the portal out of a dungeon", () => {
     const c = readyHero('warrior', REGIONS[id].level + 1);
     c.unlocked = [HOME, id];
     expect(newWorld(id, c).portalWay().to).toBe(HOME);
+  });
+
+  it('the cleared card goes where the portal goes, not always Briarhollow (2026-11-22)', () => {
+    const src = readFileSync('src/games/sigilfall/ui/GameScreen.tsx', 'utf8');
+    const card = src.slice(src.indexOf('function RewardScreen'), src.indexOf('function RotateHint'));
+    expect(card).toContain('engine.leaveCleared()');
+    expect(card).toContain('portalWay()');
+    expect(card).not.toContain('engine.returnHome()');
+    let went: unknown[] = [];
+    const setUi = (): void => undefined;
+    const world = { tier: 0, mods: [], region: { id: 'crypt' }, portalWay: () => ({ to: 'whisperwood', label: '' }) };
+    SigilEngine.prototype.leaveCleared.call({ world, setUi, travel: (...a: unknown[]) => ((went = a), true) } as unknown as SigilEngine);
+    expect(went.slice(0, 4)).toEqual(['whisperwood', 0, [], 'crypt']);
   });
 });
 
