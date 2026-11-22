@@ -3012,6 +3012,9 @@ export class World {
    * Riftstone run is entered from anywhere).
    */
   portalWay(): { to: RegionId; label: string } {
+    // (a Riftstone run goes back to the Gate it was started from: the Riftward, 2026-11-22; a Rift Trial's champion has no
+    // Riftward of their own, and goes the usual way)
+    if (this.keyRun && this.hero.unlocked.includes('riftward')) return { to: 'riftward', label: 'Portal back to the Riftward' };
     const out = this.region.kind === 'dungeon' ? this.exits.find((x) => !x.door && !isRetired(x.to) && !!REGIONS[x.to] && this.hero.unlocked.includes(x.to)) : undefined;
     if (!out || out.to === HOME) return { to: HOME, label: 'Portal to Briarhollow' };
     return { to: out.to, label: `Portal out to ${REGIONS[out.to].name}` };

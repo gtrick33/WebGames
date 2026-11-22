@@ -38,6 +38,7 @@ const AIR: Readonly<Partial<Record<MusicTrack, AmbienceId>>> = {
   'pale-reach': 'wind',
   'shattered-vale': 'wind',
   riftscar: 'wind',
+  riftward: 'wind',
   gloamhollow: 'wind',
   'weeping-woods': 'wind',
   blightwood: 'wind',

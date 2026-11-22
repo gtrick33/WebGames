@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CLASSES, heroDamage, levelPower, MAX_LEVEL, xpToNext } from '../data/classes';
 import { ITEM_DEFS } from '../data/items';
-import { KEY_AFFIXES, KEY_DEATH, keyLevelFor, KEY_MIN, keyAffixes, keyLoot, keyParFor, keyScale, weekAffixes, weekOf } from '../data/keystones';
+import { KEY_AFFIXES, KEY_DEATH, keyLevelFor, KEY_MIN, keyAffixes, keyLoot, keyParFor, keyScale, riftDungeons, weekAffixes, weekOf } from '../data/keystones';
 import { NPCS, QUESTS } from '../data/quests';
 import { mapColors, THEMES } from '../data/themes';
-import { REGION_IDS, REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
+import { REGION_IDS, REGIONS } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENT_ROWS, TALENTS } from '../data/talents';
 import { setOf } from '../data/riftgear';
 import type { Item, ItemDef, QuestDef, RegionDef, RegionId, SkillIndex, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
 import { SLOTS } from '../data/types';
 import type { PanelId, SigilEngine } from '../engine';
-import { SLOT_LEVELS, slotOpen, bagSize, cantAbandon, cantEquip, cantLearn, cantSpec, currentObjective, pickOptions, pickTaken, freePoints, learnedSkills, levelGated, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character, HOME } from '../progress/character';
+import { SLOT_LEVELS, slotOpen, potionCap, bagSize, cantAbandon, cantEquip, cantLearn, cantSpec, currentObjective, pickOptions, pickTaken, freePoints, learnedSkills, levelGated, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character, HOME } from '../progress/character';
 import { ZOOM_MAX, ZOOM_MIN } from '../progress/save';
 import { buildHero, heroUlt, typeBonus } from '../progress/build';
 import { comboVsText, DMG_NAME, fmtStat, modLines, STAT_LABEL, costText } from '../progress/describe';
@@ -69,6 +69,7 @@ export function Panels({ engine }: { engine: SigilEngine }) {
   if (p === 'shop' && engine.ui.shop) return <ShopPanel engine={engine} shop={engine.ui.shop} />;
   if (p === 'party') return <PartyPanel engine={engine} />;
   if (p === 'store') return <StorePanel onClose={() => engine.closePanel()} />;
+  if (p === 'rift') return <RiftGatePanel engine={engine} />;
   const h = engine.hero!;
   const title = (
     <span className="rb-tabs" role="tablist">
@@ -94,6 +95,66 @@ export function Panels({ engine }: { engine: SigilEngine }) {
 }
 
 /* --------------------------------------------------------------- hero */
+
+/**
+ * What the hero carries, as a row of coins and tokens (the owner, 2026-11-22: "display the currencies better and more
+ * visually appealing"): gold, Sigil Marks, the potion belt and the Riftstone, each a tile of its own color with its
+ * picture, its count large and what it is for under it.
+ */
+function Purse({ hero: h }: { hero: Character }) {
+  const tiles: { id: string; icon: ReactNode; n: string; label: string; tip: string }[] = [
+    { id: 'gold', icon: <CoinIcon />, n: fmt(h.gold), label: 'Gold', tip: 'Spent at the merchants: gear, potions, a talent reset.' },
+    { id: 'marks', icon: <MarkIcon />, n: fmt(h.marks), label: 'Sigil Marks', tip: 'From bosses and the Riftstone: the quartermaster’s and the Riftbroker’s best gear, and wagers.' },
+    { id: 'potions', icon: <FlaskIcon />, n: `${h.potions}/${potionCap(h)}`, label: 'Potions', tip: 'Your belt of healing potions, refilled at an inn.' },
+    ...(h.keystone >= 1 ? [{ id: 'stone', icon: <StoneIcon />, n: `+${h.keystone}`, label: 'Riftstone', tip: 'The deepest stone you have opened: run it at the Riftgate in the Riftward.' }] : []),
+  ];
+  return (
+    <ul className="rb-purse" aria-label="What you carry">
+      {tiles.map((t) => (
+        <li key={t.id} className={`rb-purse-tile is-${t.id}`} title={t.tip}>
+          <span className="rb-purse-icon" aria-hidden="true">
+            {t.icon}
+          </span>
+          <span className="rb-purse-text">
+            <b>{t.n}</b>
+            <small>{t.label}</small>
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+const CoinIcon = () => (
+  <svg viewBox="0 0 24 24">
+    <ellipse cx="12" cy="14" rx="9" ry="7.5" fill="#a8701c" />
+    <ellipse cx="12" cy="11.5" rx="9" ry="7.5" fill="#ffd257" stroke="#7a4e10" strokeWidth="1.2" />
+    <ellipse cx="12" cy="11.5" rx="5.6" ry="4.4" fill="none" stroke="#c88a1e" strokeWidth="1.4" />
+    <path d="M9.5 9 Q12 7.4 14.5 9" stroke="#fff3c0" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+  </svg>
+);
+const MarkIcon = () => (
+  <svg viewBox="0 0 24 24">
+    <path d="M12 2 L20 12 L12 22 L4 12 Z" fill="#7b4dff" stroke="#2a1660" strokeWidth="1.3" />
+    <path d="M12 5.5 L17 12 L12 18.5 L7 12 Z" fill="#c8a8ff" />
+    <path d="M12 8.5 L14.5 12 L12 15.5 L9.5 12 Z" fill="#fff" opacity="0.85" />
+  </svg>
+);
+const FlaskIcon = () => (
+  <svg viewBox="0 0 24 24">
+    <rect x="9.5" y="2.5" width="5" height="3" rx="1" fill="#8a5a2a" />
+    <path d="M10 5.5 h4 v3 l4.5 6.5 a5 5 0 0 1 -4.2 7.5 h-4.6 a5 5 0 0 1 -4.2 -7.5 L10 8.5 Z" fill="#e8ecf4" stroke="#3a3048" strokeWidth="1.2" />
+    <path d="M6.7 15 h10.6 a4.6 4.6 0 0 1 -3.9 6.5 h-2.8 a4.6 4.6 0 0 1 -3.9 -6.5 Z" fill="#e8324a" />
+    <circle cx="10" cy="17" r="1.2" fill="#ffb3bd" />
+  </svg>
+);
+const StoneIcon = () => (
+  <svg viewBox="0 0 24 24">
+    <path d="M12 2.5 L18.5 8 L16.5 20 L7.5 20 L5.5 8 Z" fill="#5a2aa8" stroke="#1e0e40" strokeWidth="1.2" />
+    <path d="M12 2.5 L14.5 8 L12 20 L9.5 8 Z" fill="#a878ff" />
+    <path d="M5.5 8 H18.5" stroke="#e0ccff" strokeWidth="1" />
+  </svg>
+);
 
 export const SLOT_LABEL: Record<SlotId, string> = { weapon: 'Weapon', offhand: 'Off-hand', head: 'Head', chest: 'Chest', legs: 'Legs', hands: 'Hands', feet: 'Feet', amulet: 'Amulet', ring: 'Ring', relic: 'Relic' };
 const SHOWN_STATS: StatKey[] = ['power', 'crit', 'critDmg', 'haste', 'armor', 'speed', 'regen', 'ultCharge', 'fire', 'frost', 'lightning', 'poison', 'physical', 'arcane', 'potion'];
@@ -149,19 +210,20 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
               <>
                 <Bar value={h.para.x} max={paragonXp(h.para.l)} color="#c58cff" label="Paragon experience" />
                 <span className="rb-dim rb-small">
-                  {fmt(h.para.x)} / {fmt(paragonXp(h.para.l))} to Paragon {h.para.l + 1} · {fmt(h.gold)} gold
+                  {fmt(h.para.x)} / {fmt(paragonXp(h.para.l))} to Paragon {h.para.l + 1}
                 </span>
               </>
             ) : (
               <>
                 <Bar value={h.xp} max={xpToNext(h.level)} color="#ffe066" label="Experience" />
                 <span className="rb-dim rb-small">
-                  {fmt(h.xp)} / {fmt(xpToNext(h.level))} XP · {fmt(h.gold)} gold
+                  {fmt(h.xp)} / {fmt(xpToNext(h.level))} XP
                 </span>
               </>
             )}
           </div>
         </div>
+        <Purse hero={h} />
         <div className="rb-equip">
           {SLOTS.map((slot) => {
             const it = h.equip[slot];
@@ -1071,22 +1133,11 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
     setFollowed(goal?.id);
     if (showAt) showQuest();
   }
-  const [tier, setTier] = useState(Math.min(h.tier, w.tier || h.tier, h.level >= MAX_LEVEL ? 2 : 1));
-  const [mods, setMods] = useState<RiftMod[]>([]);
-  // Riftstone: any level the Riftstone has opened (0: the tiers instead)
-  const [stone, setStone] = useState(w.keyRun ? Math.min(w.keyRun.key, h.keystone) : 0);
+  // (no difficulty to choose, and no Riftstone: Heroic and Mythic are gone, and the Riftstone is started only at the Rift
+  // Gate in the Riftward, the owner, 2026-11-22)
   const r = REGIONS[sel];
   const open = h.unlocked.includes(sel);
   const here = w.region.id === sel;
-  // (Mythic and the Riftstones are for heroes at the top level)
-  const top = h.level >= MAX_LEVEL;
-  const keyed = top && h.keystone >= KEY_MIN && r.kind === 'dungeon';
-  const useKey = keyed && stone > 0;
-  // difficulty tiers are for dungeons (and the old wood)
-  const tiered = h.tier > 0 && (r.kind === 'dungeon' || sel === 'whisperwood');
-  const pick = tiered && !useKey ? tier : 0;
-  // this week's affixes (read once: the panel isn't open across a Monday)
-  const [week] = useState(() => weekOf(Date.now()));
   const ready = goal && questState(h, goal.id) === 'ready';
   const giver = goal && ready ? turnInNpc(goal) : null;
   // where it is, in words: in a land the hero knows, or past the nearest one they do, and which way
@@ -1141,83 +1192,87 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
           <div>
             <strong>
               {open || r.kind === 'town' ? r.name : 'Unknown land'}{' '}
-              <span className="rb-dim rb-small">{r.kind === 'town' ? 'Town' : useKey ? `Dungeon · level ${keyLevelFor(h.level)} · Riftstone +${stone}` : `${r.kind === 'dungeon' ? 'Dungeon' : 'Wilds'} · levels ${r.levels[0] + TIERS[pick]!.levels}-${r.levels[1] + TIERS[pick]!.levels}`}</span>
+              <span className="rb-dim rb-small">{r.kind === 'town' ? 'Town' : `${r.kind === 'dungeon' ? 'Dungeon' : 'Wilds'} · levels ${r.levels[0]}-${r.levels[1]}`}</span>
             </strong>
             <span className="rb-small rb-dim">{open ? r.blurb : sel === 'whisperwood' ? 'Finish your training with Elder Maren.' : sel === 'crypt' ? 'Defeat Grimtusk in the Whisperwood.' : 'Not discovered yet: walk there to find it.'}</span>
           </div>
           <button
             className="rb-btn is-small is-gold"
-            disabled={!open || !canTravel || (here && !useKey && (r.safe || (pick === w.tier && !w.keyRun)))}
-            onClick={() => (useKey ? engine.travel(sel, 2, [], undefined, stone) : engine.travel(sel, pick, mods, undefined))}
+            disabled={!open || !canTravel || (here && (r.safe || (w.tier === 0 && !w.keyRun)))}
+            onClick={() => engine.travel(sel, 0, [], undefined)}
           >
-            {useKey ? (here ? 'Start again' : 'Start') : here ? 'Here' : 'Go'}
+            {here ? 'Here' : 'Go'}
           </button>
         </div>
-        {tiered && (
-          <div className="rb-tiers">
-            <span className="rb-kicker">Difficulty</span>
-            <div className="rb-seg">
-              {TIERS.slice(0, Math.min(h.tier, top ? 2 : 1) + 1).map((t, i) => (
-                <button
-                  key={t.name}
-                  className={tier === i && !useKey ? 'is-on' : ''}
-                  style={{ color: t.color }}
-                  onClick={() => {
-                    setTier(i);
-                    setStone(0);
-                  }}
-                >
-                  {t.name}
-                </button>
-              ))}
-              {keyed && (
-                <button className={useKey ? 'is-on rb-mplus' : 'rb-mplus'} onClick={() => setStone(stone || h.keystone)}>
-                  Riftstone
-                </button>
-              )}
-            </div>
-            {useKey ? (
-              <>
-                <KeyPicker heroLevel={h.level} region={r} stone={stone} top={h.keystone} best={h.bestKeys[sel] ?? 0} week={week} onPick={setStone} />
-                <RiftGuide hero={h} />
-                <button
-                  className="rb-btn is-small"
-                  onClick={() => {
-                    // the party's plan starts where this picker is
-                    if (!engine.party) void engine.createParty().then(() => engine.setPartyPlan(sel, stone));
-                    else engine.setPartyPlan(sel, stone);
-                    engine.openPanel('party');
-                  }}
-                >
-                  {engine.party ? 'Party: run this' : 'Play with friends'}
-                </button>
-              </>
-            ) : (
-              <span className="rb-small rb-dim">
-                {TIERS[tier]!.name}: enemies +{TIERS[tier]!.levels} levels, ×{TIERS[tier]!.loot} loot, ×{TIERS[tier]!.xp} XP{tier > 0 ? ', elites with more affixes' : ''}.
-              </span>
-            )}
-            {tier > 0 && !useKey && (
-              <div className="rb-mods">
-                {(Object.keys(RIFT_MODS) as RiftMod[]).map((m) => (
-                  <label key={m} className="rb-check">
-                    <input type="checkbox" checked={mods.includes(m)} onChange={(e) => setMods(e.target.checked ? [...mods, m] : mods.filter((x) => x !== m))} />
-                    <span>
-                      <b>{RIFT_MODS[m].name}</b> {RIFT_MODS[m].text} <span className="rb-gold">+{Math.round(RIFT_MODS[m].bonus * 100)}% rewards</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </section>
     </div>
   );
 }
 
-/** Riftstone at a waystone: the level (any the Riftstone has opened), what it does, the clock, this week's affixes. */
-function KeyPicker({ heroLevel, region, stone, top, best, week, onPick }: { heroLevel: number; region: RegionDef; stone: number; top: number; best: number; week: number; onPick: (n: number) => void }) {
+/**
+ * The Riftgate, in the Riftward (opened by talking to its Keeper): the only place a Riftstone run starts (the owner,
+ * 2026-11-22). The memories the hero's stone reaches, gentlest first; the level to hold it at (any it has opened), what
+ * that does, the clock and the week's affixes; then Start, or a run with friends.
+ */
+function RiftGatePanel({ engine }: { engine: SigilEngine }) {
+  const h = engine.hero!;
+  const pool = riftDungeons(h.keystone);
+  const [sel, setSel] = useState<RegionId>(pool[0]?.id ?? 'crypt');
+  const [stone, setStone] = useState(Math.max(KEY_MIN, h.keystone));
+  // this week's affixes (read once: the panel isn't open across a Monday)
+  const [week] = useState(() => weekOf(Date.now()));
+  const r = REGIONS[sel];
+  return (
+    <Frame title="The Riftgate" onClose={() => engine.closePanel()} wide className="rb-panel-rift">
+      {h.keystone < KEY_MIN ? (
+        <p className="rb-dim">The Gate is dark to you. Finish the story, and Maren will have a stone for you.</p>
+      ) : (
+        <div className="rb-riftgate">
+          <section className="rb-riftgate-list" aria-label="Memories the stone reaches">
+            <span className="rb-kicker">
+              Memories your stone reaches ({pool.length})
+            </span>
+            {pool.map((d) => (
+              <button key={d.id} className={`rb-riftgate-row${d.id === sel ? ' is-on' : ''}`} onClick={() => setSel(d.id)}>
+                <strong>{d.name}</strong>
+                <span className="rb-small rb-dim">
+                  {d.subtitle}
+                  {h.bestKeys[d.id] ? ` · best +${h.bestKeys[d.id]}` : ''}
+                </span>
+              </button>
+            ))}
+          </section>
+          <section className="rb-riftgate-pick">
+            <span className="rb-kicker">
+              {r.name} · level {keyLevelFor(h.level)}
+            </span>
+            <KeyPicker heroLevel={h.level} region={r} stone={stone} top={h.keystone} best={h.bestKeys[sel] ?? 0} week={week} onPick={setStone} />
+            <div className="rb-riftgate-go">
+              <button className="rb-btn is-gold" onClick={() => engine.travel(sel, 2, [], undefined, stone)}>
+                Enter Riftstone +{stone}
+              </button>
+              <button
+                className="rb-btn"
+                onClick={() => {
+                  // the party's plan starts where this picker is
+                  if (!engine.party) void engine.createParty().then(() => engine.setPartyPlan(sel, stone));
+                  else engine.setPartyPlan(sel, stone);
+                  engine.openPanel('party');
+                }}
+              >
+                {engine.party ? 'Party: run this' : 'Play with friends'}
+              </button>
+            </div>
+            <RiftGuide hero={h} />
+          </section>
+        </div>
+      )}
+    </Frame>
+  );
+}
+
+/** A Riftstone run's level at the Riftgate (any the stone has opened), what it does, the clock, this week's affixes. */
+export function KeyPicker({ heroLevel, region, stone, top, best, week, onPick }: { heroLevel: number; region: RegionDef; stone: number; top: number; best: number; week: number; onPick: (n: number) => void }) {
   const sc = keyScale(stone, heroLevel);
   const on = keyAffixes(stone, week);
   return (
@@ -1281,7 +1336,8 @@ const mapLinks = (): [RegionId, RegionId][] => regionLinks().filter(([a, b]) => 
 /** The lands with a road to another land of the map; the others (a dungeon whose land is out of the story) show only to a hero who has been there. */
 function mapLands(known: (id: RegionId) => boolean): RegionId[] {
   const joined = new Set(mapLinks().flat());
-  return REGION_IDS.filter((id) => joined.has(id) || (known(id) && REGIONS[id].kind !== 'town'));
+  // (the Riftward has no road: it is reached by waystone, and shows once it is open)
+  return REGION_IDS.filter((id) => joined.has(id) || (known(id) && (REGIONS[id].kind !== 'town' || id === 'riftward')));
 }
 
 /** The world laid out, once for each set of lands on it (the search takes a moment, and the map is opened often). */

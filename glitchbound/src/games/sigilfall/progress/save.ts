@@ -394,6 +394,10 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   }
   // Riftstone: whoever has cleared Duskspire on Mythic holds a Riftstone
   if (c.quests['postgame-crownfall-mythic']?.state === 'done') c.keystone = Math.max(KEY_MIN, c.keystone);
+  // (a hero whose story is done keeps the Riftward open, whichever way they came by the stone: 2026-11-22)
+  if (c.quests['postgame-the-riftward']?.state === 'done' || c.quests['postgame-crownfall-mythic']?.state === 'done') {
+    if (!c.unlocked.includes('riftward')) c.unlocked.push('riftward');
+  }
   // version 12: the keys listed in OPENED_TABLE come as one bitset, the others by name
   const opened = [...unpackBits(o.ok, OPENED_TABLE), ...(Array.isArray(o.opened) ? o.opened : [])];
   c.opened = [...new Set(opened.filter((x): x is string => typeof x === 'string' && /^[a-z0-9:-]{1,48}$/.test(x)))].slice(0, 1200);

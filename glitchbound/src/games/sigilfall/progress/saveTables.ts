@@ -101,6 +101,8 @@ export const QUEST_TABLE: readonly string[] = [
   'the-duskspire-gate', 'the-hollow-guard', 'the-hollow-king', 'crownfall-vaelmoor', 'crownfall-one-hour',
   'crownfall-break-it', 'crownfall-the-ash-crown', 'the-hollowing', 'old-wintersend', 'the-watchers-of-wintersend',
   'cold-iron', 'riveted-coats', 'a-hound-named-bran', 'gravejaw',
+  // the Riftward (2026-11-22)
+  'postgame-the-riftward',
 ];
 
 /** Keys of Character.opened (acts, hints, scenes, lands, sights, the hidden grove, once-only chests), by place. */
@@ -259,4 +261,6 @@ export const OPENED_TABLE: readonly string[] = [
   'kept:old-wintersend', 'kept:a-hound-named-bran',
   // the Crown Catacombs' cache, behind the cracked wall at the foot of the stair
   'crown-catacombs:cc-cache:30:43',
+  // the Riftward, the postgame's sanctuary round the Rift Gate (2026-11-22)
+  'land:riftward',
 ];

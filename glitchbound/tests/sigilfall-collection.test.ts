@@ -176,9 +176,10 @@ describe('Sigilfall: mounts', () => {
     c.quests['camp-riders'] = { state: 'done', n: 1 };
     expect(grantMounts(c).map((m) => m.id)).toEqual(['briarhollow-chestnut']);
     expect(c.mount).toBe('briarhollow-chestnut');
-    c.clears['barrow-of-kings:0'] = 1;
+    // (the prestige mounts come with the Riftstone now that Heroic and Mythic are gone, 2026-11-22)
+    c.keystone = 1;
     expect(mountEarned(c, MOUNT_DEFS['ashen-nightmare']!)).toBe(false);
-    c.clears['barrow-of-kings:2'] = 1;
+    c.keystone = 2;
     expect(mountEarned(c, MOUNT_DEFS['ashen-nightmare']!)).toBe(true);
     // an old save with the perk gets the Cob (once riding is open); a mount id that isn't real is dropped
     const old = readyHero('ranger', 20);
@@ -194,7 +195,7 @@ describe('Sigilfall: mounts', () => {
     expect(QUEST_DEFS[FIRST_RIDE]!.level).toBe(20);
     expect(MOUNT_DEFS['briarhollow-chestnut']!.source).toEqual({ kind: 'quest', quest: FIRST_RIDE });
     // (the old riding perk's quest left the story: the Cob comes from Millbrook's bridge, or with the perk of an older hero)
-    expect(new Set(MOUNTS.map((m) => m.source.kind))).toEqual(new Set(['quest', 'clears', 'shelf', 'campaign']));
+    expect(new Set(MOUNTS.map((m) => m.source.kind))).toEqual(new Set(['quest', 'rift', 'shelf', 'campaign']));
     expect(MOUNT_DEFS['gullport-strider']!.source).toEqual({ kind: 'quest', quest: 'mill-the-bridge', perk: 'mount' });
     setShelfPoints(1000);
     try {
@@ -206,6 +207,7 @@ describe('Sigilfall: mounts', () => {
         if (s.kind === 'quest' && s.quest !== FIRST_RIDE) c.quests[s.quest] = { state: 'done', n: 1 };
         if (s.kind === 'perk') c.perks.push(s.perk);
         if (s.kind === 'clears') for (const r of s.regions) c.clears[`${r}:${s.tier}`] = 1;
+        if (s.kind === 'rift') c.keystone = s.stone;
         expect(ridingOpen(c)).toBe(false);
         expect(mountEarned(c, m), m.id).toBe(false);
         expect(grantMounts(c), m.id).toEqual([]);

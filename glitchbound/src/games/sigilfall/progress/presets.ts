@@ -63,7 +63,7 @@ export const PRESETS: Preset[] = [
   { id: 'crownfall-memory', label: 'Crownfall: Vaelmoor whole (scene)', region: 'vaelmoor-remembered', active: 'crownfall-vaelmoor', level: 60 },
   { id: 'crownfall-ash-crown', label: 'Crownfall: the Crown unmade', region: 'vaelmoor-remembered', active: 'crownfall-the-ash-crown', done: ['crownfall-break-it'], level: 60 },
   { id: 'the-bell', label: 'Epilogue: the bell (scene)', region: 'briarhollow', active: 'epilogue-the-bell', level: 60 },
-  { id: 'mythic-plus', label: 'Postgame: the Riftstone (+1)', region: 'briarhollow', done: ['postgame-crownfall-mythic'], level: 60 },
+  { id: 'mythic-plus', label: 'Postgame: the Riftward (Riftstone +1)', region: 'riftward', done: ['postgame-the-riftward'], level: 60 },
   { id: 'v3-embers', label: 'Prologue: the first vision, the star (scene)', region: 'briarhollow', active: 'the-empty-tomb', level: 6 },
   { id: 'v3-wood', label: 'Prologue: the Whisperwood trail (scene)', region: 'whisperwood', active: 'into-the-wood', level: 5 },
   { id: 'v3-fern-candles', label: 'Act I: Fernstead’s candles (scene)', region: 'brackenridge', active: 'west-road', level: 6 },

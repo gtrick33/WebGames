@@ -513,6 +513,22 @@ export const SONG_DEFS: Record<Exclude<SongId, RingSong>, SongDef> = {
     level: 0.66,
   },
 
+  // the Riftward: the Riftscar's scale gone still and solemn, a held choir under a slow bell (2026-11-22)
+  riftward: {
+    bpm: 72,
+    chords: ['C3 Eb3 F#3 A3', 'Ab2 C3 Eb3', 'C3 Eb3 F#3 A3', 'B2 D3 F3 Ab3'],
+    scale: 'C5 D5 Eb5 F5 F#5 G#5 A5 B5 C6',
+    melody: '4 - - - 2 - - - | 3 - 1 - - - - - | 5 - - 4 2 - - - | 0 - - - . . . .',
+    lead: { wave: 'sine', env: 'bow' },
+    bass: 'pulse',
+    pad: 0.45,
+    choir: true,
+    bells: 0.3,
+    wind: 0.02,
+    echo: 0.5,
+    level: 0.7,
+  },
+
   /* ------------------------------------------------------------ the frightening lands */
   // Greyfen Marsh: a held low D, a wavering flute, frogs and dripping water
   greyfen: {

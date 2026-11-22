@@ -199,7 +199,9 @@ describe('Sigilfall: a quest shown on the world map', () => {
   });
 
   it('shows a quest in a place the map does not draw on the land beside it', () => {
-    const q = QUESTS.find((d) => questRegion(d) === 'crypt')!;
+    // (a quest to clear the crypt: the story's own were its Heroic and Mythic, gone, 2026-11-22)
+    const q = { ...QUESTS[1]!, id: 'clear-the-crypt', objective: { kind: 'clear' as const, region: 'crypt' as const, tier: 0, label: 'Clear the crypt' } };
+    expect(questRegion(q)).toBe('crypt');
     const h = newCharacter('warrior', 'Map', 'map', 0);
     h.unlocked = ['briarhollow', 'crypt'];
     h.quests[q.id] = { state: 'active', n: 0 };

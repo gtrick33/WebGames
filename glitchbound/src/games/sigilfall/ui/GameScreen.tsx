@@ -1074,6 +1074,12 @@ function Dialogue({ engine }: { engine: SigilEngine }) {
                 Trade
               </button>
             )}
+            {/* the Keeper of the Riftgate: the Gate, once the hero holds a stone (the only place a Riftstone run starts) */}
+            {last && npc.service === 'rift' && (engine.hero?.keystone ?? 0) >= 1 && (
+              <button className="rb-btn is-small is-gold" onClick={() => engine.openPanel('rift')}>
+                Open the Riftgate
+              </button>
+            )}
             {last && npc.service === 'respec' && (
               <button className="rb-btn is-small" onClick={() => engine.openPanel('talents')}>
                 Talents
@@ -1306,7 +1312,6 @@ function RewardScreen({ engine }: { engine: SigilEngine }) {
             ))}
           </div>
         )}
-        {h.tier > r.tier && <p className="rb-gold">{TIERS[h.tier]!.name} difficulty is now open: choose it at a waystone.</p>}
         <div className="rb-row">
           <button className="rb-btn" onClick={() => engine.closeReward()}>
             Look around

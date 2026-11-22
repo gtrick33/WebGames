@@ -81,7 +81,7 @@ export interface DialoguePage {
 }
 
 /** (`shop` is a vendor's, for gold; `store` is the game's own shop for the things sold for money: ui/Store.tsx) */
-export type PanelId = 'hero' | 'wardrobe' | 'skills' | 'talents' | 'quests' | 'map' | 'settings' | 'shop' | 'party' | 'store';
+export type PanelId = 'hero' | 'wardrobe' | 'skills' | 'talents' | 'quests' | 'map' | 'settings' | 'shop' | 'party' | 'store' | 'rift';
 
 /** A co-op party (net/room.ts): the live connection, the room's latest view, and what went wrong. */
 export interface PartyState {
@@ -1230,6 +1230,14 @@ export class SigilEngine {
     this.bump();
   }
 
+  /** A hero of the player's own, from the main menu's Riftstone mode: taken straight to the Riftward, where its Gate is. */
+  playInRiftward(slot: number): void {
+    const h = this.save.heroes[slot];
+    if (!h || !h.unlocked.includes('riftward')) return;
+    h.at = { region: 'riftward' };
+    this.play(slot);
+  }
+
   play(slot: number): void {
     const locked = this.save.heroes[slot];
     if (slot >= heroSlots(account.get().me)) return;
@@ -1419,7 +1427,9 @@ export class SigilEngine {
     // (an expedition keeps the difficulty it set out at from land to land: one that set out at Mythic before Mythic
     // was for the top level only, or with a party's leader who is there, still comes down to Heroic for a younger hero)
     if (this.run && this.run.tier >= 2 && h.level < MAX_LEVEL) this.run.tier = 1;
-    const keepTier = this.run ? this.run.tier : tier;
+    // (Heroic and Mythic are gone, 2026-11-22: only a Riftstone run is fought above Normal; an old save's resume, or an
+    // expedition that set out at one, comes back at Normal)
+    const keepTier = stone ? (this.run ? this.run.tier : tier) : 0;
     // a land seen for the first time comes up as a title over it; after that, a banner (asked before the world
     // is made: its first look round already marks some of the land seen)
     const first = !region.interior && !h.opened.includes(`land:${to}`) && !h.seen[to] && !stone;

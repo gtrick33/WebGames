@@ -1,5 +1,6 @@
 import type { EnemyDef, ItemDef, NpcDef, QuestDef, RegionDef } from '../types';
 import { INTERIORS } from '../interiors';
+import { RIFTWARD, RIFTWARD_NPCS, RIFTWARD_QUESTS } from './riftward';
 import { GRIMWARD } from './grimward';
 import { GRIMWARD_FOES, GRIMWARD_ITEMS } from './grimward-foes';
 import { GRIMWARD_NPCS, GRIMWARD_QUESTS } from './grimward-quests';
@@ -126,6 +127,8 @@ export const ZONES: ZoneModule[] = [
   { region: RIFTSCAR, npcs: RIFTSCAR_NPCS, quests: RIFTSCAR_QUESTS, foes: RIFTSCAR_FOES, items: RIFTSCAR_ITEMS },
   // Act VI, the Last March, and the finale played from it (and the postgame's thread at the Tear)
   { region: PALE_REACH, npcs: PALE_REACH_NPCS, quests: PALE_REACH_QUESTS, foes: { ...PALE_REACH_FOES, ...PALE_REACH_STORY_FOES, ...POSTGAME_FOES }, items: PALE_REACH_ITEMS },
+  // the postgame's sanctuary round the Rift Gate (2026-11-22)
+  { region: RIFTWARD, npcs: RIFTWARD_NPCS, quests: RIFTWARD_QUESTS },
 ];
 
 // the buildings' interiors, walked into from their towns (data/interiors.ts)
