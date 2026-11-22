@@ -7,7 +7,7 @@ import { botThink, newBrain } from '../src/games/sigilfall/arena/bot';
 import { afterMatch, COMPS, drawOpponents, namedApart, NEW_STANDING, nextRank, rankOf, ratingChange, RANKS, SET_COUNT, setsOf, skillAt } from '../src/games/sigilfall/arena/ladder';
 import { ARENA_H, ARENA_W, ENTRY_W, MAP_IDS, MAPS } from '../src/games/sigilfall/arena/maps';
 import { cleanTalents, ROW_NAMES, TALENT_BY_ID, TALENTS } from '../src/games/sigilfall/arena/talents';
-import { BASE_SPEED, CAST_SLOW, CLASS_DMG, clearLine, DAMP_FROM, DAMP_RATE, FEAR_BREAK, GATES, HERO_R, Match, MATCH_LIMIT, ROOT_BREAK, SIGIL_FIRST, type FighterSetup, type MoveInput } from '../src/games/sigilfall/arena/sim';
+import { BASE_SPEED, CAST_SLOW, CLASS_DMG, clearLine, DAMP_FROM, DAMP_RATE, FEAR_BREAK, GATES, HERO_R, Match, MATCH_LIMIT, ROOT_BREAK, type FighterSetup, type MoveInput } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 import { act, cleanPick, join, newRoom, relay, viewFor } from '../src/games/sigilfall/net/ringRoom';
@@ -1179,7 +1179,7 @@ describe('The Ring: a brawl', () => {
     expect(Math.hypot(foe.x - me.x, foe.y - me.y)).toBeGreaterThan(d + 30);
   });
 
-  it('the sigil rises in the middle, and whoever reaches it first is healed, charged and quickened', () => {
+  it('no orb on the ground: no sigil rises in the middle, however long the match goes (the owner, 2026-11-22: "remove the middle orb in the ring, the power boost one completely")', () => {
     for (const id of MAP_IDS) {
       const m = new Match({ seed: 1, map: id, fighters: [fighter(0, 'warrior')] });
       const s = m.sigilSpot();
@@ -1188,19 +1188,18 @@ describe('The Ring: a brawl', () => {
     const m = duel('warrior', ['w-hew'], 'mage');
     const me = m.fighters[0]!;
     m.fighters[1]!.x = 40;
-    me.x = 60;
-    wait(m, SIGIL_FIRST - 0.5);
-    expect(m.sigil).toBeNull();
-    wait(m, 1);
-    expect(m.sigil).not.toBeNull();
+    me.x = ARENA_W / 2;
+    me.y = ARENA_H / 2;
     me.hp = me.maxHp / 2;
-    me.x = m.sigil!.x;
-    me.y = m.sigil!.y;
-    wait(m, 0.1);
-    expect(m.sigil).toBeNull();
-    expect(me.hp).toBeGreaterThan(me.maxHp * 0.65);
-    expect(me.charge).toBeGreaterThan(0.3);
-    expect(me.auras.some((a) => a.kind === 'speed')).toBe(true);
+    const kinds = new Set<string>();
+    for (let i = 0; i < 60 / STEP; i++) {
+      m.step(STEP, {});
+      for (const e of m.events) kinds.add(e.k);
+    }
+    expect(kinds.has('sigil')).toBe(false);
+    expect('sigil' in m).toBe(false);
+    expect(me.hp).toBeLessThanOrEqual(me.maxHp / 2);
+    expect(me.auras.some((a) => a.kind === 'speed')).toBe(false);
   });
 
   it('no Gloam: nowhere on the ground burns, however long the match goes (the owner: "remove the gloam and leave the damp only")', () => {

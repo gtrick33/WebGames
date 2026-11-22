@@ -467,7 +467,7 @@ export class TutorialRun {
         return {
           ...out(
             'Your screen',
-            'Every part of it is labeled. In the arena: a red circle is an attack about to land, so keep moving and walk out of it. The sigil in the middle heals and fills a third of your super. Pillars block sight: nobody aims at what they can’t see. Stuns and roots get shorter each time in a row (the chips by the nameplates). Healing weakens as a match goes on, until none is left.',
+            'Every part of it is labeled. In the arena: a red circle is an attack about to land, so keep moving and walk out of it. Pillars block sight: nobody aims at what they can’t see. Stuns and roots get shorter each time in a row (the chips by the nameplates). Healing weakens as a match goes on, until none is left.',
             null,
           ),
           labels: MATCH_LABELS,
@@ -499,7 +499,7 @@ export class TutorialRun {
       case 'super':
         return out('Your super', `Your super meter fills as you fight; we filled it for you. ${t ? 'Tap the gold button' : `Press ${keys.super}`} to unleash ${sup.name}: ${sup.text}${sup.aim === 'ground' ? (t ? ' Hold the button and push to place it.' : ' Click where it should land.') : ''}`, 'super', `Your super is full. ${press(t ? 'the gold button' : keys.super)} to unleash ${sup.name}.`);
       case 'fight':
-        return out('Now, a real fight', `Your sparring partner fights back now, gently. Use everything: combos, your super, the sigil. In a team fight, your teammates’ nameplates sit under yours: ${t ? 'tap one' : `click one or press ${keys.nextFriend}`} to choose who your heals go to.${t ? ' In a team fight, the ◎ button over your top-right ability switches between them.' : ''} Win it!`, null, 'Win the fight! Use everything you’ve learned.');
+        return out('Now, a real fight', `Your sparring partner fights back now, gently. Use everything: combos, your super, the pillars. In a team fight, your teammates’ nameplates sit under yours: ${t ? 'tap one' : `click one or press ${keys.nextFriend}`} to choose who your heals go to.${t ? ' In a team fight, the ◎ button over your top-right ability switches between them.' : ''} Win it!`, null, 'Win the fight! Use everything you’ve learned.');
     }
   }
 }

@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS, type Ability, type CcKind } from '../src/games/sigilfall/arena/abilities';
 import { lookOf } from '../src/games/sigilfall/arena/look';
 import { ARM, NEAR, TALENT_BY_ID, TALENTS, type Doing, type Talent } from '../src/games/sigilfall/arena/talents';
-import { BASE_SPEED, GATES, Match, SIGIL_HEAL, type Fighter, type MoveInput } from '../src/games/sigilfall/arena/sim';
+import { BASE_SPEED, GATES, Match, type Fighter, type MoveInput } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 
@@ -22,6 +22,7 @@ const STEP = 1 / 30;
 interface Inside {
   damage(src: Fighter, t: Fighter, amount: number, direct: boolean, ab?: Ability): number;
   heal(src: Fighter, t: Fighter, amount: number, direct?: boolean): void;
+  mend(t: Fighter, amount: number): void;
   crowd(f: Fighter, ab: Ability, t: Fighter, cc: CcKind, dur: number): boolean;
   speedOf(f: Fighter): number;
 }
@@ -292,19 +293,12 @@ describe('The Ring talents: the ranger', () => {
     expect(r.hp).toBeGreaterThan(hp + r.maxHp * 0.05);
   });
 
-  it('Forager: the sigil heals more and quickens', () => {
-    const sphere = (talents: string[]): [number, boolean] => {
+  it('Pathfinder: they move a little faster, always (Forager went with the sigil, 2026-11-22)', () => {
+    const speed = (talents: string[]): number => {
       const m = fight([{ team: 0, cls: 'ranger', talents }, { team: 1, cls: 'warrior', at: [600, 125] }]);
-      const r = m.fighters[0]!;
-      m.sigil = { x: r.x, y: r.y };
-      r.hp = Math.round(r.maxHp / 2);
-      const hp = r.hp;
-      m.step(STEP, {});
-      return [r.hp - hp, has(r, 'r-3b', 'speed')];
+      return inside(m).speedOf(m.fighters[0]!);
     };
-    const [plain] = sphere([]);
-    expect(plain).toBeCloseTo(1260 * SIGIL_HEAL, -0.5);
-    expect(sphere(['r-3b'])).toEqual([Math.round(1260 * SIGIL_HEAL * (1 + doing('r-3b', 'forage').more)), true]);
+    expect(speed(['r-3b'])).toBeCloseTo(speed([]) * (1 + doing('r-3b', 'stride').pct), 5);
   });
 
   it('Antivenom: what burns over time hurts less', () => {
@@ -391,11 +385,10 @@ describe('The Ring talents: the priest', () => {
   it('Open Heart: healing given to them is stronger', () => {
     const m = fight([{ team: 0, cls: 'priest', talents: ['p-3c'] }, { team: 1, cls: 'warrior', at: [600, 125] }]);
     const p = m.fighters[0]!;
-    m.sigil = { x: p.x, y: p.y };
     p.hp = Math.round(p.maxHp / 2);
     const hp = p.hp;
-    m.step(STEP, {});
-    expect(p.hp - hp).toBe(Math.round(p.maxHp * SIGIL_HEAL * (1 + doing('p-3c', 'open').pct)));
+    inside(m).mend(p, 200);
+    expect(p.hp - hp).toBe(Math.round(200 * (1 + doing('p-3c', 'open').pct)));
   });
 });
 
@@ -549,11 +542,10 @@ describe('The Ring talents: the warlock', () => {
     const hit = (x: Match): number => inside(x).damage(x.fighters[1]!, x.fighters[0]!, 100, true, AB('w-hew'));
     expect(hit(m)).toBeCloseTo(hit(n) * (1 - TALENT_BY_ID['k-3b']!.guard!), -0.5);
     const k = m.fighters[0]!;
-    m.sigil = { x: k.x, y: k.y };
     k.hp = Math.round(k.maxHp / 2);
     const hp = k.hp;
-    m.step(STEP, {});
-    expect(k.hp - hp).toBe(Math.round(k.maxHp * SIGIL_HEAL * (1 - doing('k-3b', 'bargain').pct)));
+    inside(m).mend(k, 200);
+    expect(k.hp - hp).toBe(Math.round(200 * (1 - doing('k-3b', 'bargain').pct)));
   });
 
   it('Soul Shield: dealing damage wards them, a little at a time, to a cap', () => {
@@ -684,10 +676,9 @@ describe('The Ring talents: the Gloamknight', () => {
     const healed = (talents: string[]): number => {
       const m = fight([{ team: 0, cls: 'gloamknight', talents, at: [130, 156] }, { team: 1, cls: 'warrior' }]);
       const foe = m.fighters[1]!;
-      m.sigil = { x: foe.x, y: foe.y };
       foe.hp = Math.round(foe.maxHp * 0.3);
       const hp = foe.hp;
-      m.step(STEP, {});
+      inside(m).mend(foe, 200);
       return foe.hp - hp;
     };
     expect(healed(['g-shadow-2c'])).toBe(Math.round(healed([]) * (1 - doing('g-shadow-2c', 'knell').pct)));

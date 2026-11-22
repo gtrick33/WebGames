@@ -347,7 +347,7 @@ export const healerBar = (bar: readonly string[]): boolean => {
  * have the best dps, most amount of cc, same mobility as everyone and are the tankiest spec"; to 0.82 first, then 0.87,
  * the owner: "maybe bring dmg to 0.87".)
  */
-export const CLASS_DMG: Readonly<Record<ClassId, number>> = { warrior: 0.87, paladin: 0.82, gloamknight: 0.88, mage: 0.7, ranger: 0.78, warlock: 0.87, priest: 0.78, druid: 0.85 };
+export const CLASS_DMG: Readonly<Record<ClassId, number>> = { warrior: 0.87, paladin: 0.82, gloamknight: 0.872, mage: 0.7, ranger: 0.78, warlock: 0.87, priest: 0.78, druid: 0.77 };
 
 /** What a number of a class's lands as, for its ability's words. */
 const share = (cls: ClassId) => (n: number): number => Math.round(n * CLASS_DMG[cls]);
@@ -396,9 +396,6 @@ export const BOONS: Record<string, Boon> = Object.fromEntries(
     ] satisfies Boon[]
   ).map((b) => [b.id, b]),
 );
-
-/** The sigil in the middle of the ground (not an ability anyone has: what it gives, for the pictures and the words). */
-export const SIGIL: Ability = a({ id: 'sigil', cls: 'any', name: 'Sigil of Might', text: 'Heals a fifth of your life, fills your super meter by a third and quickens you.', icon: 'radiant_star_burst_on_gold', color: '#ffe27a', school: 'holy', role: 'heal', aim: 'self', range: 0, cast: 0, cd: 0, effects: [{ k: 'speed', pct: 30, dur: 4 }] });
 
 /**
  * Each class's first super: one big, bright blow, ready when the meter filled by dealing and taking hurt is full. Each
@@ -553,7 +550,7 @@ const KITS: Record<ClassId, Ability[]> = {
   ],
 };
 
-export const ABILITIES: Record<string, Ability> = Object.fromEntries([...Object.values(KITS).flat(), ...Object.values(SUPERS), ...Object.values(SUPERS2), SIGIL].map((x) => [x.id, x]));
+export const ABILITIES: Record<string, Ability> = Object.fromEntries([...Object.values(KITS).flat(), ...Object.values(SUPERS), ...Object.values(SUPERS2)].map((x) => [x.id, x]));
 /** Everything a class has besides its supers: both its playstyles' abilities. */
 export const kitOf = (cls: ClassId): Ability[] => KITS[cls];
 /** Is this one of a class's own abilities (not a super)? */
@@ -566,13 +563,13 @@ export const takes = (cls: ClassId, id: unknown): id is string => typeof id === 
  */
 export const BODY: Record<ClassId, { hp: number }> = {
   warrior: { hp: 1240 },
-  paladin: { hp: 1310 },
-  druid: { hp: 1280 },
+  paladin: { hp: 1400 },
+  druid: { hp: 1420 },
   ranger: { hp: 1260 },
-  priest: { hp: 1130 },
-  warlock: { hp: 1200 },
-  mage: { hp: 1200 },
-  gloamknight: { hp: 1290 },
+  priest: { hp: 1180 },
+  warlock: { hp: 1150 },
+  mage: { hp: 1165 },
+  gloamknight: { hp: 1242 },
 };
 
 /**
@@ -728,4 +725,4 @@ export function combosOf(cls: ClassId, ab: Ability, bar?: readonly string[]): Ab
 }
 
 /** Every icon The Ring's abilities and boons show, for the icon build. */
-export const ringIcons = (): string[] => [SIGIL.icon, ...Object.values(SUPERS).map((x) => x.icon), ...Object.values(SUPERS2).map((x) => x.icon), ...Object.values(KITS).flat().map((x) => x.icon), ...Object.values(BOONS).map((b) => b.icon)];
+export const ringIcons = (): string[] => [...Object.values(SUPERS).map((x) => x.icon), ...Object.values(SUPERS2).map((x) => x.icon), ...Object.values(KITS).flat().map((x) => x.icon), ...Object.values(BOONS).map((b) => b.icon)];

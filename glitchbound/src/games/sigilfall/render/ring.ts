@@ -391,9 +391,6 @@ export class RingFx {
         this.burstSparks(f.x, f.y, 22, [ab.color, '#fff6d8', ab.color], 1.35);
         sound('roar', 0.5);
         sound('epic', 0.55);
-      } else if (e.k === 'sigil') {
-        this.flashes.push({ x: e.x, y: e.y, t: 0, dur: 0.6, r: e.id < 0 ? 22 : 34, color: '#ffe27a', ring: true });
-        sound(e.id >= 0 ? 'pickupBig' : 'orb', e.id >= 0 ? 0.7 : 0.4);
       } else if (e.k === 'boon') {
         // a boon given: a ring of its light on whoever has it and a few sparks, so the other side can see it too; and
         // for the one who has it, a bright note (the light at the edges of their screen is ui/RingBoons.tsx)
@@ -1046,18 +1043,6 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
     if (!f) continue;
     const u = s.t / 0.8;
     q.put({ kind: FX.shaft, x: f.x, y: f.y, base: true, w: 34, h: 90, a: classColor(f.cls), b: '#ffffff', t: u, alpha: 1 - u });
-  }
-  // the sigil in the middle, turning and shining, worth the run
-  if (m.sigil) {
-    const s = m.sigil;
-    const bob = Math.sin(time * 3) * 2;
-    q.put({ kind: FX.glow, x: s.x, y: s.y, up: 12 + bob, w: 50, a: '#ffd76a', alpha: 0.75 });
-    q.put({ kind: FX.ring, x: s.x, y: s.y, flat: true, w: 30, a: '#ffe27a', t: (time * 0.6) % 1, seed: 3 });
-    q.put({ kind: FX.orb, x: s.x, y: s.y, up: 12 + bob, w: 13, a: '#ffe27a', b: '#ffffff', t: 0.3, seed: time });
-    for (let i = 0; i < 5; i++) {
-      const ang = time * 1.8 + (i / 5) * Math.PI * 2;
-      q.put({ kind: FX.spark, x: s.x + Math.cos(ang) * 11, y: s.y + Math.sin(ang) * 5, up: 12 + bob + Math.sin(ang * 2) * 3, w: 4, a: '#fff6c8', t: 0.2, alpha: 0.9 });
-    }
   }
   // what was left on the ground (a globe of rime drifting on): a ball of its own stuff over the middle of its patch,
   // motes turning round it, and a mist to its edge, fading as its time runs out

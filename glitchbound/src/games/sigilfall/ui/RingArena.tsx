@@ -13,7 +13,7 @@ const LOOK: Record<RingMap['theme'], { floor: [string, string]; top: string; sid
   forge: { floor: ['#5a3426', '#2a1712'], top: '#9a6448', side: '#1c0f0a', edge: '#160a06', ring: 'rgb(255 130 60 / 0.4)' },
 };
 
-/** A ground seen from above: its floor, the entries at each end, the sigil's ring, and every stone. */
+/** A ground seen from above: its floor, the entries at each end, the ring painted in the middle, and every stone. */
 export function ArenaPicture({ id, className }: { id: string; className?: string }) {
   const map = MAPS[id];
   if (!map) return null;
@@ -32,7 +32,7 @@ export function ArenaPicture({ id, className }: { id: string; className?: string
       {/* the entries, a recess at each end */}
       <rect x="0" y={ENTRY_Y0} width={ENTRY_W} height={ENTRY_Y1 - ENTRY_Y0} fill="rgb(70 130 220 / 0.35)" />
       <rect x={ARENA_W - ENTRY_W} y={ENTRY_Y0} width={ENTRY_W} height={ENTRY_Y1 - ENTRY_Y0} fill="rgb(220 70 70 / 0.35)" />
-      {/* the sigil's ring in the middle */}
+      {/* the ring painted in the middle */}
       <circle cx={ARENA_W / 2} cy={ARENA_H / 2} r="58" fill="none" stroke={k.ring} strokeWidth="7" />
       <circle cx={ARENA_W / 2} cy={ARENA_H / 2} r="30" fill="none" stroke={k.ring} strokeWidth="4" />
       {/* every stone: its shadow, then its top */}

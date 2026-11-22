@@ -80,7 +80,7 @@ export type Doing =
   | { k: 'quarry'; pct: number }
   | { k: 'far'; pct: number }
   | { k: 'cover'; after: number; pct: number }
-  | { k: 'forage'; more: number; pct: number; dur: number }
+  | { k: 'stride'; pct: number }
   | { k: 'antivenom'; pct: number }
   // the priest
   | { k: 'returned'; share: number }
@@ -276,7 +276,8 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ]),
     ...classRow('ranger', 'r', [
       { name: 'Cover', text: 'After 1.5 sec out of every enemy’s line of sight, you heal 4% of your health each sec.', icon: 'hidden_glade_on_green', does: { k: 'cover', after: 1.5, pct: 0.04 } },
-      { name: 'Forager', text: 'The sigil heals you for 50% more and increases your movement speed by 15% for 3 sec.', icon: 'fruit_of_life_on_green', does: { k: 'forage', more: 0.5, pct: 15, dur: 3 } },
+      // (Forager, which took more from the sigil in the middle, until the sigil went: 2026-11-22)
+      { name: 'Pathfinder', text: 'You move 8% faster.', icon: 'fruit_of_life_on_green', does: { k: 'stride', pct: 0.08 } },
       { name: 'Antivenom', text: 'Damage-over-time effects deal 25% less damage to you.', icon: 'poison_vial_on_green', does: { k: 'antivenom', pct: 0.25 } },
     ]),
   ],
@@ -393,7 +394,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...styleRows('druid', 'l', 'star', [
       [
         { name: 'Falling Star', text: 'Each tick of your Moonburn has a 20% chance to trigger Falling Star (stacks twice): your next Starlash is instant and deals 60% more damage.', icon: 'star_summon_on_navy', tune: { 'l-moon': { gives: [{ boon: 'star', chance: 0.2, on: 'tick' }] }, 'l-lash': { uses: [{ boon: 'star', instant: true, mult: 1.6 }] } } },
-        { name: 'Fourth Star', text: 'Every fourth Starlash deals 111 extra damage.', icon: 'star_seed_on_navy', tune: { 'l-lash': { nth: { n: 4, extra: [{ k: 'dmg', n: 130 }], name: 'Fourth Star' } } } },
+        { name: 'Fourth Star', text: 'Every fourth Starlash deals 100 extra damage.', icon: 'star_seed_on_navy', tune: { 'l-lash': { nth: { n: 4, extra: [{ k: 'dmg', n: 130 }], name: 'Fourth Star' } } } },
         { name: 'Wandering Light', text: 'Starlash can be cast while moving, at full speed, and deals 20% more damage.', icon: 'moon_spirit_summon_on_navy', tune: { 'l-lash': { swift: true, power: 1.2 } } },
       ],
       [
@@ -419,13 +420,13 @@ export const TALENTS: Record<ClassId, Talent[]> = {
       [
         { name: 'Iron Grip', text: 'Grave Chain also roots the target for 1.5 sec after the pull.', icon: 'burning_chain_link_on_black', tune: { 'g-chain': { extra: [{ k: 'cc', cc: 'root', dur: 1.5 }] } } },
         { name: 'Dusk Mantle', text: 'Enemies in melee range of you move 15% slower.', icon: 'shadow_veil_curtain_on_violet', does: { k: 'mantle', pct: 0.15 } },
-        { name: 'Crushing Hand', text: 'Grave Hand also deals 53 damage and reduces healing on the target by 30% for 6 sec.', icon: 'stone_smash_with_a_fist_on_grey', tune: { 'g-hand': { extra: [{ k: 'dmg', n: 60 }, { k: 'antiheal', pct: 30, dur: 6 }] } } },
+        { name: 'Crushing Hand', text: 'Grave Hand also deals 52 damage and reduces healing on the target by 30% for 6 sec.', icon: 'stone_smash_with_a_fist_on_grey', tune: { 'g-hand': { extra: [{ k: 'dmg', n: 60 }, { k: 'antiheal', pct: 30, dur: 6 }] } } },
       ],
     ]),
     ...styleRows('gloamknight', 'g', 'shadow', [
       [
         { name: 'Second Dusk', text: 'A Closing Cut that spends 5 Nicks triggers Second Dusk: your next Nightknife counts as striking from behind and generates 3 Nicks.', icon: 'crescent_moon_behind_clouds_on_navy', tune: { 'g-cut': { gives: [{ boon: 'dusk', full: true }] }, 'g-knife': { uses: [{ boon: 'dusk', asCombo: true, build: 2 }] } } },
-        { name: 'Bloodied Edge', text: 'Closing Cut also makes the target bleed for 18 damage over 6 sec, increased by 80% per Nick spent.', icon: 'damage_over_time_status_red_spark_on_red', tune: { 'g-cut': { extra: [{ k: 'dot', n: 20, dur: 6 }] } } },
+        { name: 'Bloodied Edge', text: 'Closing Cut also makes the target bleed for 17 damage over 6 sec, increased by 80% per Nick spent.', icon: 'damage_over_time_status_red_spark_on_red', tune: { 'g-cut': { extra: [{ k: 'dot', n: 20, dur: 6 }] } } },
         { name: 'Night’s Embrace', text: 'You move at full speed in stealth, and your first attack from stealth deals 150% more damage.', icon: 'shadow_fox_mask_on_violet', does: { k: 'shade', pct: 1.5 } },
       ],
       [

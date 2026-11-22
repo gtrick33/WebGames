@@ -1,5 +1,5 @@
 import type { ClassId } from '../data/types';
-import { ABILITIES, BODY, BOONS, CLASS_DMG, GCD, SIGIL, healerBar, styleOfBar, superOf, ultOf, type Ability, type Build, type CcKind, type Effect, type Give, type Points, type Spend, type Use } from './abilities';
+import { ABILITIES, BODY, BOONS, CLASS_DMG, GCD, healerBar, styleOfBar, superOf, ultOf, type Ability, type Build, type CcKind, type Effect, type Give, type Points, type Spend, type Use } from './abilities';
 import { ARENA_H, ARENA_W, ENTRY_GATES, MAPS, type Pillar } from './maps';
 import { ARM, cleanTalents, EXECUTE, NEAR, RALLY, TALENT_BY_ID, type Does, type Tune } from './talents';
 
@@ -9,8 +9,9 @@ export { CLASS_DMG };
  * The Ring's simulation: everything about a match but the drawing, so it can be tested, run by a bot at speed, and run
  * by a host for a room of players. A brawl: always on the move (casting only slows you), shots that fly where the
  * target is going and can be dodged with a step, short holds kept apart by their cooldowns, a super filled by
- * fighting, and a sigil in the middle worth running for. Line of sight still matters (pillars block shots and new
- * casts), and healing fades the longer a match goes, to nothing in the end, so that no match drags. (The Gloam, which
+ * fighting, and nothing on the ground to run for (the sigil that rose in the middle went on 2026-11-22, the owner:
+ * "remove the middle orb in the ring, the power boost one completely, let no orbs be present during gameplay"). Line
+ * of sight still matters (pillars block shots and new casts), and healing fades the longer a match goes, to nothing in the end, so that no match drags. (The Gloam, which
  * closed in from the edges from forty seconds and burned whoever stood in it, went on 2026-11-16, the owner: "remove
  * the 'gloam' and leave the damp only".)
  */
@@ -52,7 +53,7 @@ export const HEAL_BY_SIZE: readonly number[] = [1, 1, 1, 1.45];
  * duel and do less among six), and one number can't set a class right in all three. The owner, 2026-11-19: "can we
  * tweak it so the balancing is between 46 and 54%". Set by tests/sigilfall-ring-balance.test.ts.
  */
-export const TEAM_K: Readonly<Partial<Record<ClassId, readonly [number, number]>>> = { priest: [0.95, 0.975], mage: [0.895, 0.955], ranger: [1.005, 1.1], paladin: [1.02, 1], warlock: [1, 1.08], gloamknight: [1, 0.97], warrior: [0.985, 0.935] };
+export const TEAM_K: Readonly<Partial<Record<ClassId, readonly [number, number]>>> = { priest: [0.95, 0.975], mage: [0.895, 0.955], ranger: [1.005, 1.1], paladin: [1.02, 1], warlock: [1, 1.08], gloamknight: [1.01, 0.98], warrior: [0.985, 0.935] };
 /**
  * Only healers left standing, on both sides: sudden death. Healing is gone within `fade` seconds of it, and everything
  * hits `grow` harder for every second since (the owner, 2026-11-17: "in 2v2 if both dps die, the healers take ages to
@@ -81,11 +82,6 @@ export const CAST_SLOW = 0.55;
  */
 export const DAMP_FROM = 65;
 export const DAMP_RATE = 1 / 60;
-/** The sigil in the middle: first at this, then this long after it's taken. */
-export const SIGIL_FIRST = 15;
-/** The share of a life the sigil gives back to whoever takes it (its healing fades as all healing does). */
-export const SIGIL_HEAL = 0.2;
-const SIGIL_EVERY = 22;
 /** The super meter fills by this much dealt (healing counts the same), and a little by what's taken. */
 const SUPER_DEALT = 900;
 const SUPER_TAKEN = 2600;
@@ -472,8 +468,6 @@ export type MatchEvent =
   | { k: 'miss'; x: number; y: number; ab: string }
   /** A placed ability lands on its patch of ground. */
   | { k: 'zone'; x: number; y: number; r: number; ab: string }
-  /** The sigil rises (id -1), or someone takes it. */
-  | { k: 'sigil'; id: number; x: number; y: number }
   /** A super goes off. */
   | { k: 'super'; id: number; ab: string }
   /** One of the raised dead strikes at someone. */
@@ -667,12 +661,8 @@ export class Match {
   fields: Field[] = [];
   /** How much stronger healing is in this match (HEAL_BY_SIZE, by the bigger side). */
   readonly healK: number;
-  /** The sigil, while it stands waiting to be taken, and when the next one rises. */
-  sigil: SigilStone | null = null;
-  sigilAt = SIGIL_FIRST;
   /**
-   * The clock stands still while this is set: no fading of healing, no sigil rising by itself and no end by
-   * time. The Ring's tutorial (arena/tutorial.ts) holds it while it teaches, and lets it go for the last fight.
+   * The clock stands still while this is set: no fading of healing and no end by time. The Ring's tutorial (arena/tutorial.ts) holds it while it teaches, and lets it go for the last fight.
    */
   hold = false;
   /** When sudden death began (SUDDEN): only healers were left on both sides. */
@@ -2185,7 +2175,7 @@ export class Match {
     return best;
   }
 
-  /** Nobody heals a lingering spirit, nor a revenant but the revenant (`by` null: the sigil). */
+  /** Nobody heals a lingering spirit, nor a revenant but the revenant (`by` null: no one's spell). */
   private healable(t: Fighter, by: Fighter | null): boolean {
     return !t.dead && !t.auras.some((a) => a.kind === 'spirit' || (a.kind === 'revenant' && by !== t));
   }
@@ -2465,7 +2455,6 @@ export class Match {
     this.fallZones(dt);
     this.tendFields(dt);
     this.tripTraps(dt);
-    this.tendSigil();
     this.judge();
     if (this.phase !== 'fight') return;
     this.lastHealers();
@@ -2502,36 +2491,7 @@ export class Match {
     }
   }
 
-  /** The sigil rises in the middle now and then; the first to reach it takes it. */
-  private tendSigil(): void {
-    if (!this.sigil) {
-      if (this.clock < this.sigilAt) return;
-      this.sigil = this.sigilSpot();
-      this.events.push({ k: 'sigil', id: -1, x: this.sigil.x, y: this.sigil.y });
-      this.events.push({ k: 'word', id: -1, word: 'A sigil rises' });
-      return;
-    }
-    const s = this.sigil;
-    const by = this.fighters.find((f) => !f.dead && !f.pet && Math.hypot(f.x - s.x, f.y - s.y) < HERO_R + 8);
-    if (!by) return;
-    this.sigil = null;
-    this.sigilAt = this.clock + SIGIL_EVERY;
-    // (a forager takes more of it, and is quickened again by their own talent)
-    const forage = by.perks.does.forage;
-    // (its healing fades as all healing does: its might and its speed don't)
-    const n = this.healable(by, null) ? Math.round(Math.min(by.maxHp * SIGIL_HEAL * (1 + (forage?.more ?? 0)) * (1 - this.dampening) * this.taken(by), by.maxHp - by.hp)) : 0;
-    if (n > 0) {
-      by.hp += n;
-      this.events.push({ k: 'num', id: by.id, n, kind: 'heal', crit: false });
-    }
-    by.charge = Math.min(1, by.charge + 0.34);
-    this.addAura(by, { ab: SIGIL.id, src: by.id, dur: 4, magic: false, n: 0.3, kind: 'speed', harmful: false });
-    if (forage) this.addAura(by, { ab: abOfDoing(by.cls, 'forage').id, src: by.id, dur: forage.dur, magic: false, n: forage.pct / 100, kind: 'speed', harmful: false });
-    this.events.push({ k: 'sigil', id: by.id, x: s.x, y: s.y });
-    this.events.push({ k: 'word', id: by.id, word: 'Sigil of Might' });
-  }
-
-  /** The middle of the ground, or beside the stone that stands there. */
+  /** The middle of the ground, or beside the stone that stands there (where a bot gathers when there's nothing else to do). */
   sigilSpot(): SigilStone {
     const cx = ARENA_W / 2;
     const cy = ARENA_H / 2;
@@ -2659,6 +2619,8 @@ export class Match {
     const mantle = this.near(f, 'mantle', 'foe', ARM);
     if (mantle) k *= 1 - mantle.d.pct;
     for (const a of f.auras) if (a.kind === 'speed') k *= 1 + a.n;
+    // (a Pathfinder ranger is always a little quicker)
+    if (f.perks.does.stride) k *= 1 + f.perks.does.stride.pct;
     // (the shroud is a careful step, unless the night holds them)
     if (!f.perks.does.shade) for (const a of f.auras) if (a.kind === 'veil') k *= 1 - a.n;
     if (!f.auras.some((a) => a.kind === 'free')) {
@@ -3001,8 +2963,6 @@ export class Match {
       tr: this.traps,
       z: this.zones,
       ...(this.fields.length ? { fl: this.fields } : {}),
-      sg: this.sigil,
-      sa: this.sigilAt,
       ...(this.suddenAt !== null ? { sd: Math.round(this.suddenAt * 100) / 100 } : {}),
     };
   }
@@ -3019,8 +2979,6 @@ export class Match {
     this.traps = s.tr;
     this.zones = s.z ?? [];
     this.fields = s.fl ?? [];
-    this.sigil = s.sg ?? null;
-    this.sigilAt = s.sa ?? this.sigilAt;
     this.suddenAt = s.sd ?? null;
     // the raised dead come and go with the host's word: raised here as they are there, and gone when they are
     // (always after the heroes, so no hero's place moves)
@@ -3144,8 +3102,6 @@ export interface Snapshot {
   z?: Zone[];
   /** What is left on the ground (Field). */
   fl?: Field[];
-  sg?: SigilStone | null;
-  sa?: number;
   /** When sudden death began (Match.suddenAt), once it has. */
   sd?: number;
 }

@@ -3,8 +3,7 @@ import { DAMP_FROM, RANGED, type Fighter, type Match, type MatchEvent } from './
 
 /**
  * What a newcomer is taught by the Ring itself, outside the tutorial (arena/tutorial.ts): a hint the first time
- * something happens in a match (a red circle under them, a lit ability, a full super, the sigil,
- * healing beginning to fade), and
+ * something happens in a match (a red circle under them, a lit ability, a full super, healing beginning to fade), and
  * after a lost match one thing to try next time, worked out from how the match went. The owner, 2026-11-14: "i wanna
  * make this game mode accessible for every type of player".
  */
@@ -19,9 +18,9 @@ export interface HintKeys {
 
 const superWord = (k: HintKeys): string => (k.touch ? 'tap the gold button' : `press ${k.super}`);
 
-export type HintId = 'circle' | 'combo' | 'super' | 'sigil' | 'damp';
+export type HintId = 'circle' | 'combo' | 'super' | 'damp';
 
-export const HINT_IDS: readonly HintId[] = ['circle', 'combo', 'super', 'sigil', 'damp'];
+export const HINT_IDS: readonly HintId[] = ['circle', 'combo', 'super', 'damp'];
 
 /** Is `f` standing under one of the other side's circles? */
 export const underCircle = (m: Match, f: Fighter): boolean => m.zones.some((z) => z.team !== f.team && Math.hypot(f.x - z.x, f.y - z.y) <= z.r);
@@ -39,7 +38,6 @@ export function hintNow(m: Match, me: Fighter | null, seen: readonly string[], k
     if (ready) return { id: 'combo', text: `${ready.name} is glowing: it lands its combo right now and does much more. Use it!` };
   }
   if (fresh('super') && me.charge >= 1) return { id: 'super', text: `Your super is full. ${superWord(keys)[0]!.toUpperCase()}${superWord(keys).slice(1)} to unleash it.` };
-  if (fresh('sigil') && m.sigil) return { id: 'sigil', text: 'A sigil rose in the middle. Grab it: it heals you, fills your super and speeds you up.' };
   if (fresh('damp') && m.clock >= DAMP_FROM + 1) return { id: 'damp', text: 'From here on, healing gets weaker every second until none is left. Finish the fight.' };
   return null;
 }

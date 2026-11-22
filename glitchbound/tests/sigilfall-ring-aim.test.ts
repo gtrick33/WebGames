@@ -407,7 +407,7 @@ describe('The Ring: bigger grounds', () => {
   });
 
   it('has no healing spheres: a hurt fighter standing anywhere gets nothing back by themself', () => {
-    // (the owner, 2026-11-20: the spheres are gone from the Ring; healing is a healer's alone, and the sigil's)
+    // (the owner, 2026-11-20: the spheres are gone from the Ring; healing is a healer's alone; the sigil went too, 2026-11-22)
     const m = new Match({ seed: 3, map: 'sands', fighters: [fighter(0, 'warrior'), fighter(1, 'mage')] });
     m.step(GATES + 0.01, {});
     const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
