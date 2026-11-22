@@ -125,7 +125,7 @@ function Purse({ hero: h }: { hero: Character }) {
   );
 }
 
-const CoinIcon = () => (
+export const CoinIcon = () => (
   <svg viewBox="0 0 24 24">
     <ellipse cx="12" cy="14" rx="9" ry="7.5" fill="#a8701c" />
     <ellipse cx="12" cy="11.5" rx="9" ry="7.5" fill="#ffd257" stroke="#7a4e10" strokeWidth="1.2" />
@@ -133,7 +133,7 @@ const CoinIcon = () => (
     <path d="M9.5 9 Q12 7.4 14.5 9" stroke="#fff3c0" strokeWidth="1.3" fill="none" strokeLinecap="round" />
   </svg>
 );
-const MarkIcon = () => (
+export const MarkIcon = () => (
   <svg viewBox="0 0 24 24">
     <path d="M12 2 L20 12 L12 22 L4 12 Z" fill="#7b4dff" stroke="#2a1660" strokeWidth="1.3" />
     <path d="M12 5.5 L17 12 L12 18.5 L7 12 Z" fill="#c8a8ff" />

@@ -4493,16 +4493,68 @@ html.rb-touch-playing textarea {
     animation: none;
   }
 }
-.rb-shop-top {
+.rb-shop-blurb {
+  margin: 0;
+}
+/* the tabs and the coins to spend, on one line (2026-11-22: the gold and marks had been stacked a word a line) */
+.rb-shop-bar {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: baseline;
-  gap: 8px 14px;
+  gap: 6px 10px;
   flex-wrap: wrap;
 }
-.rb-purse {
-  font-size: 13px;
+.rb-shop-bar .rb-seg {
+  margin: 0;
+}
+.rb-shop-coins {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+.rb-shop-coin {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 10px 2px 3px;
+  border: 2px solid #8a6424;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgb(255 210 87 / 0.14), rgb(0 0 0 / 0.35));
+  font: 700 13px var(--mono);
+  color: var(--rb-gold);
   white-space: nowrap;
+}
+.rb-shop-coin svg {
+  width: 22px;
+  height: 22px;
+}
+.rb-shop-coin.is-marks {
+  border-color: #6a3ab0;
+  background: linear-gradient(180deg, rgb(197 140 255 / 0.16), rgb(0 0 0 / 0.35));
+  color: #c9a8ff;
+}
+/* "spend the marks?": under the thumb, at the foot of the list however far it is scrolled */
+.rb-shop-ask {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px;
+  border: 2px solid #c58cff;
+  border-radius: 8px;
+  background: #1e1530;
+  box-shadow: 0 -6px 12px rgb(0 0 0 / 0.55);
+}
+.rb-shop-ask > span {
+  flex: 1;
+  min-width: 150px;
+  font-size: 13px;
+}
+.rb-shop-ask .rb-btn {
+  min-height: 40px;
 }
 .rb-marks {
   color: #c9a8ff;
@@ -4785,6 +4837,17 @@ html.rb-touch-playing textarea {
   }
   .rb-shop .rb-detail.is-open {
     min-height: min(260px, 100%);
+  }
+  /* (the vendor's line of patter goes: the room is for the wares. The owner, 2026-11-22: "the items are shown at a
+     very small window") */
+  .rb-shop {
+    gap: 6px;
+  }
+  .rb-shop-blurb {
+    display: none;
+  }
+  .rb-wager-grid {
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   }
 }
 
@@ -6368,6 +6431,16 @@ html.rb-touch-playing textarea {
   font: 700 28px/1 Georgia, serif;
   box-shadow: 0 0 0 2px #05030b, 0 0 16px rgb(246 196 83 / 0.55);
   animation: cs-plus 2.2s ease-in-out infinite;
+}
+/* the chosen place, empty: a big plus in the middle of the shape, on every screen (the owner, 2026-11-22: "empty char
+   on a main screen has no plus button in the middle in order to create it") */
+.cs-figure.is-here .cs-plus {
+  left: -30px;
+  bottom: 46px;
+  width: 60px;
+  height: 60px;
+  border-width: 3px;
+  font-size: 44px;
 }
 @keyframes cs-plus {
   50% {
@@ -16330,10 +16403,6 @@ html.rb-touch-playing textarea {
 }
 @container (max-height: 520px) {
   .cs-figure.is-away {
-    display: none;
-  }
-  /* (an empty place's plus on the dais lay behind its name there; its banner says "New hero") */
-  .cs-plus {
     display: none;
   }
   /* (more room for the name: it was cut to "Guitartr…" between its arrows) */

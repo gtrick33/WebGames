@@ -12,6 +12,7 @@ import { ECHOES } from '../data/wardens';
 import type { SigilEngine } from '../engine';
 import { classOpen } from '../progress/paidClasses';
 import { trialHero, trialStone } from '../progress/trial';
+import { wornLooks } from '../progress/wardrobe';
 import { iconsReady } from '../render/art/gameIcons';
 import { heldWeapon, heroDollUrl, heroLook, portraitUrl } from '../render/sprites';
 import { clockText } from '../sim/world';
@@ -116,7 +117,7 @@ function OwnHeroes({ engine, onBack, tabs }: { engine: SigilEngine; onBack: () =
             const c = CLASSES[h.cls];
             return (
               <li key={slot} className={`rb-rlobby-own-card${open ? '' : ' is-locked'}`} style={{ ['--cls' as string]: c.colors.accent }}>
-                <Doll className="rb-rlobby-own-doll" src={heroDollUrl(heroLook(h.cls, h.equip, undefined, h.body, h.face), 'down', 3, heldWeapon(h.cls, h.equip.weapon), h.cls === 'warrior' || h.cls === 'paladin')} alt="" />
+                <Doll className="rb-rlobby-own-doll" src={heroDollUrl(heroLook(h.cls, h.equip, wornLooks(h), h.body, h.face), 'down', 3, heldWeapon(h.cls, h.equip.weapon, wornLooks(h).weapon), h.cls === 'warrior' || h.cls === 'paladin')} alt="" />
                 <span className="rb-rlobby-own-text">
                   <strong>{h.name}</strong>
                   <small>
