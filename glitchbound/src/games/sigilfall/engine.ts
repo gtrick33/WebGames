@@ -2514,6 +2514,18 @@ export class SigilEngine {
     this.setUi({ reward: null });
   }
 
+  /**
+   * From a cleared dungeon's card: out the way its portal goes (World.portalWay: the land at the dungeon's door, the
+   * Riftward after a Riftstone run, Briarhollow only failing those). It had always said Briarhollow, while the portal
+   * itself went to the right place (the owner, 2026-11-22).
+   */
+  leaveCleared(): void {
+    const w = this.world;
+    if (!w) return;
+    const { tier, mods } = w;
+    if (this.travel(w.portalWay().to, tier, mods, w.region.id)) this.setUi({ death: false, reward: null });
+  }
+
   /** From a Riftstone run's end: the same dungeon again, at the stone the hero holds now. */
   keyAgain(): void {
     const w = this.world;
