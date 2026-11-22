@@ -33,7 +33,9 @@ describe('the daily streak on the server', () => {
       // never refused as implausible on a day whose challenge counts something other than the score)
       const exact = c.game.limits?.scoreIs?.[c.metric];
       const score = exact !== undefined ? exact * value : value > 0 ? 1 : 0;
-      const body = c.metric === 'score' ? { runId, score: value, stats: {}, day } : { runId, score, stats: { [c.metric]: value }, day };
+      // (played as the daily, as the page says it is: a challenge on a daily-only stat, Spot the Glitch's best daily
+      // score, only counts a round that is the daily; without it the test failed on the days that game is the challenge)
+      const body = c.metric === 'score' ? { runId, score: value, stats: {}, day, daily: true } : { runId, score, stats: { [c.metric]: value }, day, daily: true };
       const request = new Request(`${ORIGIN}/api/runs/end`, { method: 'POST', headers: { origin: ORIGIN, cookie: jar, 'content-type': 'application/json' }, body: JSON.stringify(body) });
       return (await (await endRun({ request, env, params: {} })).json()) as RunEndResult;
     };
