@@ -10,7 +10,7 @@ import { rarityColor } from '../render/renderer';
 import { cantWager, FORGED_LEVEL, WAGER_PRICE, WAGER_SLOTS, wagerOdds } from '../progress/rift';
 import { cantBuy, potionPrice, stockFor, type ShopItem } from '../progress/shop';
 import { fmt, Frame, ItemIcon, Portrait } from './common';
-import { isUpgrade, ItemDetail, SLOT_LABEL } from './Panels';
+import { CoinIcon, isUpgrade, ItemDetail, MarkIcon, SLOT_LABEL } from './Panels';
 import { uiIcon } from './uiIcons';
 
 /** A vendor: buy their stock (or potions at the inn), sell what is in your bag. */
@@ -43,6 +43,7 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
   const pick = (uid: string): void => {
     setSel(uid);
     setInspect(null);
+    setConfirm(null);
   };
   const equipNow = (it: Item): void => {
     if (!engine.equipItem(it.uid)) return;
@@ -85,38 +86,43 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
             )}
           </div>
         )}
-        <div className="rb-shop-top">
-          <span className="rb-dim rb-small">{def.blurb}</span>
-          <span className="rb-purse">
-            <b className="rb-gold">{fmt(h.gold)}</b> gold
+        <p className="rb-shop-blurb rb-dim rb-small">{def.blurb}</p>
+        {/* the tabs and what the hero has to spend, on one line (the owner, 2026-11-22, on a phone: "the items are shown
+            at a very small window that u need to scroll") */}
+        <div className="rb-shop-bar">
+          {shop !== 'inn' && (
+            <div className="rb-seg" role="tablist" aria-label="Buy or sell">
+              {tabs.map((t) => (
+                <button
+                  key={t}
+                  role="tab"
+                  aria-selected={tab === t}
+                  className={tab === t ? 'is-on' : ''}
+                  onClick={() => {
+                    setTab(t);
+                    setSel(null);
+                    setInspect(null);
+                    setConfirm(null);
+                  }}
+                >
+                  {t === 'buy' ? 'Buy' : t === 'wager' ? 'Rift wagers' : `Sell (${h.bag.length}/${bagSize(h)})`}
+                </button>
+              ))}
+            </div>
+          )}
+          <span className="rb-shop-coins">
+            <span className="rb-shop-coin is-gold" title="Gold" aria-label={`${fmt(h.gold)} gold`}>
+              <CoinIcon />
+              <b>{fmt(h.gold)}</b>
+            </span>
             {(shop === 'quartermaster' || h.marks > 0) && (
-              <>
-                {' · '}
-                <b className="rb-marks">{fmt(h.marks)}</b> Sigil Marks
-              </>
+              <span className="rb-shop-coin is-marks" title="Sigil Marks" aria-label={`${fmt(h.marks)} Sigil Marks`}>
+                <MarkIcon />
+                <b>{fmt(h.marks)}</b>
+              </span>
             )}
           </span>
         </div>
-        {shop !== 'inn' && (
-          <div className="rb-seg" role="tablist" aria-label="Buy or sell">
-            {tabs.map((t) => (
-              <button
-                key={t}
-                role="tab"
-                aria-selected={tab === t}
-                className={tab === t ? 'is-on' : ''}
-                onClick={() => {
-                  setTab(t);
-                  setSel(null);
-                  setInspect(null);
-                  setConfirm(null);
-                }}
-              >
-                {t === 'buy' ? 'Buy' : t === 'wager' ? 'Rift wagers' : `Sell (${h.bag.length}/${bagSize(h)})`}
-              </button>
-            ))}
-          </div>
-        )}
         <div className="rb-shop-body">
           <section className="rb-shop-list" aria-label={tab === 'buy' ? 'For sale' : 'Your bag'}>
             {shop === 'inn' ? (
@@ -176,9 +182,16 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
                   actions={
                     <div className="rb-row">
                       <button
-                        className="rb-btn is-gold"
+                        className={`rb-btn${confirm === chosen.item.uid ? ' is-danger' : ' is-gold'}`}
                         disabled={!!cantBuy(h, shop, chosen)}
                         onClick={() => {
+                          // Sigil Marks are hard won: spending them asks twice (the owner, 2026-11-22: a tap "by
+                          // accident wasting your sigils")
+                          if (chosen.price.marks && confirm !== chosen.item.uid) {
+                            setConfirm(chosen.item.uid);
+                            return;
+                          }
+                          setConfirm(null);
                           const got = engine.buy(shop, chosen.item.uid);
                           if (got) {
                             show({ text: `Bought ${itemName(got)}`, sub: priceText(chosen), item: got });
@@ -186,7 +199,7 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
                           }
                         }}
                       >
-                        {cantBuy(h, shop, chosen) ?? `Buy · ${priceText(chosen)}`}
+                        {cantBuy(h, shop, chosen) ?? (confirm === chosen.item.uid ? `Spend ${priceText(chosen)}? Tap to buy` : `Buy · ${priceText(chosen)}`)}
                       </button>
                     </div>
                   }
@@ -258,22 +271,22 @@ function Wagers({ engine, onWon }: { engine: SigilEngine; onWon: (item: Item) =>
   const why = cantWager(h);
   const odds = wagerOdds(h.keystone);
   const pct = (v: number): string => `${Math.round(v * 100)}%`;
+  // a tap picks the slot; the marks go only on the second, deliberate one (the owner, 2026-11-22: "buying a sigil item
+  // requires only tapping, it needs a confirmation")
+  const [ask, setAsk] = useState<(typeof WAGER_SLOTS)[number] | null>(null);
+  useEffect(() => {
+    if (why) setAsk(null);
+  }, [why]);
   return (
     <div className="rb-wagers">
-      <p className="rb-small">
-        Lay <b className="rb-marks">{WAGER_PRICE} Sigil Marks</b> on a slot and the broker turns over one piece for it, made at item level <b>{keyLoot(h.keystone, h.level)}</b> (your Riftstone +{h.keystone}). Legendary{' '}
-        <b className="rb-gold">{pct(odds.legendary)}</b>, epic {pct(odds.epic)}, rare {pct(odds.rare)}. Rift-forged pieces your stone has opened are among the legendaries.
-      </p>
       <div className="rb-wager-grid">
         {WAGER_SLOTS.map((slot) => (
           <button
             key={slot}
-            className="rb-ware rb-wager"
+            className={`rb-ware rb-wager${ask === slot ? ' is-sel' : ''}`}
             disabled={!!why}
-            onClick={() => {
-              const it = engine.wager(slot);
-              if (it) onWon(it);
-            }}
+            aria-pressed={ask === slot}
+            onClick={() => setAsk((a) => (a === slot ? null : slot))}
             aria-label={`Wager on ${SLOT_LABEL[slot]}, ${WAGER_PRICE} Sigil Marks`}
           >
             <span className="rb-ware-name">{SLOT_LABEL[slot]}</span>
@@ -281,7 +294,31 @@ function Wagers({ engine, onWon }: { engine: SigilEngine; onWon: (item: Item) =>
           </button>
         ))}
       </div>
+      {ask && (
+        <div className="rb-shop-ask" role="alertdialog" aria-label="Confirm the wager">
+          <span>
+            Lay <b className="rb-marks">{WAGER_PRICE} Sigil Marks</b> on <b>{SLOT_LABEL[ask]}</b>?
+          </span>
+          <button
+            className="rb-btn is-gold"
+            onClick={() => {
+              const it = engine.wager(ask);
+              setAsk(null);
+              if (it) onWon(it);
+            }}
+          >
+            Wager
+          </button>
+          <button className="rb-btn" onClick={() => setAsk(null)}>
+            Cancel
+          </button>
+        </div>
+      )}
       {why && <p className="rb-small rb-warn">{why}.</p>}
+      <p className="rb-small">
+        The broker turns over one unseen piece for the slot, made at item level <b>{keyLoot(h.keystone, h.level)}</b> (your Riftstone +{h.keystone}). Legendary{' '}
+        <b className="rb-gold">{pct(odds.legendary)}</b>, epic {pct(odds.epic)}, rare {pct(odds.rare)}. Rift-forged pieces your stone has opened are among the legendaries.
+      </p>
       <p className="rb-small rb-dim">Marks come from bosses and from every Rift run: more for a higher stone, and more for beating the clock.</p>
     </div>
   );
