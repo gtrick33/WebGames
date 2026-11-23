@@ -41,10 +41,10 @@ describe('Sigilfall: the Rift season calendar', () => {
     expect(nextSeasonAt(Date.UTC(2026, 10, 23))).toBe(SEASON_EPOCH);
   });
 
-  it('gives each season a keeper, a title and words of its own, and only the first is built yet', () => {
+  it('gives each season a keeper, a title and words of its own, and builds every one', () => {
     expect(new Set(SEASON_LOOP.map((d) => d.keeper.name)).size).toBe(10);
     expect(new Set(SEASON_LOOP.map((d) => d.title.id)).size).toBe(10);
-    expect(SEASON_LOOP.filter((d) => d.built).map((d) => d.mechanic)).toEqual(['heart']);
+    expect(SEASON_LOOP.filter((d) => d.built)).toHaveLength(10);
     for (const d of SEASON_LOOP) expect(TITLES.some((t) => t.id === d.title.id), d.title.id).toBe(true);
   });
 });

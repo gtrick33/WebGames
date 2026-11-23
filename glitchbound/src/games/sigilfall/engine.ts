@@ -20,7 +20,8 @@ import { CLASSES, MAX_LEVEL } from './data/classes';
 import { keyAffixes, weekOf } from './data/keystones';
 import { seasonAt, seasonDef, seasonStart, type SeasonNow } from './data/seasons';
 import { dressSeasonKeeper } from './data/zones/riftward';
-import { chooseHeart, claimChapter } from './progress/season';
+import { chooseBorrowed, chooseHeart, chooseTwin, claimChapter, offerAltar } from './progress/season';
+import { takeBoon } from './sim/season';
 import { WARDENS } from './data/wardens';
 import { NPCS, QUEST_DEFS } from './data/quests';
 import { REGIONS, TIERS, type RiftMod } from './data/regions';
@@ -2019,6 +2020,51 @@ export class SigilEngine {
     if (!h || !s || this.world?.keyRun || !chooseHeart(h, s.n, id)) return false;
     this.sound.play('equip');
     this.scheduleSave(300);
+    this.bump();
+    return true;
+  }
+
+  /** The Season of Borrowed Legends: the legendary whose power works in the Riftstones without wearing it. */
+  chooseSeasonBorrowed(uid: string): boolean {
+    const h = this.hero;
+    const s = this.season;
+    if (!h || !s || this.world?.keyRun || !chooseBorrowed(h, s.n, uid)) return false;
+    this.sound.play('equip');
+    this.scheduleSave(300);
+    this.bump();
+    return true;
+  }
+
+  /** The Season of Twin Paths: another specialization's skill, and the slot of the bar it takes in a run. */
+  chooseSeasonTwin(skill: string, slot: number): boolean {
+    const h = this.hero;
+    const s = this.season;
+    if (!h || !s || this.world?.keyRun || !chooseTwin(h, s.n, skill, slot)) return false;
+    this.sound.play('equip');
+    this.scheduleSave(300);
+    this.bump();
+    return true;
+  }
+
+  /** The Season of Offerings: lights the altar's next blessing for its Sigil Marks. */
+  offerSeasonAltar(): boolean {
+    const h = this.hero;
+    const s = this.season;
+    if (!h || !s || this.world?.keyRun || !offerAltar(h, s.n)) {
+      this.sound.play('nomana');
+      return false;
+    }
+    this.sound.play('questDone');
+    this.toast('A blessing is lit', 'good', undefined, 'It works in every Riftstone run this season.');
+    this.persist();
+    this.bump();
+    return true;
+  }
+
+  /** The Season of Boons: takes one of the boons the run offers after a boss (the run waits for it). */
+  takeSeasonBoon(i: number): boolean {
+    const w = this.world;
+    if (!w || !takeBoon(w, i)) return false;
     this.bump();
     return true;
   }

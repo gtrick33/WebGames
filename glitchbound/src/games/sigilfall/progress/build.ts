@@ -4,7 +4,7 @@ import { ITEM_DEFS } from '../data/items';
 import { SETS, type SetDef } from '../data/riftgear';
 import { SKILLS } from '../data/skills';
 import { SPEC_LEVEL, TALENTS } from '../data/talents';
-import type { Effect, FormDef, GroundSpec, Mod, PointsDef, ProcDef, Rarity, ResourceDef, SkillOp, SkillSpec, SlotKey, Stats, StatKey } from '../data/types';
+import type { Effect, FormDef, GroundSpec, Mod, PointsDef, ProcDef, Rarity, ResourceDef, SkillIndex, SkillOp, SkillSpec, SlotKey, Stats, StatKey } from '../data/types';
 import { SKILL_SLOTS, SLOTS } from '../data/types';
 import { hasUltimate, SIGIL_BONUS, sigilCount, slotOpen, type Character } from './character';
 import { opText } from './describe';
@@ -71,7 +71,7 @@ interface Entry {
 }
 
 /** Every modifier the hero has: the specialization's passive, talents (tree order), then items (slot order). */
-export function collectMods(c: Character): Entry[] {
+export function collectMods(c: Character, setExtra = 0): Entry[] {
   const out: Entry[] = [];
   const spec = c.spec !== null && c.level >= SPEC_LEVEL ? CLASSES[c.cls].trees[c.spec] : null;
   if (spec) for (const mod of spec.passive.mods) out.push({ mod, rank: 1, source: { name: spec.passive.name, kind: 'talent' } });
@@ -86,8 +86,10 @@ export function collectMods(c: Character): Entry[] {
     for (const mod of itemMods(item)) out.push({ mod, rank: 1, source: { name: itemName(item), kind: 'item', rarity: item.r } });
   }
   // what a set gives for the pieces of it worn
+  // (`setExtra`: pieces a set counts as having beyond those worn, two or more being worn: the Season of Kinship)
   for (const { set, worn } of setsWorn(c.equip)) {
-    for (const b of set.bonuses) if (worn >= b.need) for (const mod of b.mods) out.push({ mod, rank: 1, source: { name: set.name, kind: 'item', rarity: 'legendary' } });
+    const counts = worn >= 2 ? Math.min(6, worn + setExtra) : worn;
+    for (const b of set.bonuses) if (counts >= b.need) for (const mod of b.mods) out.push({ mod, rank: 1, source: { name: set.name, kind: 'item', rarity: 'legendary' } });
   }
   return out;
 }
@@ -533,9 +535,17 @@ function paceBasics(def: (typeof CLASSES)[keyof typeof CLASSES], skills: Record<
  * The whole build. In a druid shape (`formId`), the basic attack and dodge are the shape's, the slot
  * with the shape's skill keeps it (to change back) and the other two slots hold the shape's skills.
  */
-export function buildHero(c: Character, formId: string | null = null, extra: Mod[] = []): HeroBuild {
+/** What a Rift season changes in a Riftstone run beyond modifiers (progress/season.ts): sets' pieces, a borrowed skill. */
+export interface SeasonShape {
+  /** Pieces each set counts as having beyond those worn (the Season of Kinship). */
+  sets?: number;
+  /** Another specialization's skill in one of the bar's slots (the Season of Twin Paths). */
+  twin?: { skill: string; slot: number } | null;
+}
+
+export function buildHero(c: Character, formId: string | null = null, extra: Mod[] = [], season: SeasonShape = {}): HeroBuild {
   // (`extra`: what a Rift season's mechanic adds in a Riftstone run, progress/season.ts)
-  const mods = [...collectMods(c), ...extra.map((mod): Entry => ({ mod, rank: 1, source: { name: 'The season', kind: 'item', rarity: 'legendary' } }))];
+  const mods = [...collectMods(c, season.sets ?? 0), ...extra.map((mod): Entry => ({ mod, rank: 1, source: { name: 'The season', kind: 'item', rarity: 'legendary' } }))];
   const def = CLASSES[c.cls];
   const form = (formId && def.forms?.find((f) => f.id === formId)) || null;
   const bar: Record<SlotKey, string | null> = {
@@ -548,6 +558,12 @@ export function buildHero(c: Character, formId: string | null = null, extra: Mod
     ult: hasUltimate(c) ? heroUlt(c) : null,
     dodge: def.dodge,
   };
+  // the Season of Twin Paths: a skill of another specialization in a slot of the hero's choosing (never in a shape)
+  const twin = !form && season.twin && SKILLS[season.twin.skill] ? season.twin : null;
+  if (twin) {
+    const slot = SKILL_SLOTS[twin.slot];
+    if (slot && slotOpen(c, twin.slot as SkillIndex) && !SKILL_SLOTS.some((k) => bar[k] === twin.skill)) bar[slot] = twin.skill;
+  }
   if (form) {
     bar.basic = form.basic;
     bar.dodge = form.dodge;
@@ -557,6 +573,7 @@ export function buildHero(c: Character, formId: string | null = null, extra: Mod
   }
   const skills: Record<string, ResolvedSkill> = {};
   for (const id of classSkillIds(c)) if (SKILLS[id]) skills[id] = resolveSkill(c, id, mods);
+  if (twin && !skills[twin.skill]) skills[twin.skill] = resolveSkill(c, twin.skill, mods);
   paceBasics(def, skills);
   const res = def.resource ?? null;
   const maxMana = res ? Math.round(res.base + res.perLevel * (c.level - 1)) : 0;

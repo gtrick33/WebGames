@@ -14,6 +14,8 @@ import { bossHidden } from '../sim/boss';
 import { hasStatus } from '../sim/combat';
 import { TILE } from '../sim/map';
 import type { Enemy, Fx, Projectile, Telegraph, TelegraphKind } from '../sim/types';
+import { SHRINES } from '../data/seasons';
+import type { Shrine } from '../sim/season';
 import { SUMMON_TIME, type World } from '../sim/world';
 
 /**
@@ -891,6 +893,7 @@ export class Effects {
     // at all, and the half of it that lay across the room came and went as the hero stepped. The owner: "some of the
     // red projected spells of the boss get cut off on the side")
     for (const f of w.fields) if (sc.near(f.x, f.y, f.r)) this.field(f, sc);
+    if (w.seasonRun) for (const s of w.seasonRun.shrines) if (sc.near(s.x, s.y, 140)) this.shrine(s, sc);
     for (const t of w.telegraphs) if (t.shape === 'line' || sc.near(t.x, t.y, Math.max(t.r, t.len))) this.telegraph(t, fx);
     for (const wv of w.waves) {
       const out = wv.r + wv.width;
@@ -960,6 +963,38 @@ export class Effects {
     const hy = y + Math.sin(angle) * 8;
     fx.put({ kind: FX.glow, x: hx, y: hy, up: 26, w: 14 + 20 * k, a: tone.b, alpha: 0.2 + 0.35 * k });
     fx.put({ kind: FX.orb, x: hx, y: hy, up: 26, w: 3 + 8 * k, a: tone.a, b: tone.b, seed: 0.4 });
+  }
+
+  /**
+   * A shrine of the Season of Shrines (sim/season.ts): a rune turning on the floor, a shaft of its light, a mote over it
+   * and sparks rising round it; walked through, it goes up in a pillar and is gone.
+   */
+  private shrine(s: Shrine, sc: EffectsScene): void {
+    const fx = sc.fx;
+    const d = SHRINES[s.kind];
+    if (s.taken) {
+      if (s.t > 0.8) return;
+      const u = s.t / 0.8;
+      fx.put({ kind: FX.shaft, x: s.x, y: s.y, base: true, w: 52 * (1 - u * 0.6), h: 230, a: d.color, alpha: 1 - u, t: u * 0.6, seed: s.id });
+      fx.put({ kind: FX.shaft, x: s.x, y: s.y, base: true, w: 18 * (1 - u), h: 200, a: d.core, alpha: 1 - u, t: u, seed: s.id + 0.25 });
+      fx.put({ kind: FX.glow, x: s.x, y: s.y, up: 30, w: 90 * (1 - u * 0.5), a: d.core, alpha: 0.8 * (1 - u) });
+      return;
+    }
+    const time = sc.time;
+    const pulse = 0.5 + 0.5 * Math.sin(time * 2.4 + s.id);
+    const bob = 36 + 4 * Math.sin(time * 1.8 + s.id);
+    fx.put({ kind: FX.rune, x: s.x, y: s.y, flat: true, w: 54, a: d.color, b: d.core, t: (time * 0.15) % 1, alpha: 0.9, seed: s.id });
+    // the pillar of its light, seen from the room's door: a broad shaft of its color round a white-hot core
+    fx.put({ kind: FX.glow, x: s.x, y: s.y, up: 3, w: 84 + 10 * pulse, a: d.color, alpha: 0.32 });
+    fx.put({ kind: FX.shaft, x: s.x, y: s.y, base: true, w: 38, h: 170, a: d.color, alpha: 0.55 + 0.25 * pulse, t: 0, seed: s.id + 0.5 });
+    fx.put({ kind: FX.shaft, x: s.x, y: s.y, base: true, w: 13, h: 140, a: d.core, alpha: 0.45 + 0.2 * pulse, t: 0, seed: s.id + 0.25 });
+    fx.put({ kind: FX.glow, x: s.x, y: s.y, up: bob, w: 42 + 12 * pulse, a: d.color, alpha: 0.55 });
+    fx.put({ kind: FX.orb, x: s.x, y: s.y, up: bob, w: 7, a: d.core, b: d.color, seed: s.id });
+    for (let i = 0; i < 6; i++) {
+      const u = (time * 0.5 + i / 6) % 1;
+      const a = (i / 6) * TAU + time * 0.6;
+      fx.put({ kind: FX.spark, x: s.x + Math.cos(a) * 17, y: s.y + Math.sin(a) * 11, up: 6 + u * 52, w: 3.5 * Math.sin(u * Math.PI), a: i % 2 ? d.color : d.core, t: 0.1 + u * 0.5 });
+    }
   }
 
   private field(f: World['fields'][number], sc: EffectsScene): void {
@@ -1344,6 +1379,14 @@ export class Effects {
     const p = w.player;
     if (p.dead) return;
     if (p.shield > 0) fx.put({ kind: FX.bubble, x: p.x, y: p.y, up: 16, w: 50, a: '#7fd8ff' });
+    // the Season of Bloodlust: a streak burns round the hero, hotter as it grows
+    const lust = p.buffs.find((b) => b.def.id === 'bloodlust');
+    if (lust && (lust.n ?? 1) >= 5) {
+      const k = Math.min(1, (lust.n ?? 1) / 20);
+      this.aura(fx, p.x, p.y, 0, { a: '#ff3a4a', b: '#ffb04a', n: Math.round(6 + 12 * k), speed: 0.55 + 0.5 * k, spin: 0.35, from: 2, rise: 30 + 24 * k, size: 7 + 5 * k, halo: { up: 18, w: 36 + 34 * k, alpha: 0.2 + 0.25 * k } }, sc.time);
+      // (a long one sets the ground round them glowing, and beats)
+      if ((lust.n ?? 1) >= 10) fx.put({ kind: FX.glow, x: p.x, y: p.y, up: 3, w: 56 + 30 * k + 6 * Math.sin(sc.time * 7), a: '#ff2a3a', alpha: 0.28 + 0.2 * k });
+    }
     for (let i = 0; i < p.buffs.length; i++) {
       const b = p.buffs[i]!;
       fx.put({ kind: FX.rain, x: p.x, y: p.y, base: true, w: 34, h: 50, a: b.def.color, t: -1, seed: i * 2.1 + 1 });
@@ -1483,6 +1526,11 @@ export class Effects {
   }
 
   private enemyMarks(e: Enemy, fx: Fx3D, time: number): void {
+    // the Season of the Hunter's hunter: a red sign turning under it, and a glow it can't hide in
+    if (e.hunter) {
+      fx.put({ kind: FX.rune, x: e.x, y: e.y, flat: true, w: e.r * 4.4, a: '#ff3a3a', b: '#ffb0a0', t: (time * 0.3) % 1, alpha: 0.9, seed: 7 });
+      fx.put({ kind: FX.glow, x: e.x, y: e.y, up: e.r * 2.4, w: e.r * 3.2, a: '#ff3a3a', alpha: 0.3 + 0.12 * Math.sin(time * 4) });
+    }
     const h = headOf(e);
     const seed = e.id * 0.37;
     if (hasStatus(e, 'burn')) fx.put({ kind: FX.flame, x: e.x, y: e.y, base: true, w: e.r * 2.6 + 10, h: h * 0.85 + 8, a: '#ff5a1e', b: '#ffc23a', seed });

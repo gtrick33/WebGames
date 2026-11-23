@@ -17,6 +17,13 @@ Shrinewalker, Kinbound, Legendbearer, Boonblessed, Altarsworn, Bloodbound, Twin-
 the Heartfire Drake are Sigilfall's own (`data/seasons.ts`). The third season was proposed as "Grandeur", the name of a
 Diablo III season, and is called the Season of Kinship instead.
 
+Seasons 2 to 10, built the same day, keep to that. The four shrines (Might, Haste, the Ward, Thunder), the twelve boons,
+the ten blessings of the altar and the Hunter are named and worded here. Two names first written were the genre's own,
+each with the same effect behind it, and were changed: a "Shrine of the Conduit" whose lightning leaps into foes nearby
+(Diablo III's Conduit Pylon) is the Shrine of Thunder, and an "Iron Skin" boon of less damage taken (a Diablo II
+Barbarian skill) is Bulwark. Their colors are each power's own (a red for might, a green for haste, a blue for a ward, a
+violet for lightning), not any game's pylon colors.
+
 ## The Rift's sets and legendaries (2026-11-22)
 
 The owner asked for sets "like diablo 3": one per specialization and one per class, with bonuses at two, four and six
