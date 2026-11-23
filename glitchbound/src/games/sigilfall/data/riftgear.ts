@@ -277,12 +277,12 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#c8323a',
     names: 'Redmaw',
     lore: 'Every plate of it has been red at one time or another.',
-    two: { need: 2, text: 'Bloodthirst mends you for 2% of your health on every hit.', mods: [K('bloodthirst', { op: 'onHit', effect: { kind: 'heal', pct: 2 } })] },
-    four: { need: 4, text: 'Bloodthirst sweeps a wide arc and holds a second charge.', mods: [K('bloodthirst', { op: 'arc', pct: 120 }), K('bloodthirst', { op: 'charges', n: 1 })] },
+    two: { need: 2, text: 'Blood Hunger mends you for 2% of your health on every hit.', mods: [K('bloodthirst', { op: 'onHit', effect: { kind: 'heal', pct: 2 } })] },
+    four: { need: 4, text: 'Blood Hunger sweeps a wide arc and holds a second charge.', mods: [K('bloodthirst', { op: 'arc', pct: 120 }), K('bloodthirst', { op: 'charges', n: 1 })] },
     six: {
       need: 6,
-      text: 'Bloodthirst deals 300% more damage, and every kill bites again: an echo of Bloodthirst at the next enemy.',
-      mods: [K('bloodthirst', { op: 'damage', pct: 300 }), P('redmaw-six', 'kill', ECHO('bloodthirst', 1), 'Every kill: an echo of Bloodthirst at the next enemy (once every 0.4 s).', { icd: 0.4 })],
+      text: 'Blood Hunger deals 300% more damage, and every kill bites again: an echo of Blood Hunger at the next enemy.',
+      mods: [K('bloodthirst', { op: 'damage', pct: 300 }), P('redmaw-six', 'kill', ECHO('bloodthirst', 1), 'Every kill: an echo of Blood Hunger at the next enemy (once every 0.4 s).', { icd: 0.4 })],
     },
   },
   {
@@ -301,8 +301,8 @@ const SPEC_SETS: SetSpec[] = [
     },
     six: {
       need: 6,
-      text: 'Shield Bash deals 300% more damage, and every blow you take may bash back (one in three, once a second): an echo of Shield Bash at the nearest enemy.',
-      mods: [K('shield-bash', { op: 'damage', pct: 300 }), P('unbroken-six', 'hurt', ECHO('shield-bash', 1), 'A blow taken, one in three: an echo of Shield Bash (once a second).', { chance: 0.34, icd: 1 })],
+      text: 'Shield Bash and Thunder Stomp deal 300% more damage, and every blow you take may stamp back (one in three, once a second): an echo of Thunder Stomp.',
+      mods: [K('shield-bash', { op: 'damage', pct: 300 }), K('thunder-clap', { op: 'damage', pct: 300 }), P('unbroken-six', 'hurt', ECHO('thunder-clap', 1), 'A blow taken, one in three: an echo of Thunder Stomp (once a second).', { chance: 0.34, icd: 1 })],
     },
   },
   {
@@ -313,16 +313,16 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#d8d0c0',
     names: 'Duelist’s',
     lore: 'Worn by the last one standing at every duel it was ever in.',
-    two: { need: 2, text: 'Mortal Strike comes back a quarter sooner.', mods: [K('mortal-strike', { op: 'cooldown', pct: -25 })] },
+    two: { need: 2, text: 'Grievous Strike comes back a quarter sooner.', mods: [K('mortal-strike', { op: 'cooldown', pct: -25 })] },
     four: {
       need: 4,
-      text: 'Mortal Strike sends a shockwave rolling forward for 80% of its damage and opens a wound that Bleeds for 40% of the hit a second.',
+      text: 'Grievous Strike sends a shockwave rolling forward for 80% of its damage and opens a wound that Bleeds for 40% of the hit a second.',
       mods: [K('mortal-strike', { op: 'onCast', effect: { kind: 'shockwave', length: 140, width: 26, mul: 0.8 } }), K('mortal-strike', { op: 'onHit', effect: { kind: 'status', status: 'bleed', dur: 6, power: 0.4 } })],
     },
     six: {
       need: 6,
-      text: 'Mortal Strike deals 300% more damage, and a phantom blade strikes with it by itself every 3 s in a fight.',
-      mods: [K('mortal-strike', { op: 'damage', pct: 300 }), EVERY('duelist-six', 3, 'mortal-strike', 1, 'Every 3 s in a fight: an echo of Mortal Strike at the nearest enemy.')],
+      text: 'Grievous Strike deals 300% more damage, and a phantom blade strikes with it by itself every 3 s in a fight.',
+      mods: [K('mortal-strike', { op: 'damage', pct: 300 }), EVERY('duelist-six', 3, 'mortal-strike', 1, 'Every 3 s in a fight: an echo of Grievous Strike at the nearest enemy.')],
     },
   },
   /* mage */
@@ -337,13 +337,13 @@ const SPEC_SETS: SetSpec[] = [
     two: { need: 2, text: 'Fireball holds a second charge.', mods: [K('fireball', { op: 'charges', n: 1 })] },
     four: {
       need: 4,
-      text: 'Flamestrike leaves the ground burning for 5 s and comes back 30% sooner.',
+      text: 'Flame Pillar leaves the ground burning for 5 s and comes back 30% sooner.',
       mods: [K('flamestrike', { op: 'onImpact', effect: { kind: 'ground', ground: { radius: 46, dur: 5, tick: 0.5, mul: 0.14, dmgType: 'fire', look: 'fire', status: { status: 'burn', dur: 3, power: 0.2 } } } }), K('flamestrike', { op: 'cooldown', pct: -30 })],
     },
     six: {
       need: 6,
-      text: 'Flamestrike deals 300% more damage, and one Fireball hit in three calls it down by itself: an echo of Flamestrike at the nearest enemy.',
-      mods: [K('flamestrike', { op: 'damage', pct: 300 }), P('pyre-six', 'hit', ECHO('flamestrike', 1), 'One Fireball hit in three: an echo of Flamestrike (once every 1.5 s).', { skill: 'fireball', chance: 0.34, icd: 1.5 })],
+      text: 'Flame Pillar deals 300% more damage, and one Fireball hit in three calls it down by itself: an echo of Flame Pillar at the nearest enemy.',
+      mods: [K('flamestrike', { op: 'damage', pct: 300 }), P('pyre-six', 'hit', ECHO('flamestrike', 1), 'One Fireball hit in three: an echo of Flame Pillar (once every 1.5 s).', { skill: 'fireball', chance: 0.34, icd: 1.5 })],
     },
   },
   {
@@ -374,15 +374,15 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#b8e8ff',
     names: 'Longwinter',
     lore: 'It has not been warm since the year it was made.',
-    two: { need: 2, text: 'Ice Lance passes through three more enemies.', mods: [K('ice-lance', { op: 'pierce', n: 3 })] },
+    two: { need: 2, text: 'Ice Javelin passes through three more enemies.', mods: [K('ice-lance', { op: 'pierce', n: 3 })] },
     four: {
       need: 4,
-      text: 'Blizzard drags enemies to its middle and lasts half again as long; Ice Lance hits the Frozen 80% harder.',
+      text: 'Ice Storm drags enemies to its middle and lasts half again as long; Ice Javelin hits the Frozen 80% harder.',
       mods: [K('blizzard', { op: 'extra', key: 'pull', n: 55, label: 'pull' }), K('blizzard', { op: 'duration', pct: 50 }), K('ice-lance', { op: 'bonusVs', status: 'freeze', pct: 80 })],
     },
     six: {
       need: 6,
-      text: 'Ice Lance deals 300% more damage, and every Blizzard you call sends three Ice Lances after it by themselves.',
+      text: 'Ice Javelin deals 300% more damage, and every Ice Storm you call sends three Ice Javelins after it by themselves.',
       mods: [K('ice-lance', { op: 'damage', pct: 300 }), K('blizzard', { op: 'onCast', effect: ECHO('ice-lance', 1, 3) })],
     },
   },
@@ -395,16 +395,16 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#d8c080',
     names: 'Farsight',
     lore: 'The arrow is already there. The leather only tells you where.',
-    two: { need: 2, text: 'Aimed Shot reaches 40% further.', mods: [K('aimed-shot', { op: 'range', pct: 40 })] },
+    two: { need: 2, text: 'Long Draw reaches 40% further.', mods: [K('aimed-shot', { op: 'range', pct: 40 })] },
     four: {
       need: 4,
-      text: 'Aimed Shot passes through six more enemies, bursting on each for 50% of its damage.',
+      text: 'Long Draw passes through six more enemies, bursting on each for 50% of its damage.',
       mods: [K('aimed-shot', { op: 'pierce', n: 6 }), K('aimed-shot', { op: 'onHit', effect: { kind: 'explode', radius: 34, mul: 0.5 } })],
     },
     six: {
       need: 6,
-      text: 'Aimed Shot deals 300% more damage, and every critical hit may loose another (one in four, once every 1.5 s): an echo of Aimed Shot.',
-      mods: [K('aimed-shot', { op: 'damage', pct: 300 }), P('farsight-six', 'crit', ECHO('aimed-shot', 1), 'A critical hit, one in four: an echo of Aimed Shot (once every 1.5 s).', { chance: 0.25, icd: 1.5 })],
+      text: 'Long Draw deals 300% more damage, and every critical hit may loose another (one in four, once every 1.5 s): an echo of Long Draw.',
+      mods: [K('aimed-shot', { op: 'damage', pct: 300 }), P('farsight-six', 'crit', ECHO('aimed-shot', 1), 'A critical hit, one in four: an echo of Long Draw (once every 1.5 s).', { chance: 0.25, icd: 1.5 })],
     },
   },
   {
@@ -415,16 +415,16 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#c8b89a',
     names: 'Snareweave',
     lore: 'Every seam is a knot that tightens when pulled.',
-    two: { need: 2, text: 'Snapjaw Trap comes back 40% sooner.', mods: [K('bear-trap', { op: 'cooldown', pct: -40 })] },
+    two: { need: 2, text: 'Bear Trap comes back 40% sooner.', mods: [K('bear-trap', { op: 'cooldown', pct: -40 })] },
     four: {
       need: 4,
-      text: 'Two more traps can lie at once, and each bursts as it snaps for 110% of its damage, leaving a Bleed.',
+      text: 'Two more Bear Traps can lie at once, and each bursts as it snaps for 110% of its damage, leaving a Bleed.',
       mods: [K('bear-trap', { op: 'extra', key: 'maxTraps', n: 2, label: 'traps at once' }), K('bear-trap', { op: 'onImpact', effect: { kind: 'explode', radius: 44, mul: 1.1, status: { status: 'bleed', dur: 4, power: 0.3 } } })],
     },
     six: {
       need: 6,
-      text: 'Snapjaw Trap deals 300% more damage, and a hidden snare is thrown under the nearest enemy by itself every 2.5 s in a fight.',
-      mods: [K('bear-trap', { op: 'damage', pct: 300 }), EVERY('snareweave-six', 2.5, 'bear-trap', 1, 'Every 2.5 s in a fight: an echo of Snapjaw Trap under the nearest enemy.')],
+      text: 'Bear Trap deals 300% more damage, and a hidden snare is thrown under the nearest enemy by itself every 2.5 s in a fight.',
+      mods: [K('bear-trap', { op: 'damage', pct: 300 }), EVERY('snareweave-six', 2.5, 'bear-trap', 1, 'Every 2.5 s in a fight: an echo of Bear Trap under the nearest enemy.')],
     },
   },
   {
@@ -438,7 +438,7 @@ const SPEC_SETS: SetSpec[] = [
     two: { need: 2, text: 'Your companions hit 25% harder.', mods: [S('pet', 25)] },
     four: {
       need: 4,
-      text: 'Calling a wolf calls two more with it.',
+      text: 'Call Wolf brings two more wolves with it.',
       mods: [K('call-wolf', { op: 'onCast', effect: { kind: 'summon', pet: 'wolf', count: 2, dur: 0 } })],
     },
     six: {
@@ -456,16 +456,16 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#ffe9a0',
     names: 'Morningsong',
     lore: 'It rings once when it strikes, and somewhere a window lights.',
-    two: { need: 2, text: 'Holy Shock holds a second charge.', mods: [K('holy-shock', { op: 'charges', n: 1 })] },
+    two: { need: 2, text: 'Sun Spark holds a second charge.', mods: [K('holy-shock', { op: 'charges', n: 1 })] },
     four: {
       need: 4,
-      text: 'Holy Shock leaps to three more enemies and mends you for 2% of your health each hit.',
+      text: 'Sun Spark leaps to three more enemies and mends you for 2% of your health each hit.',
       mods: [K('holy-shock', { op: 'bounce', n: 3 }), K('holy-shock', { op: 'onHit', effect: { kind: 'heal', pct: 2 } })],
     },
     six: {
       need: 6,
-      text: 'Holy Shock deals 300% more damage, and the choir sings it for you every 2 s in a fight.',
-      mods: [K('holy-shock', { op: 'damage', pct: 300 }), EVERY('choir-six', 2, 'holy-shock', 1, 'Every 2 s in a fight: an echo of Holy Shock at the nearest enemy.')],
+      text: 'Sun Spark deals 300% more damage, and the choir sings it for you every 2 s in a fight.',
+      mods: [K('holy-shock', { op: 'damage', pct: 300 }), EVERY('choir-six', 2, 'holy-shock', 1, 'Every 2 s in a fight: an echo of Sun Spark at the nearest enemy.')],
     },
   },
   {
@@ -476,16 +476,16 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#e0b040',
     names: 'Oathwall',
     lore: 'It has a dent for every promise kept.',
-    two: { need: 2, text: 'Avenger’s Shield comes back 30% sooner.', mods: [K('avengers-shield', { op: 'cooldown', pct: -30 })] },
+    two: { need: 2, text: 'Thrown Aegis comes back 30% sooner.', mods: [K('avengers-shield', { op: 'cooldown', pct: -30 })] },
     four: {
       need: 4,
-      text: 'Shield of the Righteous bursts around you for 90% of its damage, and Avenger’s Shield leaps to three more enemies.',
+      text: 'Bastion Strike bursts around you for 90% of its damage, and Thrown Aegis leaps to three more enemies.',
       mods: [K('shield-of-the-righteous', { op: 'onCast', effect: { kind: 'nova', radius: 56, mul: 0.9, dmgType: 'holy' } }), K('avengers-shield', { op: 'bounce', n: 3 })],
     },
     six: {
       need: 6,
-      text: 'Avenger’s Shield deals 300% more damage, and a blow taken may throw it back (one in three, once every 1.5 s): an echo of Avenger’s Shield.',
-      mods: [K('avengers-shield', { op: 'damage', pct: 300 }), P('oathwall-six', 'hurt', ECHO('avengers-shield', 1), 'A blow taken, one in three: an echo of Avenger’s Shield (once every 1.5 s).', { chance: 0.34, icd: 1.5 })],
+      text: 'Thrown Aegis deals 300% more damage, and a blow taken may throw it back (one in three, once every 1.5 s): an echo of Thrown Aegis.',
+      mods: [K('avengers-shield', { op: 'damage', pct: 300 }), P('oathwall-six', 'hurt', ECHO('avengers-shield', 1), 'A blow taken, one in three: an echo of Thrown Aegis (once every 1.5 s).', { chance: 0.34, icd: 1.5 })],
     },
   },
   {
@@ -496,16 +496,16 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#fff2c8',
     names: 'Sentencer’s',
     lore: 'It was read out once. Nobody appealed.',
-    two: { need: 2, text: 'Templar’s Verdict sweeps a far wider arc.', mods: [K('templars-verdict', { op: 'arc', pct: 150 })] },
+    two: { need: 2, text: 'Twin Edict sweeps a far wider arc.', mods: [K('templars-verdict', { op: 'arc', pct: 150 })] },
     four: {
       need: 4,
-      text: 'Templar’s Verdict reaches 25% further, and every kill with it gives 2 Zeal.',
+      text: 'Twin Edict reaches 25% further, and every kill with it gives 2 Zeal.',
       mods: [K('templars-verdict', { op: 'area', pct: 25 }), K('templars-verdict', { op: 'onKill', effect: { kind: 'resource', n: 2 } })],
     },
     six: {
       need: 6,
-      text: 'Templar’s Verdict deals 300% more damage, and every kill it makes passes sentence again: an echo of Templar’s Verdict at the next enemy.',
-      mods: [K('templars-verdict', { op: 'damage', pct: 300 }), P('sentence-six', 'kill', ECHO('templars-verdict', 1), 'A kill with Templar’s Verdict: an echo of it at the next enemy (once every 0.4 s).', { skill: 'templars-verdict', icd: 0.4 })],
+      text: 'Twin Edict deals 300% more damage, and every kill it makes passes sentence again: an echo of Twin Edict at the next enemy.',
+      mods: [K('templars-verdict', { op: 'damage', pct: 300 }), P('sentence-six', 'kill', ECHO('templars-verdict', 1), 'A kill with Twin Edict: an echo of it at the next enemy (once every 0.4 s).', { skill: 'templars-verdict', icd: 0.4 })],
     },
   },
   /* priest */
@@ -517,16 +517,16 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#ffe9c0',
     names: 'Vigilant',
     lore: 'The smoke goes where it is needed, and then a little further.',
-    two: { need: 2, text: 'Penance lasts half again as long.', mods: [K('penance', { op: 'duration', pct: 50 })] },
+    two: { need: 2, text: 'Atoning Light lasts half again as long.', mods: [K('penance', { op: 'duration', pct: 50 })] },
     four: {
       need: 4,
-      text: 'Penance leaps on to two more enemies and shields you for 10% of your health as you begin it.',
+      text: 'Atoning Light leaps on to two more enemies and shields you for 10% of your health as you begin it.',
       mods: [K('penance', { op: 'onHit', effect: { kind: 'chain', jumps: 2, range: 70, mul: 0.7, dmgType: 'holy' } }), K('penance', { op: 'onCast', effect: { kind: 'shield', pct: 10, dur: 5 } })],
     },
     six: {
       need: 6,
-      text: 'Penance deals 300% more damage, and a blow taken may answer with it (one in four, once every 2 s): an echo of Penance at your attacker.',
-      mods: [K('penance', { op: 'damage', pct: 300 }), P('vigil-six', 'hurt', ECHO('penance', 1), 'A blow taken, one in four: an echo of Penance (once every 2 s).', { chance: 0.25, icd: 2 })],
+      text: 'Atoning Light deals 300% more damage and Radiant Burst 150% more, and a blow taken may answer (one in three, once every 1.5 s): an echo of Radiant Burst.',
+      mods: [K('penance', { op: 'damage', pct: 300 }), K('holy-nova', { op: 'damage', pct: 150 }), P('vigil-six', 'hurt', ECHO('holy-nova', 1), 'A blow taken, one in three: an echo of Radiant Burst (once every 1.5 s).', { chance: 0.34, icd: 1.5 })],
     },
   },
   {
@@ -537,16 +537,16 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#ffd27a',
     names: 'Noonfire',
     lore: 'It hums the first line. You are expected to know the rest.',
-    two: { need: 2, text: 'Holy Fire holds a second charge.', mods: [K('holy-fire', { op: 'charges', n: 1 })] },
+    two: { need: 2, text: 'Searing Hymn holds a second charge.', mods: [K('holy-fire', { op: 'charges', n: 1 })] },
     four: {
       need: 4,
-      text: 'Holy Fire bursts where it lands for 90% of its damage and burns all it reaches; Holy Nova reaches 30% further.',
+      text: 'Searing Hymn bursts where it lands for 90% of its damage and burns all it reaches; Radiant Burst reaches 30% further.',
       mods: [K('holy-fire', { op: 'onImpact', effect: { kind: 'explode', radius: 50, mul: 0.9, dmgType: 'holy', status: { status: 'burn', dur: 4, power: 0.25 } } }), K('holy-nova', { op: 'area', pct: 30 })],
     },
     six: {
       need: 6,
-      text: 'Holy Fire deals 300% more damage, and noon burns down on its own: an echo of Holy Fire every 2.5 s in a fight.',
-      mods: [K('holy-fire', { op: 'damage', pct: 300 }), EVERY('noonfire-six', 2.5, 'holy-fire', 1, 'Every 2.5 s in a fight: an echo of Holy Fire at the nearest enemy.')],
+      text: 'Searing Hymn deals 300% more damage, and noon burns down on its own: an echo of Searing Hymn every 2.5 s in a fight.',
+      mods: [K('holy-fire', { op: 'damage', pct: 300 }), EVERY('noonfire-six', 2.5, 'holy-fire', 1, 'Every 2.5 s in a fight: an echo of Searing Hymn at the nearest enemy.')],
     },
   },
   {
@@ -557,16 +557,16 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#8a5ac8',
     names: 'Hollowsaint',
     lore: 'There is a portrait inside it. It is never the same one twice.',
-    two: { need: 2, text: 'Vampiric Touch curses what it touches for 6 s.', mods: [K('vampiric-touch', { op: 'onHit', effect: { kind: 'status', status: 'curse', dur: 6, power: 0.4 } })] },
+    two: { need: 2, text: 'Leeching Touch curses what it touches for 6 s.', mods: [K('vampiric-touch', { op: 'onHit', effect: { kind: 'status', status: 'curse', dur: 6, power: 0.4 } })] },
     four: {
       need: 4,
-      text: 'Vampiric Touch leaps on to three more enemies.',
+      text: 'Leeching Touch leaps on to three more enemies.',
       mods: [K('vampiric-touch', { op: 'onHit', effect: { kind: 'chain', jumps: 3, range: 80, mul: 0.8, dmgType: 'shadow' } })],
     },
     six: {
       need: 6,
-      text: 'Vampiric Touch deals 300% more damage, and every Cursed enemy that dies passes it on: an echo of Vampiric Touch at the next, and 3% of your health back.',
-      mods: [K('vampiric-touch', { op: 'damage', pct: 300 }), P('saint-six', 'kill', ECHO('vampiric-touch', 1), 'A Cursed enemy that dies: an echo of Vampiric Touch at the next (once every 0.5 s).', { status: 'curse', icd: 0.5 }), P('saint-six-heal', 'kill', { kind: 'heal', pct: 3 }, 'A Cursed enemy that dies feeds you: 3% of your health back (once a second).', { status: 'curse', icd: 1 })],
+      text: 'Leeching Touch deals 300% more damage, and every Cursed enemy that dies passes it on: an echo of Leeching Touch at the next, and 3% of your health back.',
+      mods: [K('vampiric-touch', { op: 'damage', pct: 300 }), P('saint-six', 'kill', ECHO('vampiric-touch', 1), 'A Cursed enemy that dies: an echo of Leeching Touch at the next (once every 0.5 s).', { status: 'curse', icd: 0.5 }), P('saint-six-heal', 'kill', { kind: 'heal', pct: 3 }, 'A Cursed enemy that dies feeds you: 3% of your health back (once a second).', { status: 'curse', icd: 1 })],
     },
   },
   /* warlock */
@@ -578,16 +578,16 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#7ab04a',
     names: 'Blightscribe’s',
     lore: 'Every page is a different handwriting, and all of it is a warning.',
-    two: { need: 2, text: 'Unstable Affliction comes back 40% sooner.', mods: [K('unstable-affliction', { op: 'cooldown', pct: -40 })] },
+    two: { need: 2, text: 'Wild Hex comes back 40% sooner.', mods: [K('unstable-affliction', { op: 'cooldown', pct: -40 })] },
     four: {
       need: 4,
-      text: 'Unstable Affliction leaps to three more enemies and bursts on each, cursing all it reaches.',
+      text: 'Wild Hex leaps to three more enemies and bursts on each, cursing all it reaches.',
       mods: [K('unstable-affliction', { op: 'onHit', effect: { kind: 'chain', jumps: 3, range: 80, mul: 1, dmgType: 'shadow' } }), K('unstable-affliction', { op: 'onHit', effect: { kind: 'explode', radius: 40, mul: 0.6, dmgType: 'shadow', status: { status: 'curse', dur: 6, power: 0.4 } } })],
     },
     six: {
       need: 6,
-      text: 'Unstable Affliction deals 300% more damage, and every Cursed enemy that dies spreads it: an echo of Unstable Affliction at the next.',
-      mods: [K('unstable-affliction', { op: 'damage', pct: 300 }), P('blight-six', 'kill', ECHO('unstable-affliction', 1), 'A Cursed enemy that dies: an echo of Unstable Affliction at the next (once every 0.4 s).', { status: 'curse', icd: 0.4 })],
+      text: 'Wild Hex deals 300% more damage, and every Cursed enemy that dies spreads it: an echo of Wild Hex at the next.',
+      mods: [K('unstable-affliction', { op: 'damage', pct: 300 }), P('blight-six', 'kill', ECHO('unstable-affliction', 1), 'A Cursed enemy that dies: an echo of Wild Hex at the next (once every 0.4 s).', { status: 'curse', icd: 0.4 })],
     },
   },
   {
@@ -601,7 +601,7 @@ const SPEC_SETS: SetSpec[] = [
     two: { need: 2, text: 'Your companions hit 25% harder.', mods: [S('pet', 25)] },
     four: {
       need: 4,
-      text: 'Summoning the Pit Knight brings a second with it for 20 s, and your ultimate calls two more for 15 s.',
+      text: 'Summon Pit Knight brings a second with it for 20 s, and your ultimate calls two more for 15 s.',
       mods: [K('summon-felguard', { op: 'onCast', effect: { kind: 'summon', pet: 'felguard', count: 1, dur: 20 } }), P('covenant-four', 'ult', { kind: 'summon', pet: 'felguard', count: 2, dur: 15 }, 'Your ultimate calls two more Pit Knights to the fight for 15 s.')],
     },
     six: {
@@ -618,16 +618,16 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#ff5a2a',
     names: 'Ruinsinger’s',
     lore: 'It says one word. Nobody has heard it twice.',
-    two: { need: 2, text: 'Chaos Bolt comes back a quarter sooner.', mods: [K('chaos-bolt', { op: 'cooldown', pct: -25 })] },
+    two: { need: 2, text: 'Ruin Bolt comes back a quarter sooner.', mods: [K('chaos-bolt', { op: 'cooldown', pct: -25 })] },
     four: {
       need: 4,
-      text: 'Chaos Bolt bursts into four lesser bolts where it lands and leaves the ground burning.',
+      text: 'Ruin Bolt bursts into four lesser bolts where it lands and leaves the ground burning.',
       mods: [K('chaos-bolt', { op: 'onImpact', effect: { kind: 'split', count: 4, mul: 0.4 } }), K('chaos-bolt', { op: 'onImpact', effect: { kind: 'ground', ground: { radius: 40, dur: 4, tick: 0.5, mul: 0.12, dmgType: 'fire', look: 'fire' } } })],
     },
     six: {
       need: 6,
-      text: 'Chaos Bolt deals 300% more damage, and every critical hit may loose another (one in four, once every 1.5 s): an echo of Chaos Bolt.',
-      mods: [K('chaos-bolt', { op: 'damage', pct: 300 }), P('ruinous-six', 'crit', ECHO('chaos-bolt', 1), 'A critical hit, one in four: an echo of Chaos Bolt (once every 1.5 s).', { chance: 0.25, icd: 1.5 })],
+      text: 'Ruin Bolt deals 300% more damage, and every critical hit may loose another (one in four, once every 1.5 s): an echo of Ruin Bolt.',
+      mods: [K('chaos-bolt', { op: 'damage', pct: 300 }), P('ruinous-six', 'crit', ECHO('chaos-bolt', 1), 'A critical hit, one in four: an echo of Ruin Bolt (once every 1.5 s).', { chance: 0.25, icd: 1.5 })],
     },
   },
   /* druid */
@@ -639,16 +639,16 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#a8c8ff',
     names: 'Nightpool',
     lore: 'Cut at midnight, by permission.',
-    two: { need: 2, text: 'Starsurge holds a second charge.', mods: [K('starsurge', { op: 'charges', n: 1 })] },
+    two: { need: 2, text: 'Starbreak holds a second charge.', mods: [K('starsurge', { op: 'charges', n: 1 })] },
     four: {
       need: 4,
-      text: 'Starsurge breaks into three lesser stars where it lands; Moonfire bursts on what it hits.',
+      text: 'Starbreak breaks into three lesser stars where it lands; Moonburn bursts on what it hits.',
       mods: [K('starsurge', { op: 'onImpact', effect: { kind: 'split', count: 3, mul: 0.4 } }), K('moonfire', { op: 'onHit', effect: { kind: 'explode', radius: 36, mul: 0.8, dmgType: 'arcane' } })],
     },
     six: {
       need: 6,
-      text: 'Starsurge deals 300% more damage, and the night sky throws one of its own every 2.5 s in a fight.',
-      mods: [K('starsurge', { op: 'damage', pct: 300 }), EVERY('nightpool-six', 2.5, 'starsurge', 1, 'Every 2.5 s in a fight: an echo of Starsurge at the nearest enemy.')],
+      text: 'Starbreak deals 300% more damage, and the night sky throws one of its own every 2.5 s in a fight.',
+      mods: [K('starsurge', { op: 'damage', pct: 300 }), EVERY('nightpool-six', 2.5, 'starsurge', 1, 'Every 2.5 s in a fight: an echo of Starbreak at the nearest enemy.')],
     },
   },
   {
@@ -682,7 +682,7 @@ const SPEC_SETS: SetSpec[] = [
     two: { need: 2, text: 'Thrash reaches 45% further.', mods: [K('thrash', { op: 'area', pct: 45 })] },
     four: {
       need: 4,
-      text: 'Ironfur makes your hide bite back and cuts the damage you take by a tenth for 8 s; Thrash draws enemies onto you.',
+      text: 'Ironpelt makes your hide bite back and cuts the damage you take by a tenth for 8 s; Thrash draws enemies onto you.',
       mods: [K('ironfur', { op: 'onCast', effect: { kind: 'buff', buff: { id: 'rift-heartwood', name: 'Heartwood', dur: 8, color: '#8a6a3a', thorns: 0.9, dr: 10 } } }), K('thrash', { op: 'onCast', effect: { kind: 'taunt', radius: 90, dur: 3 } })],
     },
     six: {
@@ -868,8 +868,131 @@ const LEGENDARY_ITEMS: ItemDef[] = LEGENDARY_SPECS.map((u) => ({
   rift: u.cls ? RIFT_TIERS.classLegendary : RIFT_TIERS.legendary,
 }));
 
-/** Every Rift-forged piece: the sets (the class's, then the specializations'), then the legendaries. */
-export const RIFT_ITEMS: ItemDef[] = [...SET_ITEMS, ...LEGENDARY_ITEMS];
+/* ------------------------------------------------------------------ legendary weapons: three for the class, two for each specialization */
+
+/**
+ * Weapons of their own (the owner, 2026-11-23: "legendary weapons (2 per each spec and 3 overall for each class) should
+ * be implemented with various buffs, currently theyre pretty much alike"; "make sure the new sets and weapons work with
+ * every single talent in a symbiose"). A class's three change what all three of its specializations use (its basic
+ * attack, its dodge, its own skills); a specialization's two are built on what its talents build on: its ability,
+ * and its points (Fury, Heat, Snares...), which its talents and its combo spend, so a weapon that gives them feeds the
+ * whole tree. Every one plays differently: more of a skill, an echo, a status it lives on, a stack that grows.
+ */
+interface WeaponSpec {
+  cls: ClassId;
+  spec?: 0 | 1 | 2;
+  id: string;
+  name: string;
+  icon: ItemIcon;
+  tint: string;
+  stat: StatKey;
+  lore: string;
+  mods: Mod[];
+}
+/** A specialization's points, as an effect (data/types.ts Effect 'points'). */
+const PTS = (n: number): Effect => ({ kind: 'points', n });
+
+const WEAPON_SPECS: WeaponSpec[] = [
+  /* warrior */
+  { cls: 'warrior', id: 'rift-quarrel-of-kings', name: 'Quarrel of Kings', icon: 'sword', tint: '#c8b080', stat: 'physical', lore: 'Two kings drew it at once. It chose neither.', mods: [K('heavy-strike', { op: 'damage', pct: 60 }), K('heavy-strike', { op: 'onCast', effect: { kind: 'resource', n: 10 } })] },
+  { cls: 'warrior', id: 'rift-anvilbreaker', name: 'Anvilbreaker', icon: 'hammer', tint: '#8a8a9a', stat: 'physical', lore: 'The smith who made it never made another anvil.', mods: [K('charge', { op: 'onImpact', effect: { kind: 'explode', radius: 52, mul: 1.2 } }), K('charge', { op: 'cooldown', pct: -30 })] },
+  { cls: 'warrior', id: 'rift-wolfjaw-cleaver', name: 'Wolfjaw Cleaver', icon: 'axe', tint: '#a8a8a0', stat: 'physical', lore: 'It bites where the last one bled.', mods: [K('cleave', { op: 'bonusVs', status: 'bleed', pct: 40 }), K('cleave', { op: 'arc', pct: 50 }), K('cleave', { op: 'onKill', effect: { kind: 'resetCd', skill: 'charge' } })] },
+  { cls: 'warrior', spec: 0, id: 'rift-ravening-maw', name: 'The Ravening Maw', icon: 'axe', tint: '#b8202a', stat: 'physical', lore: 'It is never full. It has stopped pretending to be.', mods: [K('bloodthirst', { op: 'damage', pct: 80 }), K('bloodthirst', { op: 'onHit', effect: PTS(1) })] },
+  { cls: 'warrior', spec: 0, id: 'rift-frenzy-edge', name: 'Frenzy-Edge', icon: 'sword', tint: '#e04040', stat: 'physical', lore: 'The faster it is swung, the lighter it gets.', mods: [P('frenzy-edge', 'kill', { kind: 'buff', buff: { id: 'rift-frenzy-edge', name: 'Frenzy', dur: 5, color: '#e04040', max: 5, stats: { haste: 6, power: 4 } } }, 'Every kill: +6% haste and +4% damage for 5 s, stacking five times.'), K('red-tempest', { op: 'duration', pct: 30 })] },
+  { cls: 'warrior', spec: 1, id: 'rift-bulwark-maul', name: 'Bulwark Maul', icon: 'hammer', tint: '#8a94a8', stat: 'armor', lore: 'It was a gatepost. Then a weapon. It still holds things back.', mods: [K('shield-bash', { op: 'damage', pct: 60 }), P('bulwark-maul', 'hurt', PTS(1), 'A blow taken gives a Resolve (once a second).', { icd: 1 })] },
+  { cls: 'warrior', spec: 1, id: 'rift-oathbound-blade', name: 'Oathbound Blade', icon: 'sword', tint: '#c0c8d8', stat: 'armor', lore: 'Sworn to one door, and every one since.', mods: [K('shield-wall', { op: 'duration', pct: 40 }), K('shield-wall', { op: 'onCast', effect: { kind: 'heal', pct: 8 } }), K('earthsplitter', { op: 'area', pct: 25 })] },
+  { cls: 'warrior', spec: 2, id: 'rift-duelists-promise', name: 'The Duelist’s Promise', icon: 'sword', tint: '#e0d8c8', stat: 'physical', lore: 'It promised one more. It always keeps it.', mods: [K('mortal-strike', { op: 'bonusVs', status: 'lowHp', pct: 70 }), P('duelists-promise', 'crit', { kind: 'resetCd', skill: 'mortal-strike' }, 'A critical hit makes Grievous Strike ready again (once every 4 s).', { icd: 4 })] },
+  { cls: 'warrior', spec: 2, id: 'rift-red-ledger', name: 'The Red Ledger', icon: 'axe', tint: '#a82a2a', stat: 'physical', lore: 'Every notch is a line in it.', mods: [P('red-ledger', 'crit', PTS(1), 'A critical hit gives an Edge (once every 0.5 s).', { icd: 0.5 }), K('mortal-strike', { op: 'charges', n: 1 })] },
+  /* mage */
+  { cls: 'mage', id: 'rift-lanternmakers-staff', name: 'Lanternmaker’s Staff', icon: 'staff', tint: '#c8a8ff', stat: 'arcane', lore: 'Every bolt it throws lights a lamp somewhere.', mods: [K('arcane-bolt', { op: 'projectiles', n: 1, spread: 0.22 }), K('arcane-bolt', { op: 'damage', pct: 30 })] },
+  { cls: 'mage', id: 'rift-wand-of-second-thoughts', name: 'Wand of Second Thoughts', icon: 'wand', tint: '#9ad8ff', stat: 'haste', lore: 'It is always a step behind you, on purpose.', mods: [S('haste', 8), P('second-thoughts', 'dodge', { kind: 'riftBurst', radius: 52, mul: 2.4, delay: 0.5 }, 'Every Phase Step leaves a tear where you stood that bursts after a moment.')] },
+  { cls: 'mage', id: 'rift-kindlewick', name: 'Kindlewick', icon: 'wand', tint: '#ff7a3a', stat: 'fire', lore: 'It was a candle once. It took that badly.', mods: [K('fireball', { op: 'onImpact', effect: { kind: 'explode', radius: 40, mul: 0.6, dmgType: 'fire', status: { status: 'burn', dur: 4, power: 0.25 } } }), K('fireball', { op: 'damage', pct: 30 })] },
+  { cls: 'mage', spec: 0, id: 'rift-cinderheart', name: 'Cinderheart', icon: 'staff', tint: '#ff4a1a', stat: 'fire', lore: 'Still warm at the core, after a thousand years.', mods: [K('flamestrike', { op: 'damage', pct: 80 }), P('cinderheart', 'crit', PTS(1), 'A critical hit gives a Heat (once every 0.5 s).', { icd: 0.5 })] },
+  { cls: 'mage', spec: 0, id: 'rift-pyrewrights-wand', name: 'Pyrewright’s Wand', icon: 'wand', tint: '#ffb04a', stat: 'fire', lore: 'It writes in fire. It does not know how to erase.', mods: [K('fireball', { op: 'charges', n: 1 }), P('pyrewright', 'ult', ECHO('flamestrike', 1, 3), 'Your ultimate calls three echoes of Flame Pillar after it.')] },
+  { cls: 'mage', spec: 1, id: 'rift-thundercall', name: 'Thundercall', icon: 'staff', tint: '#6ad8ff', stat: 'lightning', lore: 'Raise it and the sky answers. It does not ask twice.', mods: [K('ball-lightning', { op: 'damage', pct: 80 }), K('ball-lightning', { op: 'onHit', effect: PTS(1) })] },
+  { cls: 'mage', spec: 1, id: 'rift-conductors-wand', name: 'Conductor’s Wand', icon: 'wand', tint: '#a8f0ff', stat: 'lightning', lore: 'The storm keeps time to it.', mods: [K('chain-lightning', { op: 'extra', key: 'jumps', n: 2, label: 'leaps' }), P('conductor', 'crit', ECHO('chain-lightning', 0.8), 'A critical hit: an echo of Chain Lightning (once every 2 s).', { icd: 2 })] },
+  { cls: 'mage', spec: 2, id: 'rift-winterkeep', name: 'Winterkeep', icon: 'staff', tint: '#b8e8ff', stat: 'frost', lore: 'It keeps a winter in it, for later.', mods: [K('blizzard', { op: 'damage', pct: 80 }), K('blizzard', { op: 'onHit', effect: PTS(1) })] },
+  { cls: 'mage', spec: 2, id: 'rift-northshard', name: 'Northshard', icon: 'wand', tint: '#8ac8ff', stat: 'frost', lore: 'Broken from the top of the world.', mods: [K('ice-lance', { op: 'pierce', n: 2 }), K('ice-lance', { op: 'bonusVs', status: 'freeze', pct: 60 }), K('frost-nova', { op: 'cooldown', pct: -30 })] },
+  /* ranger */
+  { cls: 'ranger', id: 'rift-windstring', name: 'Windstring', icon: 'bow', tint: '#c8e8d0', stat: 'physical', lore: 'The wind strung it. The wind still plays it.', mods: [K('arrow', { op: 'projectiles', n: 1, spread: 0.2 }), K('arrow', { op: 'damage', pct: 25 })] },
+  { cls: 'ranger', id: 'rift-hunters-reach', name: 'Hunter’s Reach', icon: 'bow', tint: '#d8c890', stat: 'physical', lore: 'Further than you can see, and then a little.', mods: [K('arrow', { op: 'range', pct: 30 }), K('*', { op: 'bonusVs', status: 'far', pct: 30 })] },
+  { cls: 'ranger', id: 'rift-blackfeather', name: 'Blackfeather', icon: 'bow', tint: '#3a3a4a', stat: 'poison', lore: 'Its arrows land without a sound. So do you.', mods: [K('tumble', { op: 'trail', ground: { radius: 22, dur: 3, tick: 0.5, mul: 0.12, dmgType: 'poison', look: 'poison', status: { status: 'poison', dur: 3, power: 0.2 } } }), P('blackfeather', 'dodge', { kind: 'buff', buff: { id: 'rift-blackfeather', name: 'Unseen', dur: 3, color: '#6a6a8a', stats: { power: 20, crit: 10 } } }, 'Every Tumble: +20% damage and +10% critical chance for 3 s.')] },
+  { cls: 'ranger', spec: 0, id: 'rift-patient-death', name: 'Patient Death', icon: 'bow', tint: '#e8d8a0', stat: 'physical', lore: 'It waits. It is very good at waiting.', mods: [K('aimed-shot', { op: 'damage', pct: 80 }), P('patient-death', 'crit', PTS(1), 'A critical hit gives a Poise (once every 0.5 s).', { icd: 0.5 })] },
+  { cls: 'ranger', spec: 0, id: 'rift-truesight', name: 'Truesight', icon: 'bow', tint: '#f0e8c0', stat: 'physical', lore: 'Nothing hides from it. Some things have stopped trying.', mods: [K('piercing-arrow', { op: 'pierce', n: 3 }), K('hunters-mark', { op: 'cooldown', pct: -30 }), K('aimed-shot', { op: 'onKill', effect: { kind: 'resetCd', skill: 'aimed-shot' } })] },
+  { cls: 'ranger', spec: 1, id: 'rift-tanglewood', name: 'Tanglewood', icon: 'bow', tint: '#8a9a5a', stat: 'poison', lore: 'Strung with a vine that is not quite dead.', mods: [K('bear-trap', { op: 'damage', pct: 80 }), K('bear-trap', { op: 'onHit', effect: PTS(1) })] },
+  { cls: 'ranger', spec: 1, id: 'rift-tarbrand', name: 'Tarbrand', icon: 'bow', tint: '#4a3a2a', stat: 'poison', lore: 'Sticky, and getting stickier.', mods: [K('poison-trap', { op: 'area', pct: 40 }), K('explosive-shot', { op: 'charges', n: 1 }), K('explosive-shot', { op: 'bonusVs', status: 'poison', pct: 40 })] },
+  { cls: 'ranger', spec: 2, id: 'rift-howling-yew', name: 'Howling Yew', icon: 'bow', tint: '#c8b890', stat: 'pet', lore: 'Draw it, and every dog for a mile looks up.', mods: [S('pet', 40), K('call-wolf', { op: 'cooldown', pct: -30 })] },
+  { cls: 'ranger', spec: 2, id: 'rift-hawkspire', name: 'Hawkspire', icon: 'bow', tint: '#e0c080', stat: 'pet', lore: 'A hawk nests on it. Nobody remembers asking her.', mods: [S('pet', 20), EVERY('hawkspire', 6, 'hawk-call', 1, 'Every 6 s in a fight: an echo of Hawk Call.')] },
+  /* paladin */
+  { cls: 'paladin', id: 'rift-dawnhammer', name: 'Dawnhammer', icon: 'hammer', tint: '#ffe08a', stat: 'holy', lore: 'It rings in the morning, whether or not it is struck.', mods: [K('crusader-strike', { op: 'damage', pct: 40 }), K('crusader-strike', { op: 'gen', n: 1 })] },
+  { cls: 'paladin', id: 'rift-sunsteel-brand', name: 'Sunsteel Brand', icon: 'sword', tint: '#fff0b0', stat: 'holy', lore: 'Forged at noon, on the longest day.', mods: [K('judgment', { op: 'cooldown', pct: -30 }), K('judgment', { op: 'onHit', effect: { kind: 'explode', radius: 44, mul: 0.8, dmgType: 'holy' } })] },
+  { cls: 'paladin', id: 'rift-gavel-of-mercy', name: 'Gavel of Mercy', icon: 'hammer', tint: '#e8d0a0', stat: 'healing', lore: 'It has never once found anyone guilty who was not.', mods: [K('hammer-of-justice', { op: 'charges', n: 1 }), K('hammer-of-justice', { op: 'onHit', effect: { kind: 'heal', pct: 1.5 } })] },
+  { cls: 'paladin', spec: 0, id: 'rift-matins', name: 'Matins', icon: 'hammer', tint: '#fff2c0', stat: 'holy', lore: 'The first prayer of the day, said with a hammer.', mods: [K('holy-shock', { op: 'damage', pct: 80 }), K('holy-shock', { op: 'onHit', effect: PTS(1) })] },
+  { cls: 'paladin', spec: 0, id: 'rift-noonlight', name: 'Noonlight', icon: 'sword', tint: '#ffe9a0', stat: 'holy', lore: 'It casts no shadow, at any hour.', mods: [K('lance-of-noon', { op: 'damage', pct: 60 }), K('word-of-glory', { op: 'cooldown', pct: -30 })] },
+  { cls: 'paladin', spec: 1, id: 'rift-wardens-oath', name: 'Warden’s Oath', icon: 'hammer', tint: '#d0a040', stat: 'armor', lore: 'It took the oath for you, and keeps it.', mods: [K('shield-of-the-righteous', { op: 'damage', pct: 70 }), P('wardens-oath', 'hurt', PTS(1), 'A blow taken gives a Valor (once a second).', { icd: 1 })] },
+  { cls: 'paladin', spec: 1, id: 'rift-the-long-throw', name: 'The Long Throw', icon: 'sword', tint: '#e0c070', stat: 'armor', lore: 'It always comes back. It has never once been asked to.', mods: [K('avengers-shield', { op: 'bounce', n: 2 }), K('avengers-shield', { op: 'damage', pct: 60 })] },
+  { cls: 'paladin', spec: 2, id: 'rift-edictor', name: 'Edictor', icon: 'sword', tint: '#fff8d8', stat: 'holy', lore: 'Two edges, two verdicts, one sentence.', mods: [K('templars-verdict', { op: 'damage', pct: 80 }), K('templars-verdict', { op: 'onKill', effect: PTS(1) })] },
+  { cls: 'paladin', spec: 2, id: 'rift-dawnwrath', name: 'Dawnwrath', icon: 'hammer', tint: '#ffcf5a', stat: 'holy', lore: 'Its anger rises with the sun.', mods: [K('divine-storm', { op: 'area', pct: 30 }), P('dawnwrath', 'ult', ECHO('templars-verdict', 1, 3), 'Your ultimate calls three echoes of Twin Edict after it.')] },
+  /* priest */
+  { cls: 'priest', id: 'rift-vespers', name: 'Vespers', icon: 'staff', tint: '#ffe9c0', stat: 'holy', lore: 'The evening prayer, kept in wood.', mods: [K('smite', { op: 'damage', pct: 40 }), P('vespers', 'tick', { kind: 'heal', pct: 2 }, 'Every 3 s in a fight: 2% of your health back.', { icd: 3 })] },
+  { cls: 'priest', id: 'rift-mirrorwand', name: 'Mirrorwand', icon: 'wand', tint: '#c8c8ff', stat: 'shadow', lore: 'What it shows you is true, mostly.', mods: [K('mind-blast', { op: 'cooldown', pct: -25 }), P('mirrorwand', 'crit', { kind: 'cdr', s: 0.5 }, 'A critical hit takes 0.5 s off every cooldown (once every 0.3 s).', { icd: 0.3 })] },
+  { cls: 'priest', id: 'rift-pilgrims-crook', name: 'Pilgrim’s Crook', icon: 'staff', tint: '#d8c8a0', stat: 'healing', lore: 'It has walked every road there is. Twice.', mods: [K('power-word-shield', { op: 'cooldown', pct: -30 }), P('pilgrims-crook', 'dodge', { kind: 'shield', pct: 10, dur: 4 }, 'Every Swift Feather shields you for 10% of your health for 4 s.')] },
+  { cls: 'priest', spec: 0, id: 'rift-candlewick', name: 'Candlewick', icon: 'staff', tint: '#ffd890', stat: 'holy', lore: 'It burns at both ends and is never shorter.', mods: [K('penance', { op: 'damage', pct: 80 }), K('penance', { op: 'onHit', effect: PTS(1) })] },
+  { cls: 'priest', spec: 0, id: 'rift-grace-note', name: 'Grace Note', icon: 'wand', tint: '#fff0d0', stat: 'healing', lore: 'One note, held. Everything near it heals.', mods: [K('holy-nova', { op: 'area', pct: 30 }), K('holy-nova', { op: 'onCast', effect: { kind: 'heal', pct: 4 } })] },
+  { cls: 'priest', spec: 1, id: 'rift-the-psalter', name: 'The Psalter', icon: 'staff', tint: '#ffd27a', stat: 'holy', lore: 'Every psalm in it ends in fire.', mods: [K('holy-fire', { op: 'damage', pct: 80 }), K('holy-fire', { op: 'onHit', effect: PTS(1) })] },
+  { cls: 'priest', spec: 1, id: 'rift-sunwand', name: 'Sunwand', icon: 'wand', tint: '#ffe070', stat: 'holy', lore: 'Hold it up and it is noon, for a moment, everywhere.', mods: [S('holy', 20), P('sunwand', 'ult', ECHO('holy-fire', 1, 3), 'Your ultimate calls three echoes of Searing Hymn after it.')] },
+  { cls: 'priest', spec: 2, id: 'rift-hollow-reed', name: 'Hollow Reed', icon: 'staff', tint: '#6a4a9a', stat: 'shadow', lore: 'It whistles when it is hungry. It is always whistling.', mods: [K('vampiric-touch', { op: 'damage', pct: 80 }), K('vampiric-touch', { op: 'onKill', effect: PTS(1) })] },
+  { cls: 'priest', spec: 2, id: 'rift-nightglass', name: 'Nightglass', icon: 'wand', tint: '#4a3a7a', stat: 'shadow', lore: 'Look through it and the dark looks back, kindly.', mods: [K('shadow-word-pain', { op: 'onHit', effect: { kind: 'chain', jumps: 2, range: 70, mul: 0.7, dmgType: 'shadow' } }), K('mind-blast', { op: 'bonusVs', status: 'curse', pct: 40 })] },
+  /* warlock */
+  { cls: 'warlock', id: 'rift-witchfire', name: 'Witchfire', icon: 'staff', tint: '#8a4aff', stat: 'shadow', lore: 'It burns purple, and cold.', mods: [K('shadow-bolt', { op: 'damage', pct: 40 }), K('shadow-bolt', { op: 'onHit', effect: { kind: 'status', status: 'burn', dur: 3, power: 0.25 } })] },
+  { cls: 'warlock', id: 'rift-tithing-wand', name: 'Tithing Wand', icon: 'wand', tint: '#a02a3a', stat: 'shadow', lore: 'It takes a tenth of everything. It gives back more.', mods: [K('drain-life', { op: 'damage', pct: 50 }), K('drain-life', { op: 'onHit', effect: { kind: 'heal', pct: 1 } })] },
+  { cls: 'warlock', id: 'rift-gatekeepers-rod', name: 'Gatekeeper’s Rod', icon: 'wand', tint: '#6a3a9a', stat: 'shadow', lore: 'It opens one door. Nobody has seen what is behind it and come back.', mods: [P('gatekeeper', 'dodge', { kind: 'riftBurst', radius: 52, mul: 2.4, delay: 0.5 }, 'Every Demonic Step leaves a gate where you stood that bursts after a moment.'), K('fear', { op: 'cooldown', pct: -30 })] },
+  { cls: 'warlock', spec: 0, id: 'rift-malison', name: 'Malison', icon: 'staff', tint: '#5a8a3a', stat: 'shadow', lore: 'A curse in wood, carved to fit the hand.', mods: [K('unstable-affliction', { op: 'damage', pct: 80 }), K('unstable-affliction', { op: 'onHit', effect: PTS(1) })] },
+  { cls: 'warlock', spec: 0, id: 'rift-rotscribe', name: 'Rotscribe', icon: 'wand', tint: '#7a9a4a', stat: 'shadow', lore: 'It writes a word and the word goes bad.', mods: [K('corruption', { op: 'onHit', effect: { kind: 'chain', jumps: 2, range: 80, mul: 0.8, dmgType: 'shadow' } }), P('rotscribe', 'kill', { kind: 'cdr', s: 1 }, 'A Cursed enemy that dies takes 1 s off every cooldown (once every 0.5 s).', { status: 'curse', icd: 0.5 })] },
+  { cls: 'warlock', spec: 1, id: 'rift-the-pit-key', name: 'The Pit Key', icon: 'staff', tint: '#c84a3a', stat: 'pet', lore: 'It opens the pit. Closing it is your own affair.', mods: [S('pet', 40), K('summon-imp', { op: 'onCast', effect: { kind: 'summon', pet: 'imp', count: 1, dur: 0 } })] },
+  { cls: 'warlock', spec: 1, id: 'rift-chainward', name: 'Chainward', icon: 'wand', tint: '#a8502a', stat: 'pet', lore: 'Every link was a promise. Most were kept.', mods: [K('summon-felguard', { op: 'cooldown', pct: -30 }), P('chainward', 'ult', { kind: 'summon', pet: 'imp', count: 2, dur: 15 }, 'Your ultimate calls two imps to the fight for 15 s.')] },
+  { cls: 'warlock', spec: 2, id: 'rift-cataclast', name: 'Cataclast', icon: 'staff', tint: '#ff4a1a', stat: 'fire', lore: 'It does not break things. It reminds them they were always broken.', mods: [K('chaos-bolt', { op: 'damage', pct: 80 }), P('cataclast', 'crit', PTS(1), 'A critical hit gives a Doom (once every 0.5 s).', { icd: 0.5 })] },
+  { cls: 'warlock', spec: 2, id: 'rift-brimfall', name: 'Brimfall', icon: 'wand', tint: '#ff7a2a', stat: 'fire', lore: 'The sky over it is always a little red.', mods: [K('rain-of-fire', { op: 'area', pct: 40 }), K('rain-of-fire', { op: 'duration', pct: 40 })] },
+  /* druid */
+  { cls: 'druid', id: 'rift-bramble-crook', name: 'The Bramble Crook', icon: 'staff', tint: '#6a9a4a', stat: 'nature', lore: 'It grows a little when no one is looking.', mods: [K('basic', { op: 'damage', pct: 40 }), K('basic', { op: 'onHit', effect: { kind: 'status', status: 'poison', dur: 3, power: 0.2, chance: 0.3 } })] },
+  { cls: 'druid', id: 'rift-moonwell', name: 'Moonwell', icon: 'staff', tint: '#a8c8ff', stat: 'arcane', lore: 'Drawn from a well that only fills at night.', mods: [K('moonfire', { op: 'onHit', effect: { kind: 'chain', jumps: 2, range: 70, mul: 0.8, dmgType: 'arcane' } }), K('moonfire', { op: 'duration', pct: 30 })] },
+  { cls: 'druid', id: 'rift-wildheart', name: 'Wildheart', icon: 'staff', tint: '#8ac86a', stat: 'speed', lore: 'It runs with you. It would rather run ahead.', mods: [P('wildheart', 'dodge', { kind: 'heal', pct: 5 }, 'Every Wild Dash mends 5% of your health.'), P('wildheart-run', 'dodge', { kind: 'buff', buff: { id: 'rift-wildheart', name: 'Wild Run', dur: 3, color: '#8ac86a', stats: { speed: 25, haste: 10 } } }, 'Every Wild Dash: 25% quicker and 10% haste for 3 s.')] },
+  { cls: 'druid', spec: 0, id: 'rift-glimmerwood', name: 'Glimmerwood', icon: 'staff', tint: '#c8d8ff', stat: 'arcane', lore: 'Its grain glitters, like a night sky cut in half.', mods: [K('starsurge', { op: 'damage', pct: 80 }), K('starsurge', { op: 'onHit', effect: PTS(1) })] },
+  { cls: 'druid', spec: 0, id: 'rift-skywell', name: 'Skywell', icon: 'staff', tint: '#9ab8ff', stat: 'arcane', lore: 'Look down into it and you see stars.', mods: [K('starfire', { op: 'area', pct: 30 }), P('skywell', 'ult', ECHO('starsurge', 1, 3), 'Your ultimate calls three echoes of Starbreak after it.')] },
+  { cls: 'druid', spec: 1, id: 'rift-moonfang-staff', name: 'Moonfang Staff', icon: 'staff', tint: '#e0c080', stat: 'physical', lore: 'Tipped with a tooth that was never a wolf’s.', mods: [K('rip', { op: 'damage', pct: 80 }), P('moonfang', 'crit', PTS(1), 'A critical hit gives a Ferocity (once every 0.5 s).', { icd: 0.5 })] },
+  { cls: 'druid', spec: 1, id: 'rift-stalkers-crook', name: 'Stalker’s Crook', icon: 'staff', tint: '#a88a5a', stat: 'physical', lore: 'It never makes a sound until it is too late.', mods: [K('rake', { op: 'damage', pct: 50 }), K('rake', { op: 'onHit', effect: { kind: 'status', status: 'bleed', dur: 4, power: 0.35 } }), K('rake', { op: 'onKill', effect: { kind: 'resetCd', skill: 'pounce' } })] },
+  { cls: 'druid', spec: 2, id: 'rift-oldgrowth', name: 'Oldgrowth', icon: 'staff', tint: '#6a5a3a', stat: 'armor', lore: 'It has stood through more winters than the hills.', mods: [K('ironfur', { op: 'duration', pct: 50 }), P('oldgrowth', 'hurt', PTS(1), 'A blow taken gives a Scar (once a second).', { icd: 1 })] },
+  { cls: 'druid', spec: 2, id: 'rift-den-mothers-crook', name: 'Den Mother’s Crook', icon: 'staff', tint: '#8a6a4a', stat: 'armor', lore: 'She leaned on it. Nothing ever leaned on her.', mods: [K('maul', { op: 'damage', pct: 60 }), K('maul', { op: 'onHit', effect: { kind: 'heal', pct: 1 } })] },
+  /* gloam knight */
+  { cls: 'gloamknight', id: 'rift-duskreaver', name: 'Duskreaver', icon: 'sword', tint: '#5a4a90', stat: 'shadow', lore: 'It reaps at dusk, and dusk comes when it says.', mods: [K('gloam-cleave', { op: 'damage', pct: 40 }), K('gloam-cleave', { op: 'onHit', effect: { kind: 'status', status: 'curse', dur: 4, power: 0.3, chance: 0.2 } })] },
+  { cls: 'gloamknight', id: 'rift-gravecallers-edge', name: 'Gravecaller’s Edge', icon: 'sword', tint: '#4a4a6a', stat: 'shadow', lore: 'Graves turn over when it passes.', mods: [K('shadow-lunge', { op: 'cooldown', pct: -30 }), K('shadow-lunge', { op: 'onImpact', effect: { kind: 'nova', radius: 50, mul: 1, dmgType: 'shadow' } })] },
+  { cls: 'gloamknight', id: 'rift-the-oathless', name: 'The Oathless', icon: 'sword', tint: '#2a2a3a', stat: 'armor', lore: 'It swore nothing. It owes nothing. It keeps you anyway.', mods: [P('oathless', 'dodge', { kind: 'shield', pct: 12, dur: 4 }, 'Every Stand Fast shields you for 12% of your health for 4 s.'), K('night-mantle', { op: 'duration', pct: 40 })] },
+  { cls: 'gloamknight', spec: 0, id: 'rift-debtors-blade', name: 'The Debtor’s Blade', icon: 'sword', tint: '#a02a3a', stat: 'shadow', lore: 'It remembers what is owed to the coin.', mods: [K('hollow-ward', { op: 'damage', pct: 80 }), P('debtors-blade', 'hurt', PTS(1), 'A blow taken gives a Vengeance (once a second).', { icd: 1 })] },
+  { cls: 'gloamknight', spec: 0, id: 'rift-crimson-vow', name: 'Crimson Vow', icon: 'sword', tint: '#c03040', stat: 'shadow', lore: 'Sworn in blood, and it keeps the blood too.', mods: [P('crimson-vow', 'ult', { kind: 'heal', pct: 20 }, 'Your ultimate mends 20% of your health.'), K('black-oath', { op: 'cooldown', pct: -30 })] },
+  { cls: 'gloamknight', spec: 1, id: 'rift-worldsplitter', name: 'Worldsplitter', icon: 'sword', tint: '#3a2a6a', stat: 'physical', lore: 'It was made to cut a world in two. It has been practicing.', mods: [K('sundering-dark', { op: 'damage', pct: 80 }), K('sundering-dark', { op: 'onHit', effect: PTS(1) })] },
+  { cls: 'gloamknight', spec: 1, id: 'rift-heavy-heart', name: 'Heavy Heart', icon: 'sword', tint: '#5a5a7a', stat: 'physical', lore: 'It weighs as much as everything it has ever ended.', mods: [K('dread-leap', { op: 'onImpact', effect: { kind: 'shockwave', length: 130, width: 26, mul: 0.8 } }), K('mourning-arc', { op: 'arc', pct: 40 })] },
+  { cls: 'gloamknight', spec: 2, id: 'rift-omenblade', name: 'Omenblade', icon: 'sword', tint: '#7a6aa0', stat: 'shadow', lore: 'Every swing of it is a small prophecy.', mods: [K('creeping-dread', { op: 'damage', pct: 80 }), K('creeping-dread', { op: 'onKill', effect: PTS(1) })] },
+  { cls: 'gloamknight', spec: 2, id: 'rift-tollkeeper', name: 'Tollkeeper', icon: 'sword', tint: '#9a8ac0', stat: 'shadow', lore: 'Every soul pays it something on the way through.', mods: [K('dread-toll', { op: 'cooldown', pct: -30 }), P('tollkeeper', 'kill', ECHO('dread-toll', 1), 'A Cursed enemy that dies: an echo of Dread Toll (once every 1.5 s).', { status: 'curse', icd: 1.5 })] },
+];
+
+const WEAPON_ITEMS: ItemDef[] = WEAPON_SPECS.map((u) => ({
+  id: u.id,
+  name: u.name,
+  slot: 'weapon',
+  rarity: 'legendary' as const,
+  cls: u.cls,
+  icon: u.icon,
+  tint: u.tint,
+  stats: LEGENDARY_STATS.weapon(u.stat),
+  mods: u.mods,
+  lore: u.lore,
+  minLevel: 60,
+  rift: u.spec === undefined ? RIFT_TIERS.classLegendary : RIFT_TIERS.specSet,
+  ...(u.spec !== undefined ? { forSpec: u.spec } : {}),
+}));
+
+/** Every Rift-forged piece: the sets (the class's, then the specializations'), the legendaries, then the weapons. */
+export const RIFT_ITEMS: ItemDef[] = [...SET_ITEMS, ...LEGENDARY_ITEMS, ...WEAPON_ITEMS];
 
 /** The set an item belongs to, if it belongs to one. */
 export const setOf = (item: Pick<ItemDef, 'set'> | undefined): SetDef | undefined => (item?.set ? SETS[item.set] : undefined);

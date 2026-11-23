@@ -1997,7 +1997,7 @@ export class Effects {
 /** The beam over an item on the ground. */
 /** The light of a thing a quest asks for, where it lies. */
 const QUEST_GOLD = '#ffe066';
-const BEAM: Record<string, string> = { common: '#e8e4d8', uncommon: '#7fe06a', rare: '#6fb4ff', epic: '#c58bff', legendary: '#ffae42' };
+const BEAM: Record<string, string> = { common: '#e8e4d8', uncommon: '#7fe06a', rare: '#6fb4ff', epic: '#c58bff', legendary: '#ffae42', set: '#36e0a8' };
 /** How tall a beam stands by rarity (0.8 was every beam's height before). */
 export const BEAM_TALL: Record<string, number> = { common: 0.35, uncommon: 0.6, rare: 0.8, epic: 1.2, legendary: 1.7, set: 1.9 };
 

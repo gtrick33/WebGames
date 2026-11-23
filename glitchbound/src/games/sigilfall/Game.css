@@ -16711,3 +16711,66 @@ html.rb-touch-playing textarea {
 .rb-set {
   color: #36e0a8;
 }
+
+/* the hall's own buttons, each in sight (ui/CharacterSelect.tsx, 2026-11-23): an icon and a word under it */
+.rb-iconbtn.cs-topbtn {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  place-items: center;
+  gap: 1px;
+  width: auto;
+  min-width: 52px;
+  padding: 4px 8px 3px;
+  font-size: 18px;
+  line-height: 1;
+}
+.cs-topbtn img {
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
+}
+.cs-topbtn small {
+  font: 700 10px/1 system-ui, sans-serif;
+  letter-spacing: 0.02em;
+  color: #e8dcc0;
+}
+.cs-topbtn.is-danger small,
+.cs-topbtn.is-danger span {
+  color: #ff9a8a;
+}
+/* (a phone on its side: the icons alone, the words in their titles) */
+@container (max-height: 520px) {
+  .rb-iconbtn.cs-topbtn {
+    width: 42px;
+    min-width: 0;
+    grid-template-rows: 1fr;
+    padding: 0;
+  }
+  .cs-topbtn small {
+    display: none;
+  }
+}
+
+/* a phone on its side, in a Riftstone run: the clock under the hero's bars, a little clear of the line under them */
+@container rb-stage (min-height: 341px) and (max-height: 440px) {
+  .rb-ui.is-touch .rb-tracker.rb-keyclock {
+    top: calc(68px + var(--sa-t));
+    right: auto;
+    left: calc(8px + var(--sa-l));
+  }
+  .rb-ui.is-touch.is-lefty .rb-tracker.rb-keyclock {
+    right: calc(8px + var(--sa-r));
+    left: auto;
+  }
+}
+
+/* Paragon's points on its tab and in the Hero panel (2026-11-23): its own violet, as its bar is */
+.rb-badge.is-para {
+  background: #9a5af0;
+}
+.rb-para-go {
+  justify-self: start;
+  margin-top: 6px;
+  border-color: #9a5af0;
+  color: #e6d4ff;
+}

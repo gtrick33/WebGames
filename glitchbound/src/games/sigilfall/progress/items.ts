@@ -112,8 +112,10 @@ export function itemScore(item: Item): number {
 
 /** A bought piece sells back for at most this share of what was paid for it. */
 export const RESALE = 0.25;
+/** How much more a piece of each rarity is worth than a common one (a set piece as much as a legendary). */
+const WORTH_MUL: Record<Rarity, number> = { common: 1, uncommon: 1.6, rare: 3, epic: 6, legendary: 12, set: 12 };
 /** What a piece of gear is worth: a vendor's price for one is four times this (progress/shop.ts gearPrice). */
-export const itemWorth = (item: Pick<Item, 'il' | 'r'>): number => Math.round((4 + item.il * 2) * [1, 1.6, 3, 6, 12][RARITIES.indexOf(item.r)]!);
+export const itemWorth = (item: Pick<Item, 'il' | 'r'>): number => Math.round((4 + item.il * 2) * WORTH_MUL[item.r]);
 /** What a piece melts down or sells for: the road's share of its worth (GOLD_FIND), and never more than RESALE of what was paid for it. */
 export const salvageValue = (item: Pick<Item, 'il' | 'r' | 'paid'>): number => {
   const value = Math.max(1, Math.round(itemWorth(item) * GOLD_FIND));
@@ -140,13 +142,15 @@ const RARITY_WEIGHTS: Record<LootSource, number[]> = {
  * "increase spawn rate of set items and legendary items ... they should be dropped more often"). A boss's drops and
  * the cache (a boss's) are where they mostly come from; an elite's now and then; a common foe's seldom.
  */
+// (a little less since the owner, 2026-11-23: "currently drop rates a tad bit too high, maybe tone them down now that we
+// have more choice". They were 30/22% from a boss, 10/8% an elite, 1.5/1.5% a foe)
 export const RIFT_ODDS: Record<LootSource, { set: number; legendary: number }> = {
-  enemy: { set: 0.015, legendary: 0.015 },
-  elite: { set: 0.1, legendary: 0.08 },
-  boss: { set: 0.3, legendary: 0.22 },
-  'chest-common': { set: 0.05, legendary: 0.05 },
-  'chest-rare': { set: 0.12, legendary: 0.1 },
-  'chest-epic': { set: 0.25, legendary: 0.2 },
+  enemy: { set: 0.01, legendary: 0.01 },
+  elite: { set: 0.07, legendary: 0.06 },
+  boss: { set: 0.22, legendary: 0.16 },
+  'chest-common': { set: 0.035, legendary: 0.035 },
+  'chest-rare': { set: 0.09, legendary: 0.07 },
+  'chest-epic': { set: 0.18, legendary: 0.14 },
   quest: { set: 0, legendary: 0 },
 };
 

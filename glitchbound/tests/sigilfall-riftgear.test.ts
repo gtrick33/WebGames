@@ -7,11 +7,11 @@ import { RIFT_ITEMS, RIFT_TIERS, riftPool, SETS } from '../src/games/sigilfall/d
 import { SKILLS } from '../src/games/sigilfall/data/skills';
 import type { ClassId, Effect, Mod, SlotId } from '../src/games/sigilfall/data/types';
 import { buildHero, collectMods, setsWorn } from '../src/games/sigilfall/progress/build';
-import { addXp, chooseSpec, newCharacter, seatSpecSkill, slotOpen } from '../src/games/sigilfall/progress/character';
+import { addXp, chooseSpec, newCharacter, salvage, seatSpecSkill, slotOpen } from '../src/games/sigilfall/progress/character';
 import { modLines } from '../src/games/sigilfall/progress/describe';
-import { droppable, makeItem, rollLoot } from '../src/games/sigilfall/progress/items';
+import { droppable, itemWorth, makeItem, rollLoot, salvageValue } from '../src/games/sigilfall/progress/items';
 import { cantWager, riftFirsts, stoneRows, wager, WAGER_PRICE, wagerOdds } from '../src/games/sigilfall/progress/rift';
-import { stockFor } from '../src/games/sigilfall/progress/shop';
+import { sellPrice, stockFor } from '../src/games/sigilfall/progress/shop';
 import { tipDue, tipSteps } from '../src/games/sigilfall/progress/tips';
 import { rng } from '../src/games/sigilfall/core/math';
 import type { World } from '../src/games/sigilfall/sim/world';
@@ -27,6 +27,8 @@ import { newWorld, readyHero } from './sigilfall-bot';
 const effectsOf = (mods: Mod[]): Effect[] => mods.flatMap((m) => (m.t === 'proc' ? [m.proc.effect] : m.t === 'skill' && 'effect' in m.op ? [m.op.effect] : []));
 const classSkill = (cls: ClassId, id: string): boolean => id === '*' || id === 'basic' || id === 'dodge' || id === 'ult' || SKILLS[id]?.cls === cls;
 const SIX = ['head', 'chest', 'legs', 'hands', 'feet', 'ring'];
+/** The weapons of 2026-11-23 (the class's three of each, by id: the legendaries of before that are weapons are not). */
+const WEAPON_IDS = new Set(RIFT_ITEMS.filter((d) => d.slot === 'weapon' && d.rarity === 'legendary' && d.cls && !['rift-red-appetite', 'rift-grievance', 'rift-thunderwrit', 'rift-long-look', 'rift-morningbell', 'rift-final-reading', 'rift-dawnhymn', 'rift-ruinspeaker', 'rift-nightpool-branch', 'rift-creditor', 'rift-graveweight'].includes(d.id)).map((d) => d.id));
 
 describe('Sigilfall: Rift-forged gear', () => {
   it('has, for every class, its own set and one for each specialization, six pieces each, and three legendaries', () => {
@@ -40,7 +42,11 @@ describe('Sigilfall: Rift-forged gear', () => {
         expect(s.pieces.every((id) => ITEM_DEFS[id]!.rarity === 'set'), s.name).toBe(true);
         expect(s.bonuses.map((b) => b.need), s.name).toEqual([2, 4, 6]);
       }
-      expect(RIFT_ITEMS.filter((d) => d.cls === cls && d.rarity === 'legendary').length, cls).toBe(3);
+      // three legendaries of the class's own; and its weapons, three for the class and two for each specialization (2026-11-23)
+      const weapons = RIFT_ITEMS.filter((d) => d.cls === cls && d.rarity === 'legendary' && d.slot === 'weapon' && (d.forSpec !== undefined || WEAPON_IDS.has(d.id)));
+      expect(weapons.filter((d) => d.forSpec === undefined).length, cls).toBe(3);
+      for (const spec of [0, 1, 2]) expect(weapons.filter((d) => d.forSpec === spec).length, `${cls} ${spec}`).toBe(2);
+      expect(RIFT_ITEMS.filter((d) => d.cls === cls && d.rarity === 'legendary').length, cls).toBe(3 + 9);
     }
     // and anyone's legendaries, on the places a set leaves free or a ring
     const anyone = RIFT_ITEMS.filter((d) => !d.cls);
@@ -52,8 +58,8 @@ describe('Sigilfall: Rift-forged gear', () => {
 
   it('keeps every piece saved before under its id: the old set pieces and the specialization pieces', () => {
     for (const id of ['rift-stonehewer-hands', 'rift-stonehewer-legs', 'rift-stonehewer-feet', 'rift-rimeglass-hands', 'rift-red-appetite', 'rift-thunderwrit', 'rift-shepherds-bell']) expect(ITEM_DEFS[id], id).toBeTruthy();
-    // (a legendary is a power for the class, whatever the specialization: none is any one specialization's now)
-    expect(RIFT_ITEMS.filter((d) => d.rarity === 'legendary' && d.forSpec !== undefined)).toEqual([]);
+    // (a legendary of before is a power for the class, whatever the specialization; only the weapons are a specialization's)
+    expect(RIFT_ITEMS.filter((d) => d.rarity === 'legendary' && d.forSpec !== undefined && d.slot !== 'weapon')).toEqual([]);
   });
 
   it('changes only its own class’s skills, with effects the game has', () => {
@@ -98,7 +104,7 @@ describe('Sigilfall: Rift-forged gear', () => {
   it('builds into a hero: every legendary worn changes a skill, a stat or adds a trigger', () => {
     for (const cls of CLASS_IDS) {
       for (const d of RIFT_ITEMS.filter((x) => (x.cls === cls || !x.cls) && x.rarity === 'legendary')) {
-        const c = readyHero(cls, 60, 'epic', 5);
+        const c = readyHero(cls, 60, 'epic', 5, d.forSpec ?? 0);
         const was = buildHero(c);
         const before = JSON.stringify(was.skills) + was.procs.length + JSON.stringify(was.stats);
         c.equip[d.slot] = makeItem(d.id, 80)!;
@@ -110,6 +116,26 @@ describe('Sigilfall: Rift-forged gear', () => {
 });
 
 describe('Sigilfall: sets', () => {
+  // (the owner's screenshot deck, 2026-11-23: a set piece's card offered "Salvage · NaN gold", and melting one
+  // down made the hero's gold NaN, which a save keeps as nothing: every coin gone at the next load)
+  it('melt down and sell for gold like a legendary, never for NaN', () => {
+    for (const set of Object.values(SETS)) {
+      for (const id of set.pieces) {
+        const it = makeItem(id, 80)!;
+        expect(Number.isFinite(salvageValue(it)) && salvageValue(it) > 0, id).toBe(true);
+        expect(sellPrice(it)).toBe(salvageValue(it));
+        expect(itemWorth(it)).toBe(itemWorth({ il: 80, r: 'legendary' }));
+      }
+    }
+    const c = readyHero('priest', 60, 'epic', 5, 1);
+    c.gold = 1000;
+    const piece = makeItem(SETS[Object.keys(SETS)[0]!]!.pieces[0]!, 80)!;
+    c.bag.push(piece);
+    const got = salvage(c, piece.uid);
+    expect(got).toBeGreaterThan(0);
+    expect(c.gold).toBe(1000 + got);
+  });
+
   const wearing = (cls: ClassId, n: number, spec?: 0 | 1 | 2) => {
     const c = readyHero(cls, 60, 'epic', 5, spec ?? 0);
     const set = Object.values(SETS).find((s) => s.cls === cls && s.spec === spec)!;
@@ -201,6 +227,60 @@ describe('Sigilfall: echoes, the sets’ and legendaries’ own spells', () => {
   });
 });
 
+describe('Sigilfall: sets and weapons with every specialization’s talents (2026-11-23, "in a symbiose")', () => {
+  // what a set's bonuses and a weapon change, for a hero of its specialization with all their talents
+  const touched = (mods: Mod[]): string[] => mods.flatMap((m) => (m.t === 'skill' && !['*', 'basic', 'dodge', 'ult'].includes(m.skill) ? [m.skill] : []));
+  const echoes = (mods: Mod[]): string[] => effectsOf(mods).flatMap((e) => (e.kind === 'cast' && e.skill !== 'basic' ? [e.skill] : []));
+
+  it('every skill a set or a weapon changes or echoes is one its own specialization has, talents and all', () => {
+    for (const cls of CLASS_IDS) {
+      for (const spec of [0, 1, 2] as const) {
+        const c = readyHero(cls, 60, 'epic', 5, spec);
+        const b = buildHero(c);
+        const mine = [...Object.values(SETS).filter((s) => s.cls === cls && (s.spec === undefined || s.spec === spec)).flatMap((s) => s.bonuses.flatMap((x) => x.mods)), ...RIFT_ITEMS.filter((d) => d.cls === cls && !d.set && (d.forSpec === undefined || d.forSpec === spec)).flatMap((d) => d.mods)];
+        for (const id of [...touched(mine), ...echoes(mine)]) expect(b.skills[id], `${cls} ${CLASSES[cls].trees[spec]!.name}: ${id}`).toBeTruthy();
+        // an echo is never of something it can't cast: a step, a dash, a change of shape, a held channel
+        for (const id of echoes(mine)) expect(['blink', 'dash', 'form', 'channel', 'drain'].includes(b.skills[id]!.spec.cast), `${cls}: an echo of ${id} (${b.skills[id]!.spec.cast})`).toBe(false);
+      }
+    }
+  });
+
+  it('names every skill in its own words as the game calls it', () => {
+    for (const s of Object.values(SETS)) {
+      for (const b of s.bonuses) for (const id of touched(b.mods)) expect(b.text, `${s.name} (${b.need}): ${id}`).toContain(SKILLS[id]!.name);
+    }
+    for (const d of RIFT_ITEMS) for (const m of d.mods) if (m.t === 'proc') for (const id of echoes([m])) expect(m.proc.text, `${d.name}: ${id}`).toContain(SKILLS[id]!.name);
+  });
+
+  it('a whole set and each of its weapons fights a while with every specialization, and its echoes go off', () => {
+    for (const cls of CLASS_IDS) {
+      for (const spec of [0, 1, 2] as const) {
+        const set = Object.values(SETS).find((s) => s.cls === cls && s.spec === spec)!;
+        for (const weapon of RIFT_ITEMS.filter((d) => d.cls === cls && d.forSpec === spec && d.slot === 'weapon')) {
+          const c = readyHero(cls, 60, 'epic', 5, spec);
+          for (const id of set.pieces) c.equip[ITEM_DEFS[id]!.slot] = makeItem(id, 90)!;
+          c.equip.weapon = makeItem(weapon.id, 90)!;
+          const w = newWorld('whisperwood', c, 3);
+          for (let i = 0; i < 3; i++) {
+            const foe = w.addEnemy('skeleton', w.player.x + 50 + i * 12, w.player.y + (i - 1) * 20, 60, { room: -1, pack: -1, spawn: false })!;
+            foe.hp = foe.maxHp = 1e6;
+          }
+          const slots = ['basic', 's1', 's2', 's3', 's4', 'ult'] as const;
+          expect(() => {
+            for (let t = 0; t < 60 * 8; t++) {
+              w.input = { ...w.input, casts: t % 20 === 0 ? [{ slot: slots[(t / 20) % slots.length]!, angle: null, dist: null, assist: 0 }] : [] };
+              w.player.hp = w.player.maxHp;
+              w.step(1 / 60);
+            }
+          }, `${set.name} with ${weapon.name}`).not.toThrow();
+          const hurt = w.enemies.filter((e) => e.hp < e.maxHp).length;
+          expect(hurt, `${cls} ${spec}: ${weapon.name}`).toBeGreaterThan(0);
+        }
+      }
+    }
+  }, 300_000);
+});
+
 describe('Sigilfall: only the Rift gives it', () => {
   it('never drops outside the Rift, and never before its stone', () => {
     for (const cls of CLASS_IDS) {
@@ -210,7 +290,9 @@ describe('Sigilfall: only the Rift gives it', () => {
       expect(droppable(cls, 100, 'set', RIFT_TIERS.classSet).length, cls).toBe(6);
       expect(droppable(cls, 100, 'set', RIFT_TIERS.specSet).length, cls).toBe(24);
       const leg = (stone: number): number => droppable(cls, 100, 'legendary', stone).filter((d) => d.rift !== undefined).length;
-      expect(leg(RIFT_TIERS.classLegendary) - leg(RIFT_TIERS.legendary), cls).toBe(3);
+      // (its three legendaries and three weapons at +2; its specializations' six weapons with their sets at +3)
+      expect(leg(RIFT_TIERS.classLegendary) - leg(RIFT_TIERS.legendary), cls).toBe(6);
+      expect(leg(RIFT_TIERS.specSet) - leg(RIFT_TIERS.classLegendary), cls).toBe(6);
     }
   });
 
@@ -248,7 +330,7 @@ describe('Sigilfall: only the Rift gives it', () => {
     expect(riftFirsts(readyHero('mage', 40, 'rare', 5), 5, 2)).toEqual([]);
     expect(riftFirsts(c, 5, 0)).toEqual([]);
     // (four sets of six, three of its own legendaries and anyone's)
-    expect(riftPool('mage', 99).length).toBe(24 + 3 + RIFT_ITEMS.filter((d) => !d.cls).length);
+    expect(riftPool('mage', 99).length).toBe(24 + 3 + 9 + RIFT_ITEMS.filter((d) => !d.cls).length);
     // of the specializations' sets, its own comes first: with all the rest in the bag, the next stone gives one of those
     const held = { ...c, bag: riftPool('mage', 2).map((d) => makeItem(d.id, 73)!) };
     expect(riftFirsts(held, 3, 1)[0]!.forSpec).toBe(1);
