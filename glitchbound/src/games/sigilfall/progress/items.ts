@@ -140,13 +140,15 @@ const RARITY_WEIGHTS: Record<LootSource, number[]> = {
  * "increase spawn rate of set items and legendary items ... they should be dropped more often"). A boss's drops and
  * the cache (a boss's) are where they mostly come from; an elite's now and then; a common foe's seldom.
  */
+// (a little less since the owner, 2026-11-23: "currently drop rates a tad bit too high, maybe tone them down now that we
+// have more choice". They were 30/22% from a boss, 10/8% an elite, 1.5/1.5% a foe)
 export const RIFT_ODDS: Record<LootSource, { set: number; legendary: number }> = {
-  enemy: { set: 0.015, legendary: 0.015 },
-  elite: { set: 0.1, legendary: 0.08 },
-  boss: { set: 0.3, legendary: 0.22 },
-  'chest-common': { set: 0.05, legendary: 0.05 },
-  'chest-rare': { set: 0.12, legendary: 0.1 },
-  'chest-epic': { set: 0.25, legendary: 0.2 },
+  enemy: { set: 0.01, legendary: 0.01 },
+  elite: { set: 0.07, legendary: 0.06 },
+  boss: { set: 0.22, legendary: 0.16 },
+  'chest-common': { set: 0.035, legendary: 0.035 },
+  'chest-rare': { set: 0.09, legendary: 0.07 },
+  'chest-epic': { set: 0.18, legendary: 0.14 },
   quest: { set: 0, legendary: 0 },
 };
 

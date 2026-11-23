@@ -27,6 +27,8 @@ import { hide, part, say } from './hudWrite';
  */
 
 const AIM_DEADZONE = 14;
+/** How far past the dead zone a thumb on the attack must be dragged to aim it by hand (it drifts while held). */
+const BASIC_DRAG = 2.4;
 const AIM_RANGE = 70;
 
 export function TouchControls({ engine }: { engine: SigilEngine }) {
@@ -180,6 +182,14 @@ function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
     // the drag in the game's own axes (turned to landscape, a finger's "up" on the glass is the game's left)
     const { x: dx, y: dy } = toLocalDelta(e.clientX - pr.cx, e.clientY - pr.cy);
     const d = Math.hypot(dx, dy);
+    if (slot === 'basic') {
+      // a thumb held on the attack drifts: only a real drag aims it, and back near the middle it aims for itself again.
+      // (It took the first drift past the dead zone as an aim for good, and fired that way from then on: the owner,
+      // 2026-11-23, "if i hold the auto attack, at some point it wont shoot at the enemies and somewhere fixed randomly")
+      const dragged = d >= AIM_DEADZONE * BASIC_DRAG;
+      engine.touch.setHold({ slot, angle: dragged ? Math.atan2(dy, dx) : null, dist: null, assist: engine.settings.aimAssist });
+      return;
+    }
     if (!pr.aimed && d < AIM_DEADZONE) return;
     const spec = id ? w.build.skills[id]?.spec : undefined;
     if (spec?.aim === 'self') return;
@@ -189,11 +199,6 @@ function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
       pr.frac = Math.min(1, d / AIM_RANGE);
       pr.cancel = false;
     } else pr.cancel = true;
-    if (slot === 'basic') {
-      // the attack aims by itself or by the drag, without an aim line in the way
-      engine.touch.setHold(pr.cancel ? null : { slot, angle: pr.angle, dist: null, assist: engine.settings.aimAssist });
-      return;
-    }
     engine.touch.setAim(previewFor(engine, slot, pr.angle, pr.frac, pr.cancel));
   };
 

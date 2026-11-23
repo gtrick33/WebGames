@@ -37,13 +37,14 @@ export const WAGER_SLOTS: readonly SlotId[] = SLOTS;
 
 /**
  * A wager's odds at a stone: a legendary or a set piece likelier with every stone opened (the owner, 2026-11-22: "sigil
- * shop should drop legendaries more often and set gear a bit more often as well"). Legendary from 30% to 45%, a set
- * piece from 15% to 25%, the rest epic: no rare from the broker any more.
+ * shop should drop legendaries more often and set gear a bit more often as well"). Legendary from 24% to 38%, a set
+ * piece from 12% to 20%, the rest epic: no rare from the broker any more.
  */
 export function wagerOdds(stone: number): Record<'rare' | 'epic' | 'legendary' | 'set', number> {
   const s = Math.max(0, stone);
-  const legendary = Math.min(0.45, 0.3 + s * 0.01);
-  const set = Math.min(0.25, 0.15 + s * 0.005);
+  // (a little less since 2026-11-23, "a tad bit too high": legendary 30-45%, a set piece 15-25%, before)
+  const legendary = Math.min(0.38, 0.24 + s * 0.01);
+  const set = Math.min(0.2, 0.12 + s * 0.005);
   return { legendary, set, epic: 1 - legendary - set, rare: 0 };
 }
 
