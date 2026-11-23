@@ -17110,9 +17110,9 @@ button.rb-scard:not(:disabled):hover {
   border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%;
   background: radial-gradient(circle at 50% 70%, #fff 0 20%, #ffd84a 45%, #b07aff 90%);
   box-shadow: 0 0 10px #c8a8ff;
-  animation: rb-flicker 1.3s ease-in-out infinite alternate;
+  animation: rb-candle-flicker 1.3s ease-in-out infinite alternate;
 }
-@keyframes rb-flicker {
+@keyframes rb-candle-flicker {
   to {
     transform: scale(0.85, 1.1) translateY(-1px);
     filter: brightness(1.2);
