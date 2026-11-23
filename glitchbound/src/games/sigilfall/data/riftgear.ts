@@ -342,8 +342,8 @@ const SPEC_SETS: SetSpec[] = [
     },
     six: {
       need: 6,
-      text: 'Flame Pillar deals 300% more damage, and one Fireball hit in three calls it down by itself: an echo of Flame Pillar at the nearest enemy.',
-      mods: [K('flamestrike', { op: 'damage', pct: 300 }), P('pyre-six', 'hit', ECHO('flamestrike', 1), 'One Fireball hit in three: an echo of Flame Pillar (once every 1.5 s).', { skill: 'fireball', chance: 0.34, icd: 1.5 })],
+      text: 'Flame Pillar deals 300% more damage, and the pyre calls it down by itself: an echo of Flame Pillar every 3 s in a fight.',
+      mods: [K('flamestrike', { op: 'damage', pct: 300 }), EVERY('pyre-six', 3, 'flamestrike', 1, 'Every 3 s in a fight: an echo of Flame Pillar at the nearest enemy.')],
     },
   },
   {
@@ -374,16 +374,16 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#b8e8ff',
     names: 'Longwinter',
     lore: 'It has not been warm since the year it was made.',
-    two: { need: 2, text: 'Ice Javelin passes through three more enemies.', mods: [K('ice-lance', { op: 'pierce', n: 3 })] },
+    two: { need: 2, text: 'Ice Javelin holds another charge and passes through two more enemies.', mods: [K('ice-lance', { op: 'charges', n: 1 }), K('ice-lance', { op: 'pierce', n: 2 })] },
     four: {
       need: 4,
-      text: 'Ice Storm drags enemies to its middle and lasts half again as long; Ice Javelin hits the Frozen 80% harder.',
-      mods: [K('blizzard', { op: 'extra', key: 'pull', n: 55, label: 'pull' }), K('blizzard', { op: 'duration', pct: 50 }), K('ice-lance', { op: 'bonusVs', status: 'freeze', pct: 80 })],
+      text: 'Ice Javelin bursts where it strikes for its full damage again and Chills all it reaches; Ice Storm drags enemies to its middle and lasts half again as long.',
+      mods: [K('ice-lance', { op: 'onImpact', effect: { kind: 'explode', radius: 34, mul: 1, dmgType: 'frost', status: { status: 'chill', dur: 2.5, power: 0.4 } } }), K('blizzard', { op: 'extra', key: 'pull', n: 55, label: 'pull' }), K('blizzard', { op: 'duration', pct: 50 })],
     },
     six: {
       need: 6,
-      text: 'Ice Javelin deals 300% more damage, and every Ice Storm you call sends three Ice Javelins after it by themselves.',
-      mods: [K('ice-lance', { op: 'damage', pct: 300 }), K('blizzard', { op: 'onCast', effect: ECHO('ice-lance', 1, 3) })],
+      text: 'Ice Javelin deals 300% more damage, and the winter throws its own: an echo of Ice Javelin every second in a fight.',
+      mods: [K('ice-lance', { op: 'damage', pct: 300 }), EVERY('long-winter-six', 1, 'ice-lance', 1, 'Every second in a fight: an echo of Ice Javelin at the nearest enemy.')],
     },
   },
   /* ranger */
@@ -911,7 +911,7 @@ const WEAPON_SPECS: WeaponSpec[] = [
   { cls: 'mage', spec: 0, id: 'rift-pyrewrights-wand', name: 'Pyrewright’s Wand', icon: 'wand', tint: '#ffb04a', stat: 'fire', lore: 'It writes in fire. It does not know how to erase.', mods: [K('fireball', { op: 'charges', n: 1 }), P('pyrewright', 'ult', ECHO('flamestrike', 1, 3), 'Your ultimate calls three echoes of Flame Pillar after it.')] },
   { cls: 'mage', spec: 1, id: 'rift-thundercall', name: 'Thundercall', icon: 'staff', tint: '#6ad8ff', stat: 'lightning', lore: 'Raise it and the sky answers. It does not ask twice.', mods: [K('ball-lightning', { op: 'damage', pct: 80 }), K('ball-lightning', { op: 'onHit', effect: PTS(1) })] },
   { cls: 'mage', spec: 1, id: 'rift-conductors-wand', name: 'Conductor’s Wand', icon: 'wand', tint: '#a8f0ff', stat: 'lightning', lore: 'The storm keeps time to it.', mods: [K('chain-lightning', { op: 'extra', key: 'jumps', n: 2, label: 'leaps' }), P('conductor', 'crit', ECHO('chain-lightning', 0.8), 'A critical hit: an echo of Chain Lightning (once every 2 s).', { icd: 2 })] },
-  { cls: 'mage', spec: 2, id: 'rift-winterkeep', name: 'Winterkeep', icon: 'staff', tint: '#b8e8ff', stat: 'frost', lore: 'It keeps a winter in it, for later.', mods: [K('blizzard', { op: 'damage', pct: 80 }), K('blizzard', { op: 'onHit', effect: PTS(1) })] },
+  { cls: 'mage', spec: 2, id: 'rift-winterkeep', name: 'Winterkeep', icon: 'staff', tint: '#b8e8ff', stat: 'frost', lore: 'It keeps a winter in it, for later.', mods: [K('blizzard', { op: 'damage', pct: 80 }), P('winterkeep', 'hit', { kind: 'resetCd', skill: 'ice-lance' }, 'Ice Storm striking an enemy may make Ice Javelin ready at once (one in three, once a second).', { skill: 'blizzard', chance: 0.34, icd: 1 })] },
   { cls: 'mage', spec: 2, id: 'rift-northshard', name: 'Northshard', icon: 'wand', tint: '#8ac8ff', stat: 'frost', lore: 'Broken from the top of the world.', mods: [K('ice-lance', { op: 'pierce', n: 2 }), K('ice-lance', { op: 'bonusVs', status: 'freeze', pct: 60 }), K('frost-nova', { op: 'cooldown', pct: -30 })] },
   /* ranger */
   { cls: 'ranger', id: 'rift-windstring', name: 'Windstring', icon: 'bow', tint: '#c8e8d0', stat: 'physical', lore: 'The wind strung it. The wind still plays it.', mods: [K('arrow', { op: 'projectiles', n: 1, spread: 0.2 }), K('arrow', { op: 'damage', pct: 25 })] },

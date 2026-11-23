@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { CLASSES } from '../src/games/sigilfall/data/classes';
 import { PETS } from '../src/games/sigilfall/data/pets';
 import type { ClassId } from '../src/games/sigilfall/data/types';
-import { learnedSkills, newCharacter, setSkill, type Character } from '../src/games/sigilfall/progress/character';
+import { addXp, chooseSpec, learnedSkills, newCharacter, setSkill, type Character } from '../src/games/sigilfall/progress/character';
+import { xpToNext } from '../src/games/sigilfall/data/classes';
 import { migrate, SAVE_VERSION } from '../src/games/sigilfall/progress/save';
 import { tryCast } from '../src/games/sigilfall/sim/cast';
 import { applyStatus, hurtPlayer } from '../src/games/sigilfall/sim/combat';
@@ -239,5 +240,43 @@ describe('sigilfall druid forms', () => {
     const w = newWorld('whisperwood', c);
     w.setForm('cat');
     expect([w.build.bar.s2, w.build.bar.s3]).toEqual(['rake', 'rip']);
+  });
+});
+
+// (the owner, 2026-11-23: "rework the cryomancer". The bar filled in the order skills were learned, so a Cryomancer
+// went to level 60 with Fireball and Chain Lightning and no Ice Javelin, the one skill its combo is about)
+describe('Sigilfall: a specialization brings its own skills to the bar', () => {
+  const levelTo = (c: Character, level: number) => { while (c.level < level) addXp(c, xpToNext(c.level)); };
+
+  it('a Cryomancer chosen at 10 has Ice Javelin on the bar the moment it is learned, and Frost Ring after', () => {
+    const c = newCharacter('mage', 'Rime', 'h0', 0);
+    levelTo(c, 10);
+    expect(chooseSpec(c, 2)).toBe(true);
+    expect(c.skills).toContain('blizzard');
+    levelTo(c, 13);
+    expect(c.skills).not.toContain('ice-lance');
+    levelTo(c, 14);
+    expect(c.skills).toContain('ice-lance');
+    levelTo(c, 60);
+    expect([...c.skills].sort()).toEqual([...CLASSES.mage.trees[2].bar!].sort());
+  });
+
+  it('every Mage specialization plays its own four at 60', () => {
+    for (const spec of [0, 1, 2] as const) {
+      const c = readyHero('mage', 60, 'epic', 5, spec);
+      expect([...c.skills].sort(), CLASSES.mage.trees[spec].name).toEqual([...CLASSES.mage.trees[spec].bar!].sort());
+    }
+  });
+
+  it('a skill the player puts on the bar stays there; a level only brings a skill it just taught', () => {
+    const c = readyHero('mage', 30, 'epic', 5, 2);
+    expect(setSkill(c, 3, 'fireball')).toBe(true);
+    levelTo(c, 31);
+    expect(c.skills).toContain('fireball');
+  });
+
+  it('a specialization without a bar of its own keeps the bar as it was', () => {
+    const c = readyHero('warrior', 60, 'epic', 5, 0);
+    expect(c.skills).toEqual(['heavy-strike', 'whirlwind', 'shield-bash', 'bloodthirst']);
   });
 });

@@ -505,6 +505,12 @@ export interface SpecDef {
   points?: PointsDef;
   /** The ability belongs to a druid shape: it is used there, not put on the normal bar. */
   formOnly?: boolean;
+  /**
+   * The skills it plays with, its own ability among them: they take the bar when it is chosen, and each one learned
+   * later takes the place of a skill that isn't one of them (progress/character.ts seatSpecBar). Without it, the bar
+   * fills in the order skills are learned, which left a Cryomancer with no Ice Javelin (2026-11-23).
+   */
+  bar?: string[];
 }
 
 /**

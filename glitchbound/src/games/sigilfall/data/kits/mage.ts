@@ -35,6 +35,7 @@ export const MAGE: Kit = {
         role: 'Area damage over time',
         skill: 'flamestrike',
         ult: 'meteor',
+        bar: ['fireball', 'frost-nova', 'chain-lightning', 'flamestrike'],
         points: { name: 'Heat', one: 'Heat', max: 5, color: '#ff9a4d' },
         combo: combo(
           'Thermal Shock',
@@ -43,7 +44,16 @@ export const MAGE: Kit = {
           when('thermal-chill', 'hit', { kind: 'explode', radius: 38, mul: 0.9, dmgType: 'fire', status: { status: 'burn', dur: 3, power: 0.2 } }, 'Fire on a Chilled enemy bursts.', { dmgType: 'fire', status: 'chill', icd: 1 }),
           when('thermal-freeze', 'hit', { kind: 'explode', radius: 44, mul: 1.3, dmgType: 'fire', status: { status: 'burn', dur: 3, power: 0.2 } }, 'Fire on a Frozen enemy bursts harder.', { dmgType: 'fire', status: 'freeze', icd: 1 }),
         ),
-        passive: { name: 'Searing Heat', text: '+10% fire damage, and every skill deals +10% damage to Burning enemies.', mods: [S('fire', 10), K('*', { op: 'bonusVs', status: 'burn', pct: 10 })] },
+        passive: {
+          name: 'Searing Heat',
+          text: '+10% fire damage, and every skill deals +10% damage to Burning enemies. Flame Pillar wraps you in flame, a shield of 15% of your health for 4 s, and every Burning enemy that dies mends you for 2% of your health.',
+          mods: [
+            S('fire', 10),
+            K('*', { op: 'bonusVs', status: 'burn', pct: 10 }),
+            K('flamestrike', { op: 'onCast', effect: { kind: 'shield', pct: 15, dur: 4 } }),
+            P({ id: 'cauterize', on: 'kill', status: 'burn', chance: 1, icd: 0.2, effect: { kind: 'heal', pct: 2 }, text: 'A Burning enemy dying mends you.' }),
+          ],
+        },
       },
       {
         name: 'Stormcaller',
@@ -52,6 +62,7 @@ export const MAGE: Kit = {
         role: 'Bouncing burst damage',
         skill: 'ball-lightning',
         ult: 'thunderhead',
+        bar: ['chain-lightning', 'ball-lightning', 'frost-nova', 'arcane-rupture'],
         points: { name: 'Sparks', one: 'Spark', max: 5, color: '#7fe3ff' },
         combo: combo(
           'Conduction',
@@ -65,8 +76,13 @@ export const MAGE: Kit = {
         ),
         passive: {
           name: 'Static Charge',
-          text: '+10% lightning damage; critical lightning hits leap to another enemy for 40% damage.',
-          mods: [S('lightning', 10), P({ id: 'static-charge', on: 'crit', dmgType: 'lightning', chance: 1, icd: 0.3, effect: { kind: 'chain', jumps: 1, range: 64, mul: 0.4, dmgType: 'lightning' }, text: 'Critical lightning hits leap to another enemy for 40% damage.' })],
+          text: '+10% lightning damage; critical lightning hits leap to another enemy for 40% damage. Ball Lightning charges a static shield of 15% of your health for 4 s, and every Chain Lightning one of 12%.',
+          mods: [
+            S('lightning', 10),
+            P({ id: 'static-charge', on: 'crit', dmgType: 'lightning', chance: 1, icd: 0.3, effect: { kind: 'chain', jumps: 1, range: 64, mul: 0.4, dmgType: 'lightning' }, text: 'Critical lightning hits leap to another enemy for 40% damage.' }),
+            K('ball-lightning', { op: 'onCast', effect: { kind: 'shield', pct: 15, dur: 4 } }),
+            K('chain-lightning', { op: 'onCast', effect: { kind: 'shield', pct: 12, dur: 4 } }),
+          ],
         },
       },
       {
@@ -76,6 +92,7 @@ export const MAGE: Kit = {
         role: 'Control and single-target burst',
         skill: 'blizzard',
         ult: 'glacierfall',
+        bar: ['frost-nova', 'ice-lance', 'blizzard', 'frost-ring'],
         points: { name: 'Splinters', one: 'Splinter', max: 5, color: '#d8f6ff' },
         combo: combo(
           'Flash Freeze',
@@ -84,7 +101,20 @@ export const MAGE: Kit = {
           when('flash-burn', 'hit', { kind: 'status', status: 'freeze', dur: 2, power: 1 }, 'Frost on a Burning enemy freezes it solid.', { dmgType: 'frost', status: 'burn', icd: 4 }),
           when('flash-shock', 'hit', { kind: 'status', status: 'freeze', dur: 2, power: 1 }, 'Frost on a Shocked enemy freezes it solid.', { dmgType: 'frost', status: 'shock', icd: 4 }),
         ),
-        passive: { name: 'Brittle Frost', text: '+10% frost damage; every skill deals +40% damage to Frozen and +20% to Chilled enemies.', mods: [S('frost', 10), K('*', { op: 'bonusVs', status: 'freeze', pct: 40 }), K('*', { op: 'bonusVs', status: 'chill', pct: 20 })] },
+        passive: {
+          name: 'Brittle Frost',
+          text: '+10% frost damage; every skill deals +40% damage to Frozen and +20% to Chilled enemies. Ice Javelin holds a second charge and comes back 20% sooner. Rime Burst wraps you in ice, a shield of 25% of your health for 5 s, and every Ice Javelin renews a thinner one (25%, 3 s). You walk at full pace while Ice Storm gathers.',
+          mods: [
+            S('frost', 10),
+            K('*', { op: 'bonusVs', status: 'freeze', pct: 40 }),
+            K('*', { op: 'bonusVs', status: 'chill', pct: 20 }),
+            K('ice-lance', { op: 'charges', n: 1 }),
+            cdr('ice-lance', 20),
+            K('frost-nova', { op: 'onCast', effect: { kind: 'shield', pct: 25, dur: 5 } }),
+            K('ice-lance', { op: 'onCast', effect: { kind: 'shield', pct: 25, dur: 3 } }),
+            K('blizzard', { op: 'extra', key: 'swift', n: 1, label: 'cast at full pace' }),
+          ],
+        },
       },
     ],
     refDamage: 20,
@@ -155,8 +185,8 @@ export const MAGE: Kit = {
       'skill',
       10,
       'Ice Storm',
-      'Ice storms down on an area for a few seconds, chilling everything under it.',
-      spec({ id: 'blizzard', cast: 'ground', aim: 'ground', range: 120, cooldown: 16, damage: 16, castTime: 1, dmgType: 'frost', area: 46, duration: 4, tick: 0.5, cost: 24, onHit: [{ kind: 'status', status: 'chill', dur: 1.5, power: 0.5 }], look: 'frost', tags: ['aoe', 'frost'] }),
+      'Ice storms down on an area for a few seconds, chilling everything under it: what it chills strikes 40% softer.',
+      spec({ id: 'blizzard', cast: 'ground', aim: 'ground', range: 120, cooldown: 10, damage: 22, castTime: 1, dmgType: 'frost', area: 46, duration: 4, tick: 0.5, cost: 24, onHit: [{ kind: 'status', status: 'chill', dur: 1.5, power: 0.5 }, { kind: 'status', status: 'weaken', dur: 1.5, power: 40 }], look: 'frost', tags: ['aoe', 'frost'] }),
     ),
     sk(
       'ultimate',

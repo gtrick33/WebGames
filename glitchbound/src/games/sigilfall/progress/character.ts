@@ -232,6 +232,9 @@ export function addXp(c: Character, n: number, past?: (rest: number) => void): n
     c.xp -= xpToNext(c.level);
     c.level += 1;
     reached.push(c.level);
+    // a skill of the specialization's own just learned (or a slot just open) goes on the bar before anything else
+    const fresh = (SLOT_LEVELS as readonly number[]).includes(c.level) ? undefined : CLASSES[c.cls].skills.filter((id) => SKILLS[id]?.unlock === c.level);
+    seatSpecBar(c, fresh);
     autoSlotSkills(c);
   }
   if (c.level >= MAX_LEVEL) {
@@ -371,7 +374,30 @@ export function chooseSpec(c: Character, tree: 0 | 1 | 2): boolean {
   c.skills = c.skills.map((id) => (id && others.includes(id) ? null : id)) as Character['skills'];
   autoSlotSkills(c);
   seatSpecSkill(c);
+  seatSpecBar(c);
   return true;
+}
+
+/**
+ * Puts the specialization's own skills (SpecDef.bar) that are learned on the bar: each takes an empty slot, or else
+ * one holding a skill that isn't one of them (which stays learned, for the Skills screen). `only` limits it to those
+ * skills (the ones a level just taught). True when anything moved.
+ */
+export function seatSpecBar(c: Character, only?: string[]): boolean {
+  if (c.spec === null || c.level < SPEC_LEVEL) return false;
+  const want = CLASSES[c.cls].trees[c.spec].bar;
+  if (!want) return false;
+  const learned = learnedSkills(c);
+  const slots = [0, 1, 2, 3] as const;
+  let moved = false;
+  for (const id of want) {
+    if ((only && !only.includes(id)) || !learned.includes(id) || c.skills.includes(id)) continue;
+    const at = slots.find((i) => slotOpen(c, i) && c.skills[i] === null) ?? slots.find((i) => slotOpen(c, i) && !want.includes(c.skills[i]!));
+    if (at === undefined) continue;
+    c.skills[at] = id;
+    moved = true;
+  }
+  return moved;
 }
 
 /**
