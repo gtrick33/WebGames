@@ -533,8 +533,9 @@ function paceBasics(def: (typeof CLASSES)[keyof typeof CLASSES], skills: Record<
  * The whole build. In a druid shape (`formId`), the basic attack and dodge are the shape's, the slot
  * with the shape's skill keeps it (to change back) and the other two slots hold the shape's skills.
  */
-export function buildHero(c: Character, formId: string | null = null): HeroBuild {
-  const mods = collectMods(c);
+export function buildHero(c: Character, formId: string | null = null, extra: Mod[] = []): HeroBuild {
+  // (`extra`: what a Rift season's mechanic adds in a Riftstone run, progress/season.ts)
+  const mods = [...collectMods(c), ...extra.map((mod): Entry => ({ mod, rank: 1, source: { name: 'The season', kind: 'item', rarity: 'legendary' } }))];
   const def = CLASSES[c.cls];
   const form = (formId && def.forms?.find((f) => f.id === formId)) || null;
   const bar: Record<SlotKey, string | null> = {

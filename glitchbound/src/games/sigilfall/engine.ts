@@ -18,6 +18,9 @@ import { ACTS, type ActDef } from './data/acts';
 import { TALES } from './data/chronicle';
 import { CLASSES, MAX_LEVEL } from './data/classes';
 import { keyAffixes, weekOf } from './data/keystones';
+import { seasonAt, seasonDef, seasonStart, type SeasonNow } from './data/seasons';
+import { dressSeasonKeeper } from './data/zones/riftward';
+import { chooseHeart, claimChapter } from './progress/season';
 import { WARDENS } from './data/wardens';
 import { NPCS, QUEST_DEFS } from './data/quests';
 import { REGIONS, TIERS, type RiftMod } from './data/regions';
@@ -81,7 +84,7 @@ export interface DialoguePage {
 }
 
 /** (`shop` is a vendor's, for gold; `store` is the game's own shop for the things sold for money: ui/Store.tsx) */
-export type PanelId = 'hero' | 'wardrobe' | 'skills' | 'talents' | 'paragon' | 'quests' | 'map' | 'settings' | 'shop' | 'party' | 'store' | 'rift';
+export type PanelId = 'hero' | 'wardrobe' | 'skills' | 'talents' | 'paragon' | 'quests' | 'map' | 'settings' | 'shop' | 'party' | 'store' | 'rift' | 'season';
 
 /** A co-op party (net/room.ts): the live connection, the room's latest view, and what went wrong. */
 export interface PartyState {
@@ -1355,7 +1358,7 @@ export class SigilEngine {
   reportRanks(): Promise<void> {
     if (!account.get().me || typeof fetch !== 'function') return Promise.resolve();
     // (the Ring's boards are written by the ranked ladder the server keeps, as matches are settled: server/ring.ts)
-    const entries = rankEntries(this.save, readBests(), 0);
+    const entries = rankEntries(this.save, readBests(), 0, {}, this.season?.n ?? 0);
     const sig = JSON.stringify(entries);
     if (!entries.length || sig === this.ranksSent) return this.ranksGoing;
     this.ranksSent = sig;
@@ -1461,7 +1464,10 @@ export class SigilEngine {
       ...(party ? { coop: party.role } : {}),
       // (a Rift Trial's hero keeps nothing, so nothing drops for them)
       ...(this.trial ? { noLoot: true } : {}),
+      // the Rift season: its mechanic in the run, and the run's end counted for it (a Trial's ready hero has no part in it)
+      ...(stone && !this.trial && this.season ? { season: this.season.n } : {}),
     });
+    if (to === 'riftward') dressSeasonKeeper(this.season);
     if (party) this.coop?.attach(w);
     if (prev && !prev.region.safe && this.run) {
       // carry this expedition's tallies across regions
@@ -1603,6 +1609,8 @@ export class SigilEngine {
   /* ----------------------------------------------------------- dialogue */
 
   talk(npcId: string): void {
+    // (the season's keeper speaks for the season running now: it may have turned while the hero stood in the Riftward)
+    if (npcId === 'rw-season') dressSeasonKeeper(this.season);
     const npc = NPCS[npcId];
     const h = this.hero;
     if (!npc || !h) return;
@@ -1990,6 +1998,49 @@ export class SigilEngine {
     // (the pointer over the potion has done its work)
     if (this.ui.teach?.slot === 'potion') this.setUi({ teach: null });
     this.bump();
+  }
+
+  /** Review tools only: a season to show as running (`?season=3` in the address, or set here), before its month comes. */
+  seasonPreview: number | null = null;
+
+  /** The Rift season running now (data/seasons.ts), or null before the first. */
+  get season(): SeasonNow | null {
+    if (this.reviewTools) {
+      const q = this.seasonPreview ?? (typeof location !== 'undefined' ? Number(new URLSearchParams(location.search).get('season')) || null : null);
+      if (q && q >= 1) return { n: q, def: seasonDef(q), start: seasonStart(q), end: seasonStart(q + 1) };
+    }
+    return seasonAt(Date.now());
+  }
+
+  /** Chooses the Season Heart (the Season of Hearts): any time, out of a Riftstone run. */
+  chooseSeasonHeart(id: string): boolean {
+    const h = this.hero;
+    const s = this.season;
+    if (!h || !s || this.world?.keyRun || !chooseHeart(h, s.n, id)) return false;
+    this.sound.play('equip');
+    this.scheduleSave(300);
+    this.bump();
+    return true;
+  }
+
+  /** Takes a finished Journey chapter's reward (the set's pieces need a set chosen, the first time). */
+  claimSeasonChapter(i: number, setId?: string): boolean {
+    const h = this.hero;
+    const s = this.season;
+    if (!h || !s) return false;
+    const r = claimChapter(h, s.n, i, setId);
+    if (!r.ok) {
+      this.toast(r.why ?? 'Not yet', 'info');
+      return false;
+    }
+    for (const it of r.items ?? []) this.toast(itemName(it), 'loot', it, 'From the season’s Journey');
+    if (r.marks) this.toast(`+${r.marks} Sigil Marks`, 'info', undefined, 'From the season’s Journey');
+    if (r.title) this.toast(`New title: ${r.title}`, 'info', undefined, 'Wear it from the Hero page, under your name.');
+    this.sound.play('questDone');
+    this.world?.rebuild();
+    this.persist();
+    this.bump();
+    return true;
   }
 
   /** Review presets are offered on the dev server and with `?review` in the address. */

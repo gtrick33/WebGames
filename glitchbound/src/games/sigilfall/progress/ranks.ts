@@ -17,7 +17,7 @@ export const levelScore = (level: number, paragon: number): number => Math.min(M
 export const levelOf = (score: number): { level: number; paragon: number } => ({ level: Math.floor(score / 10_000), paragon: score % 10_000 });
 
 /** Every best this account has, as the boards want them. Boards with nothing on them are left out. */
-export function rankEntries(save: Pick<SaveFile, 'heroes'> & { rift?: Record<string, number> }, vigil: Record<string, number>, ringBest: number, ringByFormat: Partial<Record<Format, number>> = {}): RankEntry[] {
+export function rankEntries(save: Pick<SaveFile, 'heroes'> & { rift?: Record<string, number> }, vigil: Record<string, number>, ringBest: number, ringByFormat: Partial<Record<Format, number>> = {}, season = 0): RankEntry[] {
   const out: RankEntry[] = [];
   const put = (board: string, score: number): void => {
     if (Number.isFinite(score) && score > 0) out.push({ board, score: Math.floor(score) });
@@ -40,6 +40,19 @@ export function rankEntries(save: Pick<SaveFile, 'heroes'> & { rift?: Record<str
     level = Math.max(level, levelScore(h.level, h.para?.l ?? 0));
   }
   if (stone > 1) put('stone', stone);
+  // the Rift season's ladder (data/seasons.ts): the season's best stone in time, each calling's and the highest, on boards
+  // of that season's own (a new season, new boards: the ladder starts again)
+  if (season > 0) {
+    let top = 0;
+    const byCls: Partial<Record<string, number>> = {};
+    for (const h of save.heroes) {
+      if (!h || h.review || h.rseason?.n !== season) continue;
+      byCls[h.cls] = Math.max(byCls[h.cls] ?? 0, h.rseason.best);
+      top = Math.max(top, h.rseason.best);
+    }
+    for (const [cls, best] of Object.entries(byCls)) put(`season:s${season}-${cls}`, best ?? 0);
+    put(`season:s${season}`, top);
+  }
   if (level > levelScore(1, 0)) put('level', level);
   // the Vigil's longest night, land by land and anywhere
   let night = 0;

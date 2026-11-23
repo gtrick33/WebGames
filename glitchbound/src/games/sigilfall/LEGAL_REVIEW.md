@@ -3,6 +3,20 @@
 First pass 2026-10-27, fixes the same day. A working record of licenses, names and borrowed material, for the
 owner (and a lawyer, if one is asked). It is **not legal advice** and not a trademark clearance.
 
+## The Rift's seasons (2026-11-23)
+
+The owner asked for seasons "similar to diablo": a month each, ten mechanics in turn, for the endgame only. The research
+behind them looked at Diablo III and IV, Path of Exile, Last Epoch and WoW's Mythic+, and what is taken is **rules
+only**: a season-long power that works in the endgame and sleeps afterwards (Diablo III's themes), a power socketed or
+chosen that grows as the player climbs (Diablo IV's seasonal powers), a journey of goals that gives a whole set and a
+title (Diablo III's season journey), a ladder that starts again each season (Mythic+), shrines that empower a run, a
+set bonus from fewer pieces, a legendary's power without wearing it, boons chosen after bosses, offerings at an altar,
+kill streaks, an invading hunter, and echoed casts. Every season's name, its keeper (Yvaine, Perrin, Celandine, Ysolt,
+Ismene, Brother Theodric, Greta, Corwen, Sable, Lisette), their lines, the four hearts, the titles (Heartsworn,
+Shrinewalker, Kinbound, Legendbearer, Boonblessed, Altarsworn, Bloodbound, Twin-pathed, Huntbreaker, Twice-spoken) and
+the Heartfire Drake are Sigilfall's own (`data/seasons.ts`). The third season was proposed as "Grandeur", the name of a
+Diablo III season, and is called the Season of Kinship instead.
+
 ## The Rift's sets and legendaries (2026-11-22)
 
 The owner asked for sets "like diablo 3": one per specialization and one per class, with bonuses at two, four and six

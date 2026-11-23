@@ -195,7 +195,8 @@ describe('Sigilfall: mounts', () => {
     expect(QUEST_DEFS[FIRST_RIDE]!.level).toBe(20);
     expect(MOUNT_DEFS['briarhollow-chestnut']!.source).toEqual({ kind: 'quest', quest: FIRST_RIDE });
     // (the old riding perk's quest left the story: the Cob comes from Millbrook's bridge, or with the perk of an older hero)
-    expect(new Set(MOUNTS.map((m) => m.source.kind))).toEqual(new Set(['quest', 'rift', 'shelf', 'campaign']));
+    // (and since 2026-11-23 a Rift season's Journey: data/seasons.ts)
+    expect(new Set(MOUNTS.map((m) => m.source.kind))).toEqual(new Set(['quest', 'rift', 'shelf', 'campaign', 'season']));
     expect(MOUNT_DEFS['gullport-strider']!.source).toEqual({ kind: 'quest', quest: 'mill-the-bridge', perk: 'mount' });
     setShelfPoints(1000);
     try {
@@ -208,6 +209,7 @@ describe('Sigilfall: mounts', () => {
         if (s.kind === 'perk') c.perks.push(s.perk);
         if (s.kind === 'clears') for (const r of s.regions) c.clears[`${r}:${s.tier}`] = 1;
         if (s.kind === 'rift') c.keystone = s.stone;
+        if (s.kind === 'season') c.rtitles = [s.title];
         expect(ridingOpen(c)).toBe(false);
         expect(mountEarned(c, m), m.id).toBe(false);
         expect(grantMounts(c), m.id).toEqual([]);
