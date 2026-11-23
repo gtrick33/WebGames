@@ -164,14 +164,15 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
   }, [at, engine, hero]);
 
   /* ------------------------------------------------- the hall's four banners: the ways in */
-  // (render3d/hallBanners.ts hangs them in the hall itself; these say what each says and does, left to right)
+  // (render3d/hallBanners.ts hangs them in the hall itself; these say what each says and does, left to right. The Vigil
+  // first and the Ring third since the owner, 2026-11-22: "switch the vigil and the ring banners")
   const trials = trialsOpen(engine.save);
   // (a hero of the player's own who has reached the Riftward can take the Riftstone from here too: ui/RiftScreen.tsx)
   const riftward = heroes.some((x) => !!x && x.unlocked.includes('riftward'));
   const ways: (BannerSpec & { go: () => void })[] = [
-    { id: 'ring', name: 'The Ring', sub: `Arena duels · ${standing.rating} ${rankOf(standing.best).name}`, color: '#d8304a', icon: iconPicture(VIGIL_ICON.ring!), go: onRing },
-    { id: 'story', name: hero ? 'Campaign' : 'New hero', sub: hero ? `The story · ${farthest(hero.unlocked).name}` : 'Eight callings, one Crown', color: '#3a6ad8', icon: iconPicture(VIGIL_ICON.story!), go: primary },
     { id: 'vigil', name: 'The Vigil', sub: night > 0 ? `The endless horde · best ${clock(night)}` : 'Hold out against the endless horde', color: '#d0602a', icon: iconPicture(VIGIL_ICON.vigil!), go: onVigil },
+    { id: 'story', name: hero ? 'Campaign' : 'New hero', sub: hero ? `The story · ${farthest(hero.unlocked).name}` : 'Eight callings, one Crown', color: '#3a6ad8', icon: iconPicture(VIGIL_ICON.story!), go: primary },
+    { id: 'ring', name: 'The Ring', sub: `Arena duels · ${standing.rating} ${rankOf(standing.best).name}`, color: '#d8304a', icon: iconPicture(VIGIL_ICON.ring!), go: onRing },
     // (the Trials are the account's, not a hero's: open once any hero has reached level 20, played as a calling's own
     // ready champion: progress/trial.ts)
     { id: 'rift', name: 'The Riftstone', sub: riftward ? `Your heroes or a champion · best +${Math.max(1, ...heroes.map((x) => x?.keystone ?? 0), ...Object.values(engine.save.rift))}` : trials ? `Champions against the clock · best +${Math.max(1, ...Object.values(engine.save.rift))}` : `Opens when a hero reaches level ${TRIALS_OPEN_AT}`, color: '#8a5ae8', icon: iconPicture(VIGIL_ICON.rift!), locked: !trials && !riftward, go: () => onRift(at) },
