@@ -122,12 +122,14 @@ describe('Sigilfall: the boss bar and the Riftstone clock', () => {
     expect(engine).toContain('banner: w.scene ? this.ui.banner : null };');
   });
 
-  it('the clock is a fifth smaller, and on a phone on its side lies where the quest does', () => {
+  // (the owner, 2026-11-23: "the riftstone ui covers part of the other text": on a phone on its side the clock moved
+  // from the quest's place down a little, clear of the line under the hero's bars)
+  it('the clock is a fifth smaller, and on a phone on its side sits just under the line beneath the hero’s bars', () => {
     expect(rule('.rb-tracker.rb-keyclock')).toContain('scale(0.8)');
     const phone = rule('  .rb-ui.is-touch .rb-tracker.rb-keyclock');
     expect(phone).toContain('left: calc(8px + var(--sa-l))');
-    expect(phone).toContain('top: calc(62px + var(--sa-t))');
-    // the quest's own place there
+    expect(phone).toContain('top: calc(68px + var(--sa-t))');
+    // the quest keeps its own place there, a little higher
     expect(rule('  .rb-ui.is-touch .rb-tracker:not(.rb-keyclock)')).toContain('top: calc(62px + var(--sa-t))');
   });
 
