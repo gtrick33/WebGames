@@ -219,8 +219,10 @@ const bosses: Record<string, BossDef> = {
     name: 'Gloomwing',
     title: 'the Lamp-Eater',
     sprite: 'gloomwing',
-    hp: 5000,
-    dmg: 31,
+    // (much gentler since the owner, 2026-11-22: "gloamwing the boss should be waaaay easier". It was 5000 health and 31
+    // damage, more than the barrow's own king, with darker lamps for longer and a sharper gnaw)
+    hp: 3000,
+    dmg: 23,
     radius: 13,
     xp: 900,
     gold: [140, 200],
@@ -231,27 +233,27 @@ const bosses: Record<string, BossDef> = {
         speed: 40,
         rest: [0.7, 1.1],
         // (sim/patterns/barrow-of-kings.ts) the gallery's lamps, and her feast on them
-        enter: [{ id: 'barrow:dark', w: 1, cd: 0, p: { cut: 0.6 } }, { id: 'barrow:feast', w: 1, cd: 0, p: { count: 1, dark: 16 } }],
+        enter: [{ id: 'barrow:dark', w: 1, cd: 0, p: { cut: 0.3 } }, { id: 'barrow:feast', w: 1, cd: 0, p: { count: 1, dark: 9 } }],
         patterns: [
           // dark feathers falling from its wings about the hall
-          { id: 'spell:rain', w: 3, cd: 3.5, p: { color: '#b8a8ff', type: 'shadow', count: 10, onHero: 3, time: 2.2, rr: 18, mul: 0.9 } },
-          { id: 'charge', w: 2, cd: 5, p: { stun: 0.6 } },
-          { id: 'barrow:feast', w: 3, cd: 10, p: { count: 1, dark: 16 } },
+          { id: 'spell:rain', w: 3, cd: 5, p: { color: '#b8a8ff', type: 'shadow', count: 7, onHero: 2, time: 2.4, rr: 18, mul: 0.7 } },
+          { id: 'charge', w: 2, cd: 6, p: { stun: 0.4 } },
+          { id: 'barrow:feast', w: 2, cd: 14, p: { count: 1, dark: 9 } },
         ],
       },
       {
         at: 0.5,
         banner: 'Gloomwing goes for two lamps at once! Keep them lit!',
-        speed: 46,
-        rest: [0.55, 0.9],
-        enter: [{ id: 'barrow:feast', w: 1, cd: 0, p: { count: 2, dark: 18, wind: 0.65 } }],
+        speed: 42,
+        rest: [0.8, 1.2],
+        enter: [{ id: 'barrow:feast', w: 1, cd: 0, p: { count: 2, dark: 10, wind: 0.8 } }],
         patterns: [
           // dark feathers falling from its wings about the hall
-          { id: 'spell:rain', w: 3, cd: 3, p: { color: '#b8a8ff', type: 'shadow', count: 10, onHero: 3, time: 2.2, rr: 18, mul: 0.9 } },
+          { id: 'spell:rain', w: 3, cd: 4.5, p: { color: '#b8a8ff', type: 'shadow', count: 8, onHero: 2, time: 2.4, rr: 18, mul: 0.7 } },
           // a buffet of its wings flings whoever stands before it across the hall
-          { id: 'spell:hurl', w: 3, cd: 3, p: { color: '#b8a8ff', type: 'shadow', reach: 90, dur: 0.7, mul: 0.6 } },
-          { id: 'tripleCharge', w: 2, cd: 6, p: { count: 2, wind: 0.6, speed: 330, len: 150, stun: 0, mul: 1.2 } },
-          { id: 'barrow:feast', w: 3, cd: 8, p: { count: 2, dark: 18, wind: 0.65, pick: 1 } },
+          { id: 'spell:hurl', w: 2, cd: 5, p: { color: '#b8a8ff', type: 'shadow', reach: 90, dur: 0.8, mul: 0.45 } },
+          { id: 'tripleCharge', w: 2, cd: 8, p: { count: 1, wind: 0.8, speed: 300, len: 150, stun: 0, mul: 1 } },
+          { id: 'barrow:feast', w: 2, cd: 12, p: { count: 2, dark: 10, wind: 0.8, pick: 1 } },
         ],
       },
     ],
