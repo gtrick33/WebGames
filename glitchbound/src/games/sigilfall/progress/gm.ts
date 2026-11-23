@@ -6,7 +6,8 @@ import { QUEST_DEFS } from '../data/quests';
 import { REGIONS } from '../data/regions';
 import { SPEC_LEVEL } from '../data/talents';
 import { RARITIES, SLOTS, type ClassId, type PerkId, type Rarity, type RegionId, type SlotId } from '../data/types';
-import { addXp, autoSlotSkills, cleanName, giveReward, learnedSkills, PERKS, potionCap, spentPoints, talentPoints, type Character } from './character';
+import { SETS } from '../data/riftgear';
+import { addXp, autoSlotSkills, bagSize, cleanName, giveReward, learnedSkills, PERKS, potionCap, spentPoints, talentPoints, type Character } from './character';
 import { makeItem, rollGear } from './items';
 import { BASE_HERO_SLOTS, validateCharacter, type SaveFile } from './save';
 import { lookOf } from './wardrobe';
@@ -100,6 +101,16 @@ export function applyToHero(c: Character, kind: string, p: Record<string, unknow
       const item = makeItem(def.id, clamp(num(p.il, def.minLevel), 1, 200), r);
       if (!item) return 'No such item.';
       return giveReward(c, item) === 'sold' ? 'No room in the hero’s bag.' : '';
+    }
+    case 'set': {
+      const set = SETS[text(p.id)];
+      if (!set) return 'No such set.';
+      if (bagSize(c) - c.bag.length < set.pieces.length) return `No room in the hero’s bag for ${set.pieces.length} pieces.`;
+      for (const id of set.pieces) {
+        const item = makeItem(id, clamp(num(p.il, 60), 1, 200), r);
+        if (item) giveReward(c, item);
+      }
+      return '';
     }
     case 'gear': {
       const rarity = text(p.rarity) as Rarity;

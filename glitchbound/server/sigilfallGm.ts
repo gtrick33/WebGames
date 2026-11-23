@@ -226,6 +226,14 @@ export function checkOrder(kind: string, raw: unknown, label: string): OrderInpu
       if (il === null || il < 1 || il > 200) return 'An item level is between 1 and 200.';
       return hero({ id, il }, `Give ${named} (item level ${il})`);
     }
+    // every piece of one set at once (data/riftgear.ts SETS; the game checks the set exists and the bag has room)
+    case 'set': {
+      const id = short(p.id, 60);
+      const il = whole(p.il);
+      if (!id) return 'Pick a set.';
+      if (il === null || il < 1 || il > 200) return 'An item level is between 1 and 200.';
+      return hero({ id, il }, `Give the whole set: ${named} (item level ${il})`);
+    }
     case 'gear': {
       const rarity = short(p.rarity, 12);
       const slot = short(p.slot, 12);
