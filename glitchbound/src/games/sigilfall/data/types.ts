@@ -151,6 +151,8 @@ export interface BuffDef {
   hot?: number;
   /** Strikes back at whatever hits the hero for this share of the class's reference damage. */
   thorns?: number;
+  /** More damage dealt while it lasts, % (multiplying the rest, once a stack where it stacks): a shrine's, a streak's. */
+  dmg?: number;
   color: string;
   /** It stacks this high: gaining it again adds one and renews its time, and its stats count once a stack. */
   max?: number;

@@ -16777,56 +16777,514 @@ html.rb-touch-playing textarea {
 
 /* The Rift season's page, from its keeper in the Riftward (ui/SeasonPanel.tsx): the season, its heart, its Journey */
 .rb-season {
+  --tone: #c8a8ff;
   display: grid;
+  gap: 14px;
+}
+/* the season's head: its glyph in the keeper's color, how long it has left, what it does, the keeper's word */
+.rb-season-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
   gap: 12px;
+  padding: 10px 12px;
+  border: 1.5px solid color-mix(in srgb, var(--tone) 40%, #3a2a4a);
+  border-radius: 12px;
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--tone) 22%, transparent), transparent 60%),
+    rgb(16 10 24 / 0.8);
+}
+.rb-season-head p {
+  margin: 0;
+}
+.rb-season-glyph {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, #fff 0 8%, var(--tone) 22%, color-mix(in srgb, var(--tone) 30%, transparent) 55%, transparent 72%);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--tone) 55%, transparent);
+  animation: rb-season-beat 2.6s ease-in-out infinite;
+}
+.rb-season-glyph::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1.5px solid color-mix(in srgb, var(--tone) 70%, transparent);
+  border-radius: 4px;
+  transform: rotate(45deg) scale(0.86);
+}
+@keyframes rb-season-beat {
+  50% {
+    box-shadow: 0 0 28px color-mix(in srgb, var(--tone) 75%, transparent);
+    filter: brightness(1.15);
+  }
 }
 .rb-season-lede {
   margin: 0;
   color: #fff4de;
 }
+.rb-season-short {
+  color: #e2d6ee;
+}
+.rb-season-keeper {
+  margin-top: 3px !important;
+  color: color-mix(in srgb, var(--tone) 55%, #e8dcef);
+  font-style: italic;
+}
+.rb-season-keeper span {
+  font-style: normal;
+  color: #a898b8;
+}
 .rb-season-sec {
   display: grid;
   gap: 8px;
 }
-.rb-hearts {
+.rb-season-sec > .rb-kicker {
+  color: color-mix(in srgb, var(--tone) 65%, #fff4de);
+}
+.rb-season-sec p {
+  margin: 0;
+}
+.rb-season-done {
+  color: var(--rb-gold);
+}
+/* a season's cards: hearts to choose, shrines and boons to know */
+.rb-scards {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
-.rb-heart {
-  --heart: #ff5a4a;
+.rb-scards.is-small {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+}
+.rb-scard {
+  --tone: #ff5a4a;
   display: grid;
   align-content: start;
   gap: 4px;
   padding: 9px 10px;
-  border: 1.5px solid color-mix(in srgb, var(--heart) 45%, #3a2a4a);
+  border: 1.5px solid color-mix(in srgb, var(--tone) 45%, #3a2a4a);
   border-radius: 10px;
-  background: rgb(20 12 30 / 0.75);
+  background: linear-gradient(170deg, color-mix(in srgb, var(--tone) 10%, transparent), rgb(20 12 30 / 0.8) 55%);
   color: #e8dcef;
   text-align: left;
   font: inherit;
   font-size: 13px;
+}
+.rb-scards.is-small .rb-scard {
+  padding: 7px 9px;
+  font-size: 12px;
+}
+button.rb-scard {
   cursor: pointer;
+  transition:
+    transform 0.12s ease-out,
+    box-shadow 0.12s ease-out;
 }
-.rb-heart strong {
-  color: var(--heart);
+button.rb-scard:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--tone) 30%, transparent);
 }
-.rb-heart em {
+.rb-scard strong {
+  color: var(--tone);
+  font-size: 14px;
+}
+.rb-scards.is-small .rb-scard strong {
+  font-size: 13px;
+}
+.rb-scard em {
   font-style: normal;
   font-size: 12px;
   color: #b8a8c8;
 }
-.rb-heart.is-on {
-  border-color: var(--heart);
-  background: linear-gradient(160deg, color-mix(in srgb, var(--heart) 28%, transparent), rgb(20 12 30 / 0.9));
-  box-shadow: 0 0 14px color-mix(in srgb, var(--heart) 35%, transparent);
+.rb-scard.is-on {
+  border-color: var(--tone);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--tone) 28%, transparent), rgb(20 12 30 / 0.9));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--tone) 35%, transparent);
 }
-.rb-heart.is-on em {
-  color: var(--heart);
+.rb-scard.is-on em {
+  color: var(--tone);
 }
-.rb-heart:disabled {
+.rb-scard:disabled {
   cursor: default;
   opacity: 0.75;
+}
+/* a shrine's card: its orb, lit as it stands in a run */
+.rb-scard.is-shrine {
+  justify-items: center;
+  text-align: center;
+  padding-top: 12px;
+}
+.rb-sorb {
+  --core: #fff;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 2px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, var(--core) 0 18%, var(--tone) 42%, color-mix(in srgb, var(--tone) 25%, transparent) 64%, transparent 72%);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--tone) 60%, transparent);
+  animation: rb-season-beat 2.2s ease-in-out infinite;
+}
+/* Kinship: a set's six pips, worn and lent; its bonuses, on and made on */
+.rb-kins {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px;
+}
+.rb-kin {
+  display: grid;
+  gap: 6px;
+  padding: 9px 11px;
+  border: 1.5px solid #2e4a3e;
+  border-radius: 10px;
+  background: rgb(14 22 20 / 0.75);
+}
+.rb-kin-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+.rb-kin-head strong {
+  color: #fff4de;
+}
+.rb-kin-pips {
+  display: inline-flex;
+  gap: 3px;
+}
+.rb-kin-pips i {
+  width: 11px;
+  height: 11px;
+  border: 1.5px solid #4a5a54;
+  border-radius: 3px;
+  transform: rotate(45deg) scale(0.8);
+}
+.rb-kin-pips i.is-worn {
+  border-color: #fff0c8;
+  background: #e8c86a;
+}
+.rb-kin-pips i.is-kin {
+  border-color: #36e0a8;
+  background: rgb(54 224 168 / 0.45);
+  box-shadow: 0 0 8px rgb(54 224 168 / 0.7);
+}
+.rb-kin ul {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12.5px;
+  color: #8a8496;
+}
+.rb-kin li {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 6px;
+}
+.rb-kin li.is-on {
+  color: #e8dcc8;
+}
+.rb-kin li.is-kin {
+  color: #a8ffd8;
+}
+.rb-kin li em {
+  font-style: normal;
+  color: #36e0a8;
+}
+.rb-kin-need {
+  display: grid;
+  place-items: center;
+  height: 18px;
+  border-radius: 5px;
+  background: rgb(255 255 255 / 0.07);
+  font-weight: 700;
+  font-size: 11px;
+}
+.rb-kin li.is-on .rb-kin-need {
+  background: #8a6a24;
+  color: #fff4de;
+}
+.rb-kin li.is-kin .rb-kin-need {
+  background: #1e7a5a;
+  color: #e0fff2;
+}
+/* Borrowed legends: the hero's legendaries, one lending */
+.rb-lends {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+}
+.rb-lend {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1.5px solid #5a3e1e;
+  border-radius: 10px;
+  background: rgb(26 16 10 / 0.8);
+  color: #e8dcc8;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.rb-lend.is-on {
+  border-color: #ff9a2a;
+  background: linear-gradient(160deg, rgb(255 154 42 / 0.22), rgb(26 16 10 / 0.9));
+  box-shadow: 0 0 14px rgb(255 154 42 / 0.35);
+}
+.rb-lend:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+.rb-lend-text {
+  display: grid;
+  gap: 2px;
+  font-size: 12.5px;
+}
+.rb-lend-text strong {
+  color: #ff9a2a;
+  font-size: 14px;
+}
+.rb-lend-text em {
+  font-style: normal;
+  font-size: 12px;
+  color: #b8a088;
+}
+.rb-lend.is-on .rb-lend-text em {
+  color: #ffc878;
+}
+/* the altar: ten blessings, candles lit in turn */
+.rb-altar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rb-altar li {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  border: 1.5px solid #2e2440;
+  border-radius: 8px;
+  background: rgb(16 10 26 / 0.7);
+  font-size: 12.5px;
+  color: #8a809a;
+}
+.rb-altar li.is-lit {
+  border-color: #6a4aa8;
+  background: linear-gradient(90deg, rgb(176 122 255 / 0.18), rgb(16 10 26 / 0.8));
+  color: #ece0ff;
+}
+.rb-altar li.is-next {
+  border-color: var(--rb-gold);
+  color: #fff4de;
+}
+.rb-candle {
+  position: relative;
+  justify-self: center;
+  width: 6px;
+  height: 9px;
+  margin-top: 9px;
+  border-radius: 2px;
+  background: #4a4058;
+}
+.rb-altar li.is-lit .rb-candle {
+  background: #e8dcc8;
+}
+.rb-altar li.is-lit .rb-candle::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 8px;
+  height: 10px;
+  margin-left: -4px;
+  border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%;
+  background: radial-gradient(circle at 50% 70%, #fff 0 20%, #ffd84a 45%, #b07aff 90%);
+  box-shadow: 0 0 10px #c8a8ff;
+  animation: rb-flicker 1.3s ease-in-out infinite alternate;
+}
+@keyframes rb-flicker {
+  to {
+    transform: scale(0.85, 1.1) translateY(-1px);
+    filter: brightness(1.2);
+  }
+}
+.rb-altar-cost {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--rb-gold);
+}
+.rb-altar li.is-lit .rb-altar-cost {
+  color: #c8a8ff;
+}
+.rb-altar-offer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+/* a season's numbered rules, and the bar over them (a streak, the hunter's trophies) */
+.rb-srules {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: rb-rule;
+  font-size: 13px;
+  color: #d8cce4;
+}
+.rb-srules li {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 8px;
+  counter-increment: rb-rule;
+}
+.rb-srules li::before {
+  content: counter(rb-rule);
+  display: grid;
+  place-items: center;
+  height: 20px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--tone) 30%, #1a1028);
+  color: #fff4de;
+  font-weight: 700;
+  font-size: 11px;
+}
+.rb-streak {
+  display: grid;
+  gap: 4px;
+  max-width: 420px;
+}
+.rb-streak .rb-bar {
+  height: 12px;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--tone) 30%, transparent);
+}
+/* Twin Paths: the skills of the other paths, and the bar's four places */
+.rb-twins {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rb-twin {
+  --tone: #6ad8a0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 200px;
+  padding: 7px 12px 7px 7px;
+  border: 1.5px solid color-mix(in srgb, var(--tone) 40%, #2a3a34);
+  border-radius: 10px;
+  background: rgb(14 20 18 / 0.8);
+  color: #e8dcef;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.rb-twin span {
+  display: grid;
+}
+.rb-twin strong {
+  font-size: 14px;
+  color: #fff4de;
+}
+.rb-twin em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--tone);
+}
+.rb-twin.is-on {
+  border-color: var(--tone);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--tone) 25%, transparent), rgb(14 20 18 / 0.9));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--tone) 35%, transparent);
+}
+.rb-twin:disabled,
+.rb-twin-slot:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.rb-twin-slots {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 92px));
+  gap: 8px;
+}
+.rb-twin-slot {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 8px 4px 6px;
+  border: 1.5px solid #3a2e4e;
+  border-radius: 10px;
+  background: rgb(18 12 28 / 0.75);
+  color: #b8a8c8;
+  font: inherit;
+  cursor: pointer;
+}
+.rb-twin-slot em {
+  max-width: 100%;
+  overflow: hidden;
+  font-style: normal;
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.rb-twin-slot.is-on {
+  border-color: #6ad8a0;
+  box-shadow: 0 0 12px rgb(106 216 160 / 0.4);
+  color: #6ad8a0;
+}
+.rb-twin-key {
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #8a7a9a;
+}
+.rb-twin-empty {
+  width: 36px;
+  height: 36px;
+  border: 1.5px dashed #4a3a5a;
+  border-radius: 6px;
+}
+/* Echoes: five casts, the fifth said twice */
+.rb-echoes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rb-echoes i {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid #2a4a5a;
+  border-radius: 50%;
+  background: rgb(12 22 28 / 0.8);
+  font-style: normal;
+  font-weight: 700;
+  font-size: 12px;
+  color: #6a8a9a;
+}
+.rb-echoes i.is-echo {
+  border-color: #8ae0ff;
+  color: #fff;
+  background: radial-gradient(circle, rgb(138 224 255 / 0.5), rgb(12 22 28 / 0.9));
+  box-shadow:
+    0 0 0 4px rgb(138 224 255 / 0.15),
+    0 0 0 9px rgb(138 224 255 / 0.07),
+    0 0 14px rgb(138 224 255 / 0.6);
+  animation: rb-season-beat 1.8s ease-in-out infinite;
 }
 .rb-journey {
   display: grid;
@@ -16887,9 +17345,140 @@ html.rb-touch-playing textarea {
   color: #fff4de;
   font: inherit;
 }
-/* a phone: the hearts two by two */
+/* a phone: the cards two by two, the altar in one column */
 @container rb-stage (max-width: 700px) {
-  .rb-hearts {
+  .rb-scards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rb-scards.is-small {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rb-altar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rb-season-head {
+    padding: 8px 10px;
+  }
+  .rb-season-glyph {
+    width: 34px;
+    height: 34px;
+  }
+  .rb-twin {
+    min-width: 0;
+    flex: 1 1 160px;
+  }
+}
+
+/* the season's line on a run's clock (ui/SeasonRun.tsx) */
+.rb-season-line {
+  font-weight: 700;
+  text-shadow: 0 0 6px rgb(0 0 0 / 0.9);
+}
+.rb-season-line:empty {
+  display: none;
+}
+
+/* the Season of Boons: three boons after a boss, the run waiting (ui/SeasonRun.tsx BoonOffer) */
+.rb-boons {
+  z-index: 24;
+}
+.rb-boons-box {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  width: min(720px, 100%);
+  padding: 16px;
+  text-align: center;
+  animation: rb-boons-in 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.rb-boons-box > .rb-kicker {
+  color: #ffe066;
+  text-shadow: 0 0 10px rgb(255 224 102 / 0.5);
+}
+.rb-boons-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+.rb-boon {
+  --boon: #ffe066;
+  position: relative;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 8px;
+  min-height: 170px;
+  padding: 18px 12px 14px;
+  border: 2px solid color-mix(in srgb, var(--boon) 60%, #3a2a4a);
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--boon) 30%, transparent), transparent 70%),
+    linear-gradient(180deg, #24182e, #140c1c);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.5),
+    0 0 22px color-mix(in srgb, var(--boon) 25%, transparent),
+    0 8px 0 rgb(0 0 0 / 0.35);
+  color: #e8dcef;
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+  animation: rb-boons-in 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) backwards;
+  transition:
+    transform 0.14s ease-out,
+    box-shadow 0.14s ease-out;
+}
+.rb-boon:nth-child(2) {
+  animation-delay: 0.07s;
+}
+.rb-boon:nth-child(3) {
+  animation-delay: 0.14s;
+}
+.rb-boon::before {
+  content: '';
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 14%, var(--boon) 40%, color-mix(in srgb, var(--boon) 20%, transparent) 66%, transparent 72%);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--boon) 60%, transparent);
+}
+.rb-boon strong {
+  color: var(--boon);
+  font-size: 17px;
+}
+.rb-boon:hover,
+.rb-boon:focus-visible {
+  transform: translateY(-4px);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.5),
+    0 0 30px color-mix(in srgb, var(--boon) 50%, transparent),
+    0 12px 0 rgb(0 0 0 / 0.35);
+}
+@keyframes rb-boons-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.94);
+  }
+}
+@container rb-stage (max-width: 700px) {
+  .rb-boons-box {
+    gap: 8px;
+    padding: 8px;
+  }
+  .rb-boons-cards {
+    gap: 8px;
+  }
+  .rb-boon {
+    min-height: 0;
+    gap: 5px;
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+  .rb-boon::before {
+    width: 30px;
+    height: 30px;
+  }
+  .rb-boon strong {
+    font-size: 14px;
   }
 }

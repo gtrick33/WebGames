@@ -20,7 +20,9 @@ import type { Marker, RegionStateDef, StoryCond } from '../data/types';
 import { holds, regionState, StoryDirector } from './story';
 import { maybeStartScene, revealBoss, sceneDue, scenesPlayHere, updateScene, type ScenePlay } from './scene';
 import { buildHero, type HeroBuild } from '../progress/build';
-import { greedOf, recordRun, seasonMods } from '../progress/season';
+import { recordRun, seasonBuild, seasonRunEnd } from '../progress/season';
+import type { SeasonShape } from '../progress/build';
+import { boonMods, boonRunEnd, seasonBossDown, seasonCast, seasonFall, seasonKill, seasonTick, startSeasonRun, type SeasonRun } from './season';
 import { fogOpen, fogShare, loadFog, revealFog, storeFog, type Fog } from '../progress/fog';
 import { turnInNpc } from '../progress/handin';
 import { activeQuests, addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, deliverHeld, giveReward, PERKS, potionCap, questEvent, sigilCount, SIGILS, startQuests, type Character, type DungeonMark, questState, HOME, currentObjective } from '../progress/character';
@@ -343,6 +345,11 @@ export class World {
   /** The Rift season this run is in (0: none), and what its mechanic adds to the hero here (progress/season.ts). */
   season = 0;
   seasonMods: Mod[] = [];
+  seasonShape: SeasonShape = {};
+  /** The season's part in this run as it goes (sim/season.ts): shrines, a streak, boons, the hunter, echoes. */
+  seasonRun: SeasonRun | null = null;
+  /** Boons on the table are taken at once (the play-bot and the tests: nobody to choose). */
+  autoBoons = false;
   player: Player;
   input: InputFrame = emptyInput();
 
@@ -570,8 +577,12 @@ export class World {
     this.roomRand = rng(o.seed ^ 0x2008);
     // (a season's mechanic works only in a Riftstone run: progress/season.ts)
     this.season = o.key && o.season ? o.season : 0;
-    this.seasonMods = this.season ? seasonMods(o.hero, this.season) : [];
-    this.build = buildHero(o.hero, null, this.seasonMods);
+    if (this.season) {
+      const sb = seasonBuild(o.hero, this.season);
+      this.seasonMods = sb.mods;
+      this.seasonShape = sb.shape;
+    }
+    this.build = buildHero(o.hero, null, this.seasonMods, this.seasonShape);
     this.flow = new Int16Array(this.map.w * this.map.h);
     this.encounters = this.region.encounters.map((def, index) => ({ def, index, state: 'idle', wave: 0, waveT: 0 }));
     const start = this.map.markers.find((m) => m.marker.kind === 'start');
@@ -1518,7 +1529,13 @@ export class World {
   rebuild(): void {
     const p = this.player;
     const share = p.maxHp > 0 ? p.hp / p.maxHp : 1;
-    this.build = buildHero(this.hero, p.form, this.seasonMods);
+    // (the season's part read again: a hunter's trophy, a boon taken, change it mid-run)
+    if (this.season) {
+      const sb = seasonBuild(this.hero, this.season);
+      this.seasonMods = [...sb.mods, ...boonMods(this)];
+      this.seasonShape = sb.shape;
+    }
+    this.build = buildHero(this.hero, p.form, this.seasonMods, this.seasonShape);
     p.maxHp = this.build.maxHp;
     p.hp = Math.max(1, Math.min(this.build.maxHp, Math.round(this.build.maxHp * share)));
     if (this.build.resource?.kind === 'mana') {
@@ -1594,6 +1611,14 @@ export class World {
   /* ------------------------------------------------------------- step */
 
   step(rawDt: number): void {
+    // a Rift season in a Riftstone run: its part starts with the run's first step, and a boon's choice stops the run
+    if (this.season && !this.seasonRun && this.keyRun) {
+      this.seasonRun = startSeasonRun(this);
+      // (the altar's longer clock: the Season of Offerings)
+      const end = seasonRunEnd(this.hero, this.season);
+      if (end.clock) this.keyRun.par = Math.round(this.keyRun.par * (1 + end.clock / 100));
+    }
+    if (this.seasonRun?.offer) return;
     // hit-stop: a few frames nearly frozen on heavy hits
     let dt = rawDt;
     if (this.hitstopT > 0) {
@@ -1815,7 +1840,10 @@ export class World {
       if (began && req.slot !== 'dodge') continue;
       const was = p.casting;
       const r = this.withMouse(req);
-      if (tryCast(this, r) && req.slot !== 'basic' && req.slot !== 'dodge') this.tutorialSkillCast();
+      if (tryCast(this, r) && req.slot !== 'basic' && req.slot !== 'dodge') {
+        this.tutorialSkillCast();
+        if (this.seasonRun && req.slot !== 'ult') seasonCast(this, req.slot);
+      }
       began = !!p.casting && p.casting !== was;
     }
     if (!peace && inp.holdBasic && p.cds.basic.charges > 0) tryCast(this, this.withMouse(inp.holdBasic));
@@ -1829,6 +1857,7 @@ export class World {
     updateWindup(this, dt);
     updateChannel(this, dt);
     if (!peace && !this.scene) this.tickProcs();
+    if (this.seasonRun && !this.scene) seasonTick(this, dt);
     if (inp.potion) this.drinkPotion();
     // a speed that is not a number is no speed. One that got in (a dash with no length, a blow from nowhere) never left:
     // every step after it was not a number too, moving the hero nowhere and blocked by nothing, so they stood where they
@@ -2051,7 +2080,7 @@ export class World {
   }
 
   /** A piece of gear; one the hero already carries (bag or worn) rolls again, twice at most. */
-  private rollItem(source: LootSource, level: number): Item {
+  rollItem(source: LootSource, level: number): Item {
     const h = this.hero;
     const have = new Set([...h.bag, ...Object.values(h.equip)].flatMap((i) => (i ? [itemName(i)] : [])));
     // (Rift-forged pieces come only out of the Rift, by the highest stone the hero has opened)
@@ -2248,6 +2277,7 @@ export class World {
     // a fight's thing (a candle snuffed, a coffin or a cage broken open) is part of the fight, not a foe: no kill, no loot
     if (e.def.prop) return;
     h.stats.kills += 1;
+    if (this.seasonRun) seasonKill(this, e);
     this.run.kills += 1;
     if (this.keyRun && !e.master) this.keyOnKill(e);
     const tier = TIERS[this.tier]!;
@@ -2370,6 +2400,7 @@ export class World {
     for (let i = 0; i < 1 + this.tier; i++) this.dropItem(e.x, e.y, this.rollItem('boss', il));
     for (let i = 0; i < 3; i++) this.dropAt('orb', e.x, e.y, 1);
     this.emit({ t: 'bossDown', boss: def.id });
+    if (this.seasonRun) seasonBossDown(this);
     this.emit({ t: 'voice', who: 'hero', kind: 'victory' });
     this.questProgress((o) => o.kind === 'boss' && o.boss === def.id);
     // the room opens
@@ -2630,6 +2661,10 @@ export class World {
     const before = h.keystone;
     const here = this.region.id;
     const beforeHere = h.stones[here] ?? 0;
+    // the season: its share of the run's end (the Heart of Greed's, the altar's, a boon's: read before the run counts, at the
+    // rank the hero went in with); the altar's last blessing opens one stone more
+    const season = this.season ? seasonRunEnd(h, this.season) : { marks: 0, cache: 0, up: 0, clock: 0 };
+    if (up > 0) up += season.up;
     // past the cap the stones ask for someone who has stood at Duskspire themselves; and what a run opens, it opens in
     // this dungeon (the owner, 2026-11-22: rank 9 reached in one dungeon is not rank 9 in the next). `keystone` is the
     // deepest anywhere, for what the stone rewards
@@ -2640,8 +2675,8 @@ export class World {
     }
     const best = up > 0 && k.key > (h.bestKeys[here] ?? 0);
     if (best) h.bestKeys[here] = k.key;
-    // the season: the Heart of Greed's share (read before the run counts, at the rank the hero went in with), and the run
-    const greed = greedOf(h, this.season);
+    const boon = boonRunEnd(this);
+    const greed = { marks: season.marks + boon.marks, cache: season.cache + boon.cache };
     const paid = marks + Math.round((marks * greed.marks) / 100);
     if (this.season) recordRun(h, this.season, here, k.key, up, k.deaths);
     k.end = { time, up, marks: paid, stone: Math.max(k.key, h.stones[here] ?? 0), best };
@@ -2671,6 +2706,8 @@ export class World {
   playerDies(): void {
     const p = this.player;
     if (p.dead) return;
+    // the Season of Boons' Second Wind: the fall undone, once
+    if (this.seasonRun && seasonFall(this)) return;
     this.emit({ t: 'voice', who: 'hero', kind: 'death' });
     p.dead = true;
     p.deadT = 0;

@@ -159,6 +159,8 @@ export interface BossState {
 }
 
 export interface Enemy {
+  /** The Season of the Hunter's hunter (sim/season.ts): marked, and a trophy for the season when it falls. */
+  hunter?: boolean;
   /** Taunted: it turns on the hero until this time (Effect taunt). */
   tauntUntil?: number;
   /** A boss shrugs off hard control until this time (after a partial stun, root or fear). */

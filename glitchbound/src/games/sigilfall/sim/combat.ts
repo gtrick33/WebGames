@@ -95,6 +95,9 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
   const combo = spec?.combo && !o.isDot && comboMet(e, spec.combo.vs, w.time) ? spec.combo : null;
   if (combo) mult *= combo.mult;
   mult *= 1 + (statusPower(e, 'shock') + statusPower(e, 'mark') + statusPower(e, 'armorBreak')) / 100;
+  // what the hero's buffs add on top of it all (a Rift season's shrine or streak: BuffDef.dmg)
+  const more = w.player.buffs.reduce((a, b) => a + (b.def.dmg ?? 0) * (b.def.max ? (b.n ?? 1) : 1), 0);
+  if (more) mult *= 1 + more / 100;
   let crit = false;
   if (!o.isDot && w.rand() * 100 < stats.crit) {
     crit = true;

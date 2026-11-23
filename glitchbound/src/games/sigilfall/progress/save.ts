@@ -6,7 +6,7 @@ import { BASE_DEFS, ITEM_DEFS, MINOR_MODS } from '../data/items';
 import { QUEST_DEFS } from '../data/quests';
 import { REGIONS } from '../data/regions';
 import { SETS } from '../data/riftgear';
-import { HEARTS, JOURNEY, SEASON_LOOP } from '../data/seasons';
+import { BLESSINGS, HEARTS, JOURNEY, SEASON_LOOP } from '../data/seasons';
 import { SKILLS } from '../data/skills';
 import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS } from '../data/talents';
 import type { ClassId, Item, PerkId, RegionId, SlotId, StatKey } from '../data/types';
@@ -196,6 +196,15 @@ function validRiftSeason(v: unknown, cls: ClassId): Pick<Character, 'rseason'> {
       flawless: int(o.flawless, 0, 1e6, 0),
       claimed: int(o.claimed, 0, JOURNEY.length, 0),
       set,
+      ...(typeof o.borrowed === 'string' && o.borrowed.length <= 64 ? { borrowed: o.borrowed } : {}),
+      ...(obj(o.twin) && typeof obj(o.twin)!.skill === 'string' && SKILLS[obj(o.twin)!.skill as string] ? { twin: { skill: obj(o.twin)!.skill as string, slot: int(obj(o.twin)!.slot, 0, 3, 3) } } : {}),
+      ...(o.altar !== undefined ? { altar: int(o.altar, 0, BLESSINGS.length, 0) } : {}),
+      ...(o.hunted !== undefined ? { hunted: int(o.hunted, 0, 9999, 0) } : {}),
+      ...(o.used === true ? { used: true } : {}),
+      ...(o.streak !== undefined ? { streak: int(o.streak, 0, 1e6, 0) } : {}),
+      ...(o.shrines !== undefined ? { shrines: int(o.shrines, 0, 1e6, 0) } : {}),
+      ...(o.echoes !== undefined ? { echoes: int(o.echoes, 0, 1e7, 0) } : {}),
+      ...(o.boons !== undefined ? { boons: int(o.boons, 0, 1e6, 0) } : {}),
     },
   };
 }

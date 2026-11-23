@@ -1080,7 +1080,8 @@ export class Renderer {
       if (e.dead) this.plateTrail.delete(e.id);
       return;
     }
-    const named = !!e.def.named;
+    // (the Season of the Hunter's hunter is somebody: its whole name, in red, on a plate as wide as a named foe's)
+    const named = !!e.def.named || !!e.hunter;
     const elite = e.elite.length > 0;
     // (what a boss fight stands up, a coffin, a candle, a cage, is a thing: it shows its health once it is struck,
     // not a row of full bars over the furniture)
@@ -1095,7 +1096,8 @@ export class Renderer {
       const quiet = e.hp >= e.maxHp && !e.aggro && !elite && !named;
       this.plate(e.id, s.x, s.y, elite || named ? 48 : 32, elite || named ? 5.5 : 4.5, e.hp / e.maxHp, named ? PLATE.named : elite ? PLATE.elite : PLATE.foe, { shield: e.shield > 0 ? e.shield / (e.maxHp * 0.4) : 0, alpha: quiet ? 0.6 : 1 });
     }
-    if (named) this.label(`${e.name} ${e.level}`, s.x, s.y - 11 * this.hud, 11, '#e8d0ff');
+    if (e.hunter) this.label(e.name, s.x, s.y - 11 * this.hud, 12, '#ff6a5a');
+    else if (named) this.label(`${e.name} ${e.level}`, s.x, s.y - 11 * this.hud, 11, '#e8d0ff');
     else if (elite) this.label(e.name.split(' ')[0]!, s.x, s.y - 11 * this.hud, 11, '#ffd36b');
   }
 
