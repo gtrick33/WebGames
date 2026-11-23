@@ -72,6 +72,7 @@ export const RANGER: Kit = {
         role: 'Hunting with a companion',
         skill: 'call-wolf',
         ult: 'horn-of-the-hunt',
+        bar: ['call-wolf', 'piercing-arrow', 'multishot', 'hawk-call'],
         points: { name: 'Fangs', one: 'Fang', max: 5, color: '#e0a060' },
         combo: combo(
           'The Pack Answers',
@@ -81,7 +82,11 @@ export const RANGER: Kit = {
           K('piercing-arrow', { op: 'spend', per: 0.2 }),
           when('pack-answers', 'kill', { kind: 'summon', pet: 'wolf', count: 1, dur: 8 }, 'A kill calls a wolf for 8 s.', { icd: 8 }),
         ),
-        passive: { name: 'Pack Leader', text: '+25% companion damage and health, +5% physical damage.', mods: [S('pet', 25), S('physical', 5)] },
+        passive: {
+          name: 'Pack Leader',
+          text: '+25% companion damage and health, +5% physical damage. Piercing Arrow hits 50% harder, and every one loosed closes the pack around you: a guard of 15% of your health for 3 s.',
+          mods: [S('pet', 25), S('physical', 5), dmg('piercing-arrow', 50), K('piercing-arrow', { op: 'onCast', effect: { kind: 'shield', pct: 15, dur: 3 } })],
+        },
       },
     ],
     refDamage: 20,

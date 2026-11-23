@@ -281,8 +281,8 @@ const SPEC_SETS: SetSpec[] = [
     four: { need: 4, text: 'Blood Hunger sweeps a wide arc and holds a second charge.', mods: [K('bloodthirst', { op: 'arc', pct: 120 }), K('bloodthirst', { op: 'charges', n: 1 })] },
     six: {
       need: 6,
-      text: 'Blood Hunger deals 300% more damage, and every kill bites again: an echo of Blood Hunger at the next enemy.',
-      mods: [K('bloodthirst', { op: 'damage', pct: 300 }), P('redmaw-six', 'kill', ECHO('bloodthirst', 1), 'Every kill: an echo of Blood Hunger at the next enemy (once every 0.4 s).', { icd: 0.4 })],
+      text: 'Blood Hunger deals 300% more damage, and the red maw bites by itself: an echo of Blood Hunger every 1.5 s in a fight.',
+      mods: [K('bloodthirst', { op: 'damage', pct: 300 }), EVERY('redmaw-six', 1.5, 'bloodthirst', 1, 'Every 1.5 s in a fight: an echo of Blood Hunger at the nearest enemy.')],
     },
   },
   {
@@ -443,8 +443,8 @@ const SPEC_SETS: SetSpec[] = [
     },
     six: {
       need: 6,
-      text: 'Your companions hit 100% harder, and every kill calls another wolf to the hunt for 10 s (once every 2 s).',
-      mods: [S('pet', 100), P('packlaw-six', 'kill', { kind: 'summon', pet: 'wolf', count: 1, dur: 10 }, 'Every kill: another wolf joins the hunt for 10 s (once every 2 s).', { icd: 2 })],
+      text: 'Your companions hit 100% harder and Piercing Arrow 300% harder, and the pack’s leader looses its own: an echo of Piercing Arrow every 2 s in a fight.',
+      mods: [S('pet', 100), K('piercing-arrow', { op: 'damage', pct: 300 }), EVERY('packlaw-six', 2, 'piercing-arrow', 1, 'Every 2 s in a fight: an echo of Piercing Arrow at the nearest enemy.')],
     },
   },
   /* paladin */
@@ -484,8 +484,8 @@ const SPEC_SETS: SetSpec[] = [
     },
     six: {
       need: 6,
-      text: 'Thrown Aegis deals 300% more damage, and a blow taken may throw it back (one in three, once every 1.5 s): an echo of Thrown Aegis.',
-      mods: [K('avengers-shield', { op: 'damage', pct: 300 }), P('oathwall-six', 'hurt', ECHO('avengers-shield', 1), 'A blow taken, one in three: an echo of Thrown Aegis (once every 1.5 s).', { chance: 0.34, icd: 1.5 })],
+      text: 'Thrown Aegis deals 300% more damage, and the oath throws it again by itself: an echo of Thrown Aegis every 3 s in a fight.',
+      mods: [K('avengers-shield', { op: 'damage', pct: 300 }), EVERY('oathwall-six', 3, 'avengers-shield', 1, 'Every 3 s in a fight: an echo of Thrown Aegis at the nearest enemy.')],
     },
   },
   {
@@ -525,8 +525,8 @@ const SPEC_SETS: SetSpec[] = [
     },
     six: {
       need: 6,
-      text: 'Atoning Light deals 300% more damage and Radiant Burst 150% more, and a blow taken may answer (one in three, once every 1.5 s): an echo of Radiant Burst.',
-      mods: [K('penance', { op: 'damage', pct: 300 }), K('holy-nova', { op: 'damage', pct: 150 }), P('vigil-six', 'hurt', ECHO('holy-nova', 1), 'A blow taken, one in three: an echo of Radiant Burst (once every 1.5 s).', { chance: 0.34, icd: 1.5 })],
+      text: 'Atoning Light and Radiant Burst deal 400% more damage, and the vigil answers by itself: an echo of Radiant Burst every 1.5 s in a fight.',
+      mods: [K('penance', { op: 'damage', pct: 400 }), K('holy-nova', { op: 'damage', pct: 400 }), EVERY('vigil-six', 1.5, 'holy-nova', 1, 'Every 1.5 s in a fight: an echo of Radiant Burst.')],
     },
   },
   {
@@ -606,8 +606,8 @@ const SPEC_SETS: SetSpec[] = [
     },
     six: {
       need: 6,
-      text: 'Your companions hit 100% harder, and an imp climbs out of the pit to fight for you every 4 s in a fight, for 10 s each.',
-      mods: [S('pet', 100), P('covenant-six', 'tick', { kind: 'summon', pet: 'imp', count: 1, dur: 10 }, 'Every 4 s in a fight: an imp joins you for 10 s.', { icd: 4 })],
+      text: 'Your demons hit 100% harder and Soul Spike 300% harder, and the pit hurls its own: an echo of Soul Spike every 2 s in a fight.',
+      mods: [S('pet', 100), K('soul-spike', { op: 'damage', pct: 300 }), EVERY('covenant-six', 2, 'soul-spike', 1, 'Every 2 s in a fight: an echo of Soul Spike at the nearest enemy.')],
     },
   },
   {
@@ -687,8 +687,8 @@ const SPEC_SETS: SetSpec[] = [
     },
     six: {
       need: 6,
-      text: 'Thrash deals 300% more damage, and every blow you take may thrash back (one in three, once a second): an echo of Thrash.',
-      mods: [K('thrash', { op: 'damage', pct: 300 }), P('heartwood-six', 'hurt', ECHO('thrash', 1), 'A blow taken, one in three: an echo of Thrash (once a second).', { chance: 0.34, icd: 1 })],
+      text: 'Thrash deals 400% more damage, and the old wood thrashes by itself: an echo of Thrash every second in a fight.',
+      mods: [K('thrash', { op: 'damage', pct: 400 }), EVERY('heartwood-six', 1, 'thrash', 1, 'Every second in a fight: an echo of Thrash.')],
     },
   },
   /* gloam knight */
