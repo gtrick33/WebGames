@@ -49,6 +49,7 @@ export const WARLOCK: Kit = {
         role: 'Demons fight for you',
         skill: 'summon-felguard',
         ult: 'summon-infernal',
+        bar: ['summon-felguard', 'soul-spike', 'hellbrand', 'drain-life'],
         points: { name: 'Tribute', one: 'Tribute', max: 5, color: '#ff9a4d' },
         combo: combo(
           'Fed to the Pit',
@@ -57,7 +58,11 @@ export const WARLOCK: Kit = {
           K('life-tap', { op: 'onCast', effect: { kind: 'buff', buff: { id: 'combo-pit', name: 'Blood for the Pit', dur: 8, color: '#c84a3a', stats: { pet: 40 } } } }),
           K('life-tap', { op: 'onCast', effect: { kind: 'summon', pet: 'imp', count: 1, dur: 8 } }),
         ),
-        passive: { name: 'Master Demonologist', text: 'Your demons deal 25% more damage and have 25% more health.', mods: [S('pet', 25)] },
+        passive: {
+          name: 'Master Demonologist',
+          text: 'Your demons deal 25% more damage and have 25% more health. Every Soul Spike wraps you in torn souls: a ward of 15% of your health for 3 s.',
+          mods: [S('pet', 25), K('soul-spike', { op: 'onCast', effect: { kind: 'shield', pct: 15, dur: 3 } })],
+        },
       },
       {
         name: 'Doomcaller',

@@ -261,11 +261,19 @@ describe('Sigilfall: a specialization brings its own skills to the bar', () => {
     expect([...c.skills].sort()).toEqual([...CLASSES.mage.trees[2].bar!].sort());
   });
 
-  it('every Mage specialization plays its own four at 60', () => {
-    for (const spec of [0, 1, 2] as const) {
-      const c = readyHero('mage', 60, 'epic', 5, spec);
-      expect([...c.skills].sort(), CLASSES.mage.trees[spec].name).toEqual([...CLASSES.mage.trees[spec].bar!].sort());
+  it('every specialization with a bar of its own plays those four at 60', () => {
+    let named = 0;
+    for (const cls of Object.keys(CLASSES) as ClassId[]) {
+      for (const spec of [0, 1, 2] as const) {
+        const bar = CLASSES[cls].trees[spec].bar;
+        if (!bar) continue;
+        named++;
+        const c = readyHero(cls, 60, 'epic', 5, spec);
+        expect([...c.skills].sort(), CLASSES[cls].trees[spec].name).toEqual([...bar].sort());
+      }
     }
+    // (the Mage's three, and since the second rework the Shieldbearer, the Aegis, the Beastmaster and the Binder)
+    expect(named).toBeGreaterThanOrEqual(7);
   });
 
   it('a skill the player puts on the bar stays there; a level only brings a skill it just taught', () => {

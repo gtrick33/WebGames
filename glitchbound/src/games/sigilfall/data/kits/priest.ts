@@ -35,6 +35,7 @@ export const PRIEST: Kit = {
         role: 'Shields and atonement',
         skill: 'penance',
         ult: 'seraph-lance',
+        bar: ['power-word-shield', 'holy-nova', 'hallowed-brand', 'penance'],
         points: { name: 'Candles', one: 'Candle', max: 5, color: '#ffe9a0' },
         combo: combo(
           'Penitent Light',
@@ -45,10 +46,13 @@ export const PRIEST: Kit = {
         ),
         passive: {
           name: 'Atonement',
-          text: 'Your hits heal you for 1.5% of your health (at most twice a second), and Ward of Grace absorbs 40% of your health.',
+          text: 'Your hits heal you for 1.5% of your health (at most twice a second), and Ward of Grace absorbs 40% of your health. Atoning Light and Radiant Burst hit 75% harder, and Radiant Burst comes back a third sooner.',
           mods: [
             P({ id: 'atonement', on: 'hit', chance: 1, icd: 0.5, effect: { kind: 'heal', pct: 1.5 }, text: 'Your hits heal you.' }),
             K('power-word-shield', { op: 'onCast', effect: { kind: 'shield', pct: 40, dur: 6 } }),
+            dmg('penance', 75),
+            dmg('holy-nova', 75),
+            cdr('holy-nova', 33),
           ],
         },
       },

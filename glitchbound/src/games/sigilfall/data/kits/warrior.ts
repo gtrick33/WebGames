@@ -44,8 +44,14 @@ export const WARRIOR: Kit = {
         ),
         passive: {
           name: 'Enrage',
-          text: '+4% critical hit chance; critical hits give 4 Rage.',
-          mods: [S('crit', 4), P({ id: 'enrage', on: 'crit', chance: 1, icd: 0.25, effect: { kind: 'resource', n: 4 }, text: 'Critical hits give Rage.' })],
+          text: '+4% critical hit chance; critical hits give 4 Rage. Blood Hunger comes back a quarter sooner and hits 50% harder, and every kill mends you for 2% of your health.',
+          mods: [
+            S('crit', 4),
+            P({ id: 'enrage', on: 'crit', chance: 1, icd: 0.25, effect: { kind: 'resource', n: 4 }, text: 'Critical hits give Rage.' }),
+            cdr('bloodthirst', 25),
+            dmg('bloodthirst', 50),
+            P({ id: 'enrage-feast', on: 'kill', chance: 1, icd: 0.2, effect: { kind: 'heal', pct: 2 }, text: 'Every kill mends you.' }),
+          ],
         },
       },
       {

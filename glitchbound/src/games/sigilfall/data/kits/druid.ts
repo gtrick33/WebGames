@@ -83,7 +83,11 @@ export const DRUID: Kit = {
           K('thrash', { op: 'spend', per: 0.2 }),
         ),
         formOnly: true,
-        passive: { name: 'Thick Hide', text: '+20 armor and +10% max health.', mods: [S('armor', 20), S('hpPct', 10)] },
+        passive: {
+          name: 'Thick Hide',
+          text: '+20 armor and +10% max health. Thrash comes back 40% sooner and hits four times as hard, and Maul hits three times as hard.',
+          mods: [S('armor', 20), S('hpPct', 10), cdr('thrash', 40), dmg('thrash', 300), dmg('maul', 200)],
+        },
       },
     ],
     forms: [

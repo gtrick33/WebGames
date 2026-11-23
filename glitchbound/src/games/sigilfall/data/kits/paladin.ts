@@ -54,6 +54,7 @@ export const PALADIN: Kit = {
         role: 'Tank: shields and armor',
         skill: 'shield-of-the-righteous',
         ult: 'rampart-of-light',
+        bar: ['avengers-shield', 'judgment', 'divine-storm', 'shield-of-the-righteous'],
         points: { name: 'Valor', one: 'Valor', max: 5, color: '#4fb0ff' },
         combo: combo(
           'Anvil of Faith',
@@ -67,7 +68,11 @@ export const PALADIN: Kit = {
           steady('lance-of-noon'),
           steady('sentence'),
         ),
-        passive: { name: 'Bulwark of Light', text: '+20 armor and +10% max health.', mods: [S('armor', 20), S('hpPct', 10)] },
+        passive: {
+          name: 'Bulwark of Light',
+          text: '+20 armor and +10% max health. Thrown Aegis comes back a third sooner and hits 30% harder, and Bastion Strike 30% harder.',
+          mods: [S('armor', 20), S('hpPct', 10), cdr('avengers-shield', 33), dmg('avengers-shield', 30), dmg('shield-of-the-righteous', 30)],
+        },
       },
       {
         name: 'Zealot',
