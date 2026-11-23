@@ -1037,9 +1037,9 @@ export const STAT_ROLL: Record<StatKey, { base: number; per: number; max?: numbe
   pet: { base: 4, per: 1, max: 60 },
 };
 
-export const RARITY_MUL: Record<Rarity, number> = { common: 0.8, uncommon: 1, rare: 1.15, epic: 1.3, legendary: 1.45 };
+export const RARITY_MUL: Record<Rarity, number> = { common: 0.8, uncommon: 1, rare: 1.15, epic: 1.3, legendary: 1.45, set: 1.45 };
 /** Rolled stats per rarity for generated gear. */
-export const RARITY_ROLLS: Record<Rarity, number> = { common: 1, uncommon: 2, rare: 3, epic: 3, legendary: 3 };
+export const RARITY_ROLLS: Record<Rarity, number> = { common: 1, uncommon: 2, rare: 3, epic: 3, legendary: 3, set: 3 };
 
 /** Elements a class's gear rolls in place of 'element'. */
 export const CLASS_ELEMENTS: Record<ClassId, StatKey[]> = {

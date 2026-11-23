@@ -239,7 +239,7 @@ export function validateItem(v: unknown): Item | null {
   if (!authored && !base) return null;
   const il = int(o.il, 1, MAX_IL, 1);
   const r = authored ? authored.rarity : RARITIES.includes(o.r as never) ? (o.r as Item['r']) : 'common';
-  if (!authored && (r === 'epic' || r === 'legendary')) return null;
+  if (!authored && (r === 'epic' || r === 'legendary' || r === 'set')) return null;
   const item: Item = { uid: o.uid.slice(0, 24), base: o.base, r, il, st: [] };
   if (!authored && Array.isArray(o.st)) {
     for (const pair of o.st.slice(0, 4)) {

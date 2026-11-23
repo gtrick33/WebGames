@@ -151,6 +151,11 @@ export function effectText(e: Effect): string {
       return 'drags the enemy hit to you';
     case 'detonate':
       return `sets off every ${STATUS_WORD[e.status] ?? e.status} on the enemy at once (${pct(e.mul)} of what was left${e.radius ? ', on everything near it' : ''})`;
+    case 'cast': {
+      const what = e.skill === 'basic' ? 'your basic attack' : (SKILLS[e.skill]?.name ?? e.skill);
+      const n = e.times && e.times > 1 ? `${e.times} times ` : '';
+      return `an echo casts ${what} ${n}at the nearest enemy, free (${pct(e.mul)} damage)`;
+    }
   }
 }
 

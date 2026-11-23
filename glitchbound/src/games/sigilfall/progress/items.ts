@@ -125,14 +125,29 @@ export const salvageValue = (item: Pick<Item, 'il' | 'r' | 'paid'>): number => {
 export type LootSource = 'enemy' | 'elite' | 'boss' | 'chest-common' | 'chest-rare' | 'chest-epic' | 'quest';
 
 const RARITY_WEIGHTS: Record<LootSource, number[]> = {
-  //            common uncommon rare epic legendary
-  enemy: [58, 30, 10, 1.8, 0.2],
-  elite: [0, 25, 55, 17, 3],
-  boss: [0, 0, 45, 45, 10],
-  'chest-common': [30, 45, 22, 3, 0],
-  'chest-rare': [0, 30, 50, 18, 2],
-  'chest-epic': [0, 0, 20, 70, 10],
-  quest: [0, 40, 50, 10, 0],
+  //            common uncommon rare epic legendary set (a set piece only out of the Rift: RIFT_ODDS)
+  enemy: [58, 30, 10, 1.8, 0.2, 0],
+  elite: [0, 25, 55, 17, 3, 0],
+  boss: [0, 0, 45, 45, 10, 0],
+  'chest-common': [30, 45, 22, 3, 0, 0],
+  'chest-rare': [0, 30, 50, 18, 2, 0],
+  'chest-epic': [0, 0, 20, 70, 10, 0],
+  quest: [0, 40, 50, 10, 0, 0],
+};
+
+/**
+ * In a Riftstone run, the chance a drop is a set piece, and a legendary, before the usual roll (the owner, 2026-11-22:
+ * "increase spawn rate of set items and legendary items ... they should be dropped more often"). A boss's drops and
+ * the cache (a boss's) are where they mostly come from; an elite's now and then; a common foe's seldom.
+ */
+export const RIFT_ODDS: Record<LootSource, { set: number; legendary: number }> = {
+  enemy: { set: 0.015, legendary: 0.015 },
+  elite: { set: 0.1, legendary: 0.08 },
+  boss: { set: 0.3, legendary: 0.22 },
+  'chest-common': { set: 0.05, legendary: 0.05 },
+  'chest-rare': { set: 0.12, legendary: 0.1 },
+  'chest-epic': { set: 0.25, legendary: 0.2 },
+  quest: { set: 0, legendary: 0 },
 };
 
 /** Picks a rarity; higher difficulty tiers move the odds up. */
@@ -197,6 +212,16 @@ export function droppable(cls: ClassId, il: number, rarity: Rarity, stone = 0): 
 
 /** One random item for a class: generated gear up to rare, hand-made items at epic and legendary (`stone`: in the Rift, the hero's highest). */
 export function rollLoot(cls: ClassId, il: number, source: LootSource, tier: number, r: () => number, stone = 0): Item {
+  // in the Rift: a set piece or a legendary first, by the odds of what dropped it (RIFT_ODDS)
+  if (stone > 0) {
+    const odds = RIFT_ODDS[source];
+    const roll = r();
+    const want = roll < odds.set ? 'set' : roll < odds.set + odds.legendary ? 'legendary' : null;
+    if (want) {
+      const pool = droppable(cls, il, want, stone);
+      if (pool.length) return makeItem(pool[Math.floor(r() * pool.length)]!.id, il, r)!;
+    }
+  }
   let rarity = rollRarity(source, tier, r);
   if (rarity === 'epic' || rarity === 'legendary' || rarity === 'uncommon') {
     // Uncommon can also be a hand-made helper item (Mender's Charm); epic/legendary always are.

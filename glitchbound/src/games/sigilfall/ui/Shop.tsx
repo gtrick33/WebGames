@@ -315,8 +315,8 @@ function Wagers({ engine, onWon }: { engine: SigilEngine; onWon: (item: Item) =>
       )}
       {why && <p className="rb-small rb-warn">{why}.</p>}
       <p className="rb-small">
-        The broker turns over one unseen piece for the slot, made at item level <b>{keyLoot(h.keystone, h.level)}</b> (your Riftstone +{h.keystone}). Legendary{' '}
-        <b className="rb-gold">{pct(odds.legendary)}</b>, epic {pct(odds.epic)}, rare {pct(odds.rare)}. Rift-forged pieces your stone has opened are among the legendaries.
+        The broker turns over one unseen piece for the slot, made at item level <b>{keyLoot(h.keystone, h.level)}</b> (your Riftstone +{h.keystone}). A set piece{' '}
+        <b className="rb-set">{pct(odds.set)}</b>, legendary <b className="rb-legendary">{pct(odds.legendary)}</b>, epic {pct(odds.epic)}. A slot no set is worn on turns its set chance into a legendary.
       </p>
       <p className="rb-small rb-dim">Marks come from bosses and from every Rift run: more for a higher stone, and more for beating the clock.</p>
     </div>

@@ -946,7 +946,7 @@ function Toasts({ engine }: { engine: SigilEngine }) {
         if (t.tone === 'loot' && t.item) {
           const item = t.item;
           // (on touch a plain drop isn't a card over the fight: the bag button counts what's new)
-          if (engine.touchMode && t.text === itemName(item) && item.r !== 'legendary') return null;
+          if (engine.touchMode && t.text === itemName(item) && (item.r !== 'legendary' && item.r !== 'set')) return null;
           const owned = h.bag.some((i) => i.uid === item.uid);
           const lines = modLines(itemMods(item));
           const canWear = usableBy(item, h.cls);

@@ -7,7 +7,7 @@ import { rarityColor } from '../render/renderer';
 
 /** Small shared pieces of the Sigilfall UI. */
 
-export const RARITY_NAME: Record<Rarity, string> = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare', epic: 'Epic', legendary: 'Legendary' };
+export const RARITY_NAME: Record<Rarity, string> = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare', epic: 'Epic', legendary: 'Legendary', set: 'Set' };
 
 export function ItemIcon({ item, size = 44, label }: { item: Item; size?: number; label?: string }) {
   return (

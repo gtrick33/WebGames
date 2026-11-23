@@ -440,6 +440,13 @@ html.rb-touch-playing textarea {
     0 0 10px rgb(255 154 42 / 0.6),
     inset 0 0 0 1px rgb(0 0 0 / 0.5);
 }
+/* a set piece: its own green, with a second ring inside its frame so it is told from a legendary at a glance */
+.rb-itemicon.is-set {
+  box-shadow:
+    0 0 10px rgb(54 224 168 / 0.6),
+    inset 0 0 0 2px rgb(54 224 168 / 0.55),
+    inset 0 0 0 3px rgb(0 0 0 / 0.5);
+}
 .rb-new {
   position: absolute;
   top: -4px;
@@ -16695,4 +16702,12 @@ html.rb-touch-playing textarea {
   .rb-begin > p.rb-small {
     margin: 0;
   }
+}
+
+/* the two colors of the Rift's best (render/renderer.ts rarityColor): a legendary orange, a set piece green */
+.rb-legendary {
+  color: #ff9a2a;
+}
+.rb-set {
+  color: #36e0a8;
 }

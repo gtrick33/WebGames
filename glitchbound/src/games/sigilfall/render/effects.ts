@@ -1328,7 +1328,7 @@ export class Effects {
       if (d.kind !== 'item' || !d.item || !sc.near(d.x, d.y)) continue;
       const color = BEAM[d.item.r] ?? '#ffffff';
       const tall = BEAM_TALL[d.item.r] ?? 0.8;
-      const beat = d.item.r === 'epic' || d.item.r === 'legendary' ? 0.85 + Math.sin(sc.time * 4 + d.x) * 0.15 : 1;
+      const beat = d.item.r === 'epic' || d.item.r === 'legendary' || d.item.r === 'set' ? 0.85 + Math.sin(sc.time * 4 + d.x) * 0.15 : 1;
       fx.put({ kind: FX.shaft, x: d.x, y: d.y, base: true, w: 10 + 6 * tall, h: 34 + 30 * tall, a: color, alpha: 0.75 * beat, seed: d.x * 0.1 });
       fx.put({ kind: FX.glow, x: d.x, y: d.y, flat: true, w: 22 + 12 * tall, a: color, alpha: 0.55 * beat });
     }

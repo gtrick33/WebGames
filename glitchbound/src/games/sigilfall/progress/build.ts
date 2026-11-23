@@ -144,6 +144,7 @@ export function scaleEffect(e: Effect, rank: number): Effect {
     case 'nova':
     case 'shockwave':
     case 'riftBurst':
+    case 'cast':
       x.mul *= rank;
       break;
     case 'heal':
@@ -179,7 +180,8 @@ export function mergeEffect(list: Effect[], e: Effect): void {
       (x.kind !== 'status' || (e.kind === 'status' && x.status === e.status)) &&
       (x.kind !== 'resetCd' || (e.kind === 'resetCd' && x.skill === e.skill)) &&
       (x.kind !== 'buff' || (e.kind === 'buff' && x.buff.id === e.buff.id)) &&
-      (x.kind !== 'summon' || (e.kind === 'summon' && x.pet === e.pet && (x.dur === 0) === (e.dur === 0))),
+      (x.kind !== 'summon' || (e.kind === 'summon' && x.pet === e.pet && (x.dur === 0) === (e.dur === 0))) &&
+      (x.kind !== 'cast' || (e.kind === 'cast' && x.skill === e.skill)),
   );
   if (i < 0) {
     list.push(cloneEffect(e));
@@ -199,6 +201,10 @@ export function mergeEffect(list: Effect[], e: Effect): void {
       break;
     case 'chain':
       if (e.kind === 'chain') list[i] = { ...a, jumps: Math.min(4, Math.max(a.jumps, e.jumps)), range: Math.max(a.range, e.range), mul: Math.min(1, Math.max(a.mul, e.mul)) };
+      break;
+    // (two echoes of the same skill: the stronger, as often as the most)
+    case 'cast':
+      if (e.kind === 'cast') list[i] = { ...a, mul: Math.max(a.mul, e.mul), times: Math.max(a.times ?? 1, e.times ?? 1) };
       break;
     case 'heal':
       if (e.kind === 'heal') list[i] = { ...a, pct: Math.max(a.pct, e.pct) };

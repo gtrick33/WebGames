@@ -301,7 +301,7 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
             worn={sel!.where === 'worn'}
             confirm={confirm === item.uid}
             onSalvage={() => {
-              if (confirm !== item.uid && (item.r === 'epic' || item.r === 'legendary' || item.r === 'rare')) {
+              if (confirm !== item.uid && (item.r === 'epic' || item.r === 'legendary' || item.r === 'set' || item.r === 'rare')) {
                 setConfirm(item.uid);
                 return;
               }

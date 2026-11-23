@@ -69,7 +69,7 @@ function skinRamp(hex: string): Ramp {
 
 /** The trim a piece's rarity gives it (null: none). */
 function trimOf(p: Piece): RGB | null {
-  if (p.r === 'epic' || p.r === 'legendary') return GOLD[1];
+  if (p.r === 'epic' || p.r === 'legendary' || p.r === 'set') return GOLD[1];
   if (p.r === 'rare') return tone(rgb(p.tint), 0.5);
   return null;
 }
@@ -404,7 +404,7 @@ function chestFront(p: Painter, l: HeroLook, back: boolean): void {
 
 /** Legendary pieces carry a glowing stone. */
 function gem(p: Painter, piece: Piece, x: number, y: number, hidden: boolean): void {
-  if (piece.r !== 'legendary' || hidden) return;
+  if ((piece.r !== 'legendary' && piece.r !== 'set') || hidden) return;
   const G = ramp('#ff9a3d');
   p.rect(x - 1, y - 1, 3, 3, G[2]);
   p.set(x - 1, y - 1, G[0]);
@@ -488,7 +488,7 @@ function headFront(p: Painter, l: HeroLook, skin: Ramp, hair: Ramp, back: boolea
         p.rect(9, 22, 17, 1, R[2]);
       }
       // a plume on the better ones
-      if (H.r === 'epic' || H.r === 'legendary' || H.r === 'rare') {
+      if (H.r === 'epic' || H.r === 'legendary' || H.r === 'set' || H.r === 'rare') {
         const P = ramp(H.r === 'rare' ? '#c9473b' : H.r === 'epic' ? '#8a4ae6' : '#ff8a3d');
         p.ellipse(CX + 1, 9.5, 2.2, 3.5, (dx) => (dx < 0 ? P[1] : P[3]));
         p.rect(CX, 11, 2, 2, P[2]);
@@ -522,7 +522,7 @@ function headFront(p: Painter, l: HeroLook, skin: Ramp, hair: Ramp, back: boolea
         const hgt = x === 17 ? 4 : x === 14 || x === 20 ? 3 : 2;
         p.rect(x, 15 - hgt, 1, hgt, G[x < 17 ? 1 : 2]);
       }
-      const gemC = ramp(H.r === 'legendary' ? '#ff9a3d' : H.r === 'epic' ? '#c94aff' : H.r === 'rare' ? '#4ab0ff' : '#e84a5a');
+      const gemC = ramp((H.r === 'legendary' || H.r === 'set') ? '#ff9a3d' : H.r === 'epic' ? '#c94aff' : H.r === 'rare' ? '#4ab0ff' : '#e84a5a');
       if (!back) {
         p.rect(CX - 1, 14, 2, 2, gemC[2]);
         p.set(CX - 1, 14, gemC[0]);
@@ -763,7 +763,7 @@ function side(p: Painter, l: HeroLook, pose: Pose): void {
           p.rect(10, 22, 7, 6, R[3]);
           p.rect(22, 21, 3, 3, R[2]);
           if (t) p.rect(9, 20, 17, 1, t);
-          if (H.r === 'epic' || H.r === 'legendary' || H.r === 'rare') {
+          if (H.r === 'epic' || H.r === 'legendary' || H.r === 'set' || H.r === 'rare') {
             const P = ramp(H.r === 'rare' ? '#c9473b' : H.r === 'epic' ? '#8a4ae6' : '#ff8a3d');
             p.ellipse(14, 10, 4, 2.2, (_dx, dy) => (dy < 0 ? P[1] : P[3]));
           }
