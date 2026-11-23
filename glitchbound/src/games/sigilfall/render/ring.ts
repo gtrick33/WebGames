@@ -299,7 +299,7 @@ export class RingFx {
         // (the ground torn open for the dead)
         else if (ab.role === 'summon') sound('rift', vol);
         else if (ab.aim === 'self') sound(ab.role === 'defense' ? 'shield' : ab.role === 'mobility' ? 'blink' : 'buff', vol);
-        else if (ab.school === 'physical') sound(melee ? (ab.role === 'burst' ? 'swingBig' : 'swing') : ab.cls === 'ranger' ? 'bow' : 'swingBig', vol);
+        else if (ab.school === 'physical') sound(melee ? (ab.role === 'burst' ? 'swingBig' : 'swing') : ab.cls === 'ranger' ? 'bow' : 'swingBig', ab.cls === 'ranger' && ab.role !== 'burst' ? vol * 0.7 : vol);
         else sound(LEAVES_OWN[ab.id] ?? LEAVES[ab.school] ?? 'bolt', vol);
       } else if (e.k === 'land') {
         const ab = ABILITIES[e.ab];
@@ -312,6 +312,8 @@ export class RingFx {
         // (and as it lands: steel for a blow, the school's own for a spell, a soft chime for a heal)
         const mine = e.id === myId;
         if (ab.role === 'heal' || ab.aim === 'friend') sound('heal', mine ? 0.6 : 0.35);
+        // (an arrow lands with a knock of its own, not steel on steel: the owner, 2026-11-22, "fix the sound of rangers arrows")
+        else if (ab.cls === 'ranger' && ab.school === 'physical' && ab.range > 40) sound('arrow', mine ? 0.55 : 0.35);
         else if (ab.aim === 'enemy' || ab.aim === 'near' || ab.aim === 'ground') sound(ab.school === 'physical' ? (ab.role === 'burst' ? 'critBlade' : 'clash') : ab.role === 'burst' && ab.school !== 'frost' ? 'explode' : (LANDS[ab.school] ?? 'hit'), mine ? 0.75 : 0.5);
         // (its own look as it lands, in place of its school's burst; with it, for the few that keep both)
         const from0 = this.by.get(ab.id);

@@ -27,7 +27,7 @@ const FFMPEG = process.env.FFMPEG ?? 'ffmpeg';
  * so the mix in a match stays as it was. Blows that come all the time a little under, a click well under.
  */
 const LOUD = -10.5;
-const LOUD_OF = { hit: -12.5, clash: -12, swing: -12, hurt: -11.5, critBlade: -11, talent: -14, spear: -12, 'sigil-won': -12 };
+const LOUD_OF = { bow: -16, arrow: -15.5, hit: -12.5, clash: -12, swing: -12, hurt: -11.5, critBlade: -11, talent: -14, spear: -12, 'sigil-won': -12 };
 
 /* ------------------------------------------------------------------ the instruments */
 
@@ -304,7 +304,11 @@ const SOUNDS = {
   clash: () => hall(layer([steel(0.2, between(1500, 1900))], [thud(190, 0.12, 0.3), 0, 0.5]), 0.12, 0.5),
   critBlade: () => hall(layer([thud(130, 0.35, 0.9)], [steel(0.22, 1300), 0.004, 0.6], [whoosh(0.18, 600, 2600, { peak: 0.2 }), 0, 0.4]), 0.16, 0.6),
   hurt: () => hall(layer([thud(120, 0.3, 0.7)], [air(0.12, 'bp', 400, 1.5, (u) => Math.exp(-u * 5)), 0.01, 0.4]), 0.1, 0.4),
-  bow: () => hall(layer([pluck(note(40), 0.22, 0.25), 0, 0.6], [whoosh(0.2, 1200, 4500, { peak: 0.2, q: 2 }), 0.02, 0.7]), 0.12, 0.4),
+  // (lower, shorter and softer since the owner, 2026-11-22: "fix the sound of rangers arrows pls, currently its annoying":
+  // a quick shot is loosed every second, and it was a bright high twang with a hiss up to 4.5 kHz)
+  bow: () => hall(layer([pluck(note(28), 0.13, 0.55), 0, 0.5], [whoosh(0.13, 450, 1500, { peak: 0.15, q: 1.3 }), 0.01, 0.35]), 0.06, 0.25),
+  // an arrow striking home: a dull short knock, where it had a sword's clash of steel
+  arrow: () => hall(thud(230, 0.1, 0.2), 0.05, 0.25),
   // shields and moving
   shield: () => hall(layer([shape(biquad(saws(0.6, [note(45), note(52)], { detune: 0.01 }), 'lp', (u) => 300 + 900 * swell(u, 0.25), 2), (u) => swell(u, 0.25))], [shimmer(0.5, { lo: 2500, hi: 6000, peak: 0.25 }), 0, 0.4]), 0.25, 0.8),
   shieldBreak: () => hall(layer([crunch(0.35, 700, { lo: 1500, hi: 9000 })], [boom(160, 50, 0.3), 0, 0.6], [air(0.4, 'bp', (u) => 4000 - 3000 * u, 1.5, (u) => (1 - u) ** 2), 0, 0.4]), 0.2, 0.7),
