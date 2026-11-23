@@ -12,7 +12,7 @@ export interface RewardLine {
   rarity?: string;
 }
 
-const RARITY_WORD: Record<string, string> = { common: 'a common', uncommon: 'an uncommon', rare: 'a rare', epic: 'an epic', legendary: 'a legendary' };
+const RARITY_WORD: Record<string, string> = { common: 'a common', uncommon: 'an uncommon', rare: 'a rare', epic: 'an epic', legendary: 'a legendary', set: 'a set' };
 
 export function questRewards(c: Character, q: QuestDef): RewardLine[] {
   const r = q.reward;

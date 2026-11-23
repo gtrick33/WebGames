@@ -7,11 +7,11 @@ import { RIFT_ITEMS, RIFT_TIERS, riftPool, SETS } from '../src/games/sigilfall/d
 import { SKILLS } from '../src/games/sigilfall/data/skills';
 import type { ClassId, Effect, Mod, SlotId } from '../src/games/sigilfall/data/types';
 import { buildHero, collectMods, setsWorn } from '../src/games/sigilfall/progress/build';
-import { addXp, chooseSpec, newCharacter, seatSpecSkill, slotOpen } from '../src/games/sigilfall/progress/character';
+import { addXp, chooseSpec, newCharacter, salvage, seatSpecSkill, slotOpen } from '../src/games/sigilfall/progress/character';
 import { modLines } from '../src/games/sigilfall/progress/describe';
-import { droppable, makeItem, rollLoot } from '../src/games/sigilfall/progress/items';
+import { droppable, itemWorth, makeItem, rollLoot, salvageValue } from '../src/games/sigilfall/progress/items';
 import { cantWager, riftFirsts, stoneRows, wager, WAGER_PRICE, wagerOdds } from '../src/games/sigilfall/progress/rift';
-import { stockFor } from '../src/games/sigilfall/progress/shop';
+import { sellPrice, stockFor } from '../src/games/sigilfall/progress/shop';
 import { tipDue, tipSteps } from '../src/games/sigilfall/progress/tips';
 import { rng } from '../src/games/sigilfall/core/math';
 import type { World } from '../src/games/sigilfall/sim/world';
@@ -116,6 +116,26 @@ describe('Sigilfall: Rift-forged gear', () => {
 });
 
 describe('Sigilfall: sets', () => {
+  // (the owner's screenshot deck, 2026-11-23: a set piece's card offered "Salvage · NaN gold", and melting one
+  // down made the hero's gold NaN, which a save keeps as nothing: every coin gone at the next load)
+  it('melt down and sell for gold like a legendary, never for NaN', () => {
+    for (const set of Object.values(SETS)) {
+      for (const id of set.pieces) {
+        const it = makeItem(id, 80)!;
+        expect(Number.isFinite(salvageValue(it)) && salvageValue(it) > 0, id).toBe(true);
+        expect(sellPrice(it)).toBe(salvageValue(it));
+        expect(itemWorth(it)).toBe(itemWorth({ il: 80, r: 'legendary' }));
+      }
+    }
+    const c = readyHero('priest', 60, 'epic', 5, 1);
+    c.gold = 1000;
+    const piece = makeItem(SETS[Object.keys(SETS)[0]!]!.pieces[0]!, 80)!;
+    c.bag.push(piece);
+    const got = salvage(c, piece.uid);
+    expect(got).toBeGreaterThan(0);
+    expect(c.gold).toBe(1000 + got);
+  });
+
   const wearing = (cls: ClassId, n: number, spec?: 0 | 1 | 2) => {
     const c = readyHero(cls, 60, 'epic', 5, spec ?? 0);
     const set = Object.values(SETS).find((s) => s.cls === cls && s.spec === spec)!;

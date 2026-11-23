@@ -2200,7 +2200,7 @@ function LookPicture({ look }: { look: Look }) {
 }
 
 const LOOK_LABEL: Record<LookSlot, string> = { head: 'Head', chest: 'Chest', weapon: 'Weapon' };
-const RARITY_RANK: Record<string, number> = { legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
+const RARITY_RANK: Record<string, number> = { set: 0, legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
 
 /**
  * The Wardrobe (blueprint §6.2): the looks the hero owns for their head, chest and weapon, shown over what

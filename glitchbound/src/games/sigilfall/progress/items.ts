@@ -112,8 +112,10 @@ export function itemScore(item: Item): number {
 
 /** A bought piece sells back for at most this share of what was paid for it. */
 export const RESALE = 0.25;
+/** How much more a piece of each rarity is worth than a common one (a set piece as much as a legendary). */
+const WORTH_MUL: Record<Rarity, number> = { common: 1, uncommon: 1.6, rare: 3, epic: 6, legendary: 12, set: 12 };
 /** What a piece of gear is worth: a vendor's price for one is four times this (progress/shop.ts gearPrice). */
-export const itemWorth = (item: Pick<Item, 'il' | 'r'>): number => Math.round((4 + item.il * 2) * [1, 1.6, 3, 6, 12][RARITIES.indexOf(item.r)]!);
+export const itemWorth = (item: Pick<Item, 'il' | 'r'>): number => Math.round((4 + item.il * 2) * WORTH_MUL[item.r]);
 /** What a piece melts down or sells for: the road's share of its worth (GOLD_FIND), and never more than RESALE of what was paid for it. */
 export const salvageValue = (item: Pick<Item, 'il' | 'r' | 'paid'>): number => {
   const value = Math.max(1, Math.round(itemWorth(item) * GOLD_FIND));

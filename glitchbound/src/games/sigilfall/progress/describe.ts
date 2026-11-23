@@ -136,7 +136,7 @@ export function effectText(e: Effect): string {
     case 'resource':
       return `gives ${e.n} ${e.n === 1 ? 'point' : 'points'} of your resource`;
     case 'points':
-      return `gives ${e.n} of your specialization's ${e.n === 1 ? 'point' : 'points'}`;
+      return `gives ${e.n === 1 ? 'one' : e.n} of your specialization's points`;
     case 'fear':
       return `terrifies enemies around it for ${secs(e.dur)}`;
     case 'summon':
