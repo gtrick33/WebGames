@@ -52,8 +52,6 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
   const color = hero ? CLASSES[hero.cls].colors.main : '#8d6bff';
   const [night] = useState(longestNight);
   const [standing] = useState(topStanding);
-  // the small menu behind the cog, top right: the rankings, the shop, the settings and deleting a hero
-  const [menu, setMenu] = useState(false);
 
   /* ------------------------------------------------- the hall, in 3D, with everyone in it */
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -313,40 +311,37 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
             {buildLabel()}
           </small>
         </div>
-        {/* (one cog for the hall's own things, beside the arcade's menu: the owner, 2026-11-21, "too many buttons") */}
+        {/* (each of the hall's own things a button of its own, in sight: the owner, 2026-11-23, "the options for the rankings
+            shop etc are hidden behind the cogwheel, make them visible separate buttons". They were in one cog's menu
+            since 2026-11-21's "too many buttons": small, with a word under each where there is room) */}
         <div className="cs-top-btns">
-          <button className={`rb-iconbtn cs-cog${menu ? ' is-on' : ''}`} onClick={() => setMenu((m) => !m)} aria-label="Options" aria-expanded={menu} title="Options">
-            ⚙
+          <button className="rb-iconbtn cs-topbtn" onClick={onRanks} aria-label="Rankings" title="Rankings">
+            <span aria-hidden="true">♛</span>
+            <small>Rankings</small>
           </button>
-          <GameMenuButton className="rb-iconbtn" />
-          {menu && (
-            <>
-              <button className="cs-menu-shade" aria-label="Close options" onClick={() => setMenu(false)} />
-              <div className="cs-menu" role="menu">
-                <button role="menuitem" onClick={() => (setMenu(false), onRanks())}>
-                  <span aria-hidden="true">♛</span> Rankings
-                </button>
-                {onStore && (
-                  <button role="menuitem" onClick={() => (setMenu(false), onStore())}>
-                    <img src={uiIcon('store', 2)} alt="" draggable={false} /> Shop
-                  </button>
-                )}
-                {hero && (
-                  <button role="menuitem" onClick={() => (setMenu(false), engine.playTogether(at))}>
-                    <span aria-hidden="true">⚑</span> Play together
-                  </button>
-                )}
-                <button role="menuitem" onClick={() => (setMenu(false), onSettings())}>
-                  <span aria-hidden="true">⚙</span> Settings
-                </button>
-                {hero && (
-                  <button role="menuitem" className="is-danger" onClick={() => (setMenu(false), setConfirmDelete(at))}>
-                    <span aria-hidden="true">🗑</span> Delete {hero.name}
-                  </button>
-                )}
-              </div>
-            </>
+          {onStore && (
+            <button className="rb-iconbtn cs-topbtn" onClick={onStore} aria-label="Shop" title="Shop">
+              <img src={uiIcon('store', 2)} alt="" draggable={false} />
+              <small>Shop</small>
+            </button>
           )}
+          {hero && (
+            <button className="rb-iconbtn cs-topbtn" onClick={() => engine.playTogether(at)} aria-label="Play together" title="Play together">
+              <span aria-hidden="true">⚑</span>
+              <small>Together</small>
+            </button>
+          )}
+          <button className="rb-iconbtn cs-topbtn" onClick={onSettings} aria-label="Settings" title="Settings">
+            <span aria-hidden="true">⚙</span>
+            <small>Settings</small>
+          </button>
+          {hero && (
+            <button className="rb-iconbtn cs-topbtn is-danger" onClick={() => setConfirmDelete(at)} aria-label={`Delete ${hero.name}`} title={`Delete ${hero.name}`}>
+              <span aria-hidden="true">🗑</span>
+              <small>Delete</small>
+            </button>
+          )}
+          <GameMenuButton className="rb-iconbtn" />
         </div>
       </div>
 
