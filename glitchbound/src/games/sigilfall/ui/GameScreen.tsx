@@ -347,9 +347,16 @@ function Hud({ engine }: { engine: SigilEngine }) {
               Lv {h.level}
               {h.para.l > 0 ? ` P${h.para.l}` : ''}
             </b>
-            {' · '}
-            {region.name}
-            {w.keyRun ? <b className="rb-mplus"> · Riftstone +{w.keyRun.key}</b> : w.tier > 0 && <b style={{ color: TIERS[w.tier]!.color }}> · {TIERS[w.tier]!.name}</b>}
+            {/* (in a Riftstone run its clock says the stone and the map says the place: the line keeps to the level, clear
+                of the clock under it. The owner, 2026-11-23: "the riftstone ui covers part of the other text (the zone
+                etc)") */}
+            {!w.keyRun && (
+              <>
+                {' · '}
+                {region.name}
+                {w.tier > 0 && <b style={{ color: TIERS[w.tier]!.color }}> · {TIERS[w.tier]!.name}</b>}
+              </>
+            )}
           </span>
         </div>
         {!engine.touchMode && (
