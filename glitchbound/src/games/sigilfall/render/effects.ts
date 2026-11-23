@@ -1999,7 +1999,7 @@ export class Effects {
 const QUEST_GOLD = '#ffe066';
 const BEAM: Record<string, string> = { common: '#e8e4d8', uncommon: '#7fe06a', rare: '#6fb4ff', epic: '#c58bff', legendary: '#ffae42' };
 /** How tall a beam stands by rarity (0.8 was every beam's height before). */
-export const BEAM_TALL: Record<string, number> = { common: 0.35, uncommon: 0.6, rare: 0.8, epic: 1.2, legendary: 1.7 };
+export const BEAM_TALL: Record<string, number> = { common: 0.35, uncommon: 0.6, rare: 0.8, epic: 1.2, legendary: 1.7, set: 1.9 };
 
 /** A friendly look's own colors (the rest take their damage type's). */
 const LOOK_TONES: Record<string, Tone> = {
