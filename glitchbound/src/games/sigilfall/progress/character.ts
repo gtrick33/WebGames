@@ -7,6 +7,7 @@ import { itemClass, itemSlot, salvageValue } from './items';
 import { learnLooks, type LookSlot } from './wardrobe';
 import { isMainQuest, questSteps, turnInNpc } from './handin';
 import { newParagon, type Paragon } from './paragon';
+import type { RiftSeason } from './season';
 
 /**
  * A hero and everything that persists about them, plus the rules that change it: experience and
@@ -111,6 +112,10 @@ export interface Character {
    * `keystone` stays the deepest opened anywhere, for what the stone rewards (titles, mounts, the broker's odds).
    */
   stones: Record<string, number>;
+  /** This Rift season's part (progress/season.ts): the Season Heart, the season's best stone, the Journey. */
+  rseason?: RiftSeason;
+  /** The Rift seasons' titles earned (each season's Journey gives its own), kept for good. */
+  rtitles?: string[];
   /** Paragon levels past 60 and their points (progress/paragon.ts). */
   para: Paragon;
   /** One-time things done: once-only chests, discovered spots. */

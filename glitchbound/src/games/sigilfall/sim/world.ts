@@ -14,12 +14,13 @@ import { REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
 import { isRetired } from '../data/retired';
 import { THEMES } from '../data/themes';
 import { BOSS_MARKS, GOLD_FIND } from '../data/vendors';
-import type { ClassId, EliteAffix, Encounter, Item, Objective, QuestDef, RegionDef, RegionId, SkillSpec, SlotKey, StatusId } from '../data/types';
+import type { ClassId, EliteAffix, Encounter, Item, Mod, Objective, QuestDef, RegionDef, RegionId, SkillSpec, SlotKey, StatusId } from '../data/types';
 import { ACTION_SLOTS, SKILL_SLOTS } from '../data/types';
 import type { Marker, RegionStateDef, StoryCond } from '../data/types';
 import { holds, regionState, StoryDirector } from './story';
 import { maybeStartScene, revealBoss, sceneDue, scenesPlayHere, updateScene, type ScenePlay } from './scene';
 import { buildHero, type HeroBuild } from '../progress/build';
+import { greedOf, recordRun, seasonMods } from '../progress/season';
 import { fogOpen, fogShare, loadFog, revealFog, storeFog, type Fog } from '../progress/fog';
 import { turnInNpc } from '../progress/handin';
 import { activeQuests, addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, deliverHeld, giveReward, PERKS, potionCap, questEvent, sigilCount, SIGILS, startQuests, type Character, type DungeonMark, questState, HOME, currentObjective } from '../progress/character';
@@ -87,6 +88,11 @@ export interface WorldOptions {
    * doesnt drop items").
    */
   noLoot?: boolean;
+  /**
+   * The Rift season this Riftstone run is in (data/seasons.ts), for a hero whose progress counts (not a Rift Trial's):
+   * its mechanic works in the run and the run's end counts for the season. Left out (tests, the campaign), no season.
+   */
+  season?: number;
 }
 
 /** Seconds as m:ss. */
@@ -334,6 +340,9 @@ export class World {
   hero: Character;
   settings: Settings;
   build: HeroBuild;
+  /** The Rift season this run is in (0: none), and what its mechanic adds to the hero here (progress/season.ts). */
+  season = 0;
+  seasonMods: Mod[] = [];
   player: Player;
   input: InputFrame = emptyInput();
 
@@ -559,7 +568,10 @@ export class World {
     this.critterRand = rng(o.seed ^ 0x3c1d);
     this.weatherRand = rng(o.seed ^ 0x5eed);
     this.roomRand = rng(o.seed ^ 0x2008);
-    this.build = buildHero(o.hero);
+    // (a season's mechanic works only in a Riftstone run: progress/season.ts)
+    this.season = o.key && o.season ? o.season : 0;
+    this.seasonMods = this.season ? seasonMods(o.hero, this.season) : [];
+    this.build = buildHero(o.hero, null, this.seasonMods);
     this.flow = new Int16Array(this.map.w * this.map.h);
     this.encounters = this.region.encounters.map((def, index) => ({ def, index, state: 'idle', wave: 0, waveT: 0 }));
     const start = this.map.markers.find((m) => m.marker.kind === 'start');
@@ -1506,7 +1518,7 @@ export class World {
   rebuild(): void {
     const p = this.player;
     const share = p.maxHp > 0 ? p.hp / p.maxHp : 1;
-    this.build = buildHero(this.hero, p.form);
+    this.build = buildHero(this.hero, p.form, this.seasonMods);
     p.maxHp = this.build.maxHp;
     p.hp = Math.max(1, Math.min(this.build.maxHp, Math.round(this.build.maxHp * share)));
     if (this.build.resource?.kind === 'mana') {
@@ -2628,10 +2640,14 @@ export class World {
     }
     const best = up > 0 && k.key > (h.bestKeys[here] ?? 0);
     if (best) h.bestKeys[here] = k.key;
-    k.end = { time, up, marks, stone: Math.max(k.key, h.stones[here] ?? 0), best };
-    h.marks += marks;
+    // the season: the Heart of Greed's share (read before the run counts, at the rank the hero went in with), and the run
+    const greed = greedOf(h, this.season);
+    const paid = marks + Math.round((marks * greed.marks) / 100);
+    if (this.season) recordRun(h, this.season, here, k.key, up, k.deaths);
+    k.end = { time, up, marks: paid, stone: Math.max(k.key, h.stones[here] ?? 0), best };
+    h.marks += paid;
     // the Rift's cache: more the higher the stone, and only in time
-    if (up > 0) for (let i = 0; i < keyCache(k.key); i++) this.dropItem(x, y, this.rollItem('boss', keyLoot(k.key, k.heroLevel)));
+    if (up > 0) for (let i = 0; i < keyCache(k.key) + greed.cache; i++) this.dropItem(x, y, this.rollItem('boss', keyLoot(k.key, k.heroLevel)));
     // every new stone opened gives one Rift-forged piece the hero doesn't have yet (sets first, as the stones open them)
     const firsts = this.noLoot ? [] : riftFirsts(h, h.keystone, h.keystone - before);
     for (const d of firsts) {

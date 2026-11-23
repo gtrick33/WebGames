@@ -1,4 +1,5 @@
 import { CityPlan } from '../citygen';
+import { seasonDef, type SeasonNow } from '../seasons';
 import type { NpcDef, QuestDef, RegionDef } from '../types';
 
 /**
@@ -40,6 +41,8 @@ function plan(): CityPlan {
     c.prop('brazier', x, y);
   c.marker(27, 21, { kind: 'place', id: 'rift-gate' });
   c.npc('riftkeeper', 28, 23);
+  // the season's keeper, by the square's south-west stone (data/seasons.ts: each season dresses them as its own)
+  c.npc('rw-season', 20, 28);
   c.marker(27, 29, { kind: 'waystone' });
   c.marker(28, 34, { kind: 'start' });
   for (const [x, y] of [
@@ -93,6 +96,16 @@ export const RIFTWARD: RegionDef = {
 
 /** The Riftward's people: the Keeper at the gate, and every merchant a hero at the top needs. */
 export const RIFTWARD_NPCS: Record<string, NpcDef> = {
+  // the season's keeper (dressed as the season running by dressSeasonKeeper; the first season's until then)
+  'rw-season': {
+    id: 'rw-season',
+    name: seasonDef(1).keeper.name,
+    title: seasonDef(1).keeper.title,
+    sprite: 'mystic',
+    service: 'season',
+    pal: seasonDef(1).keeper.pal,
+    talk: [{ lines: seasonDef(1).keeper.lines }],
+  },
   riftkeeper: {
     id: 'riftkeeper',
     name: 'Keeper Isolde',
@@ -166,3 +179,16 @@ export const RIFTWARD_NPCS: Record<string, NpcDef> = {
 };
 
 export const RIFTWARD_QUESTS: QuestDef[] = [];
+
+/**
+ * Dresses the season's keeper as the season running (or, before the first, as the first, saying when it begins):
+ * their name, their colors, what they say. Called whenever the Riftward is entered.
+ */
+export function dressSeasonKeeper(now: SeasonNow | null): void {
+  const npc = RIFTWARD_NPCS['rw-season']!;
+  const def = now?.def ?? seasonDef(1);
+  npc.name = def.keeper.name;
+  npc.title = def.keeper.title;
+  npc.pal = def.keeper.pal;
+  npc.talk = [{ lines: now ? def.keeper.lines : ['The first season of the stones begins on the first of December.', 'Come back then. I will have a heart for you.'] }];
+}

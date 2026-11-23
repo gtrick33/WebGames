@@ -5,6 +5,8 @@ import { CLASS_IDS, MAX_LEVEL, xpToNext } from '../data/classes';
 import { BASE_DEFS, ITEM_DEFS, MINOR_MODS } from '../data/items';
 import { QUEST_DEFS } from '../data/quests';
 import { REGIONS } from '../data/regions';
+import { SETS } from '../data/riftgear';
+import { HEARTS, JOURNEY, SEASON_LOOP } from '../data/seasons';
 import { SKILLS } from '../data/skills';
 import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS } from '../data/talents';
 import type { ClassId, Item, PerkId, RegionId, SlotId, StatKey } from '../data/types';
@@ -178,6 +180,25 @@ export const emptySave = (): SaveFile => ({ v: SAVE_VERSION, heroes: Array(HERO_
 
 type Raw = Record<string, unknown>;
 const obj = (v: unknown): Raw | null => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Raw) : null);
+
+/** A hero's part in a Rift season and the seasons' titles (progress/season.ts), as far as they make sense. */
+function validRiftSeason(v: unknown, cls: ClassId): Pick<Character, 'rseason'> {
+  const o = obj(v);
+  if (!o) return {};
+  const set = typeof o.set === 'string' && SETS[o.set]?.cls === cls ? o.set : null;
+  return {
+    rseason: {
+      n: int(o.n, 1, 9999, 1),
+      heart: typeof o.heart === 'string' && o.heart in HEARTS ? o.heart : null,
+      best: int(o.best, 0, 999, 0),
+      runs: int(o.runs, 0, 1e6, 0),
+      dungeons: Array.isArray(o.dungeons) ? [...new Set(o.dungeons.filter((x): x is string => typeof x === 'string' && x in REGIONS))] : [],
+      flawless: int(o.flawless, 0, 1e6, 0),
+      claimed: int(o.claimed, 0, JOURNEY.length, 0),
+      set,
+    },
+  };
+}
 const num = (v: unknown, lo: number, hi: number, dflt: number): number => (typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : dflt);
 const int = (v: unknown, lo: number, hi: number, dflt: number): number => Math.round(num(v, lo, hi, dflt));
 const str = (v: unknown, max: number, dflt: string): string => (typeof v === 'string' ? v.slice(0, max) : dflt);
@@ -293,6 +314,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     opened: [],
     perks: Array.isArray(o.perks) ? [...new Set(o.perks.filter((x): x is PerkId => typeof x === 'string' && x in PERKS))] : [],
     looks: Array.isArray(o.looks) ? o.looks.filter((x): x is string => typeof x === 'string' && x.length <= 64).slice(0, 4000) : [],
+    ...(Array.isArray(o.rtitles) ? { rtitles: [...new Set(o.rtitles.filter((x): x is string => typeof x === 'string' && SEASON_LOOP.some((d) => d.title.id === x)))] } : {}),
     worn: {},
     body: o.body === 'f' ? 'f' : 'm',
     ...(parseFace(o.face) ? { face: parseFace(o.face) } : {}),
@@ -300,6 +322,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     mounts: Array.isArray(o.mounts) ? [...new Set(o.mounts.filter((x): x is string => typeof x === 'string' && !!MOUNT_DEFS[x]))] : [],
     mount: typeof o.mount === 'string' && MOUNT_DEFS[o.mount] ? o.mount : null,
     stats: { kills: 0, deaths: 0, time: 0, runs: 0, bestRun: 0 },
+    ...validRiftSeason(o.rseason, cls),
     created: int(o.created, 0, 4e12, Date.now()),
     updated: int(o.updated, 0, 4e12, Date.now()),
   };

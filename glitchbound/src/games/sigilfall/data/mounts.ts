@@ -21,6 +21,8 @@ export type MountSource =
   | { kind: 'rift'; stone: number }
   /** Finish the whole story as this class. */
   | { kind: 'campaign'; cls: ClassId }
+  /** A Rift season's Journey finished (data/seasons.ts): its title earned. */
+  | { kind: 'season'; title: string }
   /** This many points on the site's Trophy Shelf. */
   | { kind: 'shelf'; points: number }
   /** The site's shop: the account owns this item (progress/shopGoods.ts). Never kept in the save. */
@@ -250,6 +252,20 @@ export const MOUNTS: MountDef[] = [
       tier: 'prestige',
     }),
   ),
+  // the Rift's seasons: each season's Journey, finished, gives its mount (data/seasons.ts)
+  {
+    id: 'season-hearts-drake',
+    name: 'Heartfire Drake',
+    lore: 'It hatched from a heart the Rift broke and could not keep. It still beats a little too fast.',
+    from: 'Finish the Journey of The Season of Hearts',
+    source: { kind: 'season', title: 'season-hearts' },
+    body: 'drake',
+    coat: '#8a1a2e',
+    mane: '#ff6a82',
+    tack: '#3a1420',
+    glow: { kind: 'embers', color: '#ff4a6a' },
+    tier: 'prestige',
+  },
 ];
 
 export const MOUNT_DEFS: Record<string, MountDef> = Object.fromEntries(MOUNTS.map((m) => [m.id, m]));

@@ -48,9 +48,10 @@ interface Board {
   signedIn: boolean;
 }
 
-type Tab = 'rift' | 'vigil' | 'ring' | 'level';
+type Tab = 'rift' | 'vigil' | 'ring' | 'level' | 'season';
 const TABS: { id: Tab; name: string; blurb: string }[] = [
   { id: 'rift', name: 'The Rift', blurb: 'The highest Riftstone beaten in time.' },
+  { id: 'season', name: 'The Season', blurb: 'This Rift season’s best stone beaten in time. The ladder starts again with every season, on the first of the month.' },
   { id: 'vigil', name: 'The Vigil', blurb: 'The longest night held.' },
   { id: 'ring', name: 'The Ring', blurb: 'The best rating reached in each kind of fight: every format has its own rating, and its own board.' },
   { id: 'level', name: 'Heroes', blurb: 'The highest hero, and their Paragon level.' },
@@ -58,7 +59,7 @@ const TABS: { id: Tab; name: string; blurb: string }[] = [
 
 /** How a board's number is written. */
 const shown = (board: string, score: number): string => {
-  if (board.startsWith('trial') || board === 'stone') return `Riftstone +${score}`;
+  if (board.startsWith('trial') || board === 'stone' || board.startsWith('season')) return `Riftstone +${score}`;
   if (board.startsWith('vigil')) return clockText(score);
   if (board === 'level') {
     const l = levelOf(score);
@@ -164,6 +165,24 @@ export function RankScreen({ engine, onBack }: { engine: SigilEngine; onBack: ()
             <BoardTable board="stone" title="Story heroes’ Riftstones" note="A level-60 hero of the story, in the gear they have won." />
           </>
         )}
+        {sent && tab === 'season' && (engine.season ? (
+          <div>
+            <label className="rb-rank-pick">
+              <span>Rift Season {engine.season.n}</span>
+              <select value={cls} onChange={(e) => setCls(e.target.value)} aria-label="Calling">
+                <option value="">Every calling</option>
+                {CLASS_IDS.map((id) => (
+                  <option key={id} value={id}>
+                    {CLASSES[id].name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <BoardTable board={cls ? `season:s${engine.season.n}-${cls}` : `season:s${engine.season.n}`} title={`${engine.season.def.name}${cls ? `: ${CLASSES[cls as keyof typeof CLASSES].name}` : ''}`} note="A story hero’s best stone in time this season." />
+          </div>
+        ) : (
+          <p className="rb-small rb-dim">The first Rift season begins on 1 December.</p>
+        ))}
         {sent && tab === 'vigil' && (
           <div>
             <label className="rb-rank-pick">

@@ -265,7 +265,7 @@ export const hasMount = (c: Pick<Character, 'quests' | 'mounts'>): boolean => ri
  * Whether the hero has met a mount's source. Every source waits for the first ride: a hero still on foot in
  * the story earns nothing yet, and gets what they have met the moment the riders come.
  */
-export function mountEarned(c: Pick<Character, 'quests' | 'perks' | 'clears' | 'cls'> & { keystone?: number }, m: MountDef): boolean {
+export function mountEarned(c: Pick<Character, 'quests' | 'perks' | 'clears' | 'cls'> & { keystone?: number; rtitles?: string[] }, m: MountDef): boolean {
   if (!ridingOpen(c)) return false;
   const s = m.source;
   // (bought, not earned: progress/shopGoods.ts says while the purchase stands, and it never joins the hero's own)
@@ -275,6 +275,7 @@ export function mountEarned(c: Pick<Character, 'quests' | 'perks' | 'clears' | '
   if (s.kind === 'quest') return c.quests[s.quest]?.state === 'done' || (!!s.perk && c.perks.includes(s.perk));
   if (s.kind === 'perk') return c.perks.includes(s.perk);
   if (s.kind === 'rift') return (c.keystone ?? 0) >= s.stone;
+  if (s.kind === 'season') return !!c.rtitles?.includes(s.title);
   return s.regions.every((r) => Object.entries(c.clears).some(([k, n]) => n > 0 && k.startsWith(`${r}:`) && Number(k.slice(r.length + 1)) >= s.tier));
 }
 

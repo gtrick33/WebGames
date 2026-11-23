@@ -28,8 +28,12 @@ const FAMILIES: Record<string, number> = {
   ring: 9999,
   // the highest hero: level × 10000 + Paragon level
   level: 60 * 10_000 + 9999,
+  // a Rift season's best stone in time (data/seasons.ts): `season:s<n>` the highest, `season:s<n>-<calling>` each calling's
+  season: 999,
 };
-const BOARD = /^([a-z]{3,8})(?::([a-z][a-z-]{1,31}))?$/;
+const BOARD = /^([a-z]{3,8})(?::([a-z][a-z0-9-]{1,31}))?$/;
+/** A Rift season's boards: its number, and a calling's. */
+const SEASON_PART = /^s[1-9][0-9]{0,3}(-[a-z]{3,16})?$/;
 /** The Ring's formats, each a board of its own: 1v1, 2v2 and 3v3. */
 const RING_FORMATS: ReadonlySet<string> = new Set(['solo', 'duo', 'trio']);
 
@@ -39,9 +43,13 @@ export function boardOf(name: unknown): { board: string; max: number } | null {
   const m = BOARD.exec(name);
   const max = m ? FAMILIES[m[1]!] : undefined;
   if (!m || max === undefined) return null;
-  // (only the Trials, the Vigil and the Ring have boards within them: the Ring's, one for each format, and no other)
-  if (m[2] && m[1] !== 'trial' && m[1] !== 'vigil' && m[1] !== 'ring') return null;
+  // (only the Trials, the Vigil, the Ring and the seasons have boards within them: the Ring's, one for each format, and no
+  // other; a season's, its own and each calling's; and a season is nothing but its boards)
+  if (m[2] && m[1] !== 'trial' && m[1] !== 'vigil' && m[1] !== 'ring' && m[1] !== 'season') return null;
   if (m[2] && m[1] === 'ring' && !RING_FORMATS.has(m[2])) return null;
+  if (m[1] === 'season' && (!m[2] || !SEASON_PART.test(m[2]))) return null;
+  // (the other families' parts are lands and callings: words, no numbers)
+  if (m[2] && m[1] !== 'season' && /[0-9]/.test(m[2])) return null;
   return { board: name, max };
 }
 

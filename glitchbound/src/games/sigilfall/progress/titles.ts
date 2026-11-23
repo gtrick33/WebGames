@@ -3,6 +3,7 @@ import type { SigilTitleGrant } from '../../../platform/apiTypes';
 import { bestRating, RANKS } from '../arena/ranks';
 import { CHALLENGE_TITLES, MASTERY_TITLES, masteryWins, readRecord, SEASON_TITLES_AHEAD, seasonTitle, TRACK_TITLES } from '../arena/record';
 import { MAX_LEVEL } from '../data/classes';
+import { SEASON_LOOP, type SeasonMechanic } from '../data/seasons';
 import { QUESTS } from '../data/quests';
 import { REGIONS } from '../data/regions';
 import type { RegionDef } from '../data/types';
@@ -52,6 +53,9 @@ const done = (c: Character, quest: string): boolean => c.quests[quest]?.state ==
 const cleared = (c: Character, region: string, tier: number): boolean => Object.entries(c.clears).some(([k, n]) => n > 0 && k.startsWith(`${region}:`) && Number(k.slice(region.length + 1)) >= tier);
 /** The story's own dungeons (not a memory with no last boss, not an interior). */
 const DUNGEONS = (Object.values(REGIONS) as RegionDef[]).filter((r) => r.kind === 'dungeon' && !r.interior && r.encounters.some((e) => !!e.boss)).map((r) => r.id);
+
+/** Each Rift season's title wears a light of its own. */
+const SEASON_FX: Record<SeasonMechanic, TitleFxId> = { heart: 'blood', shrines: 'radiant', kinship: 'verdant', borrowed: 'gilded', boons: 'gleam', altar: 'arcane', bloodlust: 'ember', twin: 'tide', nemesis: 'storm', echoes: 'frost' };
 
 /** Each rank's light, climbing with it: a gleam for where everyone starts, Ashfire, the finest, for the top. */
 const RANK_FX: Record<number, TitleFxId> = { 0: 'gleam', 1150: 'blood', 1300: 'ember', 1500: 'frost', 1700: 'arcane', 1900: 'radiant', 2100: 'ashfire' };
@@ -108,6 +112,8 @@ export const TITLES: readonly TitleDef[] = [
   { id: 'riftbreaker', name: 'the Riftbreaker', fx: 'storm', how: 'Open Riftstone +15.', rare: true, earned: (c) => c.keystone >= 15 },
   { id: 'last-memory', name: 'Keeper of the Last Memory', fx: 'starfall', how: 'Open Riftstone +25.', rare: true, earned: (c) => c.keystone >= 25 },
   { id: 'exalted', name: 'the Exalted', fx: 'radiant', how: 'Reach Paragon 25.', rare: true, earned: (c) => c.para.l >= 25 },
+  // the Rift's seasons (data/seasons.ts): each one's Journey finished gives its own, kept for good
+  ...SEASON_LOOP.map((d): TitleDef => ({ id: d.title.id, name: d.title.name, fx: SEASON_FX[d.mechanic], before: true, how: `Finish the Journey of ${d.name}.`, earned: (c) => !!c.rtitles?.includes(d.title.id) })),
   // the Ring (the best rating this device has seen the player reach)
   ...RING_TITLES.map((t): TitleDef => ({ id: t.id, name: t.name, fx: t.fx, before: true, how: `Reach ${t.rating} rating in The Ring.`, rare: t.rating >= 1700, earned: (_c, rating) => (rating ?? bestRating()) >= t.rating })),
   // the Ring's record (arena/record.ts): a class mastered, and challenges finished

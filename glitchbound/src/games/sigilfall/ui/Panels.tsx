@@ -28,6 +28,7 @@ import { K, markerPos, parseRegion, TILE, type TileMap } from '../sim/map';
 import { objectiveTarget, objectiveTargets, questCounts, questOnMap, type QuestOnMap } from '../sim/objective';
 import { headingWord, npcRegion, regionLinks, roadHeading } from '../sim/routes';
 import { Bar, fmt, Frame, ItemIcon, Portrait, RARITY_NAME, SkillIcon } from './common';
+import { SeasonPanel } from './SeasonPanel';
 import { drawMapIcon, mapIconUrl, type MapIcon } from './mapIcons';
 import { usePanZoom, type PanZoom } from './panZoom';
 import { nameLines, placeNames, planWorld, type WorldPlan } from './worldLayout';
@@ -73,6 +74,7 @@ export function Panels({ engine }: { engine: SigilEngine }) {
   if (p === 'party') return <PartyPanel engine={engine} />;
   if (p === 'store') return <StorePanel onClose={() => engine.closePanel()} />;
   if (p === 'rift') return <RiftGatePanel engine={engine} />;
+  if (p === 'season') return <SeasonPanel engine={engine} />;
   const h = engine.hero!;
   const title = (
     <span className="rb-tabs" role="tablist">

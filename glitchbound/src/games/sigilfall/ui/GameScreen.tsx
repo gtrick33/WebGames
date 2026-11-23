@@ -7,6 +7,8 @@ import type { Callout } from '../sim/types';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { MAX_LEVEL, xpToNext } from '../data/classes';
 import { KEY_AFFIXES, KEY_DEATH, keyUpgrade } from '../data/keystones';
+import { heartRank, HEARTS } from '../data/seasons';
+import { heartOf, seasonOf } from '../progress/season';
 import { BOSSES } from '../data/bosses';
 import { NPCS, QUEST_DEFS } from '../data/quests';
 import { REGIONS, TIERS } from '../data/regions';
@@ -795,6 +797,8 @@ function PointsPips({ engine }: { engine: SigilEngine }) {
 /** A Riftstone run's clock: time so far (falls included) against the dungeon's, the rooms done, the week's affixes. */
 function KeyClock({ engine }: { engine: SigilEngine }) {
   const k = engine.world!.keyRun!;
+  // the Season Heart beating in this run (data/seasons.ts), if the season is the Season of Hearts and one is chosen
+  const heart = engine.hero ? heartOf(engine.hero, engine.world!.season) : null;
   const root = useRef<HTMLDivElement>(null);
   useHudBox(engine, 'quest', root);
   const time = useRef<HTMLElement>(null);
@@ -836,6 +840,11 @@ function KeyClock({ engine }: { engine: SigilEngine }) {
       <span ref={pace} className="rb-keypace" />
       <span ref={rooms} className="rb-small" />
       {k.affixes.length > 0 && <span className="rb-small rb-dim">{k.affixes.map((a) => KEY_AFFIXES[a].name).join(' · ')}</span>}
+      {heart && (
+        <span className="rb-small" style={{ color: HEARTS[heart].color }}>
+          {HEARTS[heart].name} · rank {heartRank(seasonOf(engine.hero!, engine.world!.season).best)}
+        </span>
+      )}
     </div>
   );
 }
@@ -1086,6 +1095,12 @@ function Dialogue({ engine }: { engine: SigilEngine }) {
             {last && npc.service === 'rift' && (engine.hero?.keystone ?? 0) >= 1 && (
               <button className="rb-btn is-small is-gold" onClick={() => engine.openPanel('rift')}>
                 Open the Riftgate
+              </button>
+            )}
+            {/* the season's keeper: the season's own page (its power, its Journey, its ladder) */}
+            {last && npc.service === 'season' && (
+              <button className="rb-btn is-small is-gold" onClick={() => engine.openPanel('season')}>
+                The Season
               </button>
             )}
             {last && npc.service === 'respec' && (

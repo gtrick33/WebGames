@@ -16774,3 +16774,122 @@ html.rb-touch-playing textarea {
   border-color: #9a5af0;
   color: #e6d4ff;
 }
+
+/* The Rift season's page, from its keeper in the Riftward (ui/SeasonPanel.tsx): the season, its heart, its Journey */
+.rb-season {
+  display: grid;
+  gap: 12px;
+}
+.rb-season-lede {
+  margin: 0;
+  color: #fff4de;
+}
+.rb-season-sec {
+  display: grid;
+  gap: 8px;
+}
+.rb-hearts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.rb-heart {
+  --heart: #ff5a4a;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 9px 10px;
+  border: 1.5px solid color-mix(in srgb, var(--heart) 45%, #3a2a4a);
+  border-radius: 10px;
+  background: rgb(20 12 30 / 0.75);
+  color: #e8dcef;
+  text-align: left;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.rb-heart strong {
+  color: var(--heart);
+}
+.rb-heart em {
+  font-style: normal;
+  font-size: 12px;
+  color: #b8a8c8;
+}
+.rb-heart.is-on {
+  border-color: var(--heart);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--heart) 28%, transparent), rgb(20 12 30 / 0.9));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--heart) 35%, transparent);
+}
+.rb-heart.is-on em {
+  color: var(--heart);
+}
+.rb-heart:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+.rb-journey {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rb-chapter {
+  display: grid;
+  gap: 5px;
+  padding: 9px 11px;
+  border: 1.5px solid #3a2e4e;
+  border-radius: 10px;
+  background: rgb(18 12 28 / 0.7);
+}
+.rb-chapter.is-ready {
+  border-color: var(--rb-gold);
+  box-shadow: 0 0 12px rgb(255 216 90 / 0.25);
+}
+.rb-chapter.is-claimed {
+  opacity: 0.6;
+}
+.rb-chapter-head {
+  font-weight: 700;
+  color: #fff4de;
+}
+.rb-chapter ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: #d8cce4;
+}
+.rb-chapter li.is-done {
+  color: #9ae6a8;
+}
+.rb-goal-mark {
+  display: inline-block;
+  width: 1.2em;
+}
+.rb-chapter .rb-btn {
+  justify-self: start;
+}
+.rb-season-set {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.rb-season-set select {
+  min-height: 34px;
+  border: 1.5px solid #4a3a6a;
+  border-radius: 8px;
+  background: #1a1028;
+  color: #fff4de;
+  font: inherit;
+}
+/* a phone: the hearts two by two */
+@container rb-stage (max-width: 700px) {
+  .rb-hearts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
