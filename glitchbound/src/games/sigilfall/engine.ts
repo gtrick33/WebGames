@@ -81,7 +81,7 @@ export interface DialoguePage {
 }
 
 /** (`shop` is a vendor's, for gold; `store` is the game's own shop for the things sold for money: ui/Store.tsx) */
-export type PanelId = 'hero' | 'wardrobe' | 'skills' | 'talents' | 'quests' | 'map' | 'settings' | 'shop' | 'party' | 'store' | 'rift';
+export type PanelId = 'hero' | 'wardrobe' | 'skills' | 'talents' | 'paragon' | 'quests' | 'map' | 'settings' | 'shop' | 'party' | 'store' | 'rift';
 
 /** A co-op party (net/room.ts): the live connection, the room's latest view, and what went wrong. */
 export interface PartyState {
@@ -857,7 +857,7 @@ export class SigilEngine {
           }
           break;
         case 'paragon':
-          this.toast(`Paragon ${ev.level}`, 'good', undefined, 'A point to spend in the Hero panel');
+          this.toast(`Paragon ${ev.level}`, 'good', undefined, 'A point to spend: Paragon, beside Talents');
           this.sound.play('levelup');
           break;
         case 'banner':

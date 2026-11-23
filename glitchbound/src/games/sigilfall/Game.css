@@ -16763,3 +16763,14 @@ html.rb-touch-playing textarea {
     left: auto;
   }
 }
+
+/* Paragon's points on its tab and in the Hero panel (2026-11-23): its own violet, as its bar is */
+.rb-badge.is-para {
+  background: #9a5af0;
+}
+.rb-para-go {
+  justify-self: start;
+  margin-top: 6px;
+  border-color: #9a5af0;
+  color: #e6d4ff;
+}

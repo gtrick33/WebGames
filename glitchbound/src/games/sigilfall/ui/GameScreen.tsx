@@ -301,7 +301,8 @@ function Hud({ engine }: { engine: SigilEngine }) {
   });
   const res = w.build.resource;
   const fresh = h.bag.filter((i) => i.fresh).length;
-  const points = freePoints(h);
+  // (the star counts Paragon's points too, past level 60: they are spent on the tab beside Talents)
+  const points = freePoints(h) + (h.level >= MAX_LEVEL ? paragonFree(h.para) : 0);
   const region = REGIONS[w.region.id];
   return (
     <>
@@ -378,7 +379,7 @@ function Hud({ engine }: { engine: SigilEngine }) {
           <HudButton icon="party" label="Play together" onClick={() => engine.openPanel('party')} kbd="O" engine={engine} />
         )}
         <HudButton icon="bag" label="Hero & bag" badge={fresh || undefined} onClick={() => engine.openPanel('hero')} kbd="I" engine={engine} />
-        <HudButton icon="star" label="Talents" badge={points || undefined} onClick={() => engine.openPanel('talents')} kbd="K" engine={engine} />
+        <HudButton icon="star" label="Talents" badge={points || undefined} onClick={() => engine.openPanel(freePoints(h) === 0 && h.level >= MAX_LEVEL && paragonFree(h.para) > 0 ? 'paragon' : 'talents')} kbd="K" engine={engine} />
         {/* spare: a tab of the Hero panel too, so a narrow screen can do without the button */}
         <HudButton icon="skills" label="Skills" onClick={() => engine.openPanel('skills')} kbd="U" engine={engine} spare />
         {/* on touch the tracker opens the quests and the minimap the map (and both are tabs of the Hero panel) */}

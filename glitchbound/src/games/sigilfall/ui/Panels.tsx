@@ -59,6 +59,9 @@ const TABS: { id: PanelId; label: string }[] = [
   { id: 'wardrobe', label: 'Wardrobe' },
   { id: 'skills', label: 'Skills' },
   { id: 'talents', label: 'Talents' },
+  // (past level 60: Paragon's own tab, with its points counted on it: the owner, 2026-11-23, "the paragon points should be
+  // a separate icon i guess or implemented within the talents section as a sepaeate tab, add also notifications")
+  { id: 'paragon', label: 'Paragon' },
   { id: 'quests', label: 'Quests' },
   { id: 'map', label: 'Map' },
 ];
@@ -73,10 +76,11 @@ export function Panels({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const title = (
     <span className="rb-tabs" role="tablist">
-      {TABS.map((t) => (
+      {TABS.filter((t) => t.id !== 'paragon' || h.level >= MAX_LEVEL).map((t) => (
         <button key={t.id} role="tab" data-tab={t.id} aria-selected={p === t.id} className={p === t.id ? 'is-on' : ''} onClick={() => engine.openPanel(t.id)}>
           {t.label}
           {t.id === 'talents' && freePoints(h) > 0 && <span className="rb-badge">{freePoints(h)}</span>}
+          {t.id === 'paragon' && paragonFree(h.para) > 0 && <span className="rb-badge is-para">{paragonFree(h.para)}</span>}
           {t.id === 'hero' && h.bag.some((i) => i.fresh) && <span className="rb-badge">{h.bag.filter((i) => i.fresh).length}</span>}
         </button>
       ))}
@@ -88,6 +92,7 @@ export function Panels({ engine }: { engine: SigilEngine }) {
       {p === 'wardrobe' && <WardrobePanel engine={engine} />}
       {p === 'skills' && <SkillsPanel engine={engine} />}
       {p === 'talents' && <TalentsPanel engine={engine} />}
+      {p === 'paragon' && <ParagonBox engine={engine} />}
       {p === 'quests' && <QuestsPanel engine={engine} />}
       {p === 'map' && <MapPanel engine={engine} />}
     </Frame>
@@ -263,7 +268,11 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
             Sigils {SIGILS.filter((id) => h.perks.includes(id)).length} / {SIGILS.length}
           </span>
         </div>
-        {h.level >= MAX_LEVEL && <ParagonBox engine={engine} />}
+        {h.level >= MAX_LEVEL && paragonFree(h.para) > 0 && (
+          <button className="rb-btn is-small rb-para-go" onClick={() => engine.openPanel('paragon')}>
+            {paragonFree(h.para)} Paragon point{paragonFree(h.para) === 1 ? '' : 's'} to spend
+          </button>
+        )}
       </section>
       <section className="rb-bag" aria-label="Bag">
         <div className="rb-bag-head">
