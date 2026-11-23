@@ -1,7 +1,7 @@
 import { mixFor } from './audio/mix';
 import { rankEntries } from './progress/ranks';
 import { readBests } from './vigil/bests';
-import { trialHero, trialsOpen, trialStone } from './progress/trial';
+import { stoneIn, stonesOf, trialHero, trialsOpen, trialStone } from './progress/trial';
 import { ambienceOf } from './audio/ambience';
 import type { GameHost } from '../../platform/contract';
 import { isRetired } from './data/retired';
@@ -1095,9 +1095,15 @@ export class SigilEngine {
 
   persist(): void {
     if (!this.canSave) return;
+    // what any hero's runs have opened, dungeon by dungeon, is its calling's on this account (progress/trial.ts stoneIn)
+    if (this.hero && Object.keys(this.hero.stones).length) {
+      const mine = { ...(this.save.riftBy[this.hero.cls] ?? {}) };
+      for (const [r, n] of Object.entries(this.hero.stones)) mine[r] = Math.max(mine[r] ?? 0, n);
+      this.save.riftBy = { ...this.save.riftBy, [this.hero.cls]: mine };
+    }
     if (this.hero && this.trial) {
       // a Trial's hero is not kept: only how high the calling's stone has been taken
-      this.save.rift = { ...this.save.rift, [this.trial]: Math.max(trialStone(this.save, this.trial), this.hero.keystone) };
+      this.save.rift = { ...this.save.rift, [this.trial]: Math.max(this.save.rift[this.trial] ?? 1, this.hero.keystone) };
     } else if (this.hero) {
       // how far into a dungeon they have come, kept with where they are (Character.at: a reload takes it up again)
       const w = this.world;
@@ -1188,11 +1194,12 @@ export class SigilEngine {
   /** Straight into a Rift Trial from the title, as a calling's ready hero on one of its paths. */
   startRiftTrial(cls: ClassId, spec: 0 | 1 | 2, region: RegionId, pick?: number): void {
     if (!trialsOpen(this.save) || !classOpen(cls, account.get().me) || REGIONS[region]?.kind !== 'dungeon') return;
-    const top = trialStone(this.save, cls);
-    // (any stone up to the calling's own: a lower one to learn a dungeon on)
+    // (any stone up to the one the calling has open in this dungeon: a lower one to learn a dungeon on)
+    const top = stoneIn(this.save, cls, region);
     const stone = Math.max(1, Math.min(top, Math.floor(pick ?? top)));
     this.trial = cls;
-    this.hero = trialHero(cls, spec, top);
+    this.hero = trialHero(cls, spec, Math.max(top, trialStone(this.save, cls)));
+    this.hero.stones = stonesOf(this.save, cls);
     this.heroSig = heroSignature(this.hero);
     this.tipQueue = [];
     this.pages = [];
@@ -1317,6 +1324,10 @@ export class SigilEngine {
     }
     // (the Trials' stones never go down: the higher of this device's and the account's, calling by calling)
     for (const [cls, n] of Object.entries(this.save.rift)) next.rift[cls] = Math.max(next.rift[cls] ?? 1, n);
+    for (const [cls, m] of Object.entries(this.save.riftBy)) {
+      const into = (next.riftBy[cls] ??= {});
+      for (const [r, n] of Object.entries(m)) into[r] = Math.max(into[r] ?? 0, n);
+    }
     this.save = next;
     this.bump();
   }
@@ -1385,8 +1396,8 @@ export class SigilEngine {
     if (isRetired(to)) return this.world?.region.kind === 'dungeon' && !party ? this.travel(HOME, 0, []) : false;
     // a party's run goes where the host chose: a friend who hasn't found the way yet is taken along
     if (!h.unlocked.includes(to) && !party && !key) return false;
-    // a Riftstone run is a stone the hero holds (never above it; a party runs the host's), in a dungeon
-    if (key > 0 && (region.kind !== 'dungeon' || (key > h.keystone && !party))) return false;
+    // a Riftstone run is a stone the hero holds, never above the one open in that dungeon (a party runs the host's)
+    if (key > 0 && (region.kind !== 'dungeon' || (!party && (h.keystone < 1 || key > this.openStone(to))))) return false;
     // a Trial's hero has no village and no road: anywhere but a stone's dungeon is the way back to the title
     if (this.trial && !key) {
       this.toTitle();
@@ -2526,12 +2537,21 @@ export class SigilEngine {
     if (this.travel(w.portalWay().to, tier, mods, w.region.id)) this.setUi({ death: false, reward: null });
   }
 
-  /** From a Riftstone run's end: the same dungeon again, at the stone the hero holds now. */
+  /**
+   * The stone the playing hero may take into a dungeon: the deepest opened there by them, by another hero of their
+   * calling or by its champion in the Riftstone tab (progress/trial.ts stoneIn).
+   */
+  openStone(region: RegionId): number {
+    const h = this.hero;
+    return h ? stoneIn(this.save, h.cls, region, h) : 1;
+  }
+
+  /** From a Riftstone run's end: the same dungeon again, at the stone open there now. */
   keyAgain(): void {
     const w = this.world;
     const h = this.hero;
     if (!w || !h || !w.keyRun?.end || h.keystone < 1) return;
-    this.travel(w.region.id, 2, [], undefined, h.keystone);
+    this.travel(w.region.id, 2, [], undefined, this.openStone(w.region.id));
   }
 
   /** A Paragon point into a line (the Hero panel). */

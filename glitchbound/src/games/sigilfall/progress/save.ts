@@ -154,6 +154,11 @@ export interface SaveFile {
   saved: number;
   /** The Rift Trials: how high each calling's stone has been taken on this account (progress/trial.ts). */
   rift: Record<string, number>;
+  /**
+   * Each calling's stone, dungeon by dungeon, on this account: its champion's and its heroes' alike (progress/trial.ts
+   * stoneIn: the owner, 2026-11-22, a stone opened in the Riftstone tab is open to a campaign hero of that calling too).
+   */
+  riftBy: Record<string, Record<string, number>>;
 }
 
 export type LoadStatus = 'new' | 'ok' | 'recovered' | 'reset' | 'newer' | 'blocked';
@@ -167,7 +172,7 @@ function parseFace(raw: unknown): Face | undefined {
   return { skin: f.skin, hair: f.hair, style, beard: f.beard === true };
 }
 
-export const emptySave = (): SaveFile => ({ v: SAVE_VERSION, heroes: Array(HERO_SLOTS).fill(null), last: 0, settings: { ...DEFAULT_SETTINGS }, saved: 0, rift: {} });
+export const emptySave = (): SaveFile => ({ v: SAVE_VERSION, heroes: Array(HERO_SLOTS).fill(null), last: 0, settings: { ...DEFAULT_SETTINGS }, saved: 0, rift: {}, riftBy: {} });
 
 /* ------------------------------------------------------------ validation */
 
@@ -283,6 +288,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     clears: {},
     keystone: int(o.keystone, 0, 999, 0),
     bestKeys: {},
+    stones: {},
     para: validateParagon(o.para),
     opened: [],
     perks: Array.isArray(o.perks) ? [...new Set(o.perks.filter((x): x is PerkId => typeof x === 'string' && x in PERKS))] : [],
@@ -388,10 +394,13 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   }
   // quests of the zones the hero has been to start once those are known
   startQuests(c);
-  for (const key of ['bosses', 'clears', 'bestKeys'] as const) {
+  for (const key of ['bosses', 'clears', 'bestKeys', 'stones'] as const) {
     const m = obj(o[key]) ?? {};
     for (const [k, n] of Object.entries(m).slice(0, 200)) if (/^[a-z0-9:-]{1,32}$/.test(k)) c[key][k] = int(n, 0, 1e6, 0);
   }
+  // (a hero from before the stones were kept dungeon by dungeon, 2026-11-22: each dungeon opens one above the best it
+  // was beaten at in time, which is the least that run opened; one never beaten starts at the first)
+  if (!obj(o.stones)) for (const [k, n] of Object.entries(c.bestKeys)) if (n > 0) c.stones[k] = Math.min(c.keystone || n + 1, n + 1);
   // Riftstone: whoever has cleared Duskspire on Mythic holds a Riftstone
   if (c.quests['postgame-crownfall-mythic']?.state === 'done') c.keystone = Math.max(KEY_MIN, c.keystone);
   // (a hero whose story is done keeps the Riftward open, whichever way they came by the stone: 2026-11-22)
@@ -650,7 +659,13 @@ export function migrate(raw: unknown): SaveFile | null {
   // (a save from before the Trials had their own heroes has none: every calling starts at its first stone)
   const rift: Record<string, number> = {};
   if (o.rift && typeof o.rift === 'object') for (const [cls, n] of Object.entries(o.rift as Record<string, unknown>)) if (cls in CLASSES && typeof n === 'number' && Number.isFinite(n)) rift[cls] = Math.max(1, Math.min(999, Math.floor(n)));
-  return { v: SAVE_VERSION, heroes, last: int(o.last, 0, HERO_SLOTS - 1, 0), settings: validateSettings(o.settings), saved: int(o.saved, 0, 4e12, 0), rift };
+  const riftBy: Record<string, Record<string, number>> = {};
+  const by = o.riftBy && typeof o.riftBy === 'object' ? (o.riftBy as Record<string, unknown>) : {};
+  for (const [cls, m] of Object.entries(by)) {
+    if (!(cls in CLASSES) || !m || typeof m !== 'object') continue;
+    for (const [r, n] of Object.entries(m as Record<string, unknown>).slice(0, 200)) if (r in REGIONS && typeof n === 'number' && Number.isFinite(n) && n >= 1) (riftBy[cls] ??= {})[r] = Math.min(999, Math.floor(n));
+  }
+  return { v: SAVE_VERSION, heroes, last: int(o.last, 0, HERO_SLOTS - 1, 0), settings: validateSettings(o.settings), saved: int(o.saved, 0, 4e12, 0), rift, riftBy };
 }
 
 /* --------------------------------------------------------------- storage */

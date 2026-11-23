@@ -2575,11 +2575,19 @@ export class World {
     const marks = keyMarks(k.key, up > 0);
     // beaten in time, the levels above it open (as in Diablo's rifts, nothing is lost by being late)
     const before = h.keystone;
-    // past the cap the stones ask for someone who has stood at Duskspire themselves
-    if (up > 0) h.keystone = Math.max(h.keystone, campaignDone(h) ? k.key + up : Math.min(k.key + up, RIFT_CAP_UNFINISHED));
-    const best = up > 0 && k.key > (h.bestKeys[this.region.id] ?? 0);
-    if (best) h.bestKeys[this.region.id] = k.key;
-    k.end = { time, up, marks, stone: h.keystone, best };
+    const here = this.region.id;
+    const beforeHere = h.stones[here] ?? 0;
+    // past the cap the stones ask for someone who has stood at Duskspire themselves; and what a run opens, it opens in
+    // this dungeon (the owner, 2026-11-22: rank 9 reached in one dungeon is not rank 9 in the next). `keystone` is the
+    // deepest anywhere, for what the stone rewards
+    if (up > 0) {
+      const open = campaignDone(h) ? k.key + up : Math.min(k.key + up, RIFT_CAP_UNFINISHED);
+      h.stones[here] = Math.max(beforeHere, open);
+      h.keystone = Math.max(h.keystone, open);
+    }
+    const best = up > 0 && k.key > (h.bestKeys[here] ?? 0);
+    if (best) h.bestKeys[here] = k.key;
+    k.end = { time, up, marks, stone: Math.max(k.key, h.stones[here] ?? 0), best };
     h.marks += marks;
     // the Rift's cache: more the higher the stone, and only in time
     if (up > 0) for (let i = 0; i < keyCache(k.key); i++) this.dropItem(x, y, this.rollItem('boss', keyLoot(k.key, k.heroLevel)));
@@ -2593,7 +2601,7 @@ export class World {
     this.emit({
       t: 'banner',
       text: up > 0 ? `In time: ${clockText(time)}` : `Out of time: ${clockText(time)}`,
-      sub: up > 0 ? (h.keystone > before ? `Riftstone +${k.key} · up to Riftstone +${h.keystone} open` : `Riftstone +${k.key}`) : `Riftstone +${k.key} · the clock was ${clockText(k.par)}`,
+      sub: up > 0 ? ((h.stones[here] ?? 0) > Math.max(beforeHere, k.key) ? `Riftstone +${k.key} · up to Riftstone +${h.stones[here]} open here` : `Riftstone +${k.key}`) : `Riftstone +${k.key} · the clock was ${clockText(k.par)}`,
     });
   }
 

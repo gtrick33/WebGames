@@ -1218,7 +1218,11 @@ function RiftGatePanel({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const pool = riftDungeons(h.keystone);
   const [sel, setSel] = useState<RegionId>(pool[0]?.id ?? 'crypt');
-  const [stone, setStone] = useState(Math.max(KEY_MIN, h.keystone));
+  // each dungeon its own stone (the owner, 2026-11-22): the one open there, or a lower one picked for it
+  const top = engine.openStone(sel);
+  const [picked, setPicked] = useState<Partial<Record<RegionId, number>>>({});
+  const stone = Math.max(KEY_MIN, Math.min(top, picked[sel] ?? top));
+  const setStone = (n: number): void => setPicked((p) => ({ ...p, [sel]: n }));
   // this week's affixes (read once: the panel isn't open across a Monday)
   const [week] = useState(() => weekOf(Date.now()));
   const r = REGIONS[sel];
@@ -1236,8 +1240,8 @@ function RiftGatePanel({ engine }: { engine: SigilEngine }) {
               <button key={d.id} className={`rb-riftgate-row${d.id === sel ? ' is-on' : ''}`} onClick={() => setSel(d.id)}>
                 <strong>{d.name}</strong>
                 <span className="rb-small rb-dim">
-                  {d.subtitle}
-                  {h.bestKeys[d.id] ? ` · best +${h.bestKeys[d.id]}` : ''}
+                  Riftstone +{engine.openStone(d.id)} open
+                  {h.bestKeys[d.id] ? ` · best in time +${h.bestKeys[d.id]}` : ''}
                 </span>
               </button>
             ))}
@@ -1246,7 +1250,7 @@ function RiftGatePanel({ engine }: { engine: SigilEngine }) {
             <span className="rb-kicker">
               {r.name} · level {keyLevelFor(h.level)}
             </span>
-            <KeyPicker heroLevel={h.level} region={r} stone={stone} top={h.keystone} best={h.bestKeys[sel] ?? 0} week={week} onPick={setStone} />
+            <KeyPicker heroLevel={h.level} region={r} stone={stone} top={top} best={h.bestKeys[sel] ?? 0} week={week} onPick={setStone} />
             <div className="rb-riftgate-go">
               <button className="rb-btn is-gold" onClick={() => engine.travel(sel, 2, [], undefined, stone)}>
                 Enter Riftstone +{stone}

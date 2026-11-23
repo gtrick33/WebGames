@@ -143,6 +143,9 @@ export function applyToHero(c: Character, kind: string, p: Record<string, unknow
     case 'keystone':
       c.keystone = clamp(num(p.level), 0, 999);
       if (c.keystone > 0) c.keystone = Math.max(KEY_MIN, c.keystone);
+      // (and every dungeon's own stone with it, now that each keeps its own: 2026-11-22)
+      c.stones = {};
+      if (c.keystone > 0) for (const r of Object.values(REGIONS)) if (r.kind === 'dungeon') c.stones[r.id] = c.keystone;
       return '';
     case 'respec':
       c.freeRespec = true;
