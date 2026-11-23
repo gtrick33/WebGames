@@ -261,10 +261,10 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
   const [name, setName] = useState(() => cleanName(engine.defaultName));
   // the last choices before the Prologue: how hard, and (for a later hero) whether to be shown the hints
   const [askTips, setAskTips] = useState(false);
-  const [level, setLevel] = useState(engine.settings.difficulty);
-  const [tipsOn, setTipsOn] = useState(engine.settings.tutorial);
+  const [level, setLevel] = useState(engine.settings?.difficulty ?? 'normal');
+  const [tipsOn, setTipsOn] = useState(engine.settings?.tutorial ?? true);
   const begin = (tips?: boolean): void => {
-    if (level !== engine.settings.difficulty) engine.setSettings({ difficulty: level });
+    if (engine.settings && level !== engine.settings.difficulty) engine.setSettings({ difficulty: level });
     engine.createHero(engine.ui.createSlot, cls, cleanName(name), body, face, tips);
   };
   const def = CLASSES[cls];
@@ -360,7 +360,7 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
             if (!open) return;
             // (the questions sit at the top of the page, and Begin is at its foot: up to them, and the page held still
             // while they are asked. The owner, 2026-11-22: "it doesnt auto scroll u to the top")
-            e.currentTarget.closest('.rb-create')?.scrollTo({ top: 0 });
+            e.currentTarget.closest('.rb-create')?.scrollTo?.({ top: 0 });
             setAskTips(true);
           }}
         >

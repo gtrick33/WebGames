@@ -83,6 +83,10 @@ describe('making a hero', () => {
     // a free class is made as before
     fireEvent.click(screen.getByRole('radio', { name: /Warrior/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Begin as Warrior' }));
+    // (then how hard, before the Prologue: the owner, 2026-11-22)
+    expect(made).toEqual([]);
+    expect(screen.getByRole('radio', { name: /Normal/ }).getAttribute('aria-checked')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'Begin' }));
     expect(made).toEqual(['warrior']);
     cleanup();
     HTMLCanvasElement.prototype.getContext = real;
