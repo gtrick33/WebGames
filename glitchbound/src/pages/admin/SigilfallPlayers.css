@@ -232,6 +232,88 @@
 .gm-rar.is-legendary {
   background: #ff9a2e;
 }
+.gm-rar.is-set {
+  background: #36e0a8;
+  box-shadow: inset 0 0 0 1.5px rgb(0 0 0 / 0.35);
+}
+/* the item browser (GiveItem): the list beside the one picked, shown in full */
+.gm-give-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+.gm-give-kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+}
+.gm-give-kinds .gm-chip {
+  cursor: pointer;
+  background: var(--well);
+  color: inherit;
+}
+.gm-give-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 10px;
+  align-items: start;
+}
+@media (max-width: 760px) {
+  .gm-give-body {
+    grid-template-columns: 1fr;
+  }
+}
+.gm-give-list {
+  max-height: 380px;
+}
+.gm-give-list li {
+  list-style: none;
+}
+.gm-give-row {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.gm-give-row.is-on {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+.gm-give-card {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--well);
+}
+.gm-give-line {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.gm-give-set {
+  display: grid;
+  gap: 3px;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--line);
+}
+.gm-il {
+  width: 76px;
+}
+.gm-name.is-legendary {
+  color: #d9730f;
+}
+.gm-name.is-set {
+  color: #12a878;
+}
+.gm-name.is-epic {
+  color: #9333ea;
+}
 .gm-chip {
   display: inline-block;
   margin: 0;

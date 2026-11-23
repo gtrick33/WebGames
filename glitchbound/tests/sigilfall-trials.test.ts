@@ -60,8 +60,11 @@ describe('Sigilfall: the Rift Trials are played with ready heroes', () => {
 
   it('the engine plays a Trial as that hero, keeps only the stone, and sends them back to the title', () => {
     const engine = readFileSync('src/games/sigilfall/engine.ts', 'utf8');
-    expect(engine).toContain('this.hero = trialHero(cls, spec, top);');
-    expect(engine).toContain('this.save.rift = { ...this.save.rift, [this.trial]: Math.max(trialStone(this.save, this.trial), this.hero.keystone) };');
+    expect(engine).toContain('this.hero = trialHero(cls, spec, Math.max(top, trialStone(this.save, cls)));');
+    expect(engine).toContain('this.hero.stones = stonesOf(this.save, cls);');
+    expect(engine).toContain('this.save.rift = { ...this.save.rift, [this.trial]: Math.max(this.save.rift[this.trial] ?? 1, this.hero.keystone) };');
+    // (what any hero opens, champion or campaign, is the calling's on this account, dungeon by dungeon)
+    expect(engine).toContain('this.save.riftBy = { ...this.save.riftBy, [this.hero.cls]: mine };');
     expect(engine).toContain('if (this.trial && !key) {');
   });
 });

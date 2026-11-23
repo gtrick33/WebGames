@@ -4,6 +4,7 @@ import { Icon } from '../../components/Icon';
 import { CLASSES, MAX_LEVEL, xpToNext } from '../../games/sigilfall/data/classes';
 import { ITEMS } from '../../games/sigilfall/data/items';
 import { MOUNT_DEFS } from '../../games/sigilfall/data/mounts';
+import { setOf } from '../../games/sigilfall/data/riftgear';
 import { GAME_VERSION } from '../../games/sigilfall/data/version';
 import type { MatchEntry } from '../../games/sigilfall/arena/record';
 import { QUEST_DEFS } from '../../games/sigilfall/data/quests';
@@ -12,7 +13,7 @@ import { SKILLS } from '../../games/sigilfall/data/skills';
 import { TALENTS } from '../../games/sigilfall/data/talents';
 import { RARITIES, SLOTS, type ClassId, type Item, type RegionId } from '../../games/sigilfall/data/types';
 import { bagSize, freePoints, PERKS, spentPoints, talentPoints, type Character } from '../../games/sigilfall/progress/character';
-import { fmtStat } from '../../games/sigilfall/progress/describe';
+import { fmtStat, modLines } from '../../games/sigilfall/progress/describe';
 import { itemName, itemStats } from '../../games/sigilfall/progress/items';
 import { validateCharacter } from '../../games/sigilfall/progress/save';
 import { api, ApiError } from '../../platform/account';
@@ -843,33 +844,123 @@ function SetLevel({ hero: h, go }: { hero: Character; go: Go }) {
   );
 }
 
+/** What the item browser can narrow to: by how rare, the Rift's best first. */
+const ITEM_KINDS = [
+  { id: 'all', name: 'All' },
+  { id: 'set', name: 'Set pieces' },
+  { id: 'legendary', name: 'Legendary' },
+  { id: 'epic', name: 'Epic' },
+  { id: 'other', name: 'Other' },
+] as const;
+type ItemKind = (typeof ITEM_KINDS)[number]['id'];
+
+/**
+ * Every named item the hero's class can have, to look through and give (the owner, 2026-11-22: "make sure the admin
+ * panel is also updated with the new items and all items could be given out without issues, make better ui for
+ * that"): search, narrow by kind and slot, every match listed (it showed the first sixty in a drop-down, nothing said
+ * what any did), and the one picked shown in full, what it does and its set's bonuses, to give alone or with its set.
+ */
 function GiveItem({ hero: h, go }: { hero: Character; go: Go }) {
   const [q, setQ] = useState('');
+  const [kind, setKind] = useState<ItemKind>('all');
+  const [slot, setSlot] = useState('any');
   const [id, setId] = useState('');
-  const [il, setIl] = useState(String(h.level));
+  const [il, setIl] = useState(String(Math.max(h.level, 1)));
+  const mine = useMemo(() => ITEMS.filter((i) => !i.cls || i.cls === h.cls), [h.cls]);
   const list = useMemo(() => {
     const term = q.trim().toLowerCase();
-    return ITEMS.filter((i) => (!i.cls || i.cls === h.cls) && (!term || i.name.toLowerCase().includes(term)))
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .slice(0, 60);
-  }, [q, h.cls]);
+    const rank = (r: string): number => ['set', 'legendary', 'epic', 'rare', 'uncommon', 'common'].indexOf(r);
+    return mine
+      .filter((i) => kind === 'all' || (kind === 'other' ? !['set', 'legendary', 'epic'].includes(i.rarity) : i.rarity === kind))
+      .filter((i) => slot === 'any' || i.slot === slot)
+      .filter((i) => !term || i.name.toLowerCase().includes(term) || (setOf(i)?.name.toLowerCase().includes(term) ?? false))
+      .sort((a, b) => rank(a.rarity) - rank(b.rarity) || (a.set ?? '').localeCompare(b.set ?? '') || a.name.localeCompare(b.name));
+  }, [mine, q, kind, slot]);
   const def = list.find((i) => i.id === id) ?? list[0];
+  const set = def ? setOf(def) : undefined;
+  const level = Math.max(1, Math.min(200, Math.floor(Number(il)) || 1));
+  const count = (k: ItemKind): number => mine.filter((i) => (k === 'all' ? true : k === 'other' ? !['set', 'legendary', 'epic'].includes(i.rarity) : i.rarity === k)).length;
   return (
-    <div className="gm-action">
+    <div className="gm-action gm-give">
       <h3 className="admin-h3">A named item</h3>
-      <input className="field" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find an item" aria-label="Find an item" maxLength={60} />
-      <select className="field" value={def?.id ?? ''} onChange={(e) => setId(e.target.value)} aria-label="Item">
-        {list.map((i) => (
-          <option key={i.id} value={i.id}>
-            {i.name} ({i.rarity}, {i.slot})
-          </option>
+      <div className="gm-give-filters">
+        <input className="field" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find an item or a set" aria-label="Find an item or a set" maxLength={60} />
+        <select className="field" value={slot} onChange={(e) => setSlot(e.target.value)} aria-label="Slot">
+          <option value="any">Any slot</option>
+          {SLOTS.map((x) => (
+            <option key={x} value={x}>
+              {x}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="gm-give-kinds" role="radiogroup" aria-label="Kind">
+        {ITEM_KINDS.map((k) => (
+          <button key={k.id} type="button" role="radio" aria-checked={kind === k.id} className={`gm-chip${kind === k.id ? ' is-on' : ''}`} onClick={() => setKind(k.id)}>
+            {k.name} <span className="info-small">{count(k.id)}</span>
+          </button>
         ))}
-      </select>
-      <div className="gm-inline">
-        <input className="field" type="number" min={1} max={200} value={il} onChange={(e) => setIl(e.target.value)} aria-label="Item level" />
-        <button className="btn btn-sm" disabled={!def} onClick={() => def && void go('item', { id: def.id, il: Math.floor(Number(il)) || 1 }, def.name)}>
-          Give
-        </button>
+      </div>
+      <div className="gm-give-body">
+        <ul className="gm-items gm-scroll gm-give-list" aria-label="Items">
+          {list.length === 0 && <li className="gm-item is-empty">Nothing matches.</li>}
+          {list.map((i) => (
+            <li key={i.id}>
+              <button type="button" className={`gm-item gm-give-row${def?.id === i.id ? ' is-on' : ''}`} onClick={() => setId(i.id)} aria-pressed={def?.id === i.id}>
+                <span className={`gm-rar is-${i.rarity}`} aria-hidden="true" />
+                <span className="gm-item-name">
+                  <b className={`gm-name is-${i.rarity}`}>{i.name}</b>
+                  <span className="info-small">
+                    {i.slot} · {i.rarity}
+                    {i.set ? ` · ${setOf(i)?.name ?? i.set}` : ''}
+                    {i.rift !== undefined ? ` · Rift +${i.rift}` : ''}
+                  </span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        {def && (
+          <div className="gm-give-card">
+            <b className={`gm-name is-${def.rarity}`}>{def.name}</b>
+            <span className="info-small">
+              {def.rarity} {def.slot} · from level {def.minLevel}
+              {def.cls ? ` · ${classOf(def.cls)}` : ' · any class'}
+              {def.forSpec !== undefined && def.cls ? ` · ${CLASSES[def.cls].trees[def.forSpec]?.name}` : ''}
+            </span>
+            {modLines(def.mods).map((l) => (
+              <p key={l} className="gm-give-line">
+                {l}
+              </p>
+            ))}
+            {set && (
+              <div className="gm-give-set">
+                <span className="info-small">
+                  <b className="gm-name is-set">{set.name}</b> · {set.pieces.length} pieces
+                </span>
+                {set.bonuses.map((b) => (
+                  <p key={b.need} className="gm-give-line">
+                    <b>({b.need})</b> {b.text}
+                  </p>
+                ))}
+              </div>
+            )}
+            <div className="gm-inline">
+              <label className="info-small">
+                Item level{' '}
+                <input className="field gm-il" type="number" min={1} max={200} value={il} onChange={(e) => setIl(e.target.value)} aria-label="Item level" />
+              </label>
+              <button className="btn btn-sm" onClick={() => void go('item', { id: def.id, il: level }, def.name)}>
+                Give
+              </button>
+              {set && (
+                <button className="btn btn-sm btn-ghost" onClick={() => void go('set', { id: set.id, il: level }, set.name)}>
+                  Give the whole set ({set.pieces.length})
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

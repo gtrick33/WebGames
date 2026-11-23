@@ -35,8 +35,8 @@ import { refreshPets, summonPet, updatePets } from './pets';
 import { updateEscort } from './escort';
 import { spawnFolk, updateFolk, type Folk } from './folk';
 import { herdOf, letOut, updateCritters, type Critter } from './critters';
-import { castPace, updateCasting, updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
-import { blowFloor, healPlayer, hurtPlayer, playerSlow, playerStunned, tickPlayerStatuses } from './combat';
+import { castPace, echoCast, updateCasting, updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
+import { blowFloor, healPlayer, hurtPlayer, playerSlow, playerStunned, runProcs, tickPlayerStatuses } from './combat';
 import { breakWall, circleHitsWall, flowField, K, markerPos, moveCircle, parseRegion, pushOut, setDoors, TILE, tileAt, type PlacedMarker, type TileMap } from './map';
 import { roomBannerSub, updateRooms, type RoomPlay } from './rooms';
 import type { Chest, CoopSide, Drop, Enemy, Field, FloatText, Fx, Ghost, Interactable, NpcActor, Pet, Player, Projectile, Telegraph, Trap, Wave, WorldEvent, Callout } from './types';
@@ -397,6 +397,8 @@ export class World {
   crown: string[] | null = null;
   events: WorldEvent[] = [];
   procCd: Record<string, number> = {};
+  /** An echo is being cast (sim/cast.ts echoCast): it calls up no other. */
+  echoing = false;
   flow: Int16Array;
   private flowTile = -1;
   private flowT = 0;
@@ -809,6 +811,44 @@ export class World {
     // (and the people at their work go in with the rest: only the soldiers stay out)
     this.folk = calm ? r.folk : r.folk.filter((f) => f.posted && f.soldier);
     this.folkRand = r.rand;
+  }
+
+  /**
+   * An echo of one of the hero's skills, `times` casts `gap` seconds apart (an item's power: sim/cast.ts echoCast).
+   * Whatever casts it, an echo is never echoed: an item's echo on a skill's cast is skipped while an echo is cast.
+   */
+  echo(skill: string, mul: number, times = 1, gap = 0.25): void {
+    if (this.echoing) return;
+    echoCast(this, skill, mul);
+    for (let i = 1; i < times; i++) this.after(gap * i, () => echoCast(this, skill, mul));
+  }
+
+  /**
+   * The procs that go by themselves (`tick`): every `icd` seconds, while an enemy is near enough to be fought (the
+   * owner, 2026-11-22: "auto shooting a spell"). The first goes off a moment into the fight, not on its first frame.
+   */
+  private tickProcs(): void {
+    const p = this.player;
+    if (p.dead) return;
+    let near = false;
+    for (const e of this.enemies) {
+      if (e.dead || e.state === 'spawn' || e.dummy === 2) continue;
+      if ((e.x - p.x) ** 2 + (e.y - p.y) ** 2 < 230 * 230) {
+        near = true;
+        break;
+      }
+    }
+    for (const pr of this.build.procs) {
+      if (pr.on !== 'tick') continue;
+      if (!near) {
+        // (out of a fight the clock waits half a turn, so the first in the next one comes soon, not at once)
+        this.procCd[pr.id] = Math.max(this.procCd[pr.id] ?? 0, this.time + Math.min(1, pr.icd / 2));
+        continue;
+      }
+      if ((this.procCd[pr.id] ?? 0) > this.time) continue;
+      runProcs(this, 'tick', { x: p.x, y: p.y, base: 0, type: 'physical', depth: 1, hitDmg: 0 });
+      break;
+    }
   }
 
   /** Is the region at peace right now? (A village under attack is not.) */
@@ -1776,6 +1816,7 @@ export class World {
     }
     updateWindup(this, dt);
     updateChannel(this, dt);
+    if (!peace && !this.scene) this.tickProcs();
     if (inp.potion) this.drinkPotion();
     // a speed that is not a number is no speed. One that got in (a dash with no length, a blow from nowhere) never left:
     // every step after it was not a number too, moving the hero nowhere and blocked by nothing, so they stood where they
@@ -1992,7 +2033,7 @@ export class World {
   dropItem(x: number, y: number, item: Item): void {
     if (this.noLoot) return;
     this.dropAt('item', x, y, 1, item);
-    if (item.r === 'legendary') this.sfx('legendary');
+    if (item.r === 'legendary' || item.r === 'set') this.sfx('legendary');
     else if (item.r === 'epic') this.sfx('epic');
     else if (item.r === 'rare') this.sfx('rare');
   }
@@ -2133,7 +2174,7 @@ export class World {
         addItem(h, item);
         this.run.items.push(item);
         d.dead = true;
-        this.sfx(item.r === 'legendary' || item.r === 'epic' ? 'pickupBig' : 'pickup');
+        this.sfx(item.r === 'legendary' || item.r === 'set' || item.r === 'epic' ? 'pickupBig' : 'pickup');
         this.emit({ t: 'loot', item });
         this.emit({ t: 'save' });
         break;
@@ -2575,11 +2616,19 @@ export class World {
     const marks = keyMarks(k.key, up > 0);
     // beaten in time, the levels above it open (as in Diablo's rifts, nothing is lost by being late)
     const before = h.keystone;
-    // past the cap the stones ask for someone who has stood at Duskspire themselves
-    if (up > 0) h.keystone = Math.max(h.keystone, campaignDone(h) ? k.key + up : Math.min(k.key + up, RIFT_CAP_UNFINISHED));
-    const best = up > 0 && k.key > (h.bestKeys[this.region.id] ?? 0);
-    if (best) h.bestKeys[this.region.id] = k.key;
-    k.end = { time, up, marks, stone: h.keystone, best };
+    const here = this.region.id;
+    const beforeHere = h.stones[here] ?? 0;
+    // past the cap the stones ask for someone who has stood at Duskspire themselves; and what a run opens, it opens in
+    // this dungeon (the owner, 2026-11-22: rank 9 reached in one dungeon is not rank 9 in the next). `keystone` is the
+    // deepest anywhere, for what the stone rewards
+    if (up > 0) {
+      const open = campaignDone(h) ? k.key + up : Math.min(k.key + up, RIFT_CAP_UNFINISHED);
+      h.stones[here] = Math.max(beforeHere, open);
+      h.keystone = Math.max(h.keystone, open);
+    }
+    const best = up > 0 && k.key > (h.bestKeys[here] ?? 0);
+    if (best) h.bestKeys[here] = k.key;
+    k.end = { time, up, marks, stone: Math.max(k.key, h.stones[here] ?? 0), best };
     h.marks += marks;
     // the Rift's cache: more the higher the stone, and only in time
     if (up > 0) for (let i = 0; i < keyCache(k.key); i++) this.dropItem(x, y, this.rollItem('boss', keyLoot(k.key, k.heroLevel)));
@@ -2593,7 +2642,7 @@ export class World {
     this.emit({
       t: 'banner',
       text: up > 0 ? `In time: ${clockText(time)}` : `Out of time: ${clockText(time)}`,
-      sub: up > 0 ? (h.keystone > before ? `Riftstone +${k.key} · up to Riftstone +${h.keystone} open` : `Riftstone +${k.key}`) : `Riftstone +${k.key} · the clock was ${clockText(k.par)}`,
+      sub: up > 0 ? ((h.stones[here] ?? 0) > Math.max(beforeHere, k.key) ? `Riftstone +${k.key} · up to Riftstone +${h.stones[here]} open here` : `Riftstone +${k.key}`) : `Riftstone +${k.key} · the clock was ${clockText(k.par)}`,
     });
   }
 

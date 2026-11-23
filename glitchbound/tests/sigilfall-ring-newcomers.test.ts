@@ -223,7 +223,7 @@ describe('The Ring for newcomers: the tutorial', () => {
     expect(view().next).toBe(true);
     expect(view().labels!.map((l) => l.spot)).toEqual(expect.arrayContaining(['plates', 'foes', 'clock', 'target', 'bar', 'super']));
     expect(view().text).toMatch(/red circle/);
-    expect(view().text).toMatch(/sigil/);
+    expect(view().text).not.toMatch(/sigil/);
     expect(view().text).toMatch(/Pillars/);
     expect(view().text).toMatch(/Healing weakens/);
     expect(view().text).not.toMatch(/Gloam/);

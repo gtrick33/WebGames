@@ -124,7 +124,7 @@ const IRON: [number, number, number] = [0.47, 0.49, 0.55];
 const GOLD: [number, number, number] = [0.98, 0.78, 0.3];
 
 function metalOf(p: Piece): [number, number, number] {
-  if (p.r === 'legendary' || p.r === 'epic') return GOLD;
+  if (p.r === 'legendary' || p.r === 'set' || p.r === 'epic') return GOLD;
   return p.mat === 'mail' ? IRON : STEEL;
 }
 
@@ -196,7 +196,7 @@ export function dressedMesh(w: Wardrobe, look: HeroLook, held: Held | null, shie
 
   // the head: a covering, and what is under it
   const headP = look.head;
-  const covers = headP ? (HEADS[headP.style] ?? HEADS.cap!).filter((c) => !c.hide || headP.r === 'epic' || headP.r === 'legendary') : null;
+  const covers = headP ? (HEADS[headP.style] ?? HEADS.cap!).filter((c) => !c.hide || headP.r === 'epic' || headP.r === 'legendary' || headP.r === 'set') : null;
   const cover = covers && headP ? pickOf(covers, headP) : null;
   const headTint = headP ? hexRgb(headP.tint) : [1, 1, 1] as [number, number, number];
   const metalHead = headP?.style === 'helm' || headP?.style === 'crown';

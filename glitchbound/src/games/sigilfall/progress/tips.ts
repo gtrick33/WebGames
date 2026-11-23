@@ -196,13 +196,13 @@ export function tipSteps(id: TipId, c: TipContext): TipStep[] {
           target: hudButton('Map'),
           panel: null,
           title: 'Where to go',
-          text: `${touch ? 'Open the map' : 'Open the map (M)'} at any waystone, pick a dungeon and choose Riftstone. Or take The Rift Trials from the title screen, with no road to walk first. With friends, it’s Play together.`,
+          text: `The Riftward, past any waystone on the map${touch ? '' : ' (M)'}: show the Keeper of the Riftgate your stone and choose a dungeon. Each dungeon keeps its own stone: beat one in time and only that one goes deeper. Or take the Riftstone from the title screen, as this hero or a champion. With friends, it’s Play together.`,
         },
         {
           target: null,
           panel: null,
           title: 'What it gives',
-          text: 'Beat the clock and the next stones open; late, the run still pays and nothing is lost. Every level raises the item level of what drops, and every new stone you open gives a Rift-forged piece: your class’s set first, then one for each specialization.',
+          text: 'Beat the clock and that dungeon’s next stones open; late, the run still pays and nothing is lost. Every level raises the item level of what drops, and every new stone you open gives a Rift-forged piece: your class’s set first, then one for each specialization.',
         },
         {
           target: null,

@@ -946,7 +946,7 @@ function Toasts({ engine }: { engine: SigilEngine }) {
         if (t.tone === 'loot' && t.item) {
           const item = t.item;
           // (on touch a plain drop isn't a card over the fight: the bag button counts what's new)
-          if (engine.touchMode && t.text === itemName(item) && item.r !== 'legendary') return null;
+          if (engine.touchMode && t.text === itemName(item) && (item.r !== 'legendary' && item.r !== 'set')) return null;
           const owned = h.bag.some((i) => i.uid === item.uid);
           const lines = modLines(itemMods(item));
           const canWear = usableBy(item, h.cls);
@@ -1264,7 +1264,6 @@ function RewardScreen({ engine }: { engine: SigilEngine }) {
   const r = engine.ui.reward!;
   const mins = Math.floor(r.seconds / 60);
   const secs = Math.floor(r.seconds % 60);
-  const h = engine.hero!;
   // (where the dungeon's portal goes, which is where this button goes)
   const way = engine.world?.portalWay().to ?? HOME;
   return (
@@ -1279,7 +1278,7 @@ function RewardScreen({ engine }: { engine: SigilEngine }) {
             </span>
             <span>
               {r.key.up > 0
-                ? `${r.key.up === 3 ? 'Under 60% of the clock' : r.key.up === 2 ? 'Under 80% of the clock' : 'Inside the clock'}: Riftstone +${r.key.key + r.key.up} is open${r.key.stone > r.key.key + r.key.up ? ` (your highest is +${r.key.stone})` : ''}.`
+                ? `${r.key.up === 3 ? 'Under 60% of the clock' : r.key.up === 2 ? 'Under 80% of the clock' : 'Inside the clock'}: Riftstone +${r.key.key + r.key.up} is open here${r.key.stone > r.key.key + r.key.up ? ` (up to +${r.key.stone} already)` : ''}.`
                 : 'Late: the run still pays, and nothing is lost. Try it again, or a level lower.'}
               {r.key.best ? ' A new best here.' : ''}
             </span>
@@ -1320,7 +1319,7 @@ function RewardScreen({ engine }: { engine: SigilEngine }) {
           </button>
           {r.key && !engine.party && (
             <button className="rb-btn" onClick={() => engine.keyAgain()}>
-              Riftstone +{h.keystone} here
+              Riftstone +{engine.openStone(r.region)} here
             </button>
           )}
           {engine.canGoHome && (

@@ -11,7 +11,7 @@ import type { ClassId, RegionDef } from '../data/types';
 import { ECHOES } from '../data/wardens';
 import type { SigilEngine } from '../engine';
 import { classOpen } from '../progress/paidClasses';
-import { trialHero, trialStone } from '../progress/trial';
+import { stoneIn, trialHero, trialStone } from '../progress/trial';
 import { wornLooks } from '../progress/wardrobe';
 import { iconsReady } from '../render/art/gameIcons';
 import { heldWeapon, heroDollUrl, heroLook, portraitUrl } from '../render/sprites';
@@ -150,10 +150,10 @@ function Champions({ engine, onBack, tabs }: { engine: SigilEngine; onBack: () =
   useEffect(() => {
     void iconsReady.then(setIcons);
   }, []);
-  const top = trialStone(engine.save, pick.cls);
-  const [stone, setStone] = useState(top);
-  const at = Math.max(1, Math.min(top, stone));
-  const pool = riftDungeons(top);
+  // the calling's deepest stone anywhere: how many dungeons it reaches; and each dungeon its own stone (the owner,
+  // 2026-11-22), shared with the account's heroes of the calling (progress/trial.ts stoneIn)
+  const highest = trialStone(engine.save, pick.cls);
+  const pool = riftDungeons(highest);
   // the one played last, or (the first time) not the Chapel Crypt every story hero has just come out of
   const [region, setRegionState] = useState(() => {
     const last = lastLand();
@@ -169,9 +169,13 @@ function Champions({ engine, onBack, tabs }: { engine: SigilEngine; onBack: () =
   };
   const [first] = useState(firstVisit);
   const picked = pool.find((r) => r.id === region) ?? pool[0]!;
+  const top = stoneIn(engine.save, pick.cls, picked.id);
+  const [chosen, setChosen] = useState<Record<string, number>>({});
+  const at = Math.max(1, Math.min(top, chosen[`${pick.cls}:${picked.id}`] ?? top));
+  const setStone = (n: number): void => setChosen((c) => ({ ...c, [`${pick.cls}:${picked.id}`]: n }));
   const c = CLASSES[pick.cls];
   const path = c.trees[pick.spec];
-  const hero = useMemo(() => trialHero(pick.cls, pick.spec, top), [pick.cls, pick.spec, top]);
+  const hero = useMemo(() => trialHero(pick.cls, pick.spec, highest), [pick.cls, pick.spec, highest]);
   // what the champion carries: the bar they fight with, and the talents that change it most (the ones naming a skill)
   const kit = useMemo(() => {
     const b = buildHero(hero);
@@ -180,11 +184,10 @@ function Champions({ engine, onBack, tabs }: { engine: SigilEngine; onBack: () =
     return { bar, keys };
   }, [hero, pick.cls, pick.spec]);
   const doll = useMemo(() => heroDollUrl(heroLook(pick.cls, hero.equip), 'down', 6, heldWeapon(pick.cls, hero.equip.weapon), pick.cls === 'warrior' || pick.cls === 'paladin'), [pick.cls, hero]);
-  const next = ECHOES.find((e) => top < e.at);
+  const next = ECHOES.find((e) => highest < e.at);
   const sc = keyScale(at, MAX_LEVEL);
   const choose = (cls: ClassId, spec: 0 | 1 | 2): void => {
     setPick({ cls, spec });
-    setStone(trialStone(engine.save, cls));
     try {
       localStorage.setItem(LAST_KEY, JSON.stringify({ cls, spec }));
     } catch {
@@ -212,7 +215,7 @@ function Champions({ engine, onBack, tabs }: { engine: SigilEngine; onBack: () =
             {CLASS_IDS.map((id) => {
               const open = classOpen(id, me);
               return (
-                <button key={id} role="radio" aria-checked={id === pick.cls} className={`rb-vlobby-class${id === pick.cls ? ' is-on' : ''}${open ? '' : ' is-locked'}`} style={{ ['--c' as string]: CLASSES[id].colors.accent }} aria-disabled={!open} title={open ? `${CLASSES[id].name}: Riftstone +${trialStone(engine.save, id)}` : `${CLASSES[id].name}: unlock it in the shop`} onClick={() => open && choose(id, 0)}>
+                <button key={id} role="radio" aria-checked={id === pick.cls} className={`rb-vlobby-class${id === pick.cls ? ' is-on' : ''}${open ? '' : ' is-locked'}`} style={{ ['--c' as string]: CLASSES[id].colors.accent }} aria-disabled={!open} title={open ? `${CLASSES[id].name}: deepest Riftstone +${trialStone(engine.save, id)}` : `${CLASSES[id].name}: unlock it in the shop`} onClick={() => open && choose(id, 0)}>
                   <img src={classEmblem(id)} alt="" draggable={false} />
                   <span>{CLASSES[id].name}</span>
                   <b className="rb-rlobby-stone">+{trialStone(engine.save, id)}</b>
@@ -273,7 +276,7 @@ function Champions({ engine, onBack, tabs }: { engine: SigilEngine; onBack: () =
               </button>
             </div>
             <p className="rb-small rb-dim">
-              Enemies at level {keyLevelFor(MAX_LEVEL)}, ×{sc.hp.toFixed(1)} health, ×{sc.dmg.toFixed(1)} damage. A fall costs {KEY_DEATH} seconds. In time, the {c.name}’s stone rises (two inside 80% of the clock, three inside 60%) and is kept. Nothing else leaves the Rift.
+              Enemies at level {keyLevelFor(MAX_LEVEL)}, ×{sc.hp.toFixed(1)} health, ×{sc.dmg.toFixed(1)} damage. A fall costs {KEY_DEATH} seconds. In time, the {c.name}’s stone in this dungeon rises (two inside 80% of the clock, three inside 60%) and is kept, for your own {c.name} heroes too. Nothing else leaves the Rift.
               {next ? ` The next memory waits at +${next.at}.` : ''}
             </p>
           </div>
@@ -287,7 +290,9 @@ function Champions({ engine, onBack, tabs }: { engine: SigilEngine; onBack: () =
                 {boss && <img src={portraitUrl('creature', boss, 4)} alt="" draggable={false} />}
                 <span className="rb-vlobby-land-text">
                   <strong>{r.name}</strong>
-                  <small>{r.encounters.filter((e) => !!e.boss).length} bosses</small>
+                  <small>
+                    {r.encounters.filter((e) => !!e.boss).length} bosses · +{stoneIn(engine.save, pick.cls, r.id)} open
+                  </small>
                 </span>
                 <b className="rb-vlobby-best">{clockText(keyParFor(r, MAX_LEVEL))}</b>
               </button>

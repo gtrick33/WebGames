@@ -440,6 +440,13 @@ html.rb-touch-playing textarea {
     0 0 10px rgb(255 154 42 / 0.6),
     inset 0 0 0 1px rgb(0 0 0 / 0.5);
 }
+/* a set piece: its own green, with a second ring inside its frame so it is told from a legendary at a glance */
+.rb-itemicon.is-set {
+  box-shadow:
+    0 0 10px rgb(54 224 168 / 0.6),
+    inset 0 0 0 2px rgb(54 224 168 / 0.55),
+    inset 0 0 0 3px rgb(0 0 0 / 0.5);
+}
 .rb-new {
   position: absolute;
   top: -4px;
@@ -2573,6 +2580,8 @@ html.rb-touch-playing textarea {
   text-align: center;
   white-space: normal;
   pointer-events: none;
+  /* (over the buttons it sits among: it was drawn under them, 2026-11-22) */
+  z-index: 6;
   animation: rb-teach-in 0.25s ease-out;
 }
 .rb-teach::after {
@@ -2600,21 +2609,7 @@ html.rb-touch-playing textarea {
   right: calc(36px - var(--rb-arrow-dx, 0px));
   margin-left: 0;
 }
-/* over the button it teaches: the attack, the first skill, the dodge (data from the gathered .rb-cluster .rb-sb-*) */
-.rb-teach.is-touch.is-at-s1 {
-  right: 104px;
-  bottom: 82px;
-}
-.rb-teach.is-touch.is-at-s1::after {
-  right: 24px;
-}
-.rb-teach.is-touch.is-at-dodge {
-  right: 164px;
-  bottom: 70px;
-}
-.rb-teach.is-touch.is-at-dodge::after {
-  right: 22px;
-}
+/* (over the button it teaches, wherever that button is: ui/Lesson.tsx anchor) */
 /* the left-handed cluster is mirrored: the words are not */
 .is-lefty .rb-cluster .rb-teach {
   transform: scaleX(-1);
@@ -11405,6 +11400,9 @@ html.rb-touch-playing textarea {
   z-index: 70;
   pointer-events: auto;
 }
+.rb-create.is-asking {
+  overflow: hidden;
+}
 .rb-radios {
   display: flex;
   gap: 22px;
@@ -16616,4 +16614,100 @@ html.rb-touch-playing textarea {
   .rb-riftgate {
     grid-template-columns: 1fr;
   }
+}
+
+/* ---- Before you begin (ui/Title.tsx): the difficulty, and the hints for a later hero, asked before the Prologue (the
+   owner, 2026-11-22). Three cards side by side, the chosen one lit in its own color. ---- */
+.rb-begin {
+  display: grid;
+  gap: 8px;
+  max-width: min(620px, 100%);
+  text-align: left;
+}
+.rb-begin h2 {
+  text-align: center;
+}
+.rb-begin-levels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.rb-begin-level {
+  --lv: #d8dce6;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-height: 96px;
+  padding: 10px 10px 12px;
+  border: 2px solid rgb(255 255 255 / 0.14);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(0 0 0 / 0.25));
+  color: var(--rb-text, #f1ecff);
+  text-align: left;
+  cursor: pointer;
+}
+.rb-begin-level.is-story {
+  --lv: #6ad89a;
+}
+.rb-begin-level.is-hard {
+  --lv: #ff7a5a;
+}
+.rb-begin-level strong {
+  color: var(--lv);
+  font: 700 17px/1.1 Georgia, 'Liberation Serif', serif;
+}
+.rb-begin-level span {
+  font-size: 12.5px;
+  line-height: 1.35;
+  opacity: 0.85;
+}
+.rb-begin-level.is-on {
+  border-color: var(--lv);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--lv) 22%, transparent), rgb(0 0 0 / 0.25));
+  box-shadow: 0 0 0 1px var(--lv), 0 0 18px color-mix(in srgb, var(--lv) 40%, transparent);
+}
+.rb-begin-tips {
+  justify-self: start;
+}
+@container (max-width: 560px) {
+  .rb-begin-levels {
+    grid-template-columns: 1fr;
+  }
+  .rb-begin-level {
+    min-height: 0;
+  }
+}
+/* (a phone on its side: the card shorter, and scrolled from its top rather than cut off above it) */
+.rb-tip-ask {
+  place-items: safe center;
+}
+@container (max-height: 460px) {
+  .rb-begin {
+    gap: 5px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .rb-begin h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+  .rb-begin-level {
+    min-height: 0;
+    padding: 7px 9px 8px;
+  }
+  .rb-begin-level span {
+    font-size: 11.5px;
+    line-height: 1.25;
+  }
+  .rb-begin > p.rb-small {
+    margin: 0;
+  }
+}
+
+/* the two colors of the Rift's best (render/renderer.ts rarityColor): a legendary orange, a set piece green */
+.rb-legendary {
+  color: #ff9a2a;
+}
+.rb-set {
+  color: #36e0a8;
 }

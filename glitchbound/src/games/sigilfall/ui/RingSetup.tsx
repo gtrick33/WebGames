@@ -483,9 +483,6 @@ export function RingHelp({ onClose, touch, engine, onTutorial }: { onClose: () =
                 <b>Spells land. Circles can be left.</b> What is aimed at someone always hits them: most quick ones at once, a thrown Frostfang and cast ones after a short flight. What is placed on the ground shows as a circle first, red when it is the other side’s.
               </li>
               <li>
-                <b>Take the sigil.</b> A sigil rises in the middle now and then: it heals, fills your super by a third and speeds you up.
-              </li>
-              <li>
                 <b>Pillars block sight.</b> Step behind one before a cast ends and it is lost, and a healer can’t reach who they can’t see.
               </li>
               <li>

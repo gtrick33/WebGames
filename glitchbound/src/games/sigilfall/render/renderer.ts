@@ -1696,7 +1696,8 @@ export class Renderer {
 
 }
 
-export const rarityColor = (r: string | undefined): string => (r === 'legendary' ? '#ff9a2a' : r === 'epic' ? '#c58cff' : r === 'rare' ? '#5ab0ff' : r === 'uncommon' ? '#6dff8f' : '#e8e0d0');
+/** The color that says how rare a piece is: a set piece its own green (2026-11-22), a legendary orange. */
+export const rarityColor = (r: string | undefined): string => (r === 'set' ? '#36e0a8' : r === 'legendary' ? '#ff9a2a' : r === 'epic' ? '#c58cff' : r === 'rare' ? '#5ab0ff' : r === 'uncommon' ? '#6dff8f' : '#e8e0d0');
 
 /**
  * The mark over someone: "?" when they take a quest back (handed in, or a talk the quest is for), "!" when they

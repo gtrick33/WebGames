@@ -105,6 +105,12 @@ export interface Character {
   keystone: number;
   /** The highest stone finished in time, by dungeon. */
   bestKeys: Record<string, number>;
+  /**
+   * The stone open in each dungeon: a run beaten in time opens the levels above it there, and there only (the owner,
+   * 2026-11-22: "if i reach rank 9 at the first dungeon, i shouldnt be able to start rank 9 on the second one").
+   * `keystone` stays the deepest opened anywhere, for what the stone rewards (titles, mounts, the broker's odds).
+   */
+  stones: Record<string, number>;
   /** Paragon levels past 60 and their points (progress/paragon.ts). */
   para: Paragon;
   /** One-time things done: once-only chests, discovered spots. */
@@ -189,6 +195,7 @@ export function newCharacter(cls: ClassId, name: string, id: string, now = Date.
     clears: {},
     keystone: 0,
     bestKeys: {},
+    stones: {},
     para: newParagon(),
     opened: [],
     perks: [],

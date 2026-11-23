@@ -14,7 +14,8 @@ import { buildHero } from '../src/games/sigilfall/progress/build';
 import { SIGILS } from '../src/games/sigilfall/progress/character';
 import { rollGear } from '../src/games/sigilfall/progress/items';
 import { addParagonXp, PARA_CAP, paragonFree, paragonXp, resetParagon, spendParagon, validateParagon } from '../src/games/sigilfall/progress/paragon';
-import { DEFAULT_SETTINGS, validateCharacter, validateItem } from '../src/games/sigilfall/progress/save';
+import { DEFAULT_SETTINGS, migrate, validateCharacter, validateItem } from '../src/games/sigilfall/progress/save';
+import { stoneIn, stonesOf, trialStone } from '../src/games/sigilfall/progress/trial';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { TILE } from '../src/games/sigilfall/sim/map';
 import { emptyInput, World } from '../src/games/sigilfall/sim/world';
@@ -64,6 +65,34 @@ function finish(w: World, at: number, deaths = 0): void {
   }
   expect(w.cleared).toBe(true);
 }
+
+describe('sigilfall: the Riftstone, dungeon by dungeon (2026-11-22)', () => {
+  it("a calling's stones are its champion's and its heroes' alike, and no other calling's", () => {
+    const mage = endgameHero('mage', 7);
+    mage.stones = { crypt: 7 };
+    const save = { heroes: [mage, null], riftBy: { mage: { 'deepforge-halls': 4 }, warrior: { crypt: 12 } }, rift: { mage: 3 } };
+    // the champion's stone in the forge, the hero's in the crypt, and the warrior's twelve is the warrior's
+    expect(stoneIn(save, 'mage', 'crypt')).toBe(7);
+    expect(stoneIn(save, 'mage', 'deepforge-halls')).toBe(4);
+    expect(stoneIn(save, 'mage', 'siege-of-highwall')).toBe(KEY_MIN);
+    expect(stonesOf(save, 'mage')).toEqual({ crypt: 7, 'deepforge-halls': 4 });
+    // the deepest anywhere reaches the dungeons (data/keystones.ts riftDungeons) and is what the lobby shows
+    expect(trialStone(save, 'mage')).toBe(7);
+    expect(trialStone(save, 'warrior')).toBe(12);
+  });
+
+  it('a hero from before keeps a stone in each dungeon beaten in time: one above its best there', () => {
+    const raw = JSON.parse(JSON.stringify(endgameHero('warrior', 9))) as Record<string, unknown>;
+    delete raw.stones;
+    raw.bestKeys = { crypt: 8, 'siege-of-highwall': 3 };
+    const back = validateCharacter(raw, 0)!;
+    expect(back.keystone).toBe(9);
+    expect(back.stones).toEqual({ crypt: 9, 'siege-of-highwall': 4 });
+    // and a save keeps each calling's stones
+    const text = JSON.stringify({ v: 15, heroes: [], last: 0, settings: {}, saved: 0, rift: {}, riftBy: { mage: { crypt: 6, nowhere: 4 }, nobody: { crypt: 2 } } });
+    expect(migrate(JSON.parse(text))?.riftBy).toEqual({ mage: { crypt: 6 } });
+  });
+});
 
 describe('sigilfall: Riftstone', () => {
   it('every level is tougher, without end; affixes join at +2, +4, +7 and +10 and change with the week', () => {
@@ -120,6 +149,12 @@ describe('sigilfall: Riftstone', () => {
     expect(fast.keyRun!.end!.up).toBe(3);
     expect(fast.hero.keystone).toBe(8);
     expect(fast.hero.bestKeys['siege-of-highwall']).toBe(5);
+    // (in that dungeon only: the owner, 2026-11-22, "if i reach rank 9 at the first dungeon, i shouldnt be able to start
+    // rank 9 on the second one")
+    expect(fast.hero.stones['siege-of-highwall']).toBe(8);
+    expect(fast.hero.stones['crypt']).toBeUndefined();
+    expect(stoneIn({ heroes: [fast.hero] }, 'warrior', 'siege-of-highwall')).toBe(8);
+    expect(stoneIn({ heroes: [fast.hero] }, 'warrior', 'deepforge-halls')).toBe(KEY_MIN);
     expect(fast.keyRun!.end!.best).toBe(true);
     // falls push a run that was just in time out of it, and a late run takes nothing away
     const slow = keyRun('siege-of-highwall', 5);

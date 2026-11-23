@@ -535,8 +535,8 @@ function gloomTick(w: World, e: Enemy): void {
     if (!l.lit) {
       const near = !p.dead && dist(l.x, l.y, p.x, p.y) < 30;
       l.kindle = near ? l.kindle + dt : Math.max(0, l.kindle - dt);
-      if (near && show) w.text(l.x, l.y - 34, `Kindling... ${Math.min(100, Math.round((l.kindle / 1.4) * 100))}%`, FLAME, false);
-      if (l.kindle >= 1.4 || w.time >= l.back) {
+      if (near && show) w.text(l.x, l.y - 34, `Kindling... ${Math.min(100, Math.round((l.kindle / KINDLE) * 100))}%`, FLAME, false);
+      if (l.kindle >= KINDLE || w.time >= l.back) {
         l.lit = true;
         l.kindle = 0;
         w.fxBurst(l.x, l.y - 30, FLAME, 16, 14);
@@ -556,8 +556,9 @@ function gloomTick(w: World, e: Enemy): void {
     s.gnawT -= dt;
     if (s.gnawT <= 0) {
       s.gnawT = 0.5;
-      const k = Math.min(2.5, 1 + Math.floor(s.gnaw / 2) * 0.5);
-      if (hurtPlayer(w, p.maxHp * 0.015 * k, { pierce: true }) && (s.sayT -= 0.5) <= 0) {
+      // (gentler since 2026-11-22: it was 1.5% a half second, rising to 2.5 times that)
+      const k = Math.min(1.6, 1 + Math.floor(s.gnaw / 2) * 0.3);
+      if (hurtPlayer(w, p.maxHp * 0.008 * k, { pierce: true }) && (s.sayT -= 0.5) <= 0) {
         s.sayT = 3;
         w.text(p.x, p.y - 30, 'The dark gnaws at you! Find the light!', '#c8b8ff', false);
       }
@@ -569,6 +570,9 @@ function gloomTick(w: World, e: Enemy): void {
   s.lastHp = e.hp;
   w.after(0, () => gloomTick(w, e));
 }
+
+/** Seconds by a dark lamp to light it again (1.4 until 2026-11-22). */
+const KINDLE = 0.9;
 
 /** The dark: the lamps found and lit (the fight's start); `cut` of a blow is lost while she shelters in the dark. */
 const dark: PatternFn = (w, e, _dt, k) => {

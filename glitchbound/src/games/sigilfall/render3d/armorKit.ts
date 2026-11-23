@@ -29,7 +29,7 @@ const tup = (c: C): Rgb => [c[0]!, c[1]!, c[2]!];
 const hex = (s: string): Rgb => hexRgb(s) as Rgb;
 
 /** The color that says what rarity something is, on gems and on the plainest of trims. */
-const RARITY_GEM: Record<Rarity, string> = { common: '#9a9a9a', uncommon: '#58c858', rare: '#4aa8ff', epic: '#b870ff', legendary: '#ff9a2a' };
+const RARITY_GEM: Record<Rarity, string> = { common: '#9a9a9a', uncommon: '#58c858', rare: '#4aa8ff', epic: '#b870ff', legendary: '#ff9a2a', set: '#36e0a8' };
 
 /** What metal is, at each rarity. */
 const METAL: Record<Rarity, Rgb> = {
@@ -38,6 +38,7 @@ const METAL: Record<Rarity, Rgb> = {
   rare: [0.5, 0.54, 0.61],
   epic: [0.56, 0.6, 0.7],
   legendary: [0.98, 0.78, 0.3],
+  set: [0.42, 0.86, 0.64],
 };
 const SILVERED: Rgb = [0.82, 0.82, 0.8];
 const BRONZE = rgb('#a8763a');
@@ -46,7 +47,7 @@ const GOLD = rgb('#ffcf5a');
 const LEATHER = rgb('#5a4030');
 
 /** The trim on an item of each rarity (none on the plainest). */
-const TRIM: Record<Rarity, C | null> = { common: null, uncommon: BRONZE, rare: SILVER, epic: GOLD, legendary: GOLD };
+const TRIM: Record<Rarity, C | null> = { common: null, uncommon: BRONZE, rare: SILVER, epic: GOLD, legendary: GOLD, set: GOLD };
 
 /** A dye as it comes out at each rarity: the dullest is a poor man's dye, the best deep and bright. */
 function dye(tint: string, r: Rarity): Rgb {
@@ -62,6 +63,7 @@ function dye(tint: string, r: Rarity): Rgb {
     case 'epic':
       return hslRgb(h, Math.min(1, s * 1.35 + 0.08), Math.min(0.56, l * 0.98));
     case 'legendary':
+    case 'set':
       return hslRgb(h, Math.min(1, s * 1.5 + 0.12), Math.min(0.56, l));
   }
 }
@@ -70,16 +72,16 @@ function dye(tint: string, r: Rarity): Rgb {
 
 /** The model set a chest piece is made from, by its cut and rarity, and the sleeves that go with it. */
 const CHEST_LADDER: Record<Piece['style'] & string, Record<Rarity, string>> = {
-  plate: { common: 'Skeleton_Rogue', uncommon: 'Knight', rare: 'Knight', epic: 'Paladin', legendary: 'Paladin' },
-  tunic: { common: 'Rogue', uncommon: 'Rogue', rare: 'RogueHooded', epic: 'Vampire', legendary: 'Vampire' },
-  robe: { common: 'Skeleton_Mage', uncommon: 'Mage', rare: 'Cleric', epic: 'Necromancer', legendary: 'Necromancer' },
+  plate: { common: 'Skeleton_Rogue', uncommon: 'Knight', rare: 'Knight', epic: 'Paladin', legendary: 'Paladin', set: 'Paladin' },
+  tunic: { common: 'Rogue', uncommon: 'Rogue', rare: 'RogueHooded', epic: 'Vampire', legendary: 'Vampire', set: 'Vampire' },
+  robe: { common: 'Skeleton_Mage', uncommon: 'Mage', rare: 'Cleric', epic: 'Necromancer', legendary: 'Necromancer', set: 'Necromancer' },
 };
 const SLEEVES: Record<string, string> = { Skeleton_Rogue: 'Knight', Skeleton_Mage: 'Mage' };
 
 const LEG_LADDER: Record<string, Record<Rarity, string>> = {
-  greaves: { common: 'Knight', uncommon: 'Knight', rare: 'Knight', epic: 'Paladin', legendary: 'Paladin' },
-  trousers: { common: 'Rogue', uncommon: 'Ranger', rare: 'Ranger', epic: 'Vampire', legendary: 'Vampire' },
-  robe: { common: 'Mage', uncommon: 'Mage', rare: 'Mage', epic: 'Necromancer', legendary: 'Necromancer' },
+  greaves: { common: 'Knight', uncommon: 'Knight', rare: 'Knight', epic: 'Paladin', legendary: 'Paladin', set: 'Paladin' },
+  trousers: { common: 'Rogue', uncommon: 'Ranger', rare: 'Ranger', epic: 'Vampire', legendary: 'Vampire', set: 'Vampire' },
+  robe: { common: 'Mage', uncommon: 'Mage', rare: 'Mage', epic: 'Necromancer', legendary: 'Necromancer', set: 'Necromancer' },
 };
 
 interface Cover {
@@ -97,6 +99,7 @@ const HEAD_LADDER: Record<string, Record<Rarity, Cover>> = {
     rare: { parts: ['Skeleton_Warrior_Helmet'], bald: true },
     epic: { parts: ['Paladin_Helmet'], own: true },
     legendary: { parts: ['Paladin_Helmet'], own: true },
+    set: { parts: ['Paladin_Helmet'], own: true },
   },
   hood: {
     common: { parts: ['Skeleton_Rogue_Hood'], bald: true },
@@ -104,6 +107,7 @@ const HEAD_LADDER: Record<string, Record<Rarity, Cover>> = {
     rare: { parts: ['RogueHooded_Head', 'RogueHooded_Mask'], own: true },
     epic: { parts: ['Cleric_Head'], own: true },
     legendary: { parts: ['Cleric_Head'], own: true },
+    set: { parts: ['Cleric_Head'], own: true },
   },
   cap: {
     // (no modern hats or caps: cloth hoods and headbands)
@@ -113,6 +117,7 @@ const HEAD_LADDER: Record<string, Record<Rarity, Cover>> = {
     // (a bear's head is a trophy, for gear of renown)
     epic: { parts: ['Barbarian_BearHat'], bald: true },
     legendary: { parts: ['Barbarian_BearHat'], bald: true },
+    set: { parts: ['Barbarian_BearHat'], bald: true },
   },
   crown: {
     common: { parts: ['Ninja_Headband'] },
@@ -120,6 +125,7 @@ const HEAD_LADDER: Record<string, Record<Rarity, Cover>> = {
     rare: { parts: ['Necromancer_Crown'] },
     epic: { parts: ['Necromancer_Crown'] },
     legendary: { parts: ['Necromancer_Crown'] },
+    set: { parts: ['Necromancer_Crown'] },
   },
   wizard: {
     common: { parts: ['Skeleton_Mage_Hat'], bald: true },
@@ -127,6 +133,7 @@ const HEAD_LADDER: Record<string, Record<Rarity, Cover>> = {
     rare: { parts: ['Mage_Hat'], bald: true },
     epic: { parts: ['Mage_Hat'], bald: true },
     legendary: { parts: ['Mage_Hat'], bald: true },
+    set: { parts: ['Mage_Hat'], bald: true },
   },
 };
 
@@ -254,7 +261,7 @@ function trimsOf(body: MeshData, r: Rarity, trim: C, belt: C): MeshData[] {
     const front: Inside = (_x, _y, z) => z;
     parts.push(shell(body, [within(r === 'rare' ? 0.03 : 0.05), front, above(low + band), below(1.08)], 0.012, trim));
   }
-  if (r === 'epic' || r === 'legendary') parts.push(shell(body, [above(low + band + 0.05), below(low + band + 0.09)], 0.012, trim));
+  if (r === 'epic' || r === 'legendary' || r === 'set') parts.push(shell(body, [above(low + band + 0.05), below(low + band + 0.09)], 0.012, trim));
   return parts;
 }
 
@@ -273,23 +280,23 @@ function ladderHead(w: Wardrobe, look: HeroLook, skin: Rgb, hair: Rgb): MeshData
   }
   const tint = dye(p.tint, p.r);
   const isMetal = p.style === 'helm' || p.style === 'crown';
-  const metal = p.r === 'legendary' && p.style === 'helm' ? SILVERED : METAL[p.r];
+  const metal = (p.r === 'legendary' || p.r === 'set') && p.style === 'helm' ? SILVERED : METAL[p.r];
   for (const id of cover.parts) {
     const m = w.hero.meshes[id];
     if (!m) continue;
     if (id === 'Barbarian_BearHat') parts.push(painted(m, { cloth: tint, metal: tup(mul(tint, 0.8)), skin: tup(mul(tint, 1.3)) }));
     else if (cover.own && id === cover.parts[0] && !isMetal) parts.push(painted(m, { skin, cloth: tint, metal: tup(TRIM[p.r] ?? metal) }));
-    else if (isMetal) parts.push(painted(m, { skin, metal, cloth: p.r === 'legendary' ? hex('#a8262e') : tup(mix(metal, hex(RARITY_GEM[p.r]), 0.6)), plated: true }));
+    else if (isMetal) parts.push(painted(m, { skin, metal, cloth: (p.r === 'legendary' || p.r === 'set') ? hex('#a8262e') : tup(mix(metal, hex(RARITY_GEM[p.r]), 0.6)), plated: true }));
     else parts.push(painted(m, { cloth: tint, metal: tup(TRIM[p.r] ?? tint) }));
   }
   const head = w.medium.joints.indexOf('head');
   const J = 'medium';
-  if (p.r === 'epic' || p.r === 'legendary') {
+  if (p.r === 'epic' || p.r === 'legendary' || p.r === 'set') {
     const gem = rgb(RARITY_GEM[p.r]);
     // a stone on the brow
     parts.push(gemAt(head, 0, p.style === 'helm' ? 2.06 : 1.98, p.style === 'helm' ? 0.56 : 0.5, 0.075, gem));
   }
-  if (p.r === 'legendary') {
+  if (p.r === 'legendary' || p.r === 'set') {
     // a crest, front to back over the top
     const top = p.style === 'helm' ? 2.28 : p.style === 'hood' ? 2.12 : 2.14;
     const crest = rgb('#d8342e');
@@ -306,7 +313,7 @@ function ladderChest(w: Wardrobe, look: HeroLook, skin: Rgb): { parts: MeshData[
   const r = p.r;
   const isPlate = p.style === 'plate';
   // (the best plate is polished silver under its gold: all-gold is for a warden)
-  const metalMix = isPlate ? (r === 'legendary' ? SILVERED : tup(mix(METAL[r], hex(p.tint), 0.28))) : METAL[r];
+  const metalMix = isPlate ? ((r === 'legendary' || r === 'set') ? SILVERED : tup(mix(METAL[r], hex(p.tint), 0.28))) : METAL[r];
   // (on plate the dye is its straps and its cloth, in the rarity's own color from rare up)
   const cloth = isPlate ? (r === 'common' ? tup(LEATHER) : r === 'uncommon' ? hex('#4a5a3a') : tup(mix(hex(RARITY_GEM[r]), [0.1, 0.08, 0.14], 0.42))) : dye(p.tint, r);
   const body = w.hero.meshes[`${kind}_Body`] ?? w.hero.meshes.Rogue_Body!;
@@ -327,23 +334,23 @@ function ladderChest(w: Wardrobe, look: HeroLook, skin: Rgb): { parts: MeshData[
   if (trim) parts.push(...trimsOf(body, r, trim, r === 'uncommon' ? mul(LEATHER, 0.8) : mul(trim, 0.86)));
   const chest = w.medium.joints.indexOf('chest');
   // pauldrons: small at rare, big at epic, huge and spiked at legendary (a robe's are a mantle of the same)
-  if (r === 'rare' || r === 'epic' || r === 'legendary') {
-    const pad = r === 'legendary' ? METAL.legendary : isPlate ? metalMix : tup(mix(cloth, [0, 0, 0], 0.12));
+  if (r === 'rare' || r === 'epic' || r === 'legendary' || r === 'set') {
+    const pad = (r === 'legendary' || r === 'set') ? METAL.legendary : isPlate ? metalMix : tup(mix(cloth, [0, 0, 0], 0.12));
     const k = r === 'rare' ? 0.92 : r === 'epic' ? 1.14 : 1.34;
     for (const side of [1, -1] as const) {
       parts.push(pauldron(w, side, k, pad, trim!));
-      if (r === 'legendary') {
+      if (r === 'legendary' || r === 'set') {
         const x = side * 0.42;
         parts.push(rod([x, 1.3, 0.03], [x + side * 0.2, 1.62, 0.02], 0.08, 0, 6, GOLD, mix(GOLD, [1, 1, 1], 0.5), chest, 'medium'));
         parts.push(rod([x + side * 0.1, 1.24, -0.05], [x + side * 0.34, 1.44, -0.06], 0.065, 0, 6, GOLD, mix(GOLD, [1, 1, 1], 0.5), chest, 'medium'));
       }
     }
   }
-  if (r === 'epic' || r === 'legendary') {
+  if (r === 'epic' || r === 'legendary' || r === 'set') {
     const gem = rgb(RARITY_GEM[r]);
-    parts.push(gemAt(chest, 0, 0.98, frontAt(body, 0.98) + 0.015, r === 'legendary' ? 0.095 : 0.075, gem));
+    parts.push(gemAt(chest, 0, 0.98, frontAt(body, 0.98) + 0.015, (r === 'legendary' || r === 'set') ? 0.095 : 0.075, gem));
   }
-  if (look.cape) parts.push(capeOf(w, hex(look.cape), r === 'legendary' ? GOLD : r === 'epic' ? mix(GOLD, hex(look.cape), 0.25) : null));
+  if (look.cape) parts.push(capeOf(w, hex(look.cape), (r === 'legendary' || r === 'set') ? GOLD : r === 'epic' ? mix(GOLD, hex(look.cape), 0.25) : null));
   return { parts, kind };
 }
 

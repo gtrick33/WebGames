@@ -15,9 +15,9 @@ import { droppable, makeItem, rollGear } from './items';
 export const FORGED_LEVEL = MAX_LEVEL;
 
 /**
- * The Rift-forged pieces a hero has none of (worn or in the bag), in the order the stones give them: the set's
- * pieces as each opens, then the pieces made for one specialization, the hero's own first. At most `n` (three a
- * run, for a run fast enough to open three stones).
+ * The Rift-forged pieces a hero has none of (worn or in the bag), in the order the stones give them: the class's set
+ * and anyone's legendaries as they open, then the class's legendaries, then the specializations' sets, the hero's own
+ * first. At most `n` (three a run, for a run fast enough to open three stones).
  */
 export function riftFirsts(c: Pick<Character, 'cls' | 'bag' | 'equip' | 'level' | 'spec'>, stone: number, n: number): ItemDef[] {
   if (n <= 0 || c.level < FORGED_LEVEL) return [];
@@ -35,11 +35,16 @@ export const WAGER_PRICE = 8;
 /** The slots a wager can be made on. */
 export const WAGER_SLOTS: readonly SlotId[] = SLOTS;
 
-/** A wager's odds at a stone: legendary a little likelier with every stone opened, to a third at most. */
-export function wagerOdds(stone: number): Record<'rare' | 'epic' | 'legendary', number> {
-  const legendary = Math.min(0.34, 0.12 + Math.max(0, stone) * 0.01);
-  const epic = 0.3;
-  return { legendary, epic, rare: 1 - legendary - epic };
+/**
+ * A wager's odds at a stone: a legendary or a set piece likelier with every stone opened (the owner, 2026-11-22: "sigil
+ * shop should drop legendaries more often and set gear a bit more often as well"). Legendary from 30% to 45%, a set
+ * piece from 15% to 25%, the rest epic: no rare from the broker any more.
+ */
+export function wagerOdds(stone: number): Record<'rare' | 'epic' | 'legendary' | 'set', number> {
+  const s = Math.max(0, stone);
+  const legendary = Math.min(0.45, 0.3 + s * 0.01);
+  const set = Math.min(0.25, 0.15 + s * 0.005);
+  return { legendary, set, epic: 1 - legendary - set, rare: 0 };
 }
 
 /** Why the hero can't wager right now, or null. */
@@ -61,13 +66,14 @@ export function wager(c: Character, slot: SlotId, r: () => number = Math.random)
   const il = keyLoot(c.keystone, c.level);
   const odds = wagerOdds(c.keystone);
   const roll = r();
-  let rarity: Rarity = roll < odds.legendary ? 'legendary' : roll < odds.legendary + odds.epic ? 'epic' : 'rare';
+  // (a slot with no set piece gives a legendary in its place; one with nothing legendary, an epic; then a rare)
+  let rarity: Rarity = roll < odds.set ? 'set' : roll < odds.set + odds.legendary ? 'legendary' : roll < odds.set + odds.legendary + odds.epic ? 'epic' : 'rare';
   let item: Item | null = null;
-  for (const want of ['legendary', 'epic'] as const) {
+  for (const want of ['set', 'legendary', 'epic'] as const) {
     if (rarity !== want) continue;
     const pool = droppable(c.cls, il, want, c.keystone).filter((d) => d.slot === slot);
     if (pool.length) item = makeItem(pool[Math.floor(r() * pool.length)]!.id, il, r);
-    else rarity = want === 'legendary' ? 'epic' : 'rare';
+    else rarity = want === 'set' ? 'legendary' : want === 'legendary' ? 'epic' : 'rare';
   }
   item ??= rollGear(c.cls, il, 'rare', r, slot);
   if (!addItem(c, item)) return null;
@@ -91,16 +97,16 @@ export interface StoneRow {
 
 /** The stones worth a line in the guide: the first, each one that opens something, and the last that still raises the item level. */
 export function stoneRows(cls: Character['cls'], finished: boolean): StoneRow[] {
-  const set = Object.values(SETS).find((s) => s.cls === cls);
+  const set = Object.values(SETS).find((s) => s.cls === cls && s.spec === undefined);
   const opens = (stone: number): string[] => {
     const out: string[] = [];
-    if (stone === RIFT_TIERS.gloves) out.push(`${set?.name ?? 'Your set'}: gloves and boots (two pieces worn change your basic attack)`);
-    if (stone === RIFT_TIERS.legs) out.push(`${set?.name ?? 'Your set'}: legwear (all three change one of your skills)`);
-    if (stone === RIFT_TIERS.unique) out.push('A Rift-forged piece for each of your specializations');
+    if (stone === RIFT_TIERS.classSet) out.push(`${set?.name ?? 'Your set'}: six pieces, and legendaries any hero can wear`);
+    if (stone === RIFT_TIERS.classLegendary) out.push('Your class’s own legendaries');
+    if (stone === RIFT_TIERS.specSet) out.push('A set for each of your specializations, six pieces each');
     if (stone === RIFT_CAP_UNFINISHED + 1 && !finished) out.push('Asks for the story’s end: stones go no higher until you have finished it');
     return out;
   };
   const top = MAX_IL - keyLoot(0);
-  const stones = [...new Set([1, RIFT_TIERS.legs, RIFT_TIERS.unique, 10, RIFT_CAP_UNFINISHED + 1, 15, 20, top])].sort((a, b) => a - b);
+  const stones = [...new Set([1, RIFT_TIERS.classLegendary, RIFT_TIERS.specSet, 10, RIFT_CAP_UNFINISHED + 1, 15, 20, top])].sort((a, b) => a - b);
   return stones.map((stone) => ({ stone, il: keyLoot(stone), cache: keyCache(stone), marks: keyMarks(stone, true), late: keyMarks(stone, false), opens: opens(stone) }));
 }

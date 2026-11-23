@@ -1,6 +1,7 @@
 import { addArrival, type Arrival } from '../../../platform/arrivals';
 import { ITEM_DEFS } from '../data/items';
 import { MOUNT_DEFS } from '../data/mounts';
+import { SETS } from '../data/riftgear';
 import { RARITIES, type Rarity } from '../data/types';
 import { heroFor, type GmOrder } from './gm';
 import type { SaveFile } from './save';
@@ -26,6 +27,10 @@ export function gmThing(o: Pick<GmOrder, 'kind' | 'payload'>): { what: NonNullab
     case 'item': {
       const d = ITEM_DEFS[id];
       return d ? { what: 'item', id, name: d.name } : null;
+    }
+    case 'set': {
+      const set = SETS[id];
+      return set ? { what: 'item', id: set.pieces[0]!, name: set.name } : null;
     }
     case 'gear': {
       const r = o.payload.rarity as Rarity;

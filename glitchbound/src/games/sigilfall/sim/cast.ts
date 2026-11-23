@@ -45,6 +45,37 @@ export function autoTarget(w: World, range: number, prefer: number): Enemy | nul
   return best;
 }
 
+/**
+ * An echo of one of the hero's own skills (an item's power: data/types.ts Effect 'cast'): cast at the nearest enemy in
+ * its reach, for nothing and whatever its cooldown, at `mul` of its damage. The hero's own cast goes on as it was; an
+ * echo never calls up another (its own on-cast echoes are skipped while it is cast). Nothing in reach: nothing cast.
+ */
+export function echoCast(w: World, skill: string, mul: number): boolean {
+  const p = w.player;
+  if (w.echoing || p.dead || w.region.interior) return false;
+  const id = skill === 'basic' ? w.build.bar.basic : skill;
+  const plain = id ? w.build.skills[id]?.spec : undefined;
+  // (no echo of a step, a dash, a change of shape or a held channel: what moves or holds the hero is the hero's own)
+  if (!plain || plain.cast === 'blink' || plain.cast === 'dash' || plain.cast === 'form' || plain.cast === 'channel' || plain.cast === 'drain') return false;
+  const reach = Math.max(aimReach(plain), 150);
+  const target = autoTarget(w, reach, p.aim);
+  if (!target) return false;
+  const spec: SkillSpec = { ...plain, damage: plain.damage * mul, cost: 0, castTime: 0 };
+  const slot = (Object.keys(w.build.bar) as SlotKey[]).find((k) => w.build.bar[k] === id) ?? 's1';
+  const aim = p.aim;
+  const angle = Math.atan2(target.y - p.y, target.x - p.x);
+  w.echoing = true;
+  try {
+    execute(w, slot === 'dodge' ? 's1' : slot, spec, angle, target.x, target.y, target);
+  } finally {
+    w.echoing = false;
+    // (where the hero was looking stays theirs)
+    p.aim = aim;
+  }
+  w.addFx({ kind: 'ring', x: p.x, y: p.y, life: 0.35, size: 22, color: '#bfe8ff' });
+  return true;
+}
+
 /** Nudges a manual aim toward an enemy close to the aimed line (never more than a few degrees). */
 function assistAim(w: World, angle: number, range: number, level: number): number {
   if (level <= 0) return angle;

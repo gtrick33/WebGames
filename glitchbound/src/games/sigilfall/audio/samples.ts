@@ -69,6 +69,8 @@ export const SAMPLES: Readonly<Record<string, SampleDef>> = {
   slam: { files: slams, gain: 0.55, rate: [0.8, 0.95] },
   // the bow
   bow: { files: arrows, gain: 0.34, rate: [1, 1.15] },
+  // an arrow striking home (the Ring's own knock, made by scripts/sigilfall-ring-sounds.mjs)
+  arrow: { files: ['ring-arrow'], gain: 0.22, rate: [0.95, 1.05] },
   volley: { files: arrows, gain: 0.3, rate: [0.85, 1] },
   arrowRain: { files: arrows, gain: 0.3, rate: [0.8, 0.95] },
   // on the move
@@ -186,9 +188,9 @@ export const SAMPLES: Readonly<Record<string, SampleDef>> = {
  * healing a choir, shadow a growl, blows a thud with a crunch, steel a short scrape, a win brass over drums; no bells.
  * The Ring asks for its sounds by their usual names; render/ring.ts `ringSound` turns each into its own here.
  */
-const RING_GAIN: Record<string, number> = { hit: 0.26, clash: 0.26, swing: 0.24, hurt: 0.32, talent: 0.24, victory: 0.4, playerDie: 0.38, levelup: 0.42, checkpoint: 0.32 };
+const RING_GAIN: Record<string, number> = { bow: 0.2, arrow: 0.22, hit: 0.26, clash: 0.26, swing: 0.24, hurt: 0.32, talent: 0.24, victory: 0.4, playerDie: 0.38, levelup: 0.42, checkpoint: 0.32 };
 const RING_RATE: Record<string, readonly [number, number]> = { victory: [1, 1], playerDie: [1, 1], levelup: [1, 1], checkpoint: [1, 1], holy: [1, 1], nova: [1, 1], heal: [1, 1], buff: [1, 1], nature: [1, 1] };
-export const RING_SOUNDS = ['swing', 'swingBig', 'spear', 'hit', 'clash', 'critBlade', 'hurt', 'bow', 'shield', 'shieldBreak', 'blink', 'buff', 'bolt', 'zap', 'fireball', 'explode', 'freeze', 'shatter', 'shard', 'thunder', 'holy', 'shadow', 'nature', 'heal', 'rift', 'quake', 'meteor', 'nova', 'die', 'slam', 'roar', 'epic', 'pickupBig', 'orb', 'talent', 'checkpoint', 'victory', 'playerDie', 'levelup'] as const;
+export const RING_SOUNDS = ['swing', 'swingBig', 'spear', 'hit', 'clash', 'critBlade', 'hurt', 'bow', 'arrow', 'shield', 'shieldBreak', 'blink', 'buff', 'bolt', 'zap', 'fireball', 'explode', 'freeze', 'shatter', 'shard', 'thunder', 'holy', 'shadow', 'nature', 'heal', 'rift', 'quake', 'meteor', 'nova', 'die', 'slam', 'roar', 'epic', 'pickupBig', 'orb', 'talent', 'checkpoint', 'victory', 'playerDie', 'levelup'] as const;
 const RING: Record<string, SampleDef> = Object.fromEntries(RING_SOUNDS.map((id) => [`ring-${id}`, { files: [`ring-${id}`], gain: RING_GAIN[id] ?? 0.3, rate: RING_RATE[id] ?? [0.94, 1.08] }]));
 Object.assign(SAMPLES as Record<string, SampleDef>, RING);
 

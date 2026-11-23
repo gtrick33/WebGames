@@ -202,7 +202,7 @@ describe('Sigilfall: the save follows the hero between devices', () => {
     c.quests['into-the-wood'] = { state: 'ready', n: 15 };
     c.quests['hidden-grove'] = { state: 'offered', n: 0 };
     c.quests['briar-dusk'] = { state: 'done', n: 1 };
-    const text = saveText({ v: SAVE_VERSION, heroes: [c, null, null], last: 0, settings: {} as never, saved: 0, rift: {} });
+    const text = saveText({ v: SAVE_VERSION, heroes: [c, null, null], last: 0, settings: {} as never, saved: 0, rift: {}, riftBy: {} });
     expect(text).toContain('"first-steps":"a3"');
     const back = migrate(JSON.parse(text))!.heroes[0]!;
     expect(back.quests['first-steps']).toEqual({ state: 'active', n: 3 });

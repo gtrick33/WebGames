@@ -24,8 +24,36 @@ export const TRIALS_OPEN_AT = 20;
 /** Whether the Trials are open to this account: some hero of its has reached TRIALS_OPEN_AT. */
 export const trialsOpen = (save: Pick<SaveFile, 'heroes'>): boolean => save.heroes.some((h) => !!h && h.level >= TRIALS_OPEN_AT);
 
-/** The stone a calling's Trials stand at on this account: the first, until it has been raised. */
-export const trialStone = (save: Pick<SaveFile, 'rift'>, cls: ClassId): number => Math.max(1, Math.floor(save.rift?.[cls] ?? 1));
+/**
+ * The deepest stone a calling has opened on this account, in any dungeon, by its champion or by a hero of its own:
+ * how many dungeons its stone reaches (data/keystones.ts riftDungeons), and what the lobby shows beside it.
+ */
+export function trialStone(save: Pick<SaveFile, 'rift'> & Partial<Pick<SaveFile, 'riftBy' | 'heroes'>>, cls: ClassId): number {
+  let n = save.rift?.[cls] ?? 1;
+  for (const v of Object.values(save.riftBy?.[cls] ?? {})) n = Math.max(n, v);
+  for (const h of save.heroes ?? []) if (h && h.cls === cls) n = Math.max(n, h.keystone);
+  return Math.max(1, Math.floor(n));
+}
+
+/**
+ * The stone a calling may take into one dungeon on this account: the deepest opened there, by its champion in the
+ * Riftstone tab or by any hero of the calling in the campaign (the owner, 2026-11-22: "if i reach rank 9 at the first
+ * dungeon, i shouldnt be able to start rank 9 on the second one", and a stone opened in the Riftstone tab was not
+ * open to the campaign hero). `own` is the hero playing now, whose stones may be newer than the save's.
+ */
+export function stoneIn(save: Partial<Pick<SaveFile, 'riftBy' | 'heroes'>>, cls: ClassId, region: string, own?: Pick<Character, 'stones'> | null): number {
+  let n = save.riftBy?.[cls]?.[region] ?? 0;
+  for (const h of save.heroes ?? []) if (h && h.cls === cls) n = Math.max(n, h.stones?.[region] ?? 0);
+  if (own) n = Math.max(n, own.stones?.[region] ?? 0);
+  return Math.max(1, Math.floor(n));
+}
+
+/** A calling's stones, dungeon by dungeon, as the account has them (for its champion to carry into a run). */
+export function stonesOf(save: Partial<Pick<SaveFile, 'riftBy' | 'heroes'>>, cls: ClassId): Record<string, number> {
+  const out: Record<string, number> = { ...(save.riftBy?.[cls] ?? {}) };
+  for (const h of save.heroes ?? []) if (h && h.cls === cls) for (const [r, n] of Object.entries(h.stones ?? {})) out[r] = Math.max(out[r] ?? 0, n);
+  return out;
+}
 
 /** A calling's ready hero, on one of its three paths, holding the stone it has reached. */
 export function trialHero(cls: ClassId, spec: 0 | 1 | 2, stone: number): Character {
@@ -47,5 +75,6 @@ export function trialHero(cls: ClassId, spec: 0 | 1 | 2, stone: number): Charact
   c.tier = 2;
   c.potions = 3;
   c.keystone = Math.max(1, Math.floor(stone));
+  c.stones = {};
   return c;
 }

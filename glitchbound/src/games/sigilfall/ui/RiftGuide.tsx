@@ -1,6 +1,6 @@
 import { CLASSES } from '../data/classes';
 import { KEY_DEATH } from '../data/keystones';
-import { RIFT_ITEMS, SETS } from '../data/riftgear';
+import { RIFT_ITEMS, setsOf } from '../data/riftgear';
 import { modLines } from '../progress/describe';
 import type { Character } from '../progress/character';
 import { FORGED_LEVEL, stoneRows, WAGER_PRICE } from '../progress/rift';
@@ -13,8 +13,8 @@ import { campaignDone } from '../progress/wardrobe';
  */
 export function RiftGuide({ hero, open }: { hero: Character; open?: boolean }) {
   const cls = CLASSES[hero.cls];
-  const set = Object.values(SETS).find((s) => s.cls === hero.cls);
-  const uniques = RIFT_ITEMS.filter((d) => d.cls === hero.cls && d.forSpec !== undefined);
+  const sets = setsOf(hero.cls);
+  const legendaries = RIFT_ITEMS.filter((d) => d.rarity === 'legendary' && (!d.cls || d.cls === hero.cls));
   const rows = stoneRows(hero.cls, campaignDone(hero));
   const young = hero.level < FORGED_LEVEL;
   return (
@@ -24,7 +24,7 @@ export function RiftGuide({ hero, open }: { hero: Character; open?: boolean }) {
         <section>
           <h3>Where to go</h3>
           <p>
-            Open the map at any waystone, pick a dungeon and choose <b>Riftstone</b>. From the title screen, <b>The Rift Trials</b> does the same with no road to walk first. With friends, start it from <b>Play together</b>.
+            The <b>Riftward</b>, past any waystone: show the Keeper of the Riftgate your stone and choose a dungeon. From the title screen, <b>The Riftstone</b> takes this hero or a champion there. With friends, start it from <b>Play together</b>. Each dungeon keeps its own stone: beat one in time and that one goes deeper.
           </p>
         </section>
         <section>
@@ -58,24 +58,25 @@ export function RiftGuide({ hero, open }: { hero: Character; open?: boolean }) {
             Every new stone you open also gives one <b>Rift-forged</b> piece you don’t have yet, up to three a run.
           </p>
         </section>
-        {set && (
-          <section>
+        {/* (a set for the class and one for each specialization, six pieces each: the owner, 2026-11-22) */}
+        {sets.map((set) => (
+          <section key={set.id}>
             <h3>
-              The {cls.name}’s set: {set.name}
+              <span className="rb-set">{set.name}</span> <span className="rb-dim">({set.spec === undefined ? `the ${cls.name}’s set, any specialization` : `${cls.trees[set.spec]?.name}’s set`})</span>
             </h3>
             {set.bonuses.map((b) => (
               <p key={b.need}>
-                <b className="rb-gold">({b.need})</b> {b.text}
+                <b className="rb-set">({b.need})</b> {b.text}
               </p>
             ))}
           </section>
-        )}
-        {uniques.length > 0 && (
+        ))}
+        {legendaries.length > 0 && (
           <section>
-            <h3>One for each specialization (from +{uniques[0]!.rift})</h3>
-            {uniques.map((d) => (
+            <h3>Legendaries: a power for all your play</h3>
+            {legendaries.map((d) => (
               <p key={d.id}>
-                <b className="rb-gold">{d.name}</b> <span className="rb-dim">({cls.trees[d.forSpec!]?.name})</span>: {modLines(d.mods).join(' ')}
+                <b className="rb-legendary">{d.name}</b> <span className="rb-dim">({d.cls ? cls.name : 'any class'})</span>: {modLines(d.mods).join(' ')}
               </p>
             ))}
           </section>
@@ -83,8 +84,8 @@ export function RiftGuide({ hero, open }: { hero: Character; open?: boolean }) {
         <section>
           <h3>Sigil Marks and the Riftbroker</h3>
           <p>
-            The Sigil Quartermaster in any town takes wagers: {WAGER_PRICE} Sigil Marks on a slot, and one piece for that slot comes back at your highest stone’s item level. It may be Rift-forged. A higher stone makes a legendary
-            likelier.
+            The Riftbroker in the Riftward takes wagers: {WAGER_PRICE} Sigil Marks on a slot, and one piece for that slot comes back at your highest stone’s item level, a set piece or a legendary more often than not. A higher stone makes
+            both likelier.
           </p>
         </section>
       </div>

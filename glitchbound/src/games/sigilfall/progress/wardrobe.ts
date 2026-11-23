@@ -63,7 +63,7 @@ export function lookId(item: Item): string | null {
 }
 
 /** What found gear of each rarity is called in the Wardrobe (it looks different at each). */
-const TRIM_NAME: Record<Rarity, string> = { common: '', uncommon: 'Fine ', rare: 'Trimmed ', epic: 'Royal ', legendary: 'Gilded ' };
+const TRIM_NAME: Record<Rarity, string> = { common: '', uncommon: 'Fine ', rare: 'Trimmed ', epic: 'Royal ', legendary: 'Gilded ', set: 'Gilded ' };
 
 const cache = new Map<string, Look | null>();
 

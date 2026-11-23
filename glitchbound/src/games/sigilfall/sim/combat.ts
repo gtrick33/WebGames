@@ -606,6 +606,10 @@ export function applyEffect(w: World, e: Effect, c: EffectCtx): void {
       }
       break;
     }
+    case 'cast':
+      // (an echo of one of the hero's skills: sim/world.ts echo; never inside another echo)
+      w.echo(e.skill, e.mul, e.times ?? 1, e.gap ?? 0.25);
+      break;
     case 'riftBurst': {
       const x = c.x;
       const y = c.y;

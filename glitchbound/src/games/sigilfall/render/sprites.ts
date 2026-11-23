@@ -194,7 +194,7 @@ export function heroLook(cls: ClassId, equip: Partial<Record<SlotId, Item>> = {}
   // (what a class starts out in is the plainest there is)
   const plain = <S extends string>(p: Piece<S>): Piece<S> => ({ ...p, r: 'common' });
   const chestPiece = chest && chest !== 'bare' ? piece(chest, chestStyle(chest)) : plain(bare.chest);
-  const caped = chest && chest !== 'bare' && !chest.set && (chest.r === 'epic' || chest.r === 'legendary');
+  const caped = chest && chest !== 'bare' && !chest.set && (chest.r === 'epic' || chest.r === 'legendary' || chest.r === 'set');
   return {
     ...bare,
     ladder: true,
@@ -205,7 +205,7 @@ export function heroLook(cls: ClassId, equip: Partial<Record<SlotId, Item>> = {}
     feet: feet ? piece(shownOf(feet), feetStyle(shownOf(feet))) : plain(bare.feet),
     quiver: offhand && itemIcon(offhand) === 'quiver' ? itemTint(offhand) : bare.quiver,
     // epic and legendary armor comes with a cape
-    cape: caped ? (chest.r === 'legendary' ? '#a8262e' : '#5a2a8a') : null,
+    cape: caped ? ((chest.r === 'legendary' || chest.r === 'set') ? '#a8262e' : '#5a2a8a') : null,
   };
 }
 

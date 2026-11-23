@@ -3,6 +3,20 @@
 First pass 2026-10-27, fixes the same day. A working record of licenses, names and borrowed material, for the
 owner (and a lawyer, if one is asked). It is **not legal advice** and not a trademark clearance.
 
+## The Rift's sets and legendaries (2026-11-22)
+
+The owner asked for sets "like diablo 3": one per specialization and one per class, with bonuses at two, four and six
+pieces, and "interactive combos ... auto shooting a spell". What is taken is **rules only**, the genre's: a set's bonus
+grows at 2/4/6 worn, the sixth multiplies one skill several times over, and an "echo" casts one of the hero's own
+skills by itself (on a timer, a hit, a kill or a blow taken). Every set's and piece's name, every word of every bonus,
+and which skill each set builds on are Sigilfall's own (`data/riftgear.ts`); no Diablo III set, item, power or text is
+reproduced. Colors: a legendary is the game's long-standing orange; a set piece is a teal-green (`#36e0a8`), chosen
+apart from the pure green Diablo III gives its sets, as the owner asked for "set could be green". The set names
+(Redmaw, the Unbroken Line, the Last Duelist, the Ninefold Pyre, Thunderwake, the Long Winter, the Far Sight,
+Snareweave, Pack Law, the Morning Choir, the Oathwall, the Last Sentence, the Unbroken Vigil, Noonfire, the Hollow
+Saint, Blightscript, the Pit Covenant, the Ruinous Choir, Nightpool, the Lynxmother's Due, Heartwood, the Creditor's
+Due, Graveweight, the Shepherd's Toll) were made for the game; a web search before release is still worth doing.
+
 ## Sounds added for the small-AAA pass (2026-11-19)
 
 Footsteps from Kenney's **Impact Sounds** (CC0, kenney.nl, downloaded from the pack's own page). CC0 asks nothing, and

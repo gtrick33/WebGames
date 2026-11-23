@@ -37,6 +37,13 @@ const LoadingScreen = () => (
 /** Embers rising from the Rift on the title screen: spread across, each on its own clock. */
 const EMBERS = Array.from({ length: 18 }, (_, i) => ({ x: (i * 53) % 100, delay: (i % 6) * 0.9, dur: 6 + (i % 5) * 1.7, size: 2 + (i % 3) }));
 
+/** The three ways to play the campaign, as the Settings say them (sim/world.ts DIFFICULTY). */
+const DIFFICULTY_CHOICES = [
+  { id: 'story', name: 'Story', text: 'For the story: foes go down sooner and hit far softer. Runs stay off the leaderboard.' },
+  { id: 'normal', name: 'Normal', text: 'The campaign as it was made: hard enough to lose a fight, and to feel it won.' },
+  { id: 'hard', name: 'Hard', text: 'Every fight asks more: foes have a quarter more health and hit harder.' },
+] as const;
+
 /**
  * The world behind the title: a night sky with an aurora and a moon, three ranges of mountains, a castle
  * on the far crag, fog in the valley and embers rising from the Rift. All CSS and one small drawing: it
@@ -252,8 +259,14 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
   const [face, setFace] = useState<Face>({ skin: 1, hair: 1, style: 'short', beard: false });
   const pick = (next: Partial<Face>): void => setFace({ ...face, ...next });
   const [name, setName] = useState(() => cleanName(engine.defaultName));
+  // the last choices before the Prologue: how hard, and (for a later hero) whether to be shown the hints
   const [askTips, setAskTips] = useState(false);
-  const begin = (tips?: boolean): void => engine.createHero(engine.ui.createSlot, cls, cleanName(name), body, face, tips);
+  const [level, setLevel] = useState(engine.settings?.difficulty ?? 'normal');
+  const [tipsOn, setTipsOn] = useState(engine.settings?.tutorial ?? true);
+  const begin = (tips?: boolean): void => {
+    if (engine.settings && level !== engine.settings.difficulty) engine.setSettings({ difficulty: level });
+    engine.createHero(engine.ui.createSlot, cls, cleanName(name), body, face, tips);
+  };
   const def = CLASSES[cls];
   const { me } = useAccount();
   // a class that comes with a pack can be looked at here, and made once the pack is the player's. Its tile says so
@@ -263,7 +276,7 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
   const [store, setStore] = useState<string | null>(null);
   const open = classOpen(cls, me);
   return (
-    <div className="rb-create">
+    <div className={`rb-create${askTips ? ' is-asking' : ''}`}>
       {/* (a friend's invitation shows here too: it waits for the hero being made) */}
       <InviteCards engine={engine} />
       <div className="rb-create-head">
@@ -345,8 +358,10 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
           onSubmit={(e) => {
             e.preventDefault();
             if (!open) return;
-            if (engine.asksForTips) setAskTips(true);
-            else begin();
+            // (the questions sit at the top of the page, and Begin is at its foot: up to them, and the page held still
+            // while they are asked. The owner, 2026-11-22: "it doesnt auto scroll u to the top")
+            e.currentTarget.closest('.rb-create')?.scrollTo?.({ top: 0 });
+            setAskTips(true);
           }}
         >
           <div className="rb-seg rb-body" role="radiogroup" aria-label="Hero">
@@ -380,15 +395,40 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
       )}
       {askTips && (
         <div className="rb-ring-dialog-wrap rb-tip-ask" role="dialog" aria-modal="true" aria-labelledby="rb-tip-ask-title">
-          <div className="rb-ring-dialog">
-            <h2 id="rb-tip-ask-title">Show the tutorial hints?</h2>
-            <p>Short hints pause the game to show this hero the controls, the bag, new skills and talents. You can change this any time in Settings.</p>
+          <div className="rb-ring-dialog rb-begin">
+            <h2 id="rb-tip-ask-title">Before you begin</h2>
+            {/* (how hard, asked before the Prologue: the owner, 2026-11-22, "at the start of the playthrough you should be
+                prompted what difficulty you want to play". It is the Settings choice, and can be changed there any time) */}
+            <span className="rb-kicker">Difficulty</span>
+            <div className="rb-begin-levels" role="radiogroup" aria-label="Difficulty">
+              {DIFFICULTY_CHOICES.map((d) => (
+                <button key={d.id} type="button" role="radio" aria-checked={level === d.id} className={`rb-begin-level is-${d.id}${level === d.id ? ' is-on' : ''}`} onClick={() => setLevel(d.id)}>
+                  <strong>{d.name}</strong>
+                  <span>{d.text}</span>
+                </button>
+              ))}
+            </div>
+            {engine.asksForTips && (
+              <>
+                <span className="rb-kicker">Tutorial hints</span>
+                <div className="rb-seg rb-begin-tips" role="radiogroup" aria-label="Tutorial hints">
+                  <button type="button" role="radio" aria-checked={tipsOn} className={tipsOn ? 'is-on' : ''} onClick={() => setTipsOn(true)}>
+                    Yes, show me
+                  </button>
+                  <button type="button" role="radio" aria-checked={!tipsOn} className={!tipsOn ? 'is-on' : ''} onClick={() => setTipsOn(false)}>
+                    No, thanks
+                  </button>
+                </div>
+                <p className="rb-small rb-dim">Short hints pause the game to show this hero the controls, the bag, new skills and talents.</p>
+              </>
+            )}
+            <p className="rb-small rb-dim">Both can be changed any time in Settings.</p>
             <div className="rb-vigil-actions">
-              <button className="rb-btn" onClick={() => begin(false)}>
-                No, thanks
+              <button className="rb-btn" onClick={() => setAskTips(false)}>
+                Back
               </button>
-              <button className="rb-btn is-gold" onClick={() => begin(true)} autoFocus>
-                Yes, show me
+              <button className="rb-btn is-gold" onClick={() => begin(engine.asksForTips ? tipsOn : undefined)} autoFocus>
+                Begin
               </button>
             </div>
           </div>

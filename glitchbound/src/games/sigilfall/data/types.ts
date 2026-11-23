@@ -10,13 +10,17 @@ export type ClassId = 'mage' | 'warrior' | 'ranger' | 'warlock' | 'priest' | 'pa
 export type DmgType = 'physical' | 'fire' | 'frost' | 'lightning' | 'poison' | 'arcane' | 'shadow' | 'holy' | 'nature';
 export type StatusId = 'burn' | 'poison' | 'chill' | 'freeze' | 'shock' | 'stun' | 'root' | 'armorBreak' | 'mark' | 'weaken' | 'bleed' | 'curse' | 'fear';
 export type SlotId = 'weapon' | 'offhand' | 'head' | 'chest' | 'legs' | 'hands' | 'feet' | 'amulet' | 'ring' | 'relic';
-export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+/**
+ * How rare a piece is. `set`: a piece of a set (data/riftgear.ts), above a legendary, in its own green (the owner,
+ * 2026-11-22: "legendsry could be orange set could be green").
+ */
+export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'set';
 
 export const SLOTS: SlotId[] = ['weapon', 'offhand', 'head', 'chest', 'legs', 'hands', 'feet', 'amulet', 'ring', 'relic'];
 
 /** What a worn piece is made of (it decides how it looks on the hero). */
 export type Material = 'cloth' | 'leather' | 'mail' | 'plate' | 'gold';
-export const RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+export const RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'set'];
 
 /**
  * Character stats. Percentages are whole numbers (power 25 = +25% damage).
@@ -127,7 +131,12 @@ export type Effect =
    * Sets off a damage-over-time status on the enemy hit: everything it still had to deal lands at once, times `mul`,
    * and the status is gone. With `radius`, every enemy that near takes it too.
    */
-  | { kind: 'detonate'; status: StatusId; mul: number; radius?: number };
+  | { kind: 'detonate'; status: StatusId; mul: number; radius?: number }
+  /**
+   * An echo casts one of the hero's own skills (`skill`: its id, or 'basic') at the nearest enemy, for nothing and with
+   * no cooldown, at `mul` of its damage; `times` casts, `gap` seconds apart. An echo never calls up another echo.
+   */
+  | { kind: 'cast'; skill: string; mul: number; times?: number; gap?: number };
 
 /** A timed buff on the hero. The same id refreshes instead of stacking. */
 export interface BuffDef {
@@ -328,7 +337,8 @@ export type SkillOp =
 export interface ProcDef {
   /** Unique id: the internal cooldown is tracked per proc. */
   id: string;
-  on: 'hit' | 'crit' | 'kill' | 'dodge' | 'hurt' | 'ult' | 'block';
+  /** `tick`: every `icd` seconds while an enemy is near (in a fight), by itself. */
+  on: 'hit' | 'crit' | 'kill' | 'dodge' | 'hurt' | 'ult' | 'block' | 'tick';
   /** Only hits of this damage type / from this skill / against enemies with this status count. */
   dmgType?: DmgType;
   skill?: string;
