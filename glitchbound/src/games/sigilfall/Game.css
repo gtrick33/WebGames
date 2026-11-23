@@ -2573,6 +2573,8 @@ html.rb-touch-playing textarea {
   text-align: center;
   white-space: normal;
   pointer-events: none;
+  /* (over the buttons it sits among: it was drawn under them, 2026-11-22) */
+  z-index: 6;
   animation: rb-teach-in 0.25s ease-out;
 }
 .rb-teach::after {
@@ -2600,21 +2602,7 @@ html.rb-touch-playing textarea {
   right: calc(36px - var(--rb-arrow-dx, 0px));
   margin-left: 0;
 }
-/* over the button it teaches: the attack, the first skill, the dodge (data from the gathered .rb-cluster .rb-sb-*) */
-.rb-teach.is-touch.is-at-s1 {
-  right: 104px;
-  bottom: 82px;
-}
-.rb-teach.is-touch.is-at-s1::after {
-  right: 24px;
-}
-.rb-teach.is-touch.is-at-dodge {
-  right: 164px;
-  bottom: 70px;
-}
-.rb-teach.is-touch.is-at-dodge::after {
-  right: 22px;
-}
+/* (over the button it teaches, wherever that button is: ui/Lesson.tsx anchor) */
 /* the left-handed cluster is mirrored: the words are not */
 .is-lefty .rb-cluster .rb-teach {
   transform: scaleX(-1);
@@ -11404,6 +11392,9 @@ html.rb-touch-playing textarea {
 .rb-tip-ask {
   z-index: 70;
   pointer-events: auto;
+}
+.rb-create.is-asking {
+  overflow: hidden;
 }
 .rb-radios {
   display: flex;

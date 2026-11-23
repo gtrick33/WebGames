@@ -958,6 +958,9 @@ export class SigilEngine {
     const h = this.hero;
     if (!h || h.opened.includes(`hint:${id}`)) return;
     h.opened.push(`hint:${id}`);
+    // hints turned down are not shown, the Prologue's lessons on the bar and the toasts included (the owner,
+    // 2026-11-22: "even if i say no to tutorial hints, theyre still showing")
+    if (!this.settings.tutorial) return;
     // the tutorial says these in full, the game paused: no toast on top of it
     if (id === 'attack') this.queueTip('combat');
     if ((id === 'equip' && this.queueTip('bag')) || (id === 'spec' && this.queueTip('talents'))) return;

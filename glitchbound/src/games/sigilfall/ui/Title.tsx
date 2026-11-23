@@ -263,7 +263,7 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
   const [store, setStore] = useState<string | null>(null);
   const open = classOpen(cls, me);
   return (
-    <div className="rb-create">
+    <div className={`rb-create${askTips ? ' is-asking' : ''}`}>
       {/* (a friend's invitation shows here too: it waits for the hero being made) */}
       <InviteCards engine={engine} />
       <div className="rb-create-head">
@@ -345,8 +345,12 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
           onSubmit={(e) => {
             e.preventDefault();
             if (!open) return;
-            if (engine.asksForTips) setAskTips(true);
-            else begin();
+            if (engine.asksForTips) {
+              // (the question sits at the top of the page, and Begin is at its foot: up to it, and the page held still
+              // while it is asked. The owner, 2026-11-22: "it doesnt auto scroll u to the top")
+              e.currentTarget.closest('.rb-create')?.scrollTo({ top: 0 });
+              setAskTips(true);
+            } else begin();
           }}
         >
           <div className="rb-seg rb-body" role="radiogroup" aria-label="Hero">
