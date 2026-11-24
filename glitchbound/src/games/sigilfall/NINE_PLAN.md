@@ -28,7 +28,7 @@ requests open.**
 | 1 | Baseline and plan | `claude/sf9-baseline` | #355 | open | nothing |
 | 2a | Boss pipeline and the Coffin Matron | `claude/sf9-boss-matron` | #356 | open | 1 (#355) |
 | 2b | Bosses: the Prologue (Ossric, Morgrave, Grimtusk) | `claude/sf9-bosses-prologue` | #357 | open | 2a (#356) |
-| 2c | Bosses: Act I (Gallows Keep) | `claude/sf9-bosses-act1` | | not started | 2a |
+| 2c | Bosses: Act I (Gallows Keep): the Hangman and Harlan Blackglove; **Gnasher not done** (see piece 2) | `claude/sf9-bosses-act1` | #PRNUM | open | 2b (#357) |
 | 2d | Bosses: Act II (the Barrow of Kings, the Crown Catacombs) | `claude/sf9-bosses-act2` | | not started | 2a |
 | 2e | Bosses: Act III (the Tomb of the Sun King, the Vault of Rime) | `claude/sf9-bosses-act3` | | not started | 2a |
 | 2f | Bosses: Act IV (the Siege of Highwall) | `claude/sf9-bosses-act4` | | not started | 2a |
@@ -289,6 +289,26 @@ with piece 2i; the Ring shows no boss.
 
 **Order.** 2a: the Coffin Matron, the first boss a player meets, as the showcase and to prove the pipeline. Then each
 act's bosses and the finale's (2b to 2h, rows 2 to 28). Then the rest (2i, rows 29 to 43 and the named foes).
+
+**2c, Gallows Keep (#PRNUM, 2026-11-24).** Two of its three:
+
+- **The Hangman**: a giant bare to the waist under a headsman's black hood, a great axe in his hand and the second
+  he takes up at half health slung on his back, the rope coiled at his hip. On the large skeleton, 11,135 triangles.
+  His wide cut is a full turn of his body, his chop comes down two-handed, the gallows floor drops when he brings
+  his fist down, the noose and the thrown axes go out with a flung arm.
+- **Harlan Blackglove**: a bandit who crowned himself. The gang's red, a black plate gauntlet on his left arm with a
+  hand too big for a man, a knife in each hand, the cage keys at his belt, and a crown of stolen gold with a shard of
+  rift-glass in its brow (his first drop is that shard). 7,690 triangles and what the crown adds. Two cuts, a
+  flick for the thrown knives, a thrust for each dash, a sidestep into his smoke, a wave of the glove for his
+  cutthroats.
+- **Gnasher is not done.** His look was set piece by piece with the owner (the gang's iron, skulls at his haunches,
+  no banner) and is carried as gear fitted onto the shared wolf when it loads. A file of his own means building
+  that gear into the file exactly as it sits now, and a wolf's file with more of the pack's clips (it has a dig, a
+  leap, a low stalk and a landing that his burrow and charges could use). That is a piece of work of its own, and
+  the owner should see him before and after: it goes in 2i with the other beasts unless asked for sooner.
+- Learned: a part made for the large skeleton does not come across to the medium one at its own size (the Black
+  Knight's arm arrived as tall as the man). Parts go from medium to large, or between figures of the same skeleton.
+
 
 ### 3. The signature system in the first twenty minutes (`claude/sf9-first-epic`)
 

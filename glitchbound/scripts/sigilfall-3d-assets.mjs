@@ -1863,6 +1863,35 @@ BOSS_KITS.boss_morgrave = {
   ],
 };
 
+// The Hangman, Headsman of the Gallows Gang: a giant of a man bare to the waist under a headsman's hood. The large
+// Barbarian's body with the hooded Rogue's head and mask; the great axe in his hand, the second he takes up when he
+// is half down slung across his back, and the rope he hangs Millbrook with coiled at his hip.
+BOSS_KITS.boss_hangman = {
+  rig: 'large',
+  from: [['Barbarian_Large', /Body|Arm|Leg/], ['Rogue_Hooded', /Head|Mask/]],
+  grow: [['chest', 1.12], ['upperarm.l', 1.12], ['upperarm.r', 1.12]],
+  ties: [
+    { bit: 'axe_2handed_Large', joint: 'handslot.r', at: [0, 0, 0], size: 1.15 },
+    { bit: 'axe_2handed_Large', joint: 'chest', at: [0.1, 0.25, -0.5], size: 1, turn: [0, 90, 150], tint: [0.8, 0.8, 0.85] },
+    { bit: 'rope_bundle_A', joint: 'hips', at: [0.55, 0.05, 0.1], size: 1.3, turn: [0, 0, 90] },
+  ],
+};
+// Harlan Blackglove, King of the Gallows Gang: a bandit who crowned himself. The Rogue's leathers and cape with the
+// Survivalist's head; his left arm is the Knight's plate, painted black: the black gauntlet he is named for, with a hand grown too
+// big for a man; a long knife in each hand, and the keys of the cages he hangs his hostages in at his belt.
+BOSS_KITS.boss_harlan = {
+  rig: 'medium',
+  // (the Knight's plate arm, not the Black Knight's: that one is made for the large skeleton, and came across as an
+  // arm the size of the man)
+  from: [['Rogue', /Body|Leg|Cape|ArmRight/], ['Survivalist', /Head/], ['Knight', /ArmLeft/]],
+  grow: [['hand.l', 1.4], ['lowerarm.l', 1.15], ['chest', 1.08]],
+  ties: [
+    { bit: 'dagger_A', joint: 'handslot.r', at: [0, 0, 0], size: 1.05 },
+    { bit: 'dagger_A', joint: 'handslot.l', at: [0, 0, 0], size: 1.05 },
+    { bit: 'keyring', joint: 'hips', at: [-0.3, -0.12, 0.22], size: 0.7 },
+  ],
+};
+
 const quatOf = (rx, ry, rz) => new THREE.Quaternion().setFromEuler(new THREE.Euler((rx * Math.PI) / 180, (ry * Math.PI) / 180, (rz * Math.PI) / 180, 'YXZ')).toArray();
 
 /** The model with what hangs from one joint, and from every joint under it, made `k` times its size about that joint. */

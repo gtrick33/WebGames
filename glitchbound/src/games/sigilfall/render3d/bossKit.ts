@@ -299,6 +299,86 @@ FORMS.grimtusk = {
   fall: { clip: 'die', end: 'die', kept: 3, sink: 0 },
 };
 
+/* ------------------------------------------------------------------ Gallows Keep (Act I) */
+
+const GOLD = hex('#d9a93a');
+const RIFT_GLASS = hex('#ff9af0');
+
+/**
+ * A crown a bandit made for himself: a band of stolen gold with five uneven points, and in its brow the shard of
+ * rift-glass he took for a jewel (what he drops first is that shard: data/bosses.ts `glitch-shard`).
+ */
+function banditCrown(m: MeshData, joints: readonly string[]): MeshData {
+  const head = joints.indexOf('head');
+  const box = head >= 0 ? (boxOf(m, head) as Box | null) : null;
+  if (!box) return m;
+  const cx = (box.min[0] + box.max[0]) / 2;
+  const cz = (box.min[2] + box.max[2]) / 2;
+  const wide = box.max[0] - box.min[0];
+  const r = wide * 0.4;
+  const y = box.max[1] - (box.max[1] - box.min[1]) * 0.12;
+  const bits = new Bits();
+  const n = 5;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + Math.PI / 2;
+    const a2 = ((i + 1) / n) * Math.PI * 2 + Math.PI / 2;
+    const p = [cx + Math.cos(a) * r, y, cz + Math.sin(a) * r];
+    const q = [cx + Math.cos(a2) * r, y, cz + Math.sin(a2) * r];
+    // the band, point to point, and a point standing on each joint of it (no two the same height)
+    post(bits, p, q, wide * 0.07, wide * 0.07, shade(GOLD, 0.7), GOLD);
+    post(bits, p, [p[0]!, y + wide * (0.26 + (i % 2) * 0.1), p[2]!], wide * 0.075, 0.004, GOLD, shade(GOLD, 1.25));
+  }
+  // the shard, set in the brow (the figure faces +z)
+  const brow = [cx, y + wide * 0.02, cz + r * 1.02];
+  post(bits, brow, [cx, y + wide * 0.5, cz + r * 1.02], wide * 0.1, 0.004, RIFT_GLASS, [255, 255, 255], true);
+  return withBits(m, bits, head);
+}
+
+// The Hangman. Everything he does he does with the axe, slowly and all the way through: the wide cut is a full turn of
+// his body, the chop comes down two-handed along its line, and the boards of the gallows floor drop when he brings his
+// fist down on them. The noose and the thrown axes go out with one flung arm. He does not come in: he is standing on
+// his gallows when the hero arrives, and brings the axe down once to say so. He dies as a big man does, forward, and
+// stays where he fell: the gallows' last body.
+FORMS.hangman = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'chop', 'chop2', 'spin', 'punch', 'smash', 'cast'],
+  bend: (joint, clip, phase) => (joint === 'head' ? [0.16, 0, 0] : joint === 'chest' && clip === 'idle' ? [0.05 + Math.sin(phase * Math.PI * 2) * 0.025, 0, 0] : joint === 'spine' ? [0.04, 0, 0] : null),
+  moves: {
+    cleave: { clip: 'spin', rate: 0.9 },
+    chop: { clip: 'chop2', rate: 0.85 },
+    hook: { clip: 'cast' },
+    'gallows:hook-drop': { clip: 'cast', rate: 0.9 },
+    'gallows:trapdoors': { clip: 'smash', rate: 0.8 },
+    volley: { clip: 'cast', rate: 1.2 },
+    roar: { clip: 'punch', rate: 0.7 },
+  },
+  enter: { clip: 'smash', then: 'idle' },
+  shift: { clip: 'punch', rate: 0.6 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// Harlan Blackglove. A knife-fighter who was never a soldier: quick, low, nothing wasted. Two cuts with the knives, a
+// flick of the wrist for the thrown ones, a thrust for each dash down a lane, a sidestep into his smoke. He whistles
+// his cutthroats in with a wave of the black glove and jeers as the cages go up. He walks in showing both knives. He
+// dies as a man does, and lies where he fell, the crown still on him.
+FORMS.harlan = {
+  build: banditCrown,
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'stab', 'throw', 'dodge', 'wave', 'taunt', 'spawn', 'cheer'],
+  bend: (joint, clip, phase) => (joint === 'spine' ? [0.08, 0, 0] : joint === 'chest' && clip === 'idle' ? [0.04, Math.sin(phase * Math.PI * 2) * 0.05, 0] : joint === 'head' ? [-0.06, 0, 0.05] : null),
+  moves: {
+    cleave: { clip: 'slice', rate: 1.2 },
+    volley: { clip: 'throw', rate: 1.1 },
+    tripleCharge: { clip: 'stab', rate: 1.3 },
+    vanish: { clip: 'dodge' },
+    summon: { clip: 'wave' },
+    'gallows:hostages': { clip: 'cheer', rate: 0.8 },
+  },
+  enter: { clip: 'spawn', then: 'taunt' },
+  shift: { clip: 'taunt', rate: 1.2 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 2.8, sink: 0 },
+};
+
 export const bossForm = (id: string | undefined): BossForm | undefined => (id ? FORMS[id] : undefined);
 export const BOSS_FORMS: Readonly<Record<string, BossForm>> = FORMS;
 

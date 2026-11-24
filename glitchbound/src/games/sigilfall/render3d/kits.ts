@@ -586,6 +586,52 @@ TABLE.morgrave = {
   ],
   wears: [{ piece: 'ice-crown', a: '#7a2ab8', b: '#ff9af0', band: '#4a3a5c' }],
 };
+// The Hangman, Headsman of the Gallows Gang: "He hangs the people of Millbrook who can't pay the rope tax." A giant
+// bare to the waist, pale as tallow, under a headsman's black hood with only a slit to see by; the apron and breeches
+// of his trade the brown of old blood, the gang's iron on his axe.
+TABLE.hangman = {
+  k: 'boss_hangman',
+  form: 'hangman',
+  // (his axe held out makes him wider than he is tall, and a figure is sized by the greater: this stands him on his
+  // circle)
+  size: 1.5,
+  atk: 'chop2',
+  paint: [
+    // the slit of his hood: what looks out of it catches the light of the fire pits
+    { joint: 'head', hue: [5, 45], sat: [0.2, 0.9], lum: [0.35, 1], to: '#ff8a4a', glow: true, keep: 0.2 },
+    // the hood and mask: black
+    { joint: 'head', to: '#17131b', keep: 0.85 },
+    // his hide: tallow-pale
+    { hue: [8, 42], sat: [0.25, 0.8], lum: [0.4, 1], to: '#b89274', keep: 0.75 },
+    // what cloth and fur he wears: old blood
+    { hue: [200, 360], sat: [0.15, 1], to: '#4a2222', keep: 0.9 },
+    { hue: [45, 200], sat: [0.15, 1], to: '#3a2a26', keep: 0.9 },
+  ],
+};
+// Harlan Blackglove, King of the Gallows Gang: a bandit who crowned himself. Road leathers gone black with use, a
+// cape the red of the gang's banners, the black gauntlet on his left arm, a crown of stolen gold with a shard of
+// rift-glass for its jewel (the only magic he owns, and he doesn't know what it is).
+TABLE.varric = {
+  k: 'boss_harlan',
+  form: 'harlan',
+  size: 1.3,
+  atk: 'chop',
+  paint: [
+    // the black glove: black iron over the Knight's plate arm
+    { joint: 'upperarm.l', to: '#1d1a22', keep: 0.9 },
+    { joint: 'lowerarm.l', to: '#1d1a22', keep: 0.9 },
+    { joint: 'wrist.l', to: '#1d1a22', keep: 0.9 },
+    { joint: 'hand.l', to: '#141218', keep: 0.9 },
+    // the cape and what was bright on him: the gang's red
+    { hue: [80, 200], sat: [0.25, 1], to: '#7a1e22', keep: 0.9 },
+    // a sash of the same red at his waist
+    { joint: 'spine', to: '#8a2226', keep: 0.9 },
+    // his road leathers, which the pack has near black: worn brown, so he is a man and not a shadow from above
+    ...['chest', 'hips', 'upperarm.r', 'lowerarm.r', 'upperleg.l', 'upperleg.r', 'lowerleg.l', 'lowerleg.r'].map((joint) => ({ joint, lum: [0, 0.5] as [number, number], to: '#7a5638', keep: 0.9 })),
+    { joint: 'foot.l', to: '#3a2c24', keep: 0.9 },
+    { joint: 'foot.r', to: '#3a2c24', keep: 0.9 },
+  ],
+};
 boss('the-drowned', { size: 1.35, wears: [{ piece: 'eyes', b: '#9afff0' }] });
 boss('the-rot-mother', { size: 1.5, wears: [{ piece: 'horns', a: '#3a4a22', b: '#c8e070' }, { piece: 'eyes', b: '#e8ff70' }] });
 boss('slag-colossus', { size: 1.6, tint: undefined, paint: molten('#4a3a36', '#ff9a3a'), wears: [{ piece: 'eyes', b: '#fff0a0' }] });
