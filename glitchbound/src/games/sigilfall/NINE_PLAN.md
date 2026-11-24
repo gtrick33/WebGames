@@ -35,7 +35,7 @@ requests open.**
 | 2g | Bosses: Act V (the Molten Throne) | `claude/sf9-bosses-act5` | | not started | 2a |
 | 2h | Bosses: the finale (Duskspire) | `claude/sf9-bosses-finale` | | not started | 2a |
 | 2i | Bosses: the rest (the Rift's five other dungeons, the lands' named foes) | `claude/sf9-bosses-rest` | | not started | 2a |
-| 3 | The signature system in the first twenty minutes | `claude/sf9-first-epic` | (this one) | open | 1 (#355) |
+| 3 | The signature system in the first twenty minutes | `claude/sf9-first-epic` | #358 | open | 1 (#355) |
 | 4 | Quests up to the Prologue's standard, one pull request per act | `claude/sf9-quests-act1` … `-act6` | | not started | 1 |
 | 5 | Sound with its own character | `claude/sf9-sound-mix`, `-music`, `-voices` | | not started | 1 |
 | 6 | One standard, act by act | `claude/sf9-standard-act1` … `-act6` | | not started | 2, 4 (the same act's) |
