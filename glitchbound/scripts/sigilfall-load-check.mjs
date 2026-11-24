@@ -101,6 +101,17 @@ async function run() {
   try {
     const context = await browser.newContext({ viewport: size.viewport, hasTouch: size.touch, isMobile: size.touch, deviceScaleFactor: 1 });
     const page = await context.newPage();
+    // The built site is served here without its API, and one of the page's first calls to it failing is taken for a
+    // deploy having happened: the page reloads itself once (src/platform/freshBuild.ts), which on a slow line comes
+    // in the middle of the game's files and drops the Play from the address. The page is told it has just done that,
+    // so the visit is measured in one piece (NINE_PLAN.md piece 7 has what this means for a real player).
+    await page.addInitScript(() => {
+      try {
+        globalThis.sessionStorage.setItem('glitchbound.freshReload', String(Date.now() + 3_600_000));
+      } catch {
+        /* no storage: nothing to tell */
+      }
+    });
     const cdp = await context.newCDPSession(page);
     await cdp.send('Network.enable');
     if (net) await cdp.send('Network.emulateNetworkConditions', { offline: false, ...net });
