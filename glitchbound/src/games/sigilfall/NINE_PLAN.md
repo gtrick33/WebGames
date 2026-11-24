@@ -40,7 +40,7 @@ requests open.**
 | 5 | Sound with its own character | `claude/sf9-sound-mix`, `-music`, `-voices` | | not started | 1 |
 | 6 | One standard, act by act | `claude/sf9-standard-act1` … `-act6` | | not started | 2, 4 (the same act's) |
 | 7 | Phone and network readiness | `claude/sf9-phone` | | not started | 1 |
-| 8 | The rough edges | `claude/sf9-rough-edges` | | not started | 1 |
+| 8 | The rough edges | `claude/sf9-rough-edges` | #PRNUM | open | 1 |
 | 9 | Ready for players | `claude/sf9-playtest` | | not started | 1 |
 | 10 | The release bar | `claude/sf9-release` | | not started | all of them, merged |
 | 11 | What would make it more fun (added by the owner: see its own section) | 11a and 11e in pieces 8 and 9; `claude/sf9-open-world`, `-vigil-return`, `-fewer-legends` | | not started | the playtest (11b); the owner's go-ahead (11c, 11d) |
@@ -373,6 +373,28 @@ The three from the review: the hint card over Mara's speech, and anything else t
 "Both can be changed" line when only one choice is shown; the small game area on desktop (a bigger stage or a clear
 way to play full screen, without changing other games' pages: if it can't be done inside Sigilfall's own page, it goes
 to the owner first). Then a hunt: every panel, dialog and shop at the three sizes, with keyboard and with touch.
+
+**Done in #PRNUM (2026-11-24):**
+
+- While a first-timer's hint card is up, nothing is spoken on the screen (`renderer.hushed`); the line is there when
+  the card is put down. `node scripts/sigilfall-overlap-check.mjs --hints` is the run the baseline lacked: a new hero
+  with the hints on through the first fight. It reports `hint×speech` without the fix and nothing with it.
+- The title says "You can change it any time in Settings." when it asks one thing, "Both…" when it asks two.
+- **Full screen: the owner chose a button (2026-11-24), and it touches the shared game contract.** A game's page can
+  now hand its game a way to fill the screen (`enterFullscreen` on `GameModuleProps`, passed by `GameStage` and
+  `GamePage`, absent while the game already fills it). It is optional and only Sigilfall reads it: its title shows
+  "Play full screen" on a desktop. No other game's page looks or behaves differently.
+- The hunt: `node scripts/sigilfall-panel-audit.mjs` opens every panel and five shops at three sizes and measures
+  what is cut off, covered, too small to read or too small to tap. Found and fixed: the Wardrobe's tags at 8 and 9 px
+  (now 10). Also on the way: Settings still spoke of Heroic and Mythic, which are removed; and the basic-attack hint
+  told a player their strikes "do most of the work", which the skills do.
+- Found by the screen check's own run on this branch, and there on the baseline too (it comes and goes with the
+  machine's speed, which is how the baseline's run missed it): on a phone, a wide banner ("Raid!", "The Vigil")
+  placed while the camera was still coming to the hero slid down past the quest to where the hero then stood. An
+  announcement now stays above the hero's resting place (`HERO_TOP` in `ui/layout.ts`); where it can't get clear
+  there, the quest steps aside for it, as it already did.
+- Not done: the panels were opened by script and looked at as pictures, at a hero in mid-game; the hunt did not play
+  them with a keyboard key by key, and not on a real touch screen.
 
 ### 9. Ready for players (`claude/sf9-playtest`)
 

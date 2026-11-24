@@ -1,0 +1,441 @@
+[
+ {
+  "size": "phone",
+  "stop": "hero",
+  "open": "hero",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "stop": "wardrobe",
+  "open": "wardrobe",
+  "cut": [],
+  "small": [
+   "9.6px rb-look-tag: Equipped",
+   "9.6px rb-look-tag: Shop"
+  ],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "stop": "skills",
+  "open": "skills",
+  "cut": [],
+  "small": [
+   "9.7px rb-kbd: Skill 1",
+   "9.7px rb-kbd: Skill 2",
+   "9.7px rb-kbd: Skill 3",
+   "9.7px rb-kbd: Skill 4"
+  ],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "stop": "talents",
+  "open": "talents",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "stop": "quests",
+  "open": "quests",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "stop": "map",
+  "open": "map",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "stop": "settings",
+  "open": "settings",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "stop": "party",
+  "open": "party",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "stop": "store",
+  "open": "store",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "stop": "shop-inn",
+  "open": "shop",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "stop": "shop-weapons",
+  "open": "shop",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "stop": "shop-armor",
+  "open": "shop",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "stop": "shop-curios",
+  "open": "shop",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "stop": "shop-quartermaster",
+  "open": "shop",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "stop": "hero",
+  "open": "hero",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "stop": "wardrobe",
+  "open": "wardrobe",
+  "cut": [],
+  "small": [
+   "9.6px rb-look-tag: Equipped",
+   "9.6px rb-look-tag: Shop"
+  ],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "stop": "skills",
+  "open": "skills",
+  "cut": [],
+  "small": [
+   "9.7px rb-kbd: Skill 1",
+   "9.7px rb-kbd: Skill 2",
+   "9.7px rb-kbd: Skill 3",
+   "9.7px rb-kbd: Skill 4"
+  ],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "stop": "talents",
+  "open": "talents",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "stop": "quests",
+  "open": "quests",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "stop": "map",
+  "open": "map",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "stop": "settings",
+  "open": "settings",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "stop": "party",
+  "open": "party",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "stop": "store",
+  "open": "store",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "stop": "shop-inn",
+  "open": "shop",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "stop": "shop-weapons",
+  "open": "shop",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "stop": "shop-armor",
+  "open": "shop",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "stop": "shop-curios",
+  "open": "shop",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "stop": "shop-quartermaster",
+  "open": "shop",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "stop": "hero",
+  "open": "hero",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "stop": "wardrobe",
+  "open": "wardrobe",
+  "cut": [],
+  "small": [
+   "9.6px rb-look-tag: Equipped",
+   "9.6px rb-look-tag: Shop"
+  ],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "stop": "skills",
+  "open": "skills",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "stop": "talents",
+  "open": "talents",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "stop": "quests",
+  "open": "quests",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "stop": "map",
+  "open": "map",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "stop": "settings",
+  "open": "settings",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "stop": "party",
+  "open": "party",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "stop": "store",
+  "open": "store",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "stop": "shop-inn",
+  "open": "shop",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "stop": "shop-weapons",
+  "open": "shop",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "stop": "shop-armor",
+  "open": "shop",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "stop": "shop-curios",
+  "open": "shop",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "stop": "shop-quartermaster",
+  "open": "shop",
+  "cut": [],
+  "small": [],
+  "tiny": [],
+  "covered": [],
+  "errors": []
+ }
+]

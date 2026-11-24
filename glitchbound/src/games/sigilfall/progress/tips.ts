@@ -99,7 +99,9 @@ export function tipSteps(id: TipId, c: TipContext): TipStep[] {
           target: barSlot(touch, 'basic'),
           panel: null,
           title: 'Your basic attack',
-          text: touch ? 'Tap this button to strike. It aims for you. Your strikes do most of the work, so keep them coming.' : 'Left-click to strike where your mouse points. Your strikes do most of the work, so keep them coming.',
+          // (what the game does, progress/build.ts paceBasics: the skills carry the fight and the strikes fill the time between
+          // them. It said the strikes did most of the work, which the pacing had made untrue)
+          text: touch ? 'Tap this button to strike. It aims for you. Strike between your skills: the skills hit far harder, and your strikes keep the fight going while they come back.' : 'Left-click to strike where your mouse points. Strike between your skills: the skills hit far harder, and your strikes keep the fight going while they come back.',
         },
         {
           target: barSlot(touch, 's1'),

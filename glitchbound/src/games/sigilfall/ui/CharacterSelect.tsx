@@ -1,6 +1,7 @@
 import { TRIALS_OPEN_AT, trialsOpen } from '../progress/trial';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { uiIcon } from './uiIcons';
+import { FullscreenContext } from './fullscreen';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { CLASSES } from '../data/classes';
 import { REGIONS } from '../data/regions';
@@ -39,6 +40,7 @@ function placeOf(offset: number): { x: number; y: number; scale: number; dim: bo
  * hall's banners and the sigil under their feet take the color of whoever stands there.
  */
 export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSettings, onStore, confirmDelete, setConfirmDelete }: { engine: SigilEngine; onRift: (slot: number) => void; onVigil: () => void; onRing: () => void; onRanks: () => void; onSettings: () => void; onStore?: () => void; confirmDelete: number | null; setConfirmDelete: (n: number | null) => void }) {
+  const goFull = useContext(FullscreenContext);
   const heroes = engine.heroes();
   const n = heroes.length;
   // (the last hero played may be in a place this account no longer plays: the pack's, after a refund)
@@ -315,6 +317,14 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
             shop etc are hidden behind the cogwheel, make them visible separate buttons". They were in one cog's menu
             since 2026-11-21's "too many buttons": small, with a word under each where there is room) */}
         <div className="cs-top-btns">
+          {/* (inside the site's page on a desktop the stage is small: a plain way to fill the screen, said in words. A
+              touch screen goes full screen by itself at the first touch) */}
+          {goFull && !engine.touchMode && (
+            <button className="rb-iconbtn cs-topbtn cs-fullbtn" onClick={goFull} aria-label="Play full screen" title="Play full screen">
+              <span aria-hidden="true">⛶</span>
+              <small>Play full screen</small>
+            </button>
+          )}
           <button className="rb-iconbtn cs-topbtn" onClick={onRanks} aria-label="Rankings" title="Rankings">
             <span aria-hidden="true">♛</span>
             <small>Rankings</small>

@@ -68,6 +68,12 @@ export interface GameModuleProps {
    * instead and answer with a 'menu' event.
    */
   openMenu?: () => void;
+  /**
+   * Takes the game to full screen, as the page's own Fullscreen button does; undefined while it already is. For a game
+   * whose stage inside the page is small for what it shows, to offer in its own menu (Sigilfall's title screen). Call it
+   * from a click or a key press: browsers only allow full screen from the player's own gesture.
+   */
+  enterFullscreen?: () => void;
 }
 
 import type { ChallengeSpec } from './challenge';

@@ -696,6 +696,7 @@ export class SigilEngine {
     // isn't a menu: the camera's on the people in it, and the fires still burn)
     if (!(this.ui.pause || this.ui.panel) || this.coop || now - this.pausedDrawAt > 150) {
       this.pausedDrawAt = now;
+      this.renderer.hushed = !!this.ui.tip;
       this.renderer.draw(w, paused ? 0 : dt, now / 1000);
     }
     for (const fn of this.frameHooks) fn(w, this);

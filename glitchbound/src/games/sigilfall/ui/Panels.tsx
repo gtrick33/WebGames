@@ -1996,7 +1996,7 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
               : s.difficulty === 'hard'
                 ? 'Every fight asks more: foes have a quarter more health and hit harder.'
                 : 'The campaign as it was made: hard enough to lose a fight, and to feel it won.'}{' '}
-            Heroic, Mythic, the Riftstones and runs with friends keep their own measure.
+            The Riftstones and runs with friends keep their own measure.
           </span>
         </section>
         <section>

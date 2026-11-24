@@ -944,6 +944,7 @@ export function GamePage({ game }: { game: GameEntry }) {
             playerName={player.name}
             onPlayClick={goFull}
             openMenu={play.active && (game.menu ?? 'own') === 'own' ? openMenu : undefined}
+            enterFullscreen={play.active ? undefined : goFull}
             playRef={startPlay}
             overlay={
               <>
