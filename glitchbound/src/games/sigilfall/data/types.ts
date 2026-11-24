@@ -1151,7 +1151,7 @@ export interface NpcDef {
   /** Lines by quest state, first matching wins ('started': offered, active or done). */
   talk: { when?: { quest: string; state: 'locked' | 'offered' | 'active' | 'ready' | 'done' | 'started' | 'taken' }; lines: string[] }[];
   /** What the NPC offers besides talk. */
-  service?: 'respec' | 'smith' | 'waystone' | 'rift' | 'season';
+  service?: 'respec' | 'smith' | 'waystone' | 'rift';
   /** A vendor: the shop they open, and its name over the door (else the shop's own name). */
   shop?: ShopId;
   shopName?: string;

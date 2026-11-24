@@ -375,7 +375,7 @@ const PARTS: Record<SeasonDef['mechanic'], (p: Part) => ReactNode> = {
 };
 
 /**
- * The season's page, from its keeper in the Riftward (data/seasons.ts, progress/season.ts): what the season is and
+ * The season's page, from Keeper Isolde at the Riftgate (data/seasons.ts, progress/season.ts): what the season is and
  * how long it runs, its power (a section a season: hearts to choose, shrines to know, a legend to borrow, an altar to
  * light), the hero's Journey through it, and what it all gives. Kept to taps.
  */
@@ -407,7 +407,7 @@ export function SeasonPanel({ engine }: { engine: SigilEngine }) {
   const Power = PARTS[def.mechanic];
   return (
     <Frame title={`Rift Season ${now.n} · ${def.name}`} onClose={() => engine.closePanel()} wide className="rb-panel-season">
-      <div className="rb-season" style={tone(def.keeper.pal.O ?? '#c8a8ff')}>
+      <div className="rb-season" style={tone(def.color)}>
         <div className="rb-season-head">
           <span className="rb-season-glyph" aria-hidden />
           <div>
@@ -416,7 +416,7 @@ export function SeasonPanel({ engine }: { engine: SigilEngine }) {
             </p>
             <p className="rb-small rb-season-short">{def.short}</p>
             <p className="rb-small rb-season-keeper">
-              “{def.keeper.lines[0]}” <span>— {def.keeper.name}, {def.keeper.title}</span>
+              “{def.words[0]}” <span>— Keeper Isolde, at the Riftgate</span>
             </p>
           </div>
         </div>

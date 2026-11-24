@@ -7,15 +7,14 @@ import type { Effect, Mod } from './types';
  * calendar month is a season; ten mechanics take turns, and after the tenth the first comes back. Only the Riftstones
  * and the Riftward feel them: a season's mechanic works in Riftstone runs alone, and the campaign is as it was.
  *
- * What every season has: its mechanic (one tap or none: chosen at the season's keeper in the Riftward, or working by
+ * What every season has: its mechanic (one tap or none: chosen at Keeper Isolde's Riftgate in the Riftward, or working by
  * itself), a Journey of Riftstone goals that gives a whole Rift set and the season's title (progress/season.ts), a
  * ladder of the season's best stones that starts again with each season (functions/api/sigilfall/ranks.ts, boards
- * `season:s<n>` and `season:s<n>-<calling>`), and its keeper in the Riftward. Stones opened stay open when a season
+ * `season:s<n>` and `season:s<n>-<calling>`), and its color and words, which Isolde says. Stones opened stay open when a season
  * ends; the mechanic sleeps until it comes round again. (The Ring keeps seasons of its own, eight weeks long:
  * arena/ranks.ts. These are the Rift's.)
  *
- * The rules are taken from the seasons of other games (LEGAL_REVIEW.md); the names, the keepers and the words are
- * this game's own.
+ * The rules are taken from the seasons of other games (LEGAL_REVIEW.md); the names and the words are this game's own.
  */
 
 export type SeasonMechanic = 'heart' | 'shrines' | 'kinship' | 'borrowed' | 'boons' | 'altar' | 'bloodlust' | 'twin' | 'nemesis' | 'echoes';
@@ -28,11 +27,12 @@ export interface SeasonDef {
   short: string;
   /** The Journey's first goal, as this season words it (the season's power felt once). */
   goal: string;
-  /** The keeper the Riftward has for it (the NPC `rw-season` wears this season's). */
-  keeper: { name: string; title: string; pal: Record<string, string>; lines: string[] };
+  /** Its color (the season's page and its notice), and what Keeper Isolde at the Riftgate says of it. */
+  color: string;
+  words: string[];
   /** The title the season's Journey gives, kept for good. */
   title: { id: string; name: string };
-  /** Built and working: a season whose mechanic isn't built yet still has its Journey, ladder and keeper. */
+  /** Built and working: a season whose mechanic isn't built yet still has its Journey and ladder. */
   built: boolean;
 }
 
@@ -40,14 +40,10 @@ export const SEASON_LOOP: readonly SeasonDef[] = [
   {
     mechanic: 'heart',
     name: 'The Season of Hearts',
-    short: 'Choose a Season Heart at the keeper: its power works in every Riftstone run, and grows with your best stone this season.',
-    goal: 'Choose a Season Heart at the keeper in the Riftward',
-    keeper: {
-      name: 'Yvaine',
-      title: 'Keeper of Hearts',
-      pal: { t: '#c0304a', T: '#7a1a2e', p: '#3a1420', P: '#24101a', o: '#ffb0c0', O: '#e05a78' },
-      lines: ['Every heart the stones have broken beats here once a season.', 'Choose one. It will beat for you down there, and harder the deeper you go.'],
-    },
+    short: 'Choose a Season Heart at the Riftgate: its power works in every Riftstone run, and grows with your best stone this season.',
+    goal: 'Choose a Season Heart at the Riftgate',
+    color: '#e05a78',
+    words: ['Every heart the stones have broken beats here once a season.', 'Choose one. It will beat for you down there, and harder the deeper you go.'],
     title: { id: 'season-hearts', name: 'Heartsworn' },
     built: true,
   },
@@ -56,7 +52,8 @@ export const SEASON_LOOP: readonly SeasonDef[] = [
     name: 'The Season of Shrines',
     short: 'Shrines rise in every Riftstone run: walk through one for a burst of power.',
     goal: 'Walk through a shrine in a Riftstone run',
-    keeper: { name: 'Perrin', title: 'Shrinewright', pal: { t: '#3a8ac9', T: '#1e4a7a', p: '#1a2a40', P: '#101a2a', o: '#a8e0ff', O: '#5ab8ff' }, lines: ['Even down there are holy places, if you know where to step.'] },
+    color: '#5ab8ff',
+    words: ['Even down there are holy places, if you know where to step.'],
     title: { id: 'season-shrines', name: 'Shrinewalker' },
     built: true,
   },
@@ -65,16 +62,18 @@ export const SEASON_LOOP: readonly SeasonDef[] = [
     name: 'The Season of Kinship',
     short: 'In the Riftstones every set counts two pieces more than you wear: four on make it whole.',
     goal: 'Wear two or more pieces of a set into a Riftstone run',
-    keeper: { name: 'Celandine', title: 'Setwarden', pal: { t: '#36a878', T: '#1e6a48', p: '#14301e', P: '#0e2016', o: '#a8ffd8', O: '#36e0a8' }, lines: ['Pieces of a set know each other. This month, they know each other from further off.'] },
+    color: '#36e0a8',
+    words: ['Pieces of a set know each other. This month, they know each other from further off.'],
     title: { id: 'season-kinship', name: 'Kinbound' },
     built: true,
   },
   {
     mechanic: 'borrowed',
     name: 'The Season of Borrowed Legends',
-    short: 'Name one legendary you own at the keeper: its power works in the Riftstones without wearing it.',
-    goal: 'Borrow a legend at the keeper in the Riftward',
-    keeper: { name: 'Ysolt', title: 'Lorekeeper', pal: { t: '#d88a2a', T: '#8a5214', p: '#3a2410', P: '#24160a', o: '#ffe0a8', O: '#ff9a2a' }, lines: ['A legend is a story. Stories can be lent.'] },
+    short: 'Name one legendary you own at the Riftgate: its power works in the Riftstones without wearing it.',
+    goal: 'Borrow a legend at the Riftgate',
+    color: '#ff9a2a',
+    words: ['A legend is a story. Stories can be lent.'],
     title: { id: 'season-legends', name: 'Legendbearer' },
     built: true,
   },
@@ -83,16 +82,18 @@ export const SEASON_LOOP: readonly SeasonDef[] = [
     name: 'The Season of Boons',
     short: 'After each boss in a Riftstone run, choose one of three boons for the rest of the run.',
     goal: 'Take a boon after a boss in a Riftstone run',
-    keeper: { name: 'Ismene', title: 'Boon-giver', pal: { t: '#c8a83a', T: '#7a6420', p: '#3a3014', P: '#24200c', o: '#fff0a8', O: '#ffd84a' }, lines: ['Every boss you fell down there leaves a gift. Take the one you need.'] },
+    color: '#ffd84a',
+    words: ['Every boss you fell down there leaves a gift. Take the one you need.'],
     title: { id: 'season-boons', name: 'Boonblessed' },
     built: true,
   },
   {
     mechanic: 'altar',
     name: 'The Season of Offerings',
-    short: 'Offer Sigil Marks at the keeper’s altar to light ten blessings in turn, for the whole season.',
-    goal: 'Light a blessing at the keeper’s altar in the Riftward',
-    keeper: { name: 'Brother Theodric', title: 'Altar-keeper', pal: { t: '#8a4ae0', T: '#4a2a8a', p: '#2a1a4a', P: '#1a1030', o: '#e0c8ff', O: '#b07aff' }, lines: ['Give to the altar, and the stones give back. Not always kindly, but always more.'] },
+    short: 'Offer Sigil Marks at the Riftgate’s altar to light ten blessings in turn, for the whole season.',
+    goal: 'Light a blessing at the Riftgate’s altar',
+    color: '#b07aff',
+    words: ['Give to the altar, and the stones give back. Not always kindly, but always more.'],
     title: { id: 'season-offerings', name: 'Altarsworn' },
     built: true,
   },
@@ -101,7 +102,8 @@ export const SEASON_LOOP: readonly SeasonDef[] = [
     name: 'The Season of Bloodlust',
     short: 'Kill quickly and keep killing: a streak makes you faster and harder-hitting, and a long one stops the clock a moment.',
     goal: 'Reach a streak of 10 kills in a Riftstone run',
-    keeper: { name: 'Greta', title: 'Huntswoman', pal: { t: '#a82a2a', T: '#5a1414', p: '#2a1010', P: '#1a0a0a', o: '#ffa8a8', O: '#ff4a4a' }, lines: ['Don’t stop. The moment you stop, you are prey.'] },
+    color: '#ff4a4a',
+    words: ['Don’t stop. The moment you stop, you are prey.'],
     title: { id: 'season-bloodlust', name: 'Bloodbound' },
     built: true,
   },
@@ -109,8 +111,9 @@ export const SEASON_LOOP: readonly SeasonDef[] = [
     mechanic: 'twin',
     name: 'The Season of Twin Paths',
     short: 'Put one skill of another specialization of your calling on your bar in the Riftstones.',
-    goal: 'Choose a twin path at the keeper in the Riftward',
-    keeper: { name: 'Corwen', title: 'Pathfinder', pal: { t: '#4a8a6a', T: '#2a5a40', p: '#1a3024', P: '#102018', o: '#c8ffe0', O: '#6ad8a0' }, lines: ['You walk one road. This month, the stones let you borrow a step from another.'] },
+    goal: 'Choose a twin path at the Riftgate',
+    color: '#6ad8a0',
+    words: ['You walk one road. This month, the stones let you borrow a step from another.'],
     title: { id: 'season-twin', name: 'Twin-pathed' },
     built: true,
   },
@@ -119,7 +122,8 @@ export const SEASON_LOOP: readonly SeasonDef[] = [
     name: 'The Season of the Hunter',
     short: 'A hunter stalks the Riftstones: every one you beat makes you stronger for the rest of the season.',
     goal: 'Beat the Hunter in a Riftstone run',
-    keeper: { name: 'Sable', title: 'Bounty-keeper', pal: { t: '#4a4a5a', T: '#2a2a3a', p: '#1a1a24', P: '#101018', o: '#d8d8e8', O: '#9a9ab8' }, lines: ['Something down there has learned your name. Make it regret that.'] },
+    color: '#9a9ab8',
+    words: ['Something down there has learned your name. Make it regret that.'],
     title: { id: 'season-hunter', name: 'Huntbreaker' },
     built: true,
   },
@@ -128,7 +132,8 @@ export const SEASON_LOOP: readonly SeasonDef[] = [
     name: 'The Season of Echoes',
     short: 'In the Riftstones every fifth skill you cast comes again by itself.',
     goal: 'Hear a skill echo in a Riftstone run',
-    keeper: { name: 'Lisette', title: 'Echo-speaker', pal: { t: '#5ab8d8', T: '#2a6a8a', p: '#14303a', P: '#0c2028', o: '#d8f6ff', O: '#8ae0ff' }, lines: ['Listen. Everything you do down there is said twice.'] },
+    color: '#8ae0ff',
+    words: ['Listen. Everything you do down there is said twice.'],
     title: { id: 'season-echoes', name: 'Twice-spoken' },
     built: true,
   },

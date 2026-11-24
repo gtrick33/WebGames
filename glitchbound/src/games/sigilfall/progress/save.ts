@@ -201,6 +201,7 @@ function validRiftSeason(v: unknown, cls: ClassId): Pick<Character, 'rseason'> {
       ...(o.altar !== undefined ? { altar: int(o.altar, 0, BLESSINGS.length, 0) } : {}),
       ...(o.hunted !== undefined ? { hunted: int(o.hunted, 0, 9999, 0) } : {}),
       ...(o.used === true ? { used: true } : {}),
+      ...(o.seen === true ? { seen: true } : {}),
       ...(o.streak !== undefined ? { streak: int(o.streak, 0, 1e6, 0) } : {}),
       ...(o.shrines !== undefined ? { shrines: int(o.shrines, 0, 1e6, 0) } : {}),
       ...(o.echoes !== undefined ? { echoes: int(o.echoes, 0, 1e7, 0) } : {}),

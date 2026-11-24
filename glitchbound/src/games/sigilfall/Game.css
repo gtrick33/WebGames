@@ -3042,6 +3042,49 @@ html.rb-touch-playing textarea {
 .rb-tcard.is-act .rb-tcard-text {
   animation-duration: 4.2s;
 }
+/* a Rift season begun (engine.ts: the first time into the Riftward after it began): an act's card, lit in its color */
+.rb-tcard.is-season {
+  background:
+    radial-gradient(ellipse at center, color-mix(in srgb, var(--tone, #c8a8ff) 22%, transparent), transparent 60%),
+    radial-gradient(ellipse at center, rgb(8 5 14 / 0.4), rgb(8 5 14 / 0.86));
+}
+.rb-tcard.is-season .rb-tcard-over {
+  color: color-mix(in srgb, var(--tone, #c8a8ff) 70%, #fff4de);
+}
+.rb-tcard.is-season .rb-tcard-text strong {
+  text-shadow:
+    0 2px 0 rgb(0 0 0 / 0.7),
+    0 0 26px color-mix(in srgb, var(--tone, #c8a8ff) 70%, transparent);
+}
+.rb-tcard.is-season .rb-tcard-rule {
+  background: linear-gradient(90deg, transparent, var(--tone, #c8a8ff), transparent);
+}
+.rb-tcard.is-season .rb-tcard-sub {
+  max-width: min(620px, 86cqw);
+  color: #e8dcef;
+}
+/* (on a phone: the same card, a little smaller, its line kept: not a land's chip in the strip) */
+.rb-ui.is-touch .rb-tcard.is-season .rb-tcard-text {
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  max-width: calc(100% - 48px);
+  white-space: normal;
+  animation: rb-card-in 4.2s ease both;
+}
+.rb-ui.is-touch .rb-tcard.is-season .rb-tcard-rule,
+.rb-ui.is-touch .rb-tcard.is-season .rb-tcard-sub {
+  display: block;
+}
+.rb-ui.is-touch .rb-tcard.is-season .rb-tcard-over {
+  font-size: 11px;
+}
+.rb-ui.is-touch .rb-tcard.is-season .rb-tcard-text strong {
+  font-size: clamp(24px, 5.4cqw, 40px);
+}
+.rb-ui.is-touch .rb-tcard.is-season .rb-tcard-sub {
+  font-size: 13px;
+}
 .rb-tcard-over {
   color: var(--rb-gold);
   font-size: clamp(12px, 1.7cqw, 16px);

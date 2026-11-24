@@ -19,8 +19,8 @@ import { TALES } from './data/chronicle';
 import { CLASSES, MAX_LEVEL } from './data/classes';
 import { keyAffixes, weekOf } from './data/keystones';
 import { seasonAt, seasonDef, seasonStart, type SeasonNow } from './data/seasons';
-import { dressSeasonKeeper } from './data/zones/riftward';
-import { chooseBorrowed, chooseHeart, chooseTwin, claimChapter, offerAltar } from './progress/season';
+import { seasonTalk } from './data/zones/riftward';
+import { chooseBorrowed, chooseHeart, chooseTwin, claimChapter, offerAltar, seasonNotice } from './progress/season';
 import { takeBoon } from './sim/season';
 import { WARDENS } from './data/wardens';
 import { NPCS, QUEST_DEFS } from './data/quests';
@@ -172,6 +172,8 @@ export interface TitleCard {
   sub?: string;
   /** An act's (the screen darkens behind it), else a land's. */
   act: boolean;
+  /** A Rift season begun: its color (an act's card, lit in it). */
+  season?: string;
   id: number;
 }
 
@@ -744,8 +746,12 @@ export class SigilEngine {
     if (card && t - card.id > (card.act ? ACT_CARD_MS : LAND_CARD_MS)) this.setUi({ card: null });
     // (nor while someone's words are up on the picture: a land's name came up across what Mara was saying as the
     // hero first walked into the Whisperwood. It waits for her to finish)
-    else if (!card && this.cards.length && !this.ui.dialogue && !this.ui.panel && !this.ui.death && !w.scene && !(this.renderer as SigilEngine['renderer'] | undefined)?.speechBoxes.length)
-      this.setUi({ card: { ...this.cards.shift()!, id: t } });
+    else if (!card && this.cards.length && !this.ui.dialogue && !this.ui.panel && !this.ui.death && !w.scene && !(this.renderer as SigilEngine['renderer'] | undefined)?.speechBoxes.length) {
+      const next = this.cards.shift()!;
+      // (a season begun rings in as its card comes up)
+      if (next.season) this.sound.play('rift', 0.8);
+      this.setUi({ card: { ...next, id: t } });
+    }
     if (this.ui.levelUp && t - this.ui.levelUp.id > 3600) this.setUi({ levelUp: null });
     if (this.ui.equipAsk && (t - this.ui.equipAsk.id > EQUIP_ASK_MS || w.keyRun)) this.setUi({ equipAsk: null });
     if (this.ui.questCard && t - this.ui.questCard.id > QUEST_CARD_MS) this.setUi({ questCard: null });
@@ -1474,7 +1480,7 @@ export class SigilEngine {
       // the Rift season: its mechanic in the run, and the run's end counted for it (a Trial's ready hero has no part in it)
       ...(stone && !this.trial && this.season ? { season: this.season.n } : {}),
     });
-    if (to === 'riftward') dressSeasonKeeper(this.season);
+    if (to === 'riftward') seasonTalk(this.season);
     if (party) this.coop?.attach(w);
     if (prev && !prev.region.safe && this.run) {
       // carry this expedition's tallies across regions
@@ -1501,6 +1507,11 @@ export class SigilEngine {
     this.renderer.snap(w);
     const sub = region.safe ? region.subtitle : w.keyRun ? `Riftstone +${w.keyRun.key} · the clock is running` : `${region.subtitle}${w.tier ? ` · ${TIERS[w.tier]!.name}` : ''}`;
     if (first) this.cards.push({ over: region.kind === 'town' ? 'Town' : `${region.kind === 'dungeon' ? 'Dungeon' : 'Wilds'} · levels ${region.levels[0] + TIERS[w.tier]!.levels}–${region.levels[1] + TIERS[w.tier]!.levels}`, text: region.name, sub: region.subtitle, act: false });
+    // a Rift season begun: the first time into the Riftward after it did, its name over the square (the owner,
+    // 2026-11-24: "at the start of each season there should be notification on the screen when you enter the rift zone
+    // the first time after a season has started")
+    const notice = to === 'riftward' ? seasonNotice(h, this.season) : null;
+    if (notice) this.cards.push({ over: notice.over, text: notice.text, sub: notice.sub, act: true, season: notice.color });
     this.ui = { ...this.ui, panel: null, travel: null, dialogue: null, boss: null, death: false, reward: null, banner: first ? null : { text: region.name, sub, id: performance.now() } };
     this.persist();
     this.bump();
@@ -1617,8 +1628,8 @@ export class SigilEngine {
   /* ----------------------------------------------------------- dialogue */
 
   talk(npcId: string): void {
-    // (the season's keeper speaks for the season running now: it may have turned while the hero stood in the Riftward)
-    if (npcId === 'rw-season') dressSeasonKeeper(this.season);
+    // (the Keeper of the Riftgate speaks of the season running now: it may have turned while the hero stood there)
+    if (npcId === 'riftkeeper') seasonTalk(this.season);
     const npc = NPCS[npcId];
     const h = this.hero;
     if (!npc || !h) return;

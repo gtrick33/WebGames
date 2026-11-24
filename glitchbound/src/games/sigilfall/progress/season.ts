@@ -2,7 +2,7 @@ import { CLASSES } from '../data/classes';
 import { keyLoot } from '../data/keystones';
 import { ITEM_DEFS } from '../data/items';
 import { SETS } from '../data/riftgear';
-import { BLESSINGS, greedCache, greedMarks, heartRank, HEARTS, HUNT_MAX, JOURNEY, KINSHIP_EXTRA, seasonDef, type HeartId, type JourneyChapter } from '../data/seasons';
+import { BLESSINGS, greedCache, greedMarks, heartRank, HEARTS, HUNT_MAX, JOURNEY, KINSHIP_EXTRA, seasonDef, type HeartId, type JourneyChapter, type SeasonNow } from '../data/seasons';
 import { SKILLS } from '../data/skills';
 import { SPEC_LEVEL } from '../data/talents';
 import type { Item, Mod } from '../data/types';
@@ -42,6 +42,8 @@ export interface RiftSeason {
   hunted?: number;
   /** The season's power was felt in a run (a shrine walked through, a boon taken, a streak, an echo, a set made whole). */
   used?: boolean;
+  /** The season's notice has been shown, the first time into the Riftward after it began. */
+  seen?: boolean;
   /** What the season's page tells of it: the longest streak, shrines walked through, echoes, boons taken. */
   streak?: number;
   shrines?: number;
@@ -58,6 +60,16 @@ export const seasonOf = (c: Pick<Character, 'rseason'>, n: number): RiftSeason =
 export function ensureSeason(c: Character, n: number): RiftSeason {
   if (c.rseason?.n !== n) c.rseason = freshSeason(n);
   return c.rseason;
+}
+
+/**
+ * The notice of a season begun, the first time the hero comes into the Riftward after it did, and only then (it is
+ * marked seen as it is given): its number, its name, what it does and where it is kept. Null when there is none to give.
+ */
+export function seasonNotice(c: Character, now: SeasonNow | null): { over: string; text: string; sub: string; color: string } | null {
+  if (!now || seasonOf(c, now.n).seen) return null;
+  ensureSeason(c, now.n).seen = true;
+  return { over: `Rift Season ${now.n} has begun`, text: now.def.name, sub: `${now.def.short} Keeper Isolde at the Riftgate keeps it.`, color: now.def.color };
 }
 
 /** A Riftstone run's end, as the season counts it: only a run in time counts. */
