@@ -3,6 +3,22 @@
 First pass 2026-10-27, fixes the same day. A working record of licenses, names and borrowed material, for the
 owner (and a lawyer, if one is asked). It is **not legal advice** and not a trademark clearance.
 
+## A Rift legendary on every place (2026-11-24)
+
+The owner asked for "a legendary for each spec and 3 legendaries common for the class" on every item slot. What is taken
+is **rules only**, the genre's: a legendary piece for each place a hero wears, each with one power of its own, some for
+the whole class and some made for one specialization (as Diablo III and IV tie legendaries to a class and its builds).
+All 419 of them, their names, their one-line stories and the words of every power are Sigilfall's own
+(`data/riftlegends.ts`), and every power is built on Sigilfall's own skills, combos and points. No item, name, power or
+text of Diablo, World of Warcraft, Path of Exile, League of Legends or Dark Souls is reproduced; names known there were
+avoided as they were written (no Firewalkers, Cindercoat, Bramblejack, Seven-League Step, Thornmail, Crown of Thorns,
+Hallowed Bulwark or the like), and three that came out too close were renamed before they shipped (the fire-trail boots
+are the Slippers of the Low Flame, the long-road boots the Mile-Eaters, and a chest that shared a set's name the Plate of
+the Steady Line). Some are plain English words, not marks (the Bellwether, the Cornerstone, the Lodestone, the
+Counterweight, the Poppet, the Pole Star, the Tally Stick). Colors: every one is the game's long-standing legendary
+orange; the tints are each piece's own art color, not any game's. A web search on the names before release is still
+worth doing.
+
 ## The Rift's seasons (2026-11-23)
 
 The owner asked for seasons "similar to diablo": a month each, ten mechanics in turn, for the endgame only. The research

@@ -4,6 +4,7 @@ import { ITEM_DEFS } from '../src/games/sigilfall/data/items';
 import { keyLoot } from '../src/games/sigilfall/data/keystones';
 import { PETS } from '../src/games/sigilfall/data/pets';
 import { RIFT_ITEMS, RIFT_TIERS, riftPool, SETS } from '../src/games/sigilfall/data/riftgear';
+import { SLOT_LEGENDS } from '../src/games/sigilfall/data/riftlegends';
 import { SKILLS } from '../src/games/sigilfall/data/skills';
 import type { ClassId, Effect, Mod, SlotId } from '../src/games/sigilfall/data/types';
 import { buildHero, collectMods, setsWorn } from '../src/games/sigilfall/progress/build';
@@ -28,6 +29,9 @@ const effectsOf = (mods: Mod[]): Effect[] => mods.flatMap((m) => (m.t === 'proc'
 const classSkill = (cls: ClassId, id: string): boolean => id === '*' || id === 'basic' || id === 'dodge' || id === 'ult' || SKILLS[id]?.cls === cls;
 const SIX = ['head', 'chest', 'legs', 'hands', 'feet', 'ring'];
 /** The weapons of 2026-11-23 (the class's three of each, by id: the legendaries of before that are weapons are not). */
+/** The legendaries on every other place, of 2026-11-24 (tests/sigilfall-legend-slots.test.ts holds them). */
+const SLOT_IDS = new Set(SLOT_LEGENDS.map((u) => u.id));
+const slotLegends = (cls: ClassId, spec?: 'class' | 'spec'): number => SLOT_LEGENDS.filter((u) => u.cls === cls && (spec === undefined || (spec === 'class') === (u.spec === undefined))).length;
 const WEAPON_IDS = new Set(RIFT_ITEMS.filter((d) => d.slot === 'weapon' && d.rarity === 'legendary' && d.cls && !['rift-red-appetite', 'rift-grievance', 'rift-thunderwrit', 'rift-long-look', 'rift-morningbell', 'rift-final-reading', 'rift-dawnhymn', 'rift-ruinspeaker', 'rift-nightpool-branch', 'rift-creditor', 'rift-graveweight'].includes(d.id)).map((d) => d.id));
 
 describe('Sigilfall: Rift-forged gear', () => {
@@ -46,7 +50,8 @@ describe('Sigilfall: Rift-forged gear', () => {
       const weapons = RIFT_ITEMS.filter((d) => d.cls === cls && d.rarity === 'legendary' && d.slot === 'weapon' && (d.forSpec !== undefined || WEAPON_IDS.has(d.id)));
       expect(weapons.filter((d) => d.forSpec === undefined).length, cls).toBe(3);
       for (const spec of [0, 1, 2]) expect(weapons.filter((d) => d.forSpec === spec).length, `${cls} ${spec}`).toBe(2);
-      expect(RIFT_ITEMS.filter((d) => d.cls === cls && d.rarity === 'legendary').length, cls).toBe(3 + 9);
+      // (and since 2026-11-24 one on every other place for each specialization, and three of the class's own)
+      expect(RIFT_ITEMS.filter((d) => d.cls === cls && d.rarity === 'legendary').length, cls).toBe(3 + 9 + slotLegends(cls));
     }
     // and anyone's legendaries, on the places a set leaves free or a ring
     const anyone = RIFT_ITEMS.filter((d) => !d.cls);
@@ -58,8 +63,9 @@ describe('Sigilfall: Rift-forged gear', () => {
 
   it('keeps every piece saved before under its id: the old set pieces and the specialization pieces', () => {
     for (const id of ['rift-stonehewer-hands', 'rift-stonehewer-legs', 'rift-stonehewer-feet', 'rift-rimeglass-hands', 'rift-red-appetite', 'rift-thunderwrit', 'rift-shepherds-bell']) expect(ITEM_DEFS[id], id).toBeTruthy();
-    // (a legendary of before is a power for the class, whatever the specialization; only the weapons are a specialization's)
-    expect(RIFT_ITEMS.filter((d) => d.rarity === 'legendary' && d.forSpec !== undefined && d.slot !== 'weapon')).toEqual([]);
+    // (a legendary of before is a power for the class, whatever the specialization: only the weapons, and the other
+    // places' legendaries of 2026-11-24, are a specialization's)
+    expect(RIFT_ITEMS.filter((d) => d.rarity === 'legendary' && d.forSpec !== undefined && d.slot !== 'weapon' && !SLOT_IDS.has(d.id))).toEqual([]);
   });
 
   it('changes only its own class’s skills, with effects the game has', () => {
@@ -290,9 +296,10 @@ describe('Sigilfall: only the Rift gives it', () => {
       expect(droppable(cls, 100, 'set', RIFT_TIERS.classSet).length, cls).toBe(6);
       expect(droppable(cls, 100, 'set', RIFT_TIERS.specSet).length, cls).toBe(24);
       const leg = (stone: number): number => droppable(cls, 100, 'legendary', stone).filter((d) => d.rift !== undefined).length;
-      // (its three legendaries and three weapons at +2; its specializations' six weapons with their sets at +3)
-      expect(leg(RIFT_TIERS.classLegendary) - leg(RIFT_TIERS.legendary), cls).toBe(6);
-      expect(leg(RIFT_TIERS.specSet) - leg(RIFT_TIERS.classLegendary), cls).toBe(6);
+      // (its three legendaries and three weapons at +2, with the class's own on every other place; its specializations'
+      // six weapons and their pieces for every other place with their sets at +3)
+      expect(leg(RIFT_TIERS.classLegendary) - leg(RIFT_TIERS.legendary), cls).toBe(6 + slotLegends(cls, 'class'));
+      expect(leg(RIFT_TIERS.specSet) - leg(RIFT_TIERS.classLegendary), cls).toBe(6 + slotLegends(cls, 'spec'));
     }
   });
 
@@ -329,8 +336,8 @@ describe('Sigilfall: only the Rift gives it', () => {
     // nothing for a hero below the top level, or with no new stone
     expect(riftFirsts(readyHero('mage', 40, 'rare', 5), 5, 2)).toEqual([]);
     expect(riftFirsts(c, 5, 0)).toEqual([]);
-    // (four sets of six, three of its own legendaries and anyone's)
-    expect(riftPool('mage', 99).length).toBe(24 + 3 + 9 + RIFT_ITEMS.filter((d) => !d.cls).length);
+    // (four sets of six, three of its own legendaries, its weapons, a legendary of its own on every other place, and anyone's)
+    expect(riftPool('mage', 99).length).toBe(24 + 3 + 9 + slotLegends('mage') + RIFT_ITEMS.filter((d) => !d.cls).length);
     // of the specializations' sets, its own comes first: with all the rest in the bag, the next stone gives one of those
     const held = { ...c, bag: riftPool('mage', 2).map((d) => makeItem(d.id, 73)!) };
     expect(riftFirsts(held, 3, 1)[0]!.forSpec).toBe(1);
@@ -393,11 +400,12 @@ describe('Sigilfall: the Riftbroker', () => {
     }
     expect(c.marks).toBe(0);
     // the table's odds, near enough over 400 turns: a set piece on the gloves, on the weapon (no set is worn there) a
-    // legendary in its place; gloves have no epic of their own (those turn rare)
+    // legendary in its place; gloves have no epic of their own (those turn rare), and since 2026-11-24 legendaries of
+    // their own
     const odds = wagerOdds(6);
     expect(got.set! / 200).toBeGreaterThan(odds.set * 0.6);
     expect(got.set! / 200).toBeLessThan(odds.set * 1.6);
-    // (gloves have no legendary of their own: the weapon alone gives them, and its set chance besides)
+    // (at least the weapon's: its own and its set chance besides, and the gloves' own now as well)
     expect(got.legendary! / 200).toBeGreaterThan((odds.legendary + odds.set) * 0.75);
     expect((got.legendary! + got.set!) / 400).toBeGreaterThan(0.3);
     expect(forged).toBeGreaterThan(100);

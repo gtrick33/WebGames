@@ -103,7 +103,7 @@ export function stoneRows(cls: Character['cls'], finished: boolean): StoneRow[] 
     const out: string[] = [];
     if (stone === RIFT_TIERS.classSet) out.push(`${set?.name ?? 'Your set'}: six pieces, and legendaries any hero can wear`);
     if (stone === RIFT_TIERS.classLegendary) out.push('Your class’s own legendaries');
-    if (stone === RIFT_TIERS.specSet) out.push('A set for each of your specializations, six pieces each');
+    if (stone === RIFT_TIERS.specSet) out.push('A set for each of your specializations, six pieces each, and their own legendaries');
     if (stone === RIFT_CAP_UNFINISHED + 1 && !finished) out.push('Asks for the story’s end: stones go no higher until you have finished it');
     return out;
   };
