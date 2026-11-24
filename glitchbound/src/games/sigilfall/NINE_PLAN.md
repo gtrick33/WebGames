@@ -25,7 +25,7 @@ requests open.**
 
 | # | Piece | Branch | Pull request | State | Needs first |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Baseline and plan | `claude/sf9-baseline` | (this one) | open | nothing |
+| 1 | Baseline and plan | `claude/sf9-baseline` | #355 | open | nothing |
 | 2a | Boss pipeline and the Coffin Matron | `claude/sf9-boss-matron` | | not started | 1 |
 | 2b | Bosses: the Prologue (Ossric, Morgrave, Grimtusk) | `claude/sf9-bosses-prologue` | | not started | 2a |
 | 2c | Bosses: Act I (Gallows Keep) | `claude/sf9-bosses-act1` | | not started | 2a |
