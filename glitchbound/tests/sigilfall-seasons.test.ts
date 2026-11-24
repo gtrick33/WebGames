@@ -3,12 +3,12 @@ import { boardOf } from '../functions/api/sigilfall/ranks';
 import { MOUNT_DEFS } from '../src/games/sigilfall/data/mounts';
 import { SETS } from '../src/games/sigilfall/data/riftgear';
 import { greedCache, heartRank, HEART_IDS, HEARTS, JOURNEY, nextSeasonAt, SEASON_EPOCH, SEASON_LOOP, seasonAt, seasonDef } from '../src/games/sigilfall/data/seasons';
-import { dressSeasonKeeper, RIFTWARD, RIFTWARD_NPCS } from '../src/games/sigilfall/data/zones/riftward';
+import { RIFTWARD, RIFTWARD_NPCS, seasonTalk } from '../src/games/sigilfall/data/zones/riftward';
 import { ITEM_DEFS } from '../src/games/sigilfall/data/items';
 import { bagSize } from '../src/games/sigilfall/progress/character';
 import { rankEntries } from '../src/games/sigilfall/progress/ranks';
 import { emptySave, migrate } from '../src/games/sigilfall/progress/save';
-import { chooseHeart, claimChapter, ensureSeason, greedOf, heartOf, journeyOf, journeySets, recordRun, seasonMods, seasonOf } from '../src/games/sigilfall/progress/season';
+import { chooseHeart, claimChapter, ensureSeason, greedOf, heartOf, journeyOf, journeySets, recordRun, seasonMods, seasonNotice, seasonOf } from '../src/games/sigilfall/progress/season';
 import { TITLES } from '../src/games/sigilfall/progress/titles';
 import { FIRST_RIDE, mountEarned } from '../src/games/sigilfall/progress/wardrobe';
 import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
@@ -19,7 +19,7 @@ import { readyHero } from './sigilfall-bot';
  * The Rift's seasons (the owner, 2026-11-23: "a content for 10 seasons that rotates each season ... just for the
  * endgame ... similar to diablo we want mechanics per season that are unique and can boost rift progression", made
  * simple for a phone, Season 1 the Season of Hearts, turning on the first of each month): the calendar, the heart and
- * where it works, the Journey and what it gives, the ladder's boards, and the keeper in the Riftward.
+ * where it works, the Journey and what it gives, the ladder's boards, and the season kept at the Riftgate.
  */
 
 const DEC_2026 = Date.UTC(2026, 11, 15);
@@ -41,8 +41,9 @@ describe('Sigilfall: the Rift season calendar', () => {
     expect(nextSeasonAt(Date.UTC(2026, 10, 23))).toBe(SEASON_EPOCH);
   });
 
-  it('gives each season a keeper, a title and words of its own, and builds every one', () => {
-    expect(new Set(SEASON_LOOP.map((d) => d.keeper.name)).size).toBe(10);
+  it('gives each season a color, a title and words of its own, and builds every one', () => {
+    expect(new Set(SEASON_LOOP.map((d) => d.color)).size).toBe(10);
+    for (const d of SEASON_LOOP) expect(d.words.length, d.name).toBeGreaterThan(0);
     expect(new Set(SEASON_LOOP.map((d) => d.title.id)).size).toBe(10);
     expect(SEASON_LOOP.filter((d) => d.built)).toHaveLength(10);
     for (const d of SEASON_LOOP) expect(TITLES.some((t) => t.id === d.title.id), d.title.id).toBe(true);
@@ -195,18 +196,42 @@ describe('Sigilfall: the season’s ladder', () => {
   });
 });
 
-describe('Sigilfall: the season’s keeper in the Riftward', () => {
-  it('stands in the square, and dresses as the season running', () => {
-    expect(JSON.stringify(RIFTWARD.placed ?? [])).toContain('rw-season');
-    const npc = RIFTWARD_NPCS['rw-season']!;
-    expect(npc.service).toBe('season');
-    dressSeasonKeeper(null);
-    expect(npc.talk[0]!.lines.join(' ')).toContain('first of December');
-    dressSeasonKeeper(seasonAt(Date.UTC(2027, 0, 5)));
-    expect(npc.name).toBe(seasonDef(2).keeper.name);
-    expect(npc.talk[0]!.lines).toEqual(seasonDef(2).keeper.lines);
-    dressSeasonKeeper(seasonAt(DEC_2026));
-    expect(npc.title).toBe('Keeper of Hearts');
+describe('Sigilfall: the season kept at the Riftgate', () => {
+  it('has no keeper of its own: Keeper Isolde keeps it, and speaks of the season running', () => {
+    expect(JSON.stringify(RIFTWARD.placed ?? [])).not.toContain('rw-season');
+    expect(RIFTWARD_NPCS['rw-season']).toBeUndefined();
+    const isolde = RIFTWARD_NPCS.riftkeeper!;
+    expect(isolde.service).toBe('rift');
+    const quest = isolde.talk[0]!;
+    seasonTalk(null);
+    expect(isolde.talk.at(-1)!.lines.join(' ')).toContain('first of December');
+    seasonTalk(seasonAt(Date.UTC(2027, 0, 5)));
+    const words = isolde.talk.at(-1)!.lines;
+    expect(words.join(' ')).toContain(`${seasonDef(2).name} is upon the stones`);
+    expect(words).toEqual(expect.arrayContaining(seasonDef(2).words));
+    // what she says of the Gate itself comes first, and the postgame quest's words stay hers
+    expect(words[0]).toMatch(/The Gate is open to you/);
+    expect(isolde.talk[0]).toBe(quest);
+    expect(isolde.talk).toHaveLength(2);
+  });
+
+  it('tells a hero of a season begun once, the first time into the Riftward after it did', () => {
+    const c = readyHero('mage', 60, 'epic', 5, 0);
+    expect(seasonNotice(c, null)).toBeNull();
+    const jan = seasonAt(Date.UTC(2027, 0, 5))!;
+    const n = seasonNotice(c, jan)!;
+    expect(n.over).toBe('Rift Season 2 has begun');
+    expect(n.text).toBe(seasonDef(2).name);
+    expect(n.sub).toContain(seasonDef(2).short);
+    expect(n.color).toBe(seasonDef(2).color);
+    expect(seasonNotice(c, jan)).toBeNull();
+    // and it is still seen after a save and a load
+    const save = emptySave();
+    save.heroes[0] = c;
+    const back = migrate(JSON.parse(JSON.stringify(save)))!.heroes[0]!;
+    expect(seasonNotice(back, jan)).toBeNull();
+    // the next month is another season, and another notice
+    expect(seasonNotice(c, seasonAt(Date.UTC(2027, 1, 2)))?.over).toBe('Rift Season 3 has begun');
   });
 
   it('asks five chapters of the Journey, the last at Riftstone +20 in every dungeon', () => {

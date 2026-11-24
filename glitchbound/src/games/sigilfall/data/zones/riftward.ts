@@ -1,5 +1,5 @@
 import { CityPlan } from '../citygen';
-import { seasonDef, type SeasonNow } from '../seasons';
+import type { SeasonNow } from '../seasons';
 import type { NpcDef, QuestDef, RegionDef } from '../types';
 
 /**
@@ -40,9 +40,8 @@ function plan(): CityPlan {
   ] as const)
     c.prop('brazier', x, y);
   c.marker(27, 21, { kind: 'place', id: 'rift-gate' });
+  // the Keeper of the Riftgate: the Gate, and the season running (data/seasons.ts; she says what it is: seasonTalk)
   c.npc('riftkeeper', 28, 23);
-  // the season's keeper, by the square's south-west stone (data/seasons.ts: each season dresses them as its own)
-  c.npc('rw-season', 20, 28);
   c.marker(27, 29, { kind: 'waystone' });
   c.marker(28, 34, { kind: 'start' });
   for (const [x, y] of [
@@ -94,18 +93,11 @@ export const RIFTWARD: RegionDef = {
   blurb: 'The wardens’ sanctuary round the Riftgate: the Keeper of the Riftgate, the Riftbroker, a forge, an armory, curios, an inn and a shrine.',
 };
 
+/** What the Keeper of the Riftgate says of the Gate itself, before the season's words. */
+const GATE_WORDS = ['The Gate is open to you. Hold your stone to it and choose a memory: any dungeon the Crown fed on, against the clock.', 'Beat the clock and the stone opens deeper memories. Fall behind and you lose nothing but time.'];
+
 /** The Riftward's people: the Keeper at the gate, and every merchant a hero at the top needs. */
 export const RIFTWARD_NPCS: Record<string, NpcDef> = {
-  // the season's keeper (dressed as the season running by dressSeasonKeeper; the first season's until then)
-  'rw-season': {
-    id: 'rw-season',
-    name: seasonDef(1).keeper.name,
-    title: seasonDef(1).keeper.title,
-    sprite: 'mystic',
-    service: 'season',
-    pal: seasonDef(1).keeper.pal,
-    talk: [{ lines: seasonDef(1).keeper.lines }],
-  },
   riftkeeper: {
     id: 'riftkeeper',
     name: 'Keeper Isolde',
@@ -115,7 +107,7 @@ export const RIFTWARD_NPCS: Record<string, NpcDef> = {
     pal: { t: '#8a4ae0', T: '#4a2a8a', p: '#2a1a4a', P: '#1a1030', o: '#c8a8ff', O: '#8a6ad8' },
     talk: [
       { when: { quest: 'postgame-the-riftward', state: 'active' }, lines: ['You carry a splinter of the Crown. I can feel it from here.', 'Show it to me.'] },
-      { lines: ['The Gate is open to you. Hold your stone to it and choose a memory: any dungeon the Crown fed on, against the clock.', 'Beat the clock and the stone opens deeper memories. Fall behind and you lose nothing but time.'] },
+      { lines: [...GATE_WORDS] },
     ],
   },
   'rw-broker': {
@@ -181,14 +173,13 @@ export const RIFTWARD_NPCS: Record<string, NpcDef> = {
 export const RIFTWARD_QUESTS: QuestDef[] = [];
 
 /**
- * Dresses the season's keeper as the season running (or, before the first, as the first, saying when it begins):
- * their name, their colors, what they say. Called whenever the Riftward is entered.
+ * What the Keeper of the Riftgate says, with the season running (or, before the first, when it begins): the Gate's
+ * words, then the season's name and its own. The season has no keeper of its own; Isolde keeps it (the owner,
+ * 2026-11-24: "it should be integrated within the main npcs that opens the riftstones"). Called whenever the Riftward
+ * is entered, and as she is spoken to.
  */
-export function dressSeasonKeeper(now: SeasonNow | null): void {
-  const npc = RIFTWARD_NPCS['rw-season']!;
-  const def = now?.def ?? seasonDef(1);
-  npc.name = def.keeper.name;
-  npc.title = def.keeper.title;
-  npc.pal = def.keeper.pal;
-  npc.talk = [{ lines: now ? def.keeper.lines : ['The first season of the stones begins on the first of December.', 'Come back then. I will have a heart for you.'] }];
+export function seasonTalk(now: SeasonNow | null): void {
+  const npc = RIFTWARD_NPCS.riftkeeper!;
+  const season = now ? [`${now.def.name} is upon the stones this month.`, ...now.def.words] : ['The first season of the stones begins on the first of December. Each month after brings another.'];
+  npc.talk = [npc.talk[0]!, { lines: [...GATE_WORDS, ...season] }];
 }

@@ -11,8 +11,8 @@ only**: a season-long power that works in the endgame and sleeps afterwards (Dia
 chosen that grows as the player climbs (Diablo IV's seasonal powers), a journey of goals that gives a whole set and a
 title (Diablo III's season journey), a ladder that starts again each season (Mythic+), shrines that empower a run, a
 set bonus from fewer pieces, a legendary's power without wearing it, boons chosen after bosses, offerings at an altar,
-kill streaks, an invading hunter, and echoed casts. Every season's name, its keeper (Yvaine, Perrin, Celandine, Ysolt,
-Ismene, Brother Theodric, Greta, Corwen, Sable, Lisette), their lines, the four hearts, the titles (Heartsworn,
+kill streaks, an invading hunter, and echoed casts. Every season's name, its words (Keeper Isolde says them at the
+Riftgate; each season had a keeper of its own at first, folded into her on 2026-11-24), the four hearts, the titles (Heartsworn,
 Shrinewalker, Kinbound, Legendbearer, Boonblessed, Altarsworn, Bloodbound, Twin-pathed, Huntbreaker, Twice-spoken) and
 the Heartfire Drake are Sigilfall's own (`data/seasons.ts`). The third season was proposed as "Grandeur", the name of a
 Diablo III season, and is called the Season of Kinship instead.

@@ -213,7 +213,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
         )}
         {ui.levelUp && <LevelUpBanner engine={engine} />}
         {ui.questCard && <QuestCard engine={engine} />}
-        {ui.card && (
+        {ui.card && !ui.card.season && (
           <div className={`rb-tcard${ui.card.act ? ' is-act' : ''}`} key={`card:${ui.card.id}`} aria-live="polite">
             <div className="rb-tcard-text">
               <span className="rb-tcard-over">{ui.card.over}</span>
@@ -224,6 +224,18 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
           </div>
         )}
       </Announce>
+      {/* a Rift season begun: over the whole picture, on a phone as on a desktop (not a chip in the touch strip, as a
+          land's name is: it comes once a month) */}
+      {ui.card?.season && (
+        <div className="rb-tcard is-act is-season" key={`card:${ui.card.id}`} aria-live="polite" style={{ ['--tone' as string]: ui.card.season }}>
+          <div className="rb-tcard-text">
+            <span className="rb-tcard-over">{ui.card.over}</span>
+            <strong>{ui.card.text}</strong>
+            <i className="rb-tcard-rule" />
+            {ui.card.sub && <span className="rb-tcard-sub">{ui.card.sub}</span>}
+          </div>
+        </div>
+      )}
       {!overlay && (engine.touchMode ? <TouchControls engine={engine} /> : <DesktopBar engine={engine} />)}
       <SceneBars engine={engine} />
       {/* the frame-cost meter, with ?perf in the address (ui/PerfMeter.tsx; POLISH_PLAN.md piece 27) */}
@@ -1092,8 +1104,8 @@ function Dialogue({ engine }: { engine: SigilEngine }) {
                 Open the Riftgate
               </button>
             )}
-            {/* the season's keeper: the season's own page (its power, its Journey, its ladder) */}
-            {last && npc.service === 'season' && (
+            {/* the season, kept at the Riftgate too: its own page (its power, its Journey, its ladder) */}
+            {last && npc.service === 'rift' && (
               <button className="rb-btn is-small is-gold" onClick={() => engine.openPanel('season')}>
                 The Season
               </button>

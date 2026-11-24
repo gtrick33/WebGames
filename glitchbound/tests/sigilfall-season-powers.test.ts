@@ -17,7 +17,7 @@ import { readyHero } from './sigilfall-bot';
 
 /**
  * The Rift seasons' powers, Season 2 to 10 (the owner, 2026-11-23: "lets implement every single season and we can just
- * swap them every month"): each works in a Riftstone run of its own month and nowhere else, does what its keeper says,
+ * swap them every month"): each works in a Riftstone run of its own month and nowhere else, does what its page says,
  * and counts for the Journey's first chapter. (The Season of Hearts is sigilfall-seasons.test.ts's.)
  */
 
