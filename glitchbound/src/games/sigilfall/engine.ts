@@ -49,6 +49,7 @@ import { Steps } from './audio/steps';
 import { voiceSound } from './audio/voice';
 import type { Interactable } from './sim/types';
 import { emptyInput, World, type InputFrame } from './sim/world';
+import { FIRST_KEEPSAKE } from './data/items';
 import { advanceScene, endScene, previewScene, sceneDue } from './sim/scene';
 import { SCENES } from './data/scenes';
 import { applyPreset, PRESETS } from './progress/presets';
@@ -76,7 +77,16 @@ import { counted, fallProps, stopProps } from './progress/telemetry';
  * starts while one is waiting, so the tale is told in its order (the owner: "i do a dungeon and suddenly in my inventory
  * tab i see 4/7 sigils"; and a quest's ending, written in its reward, was never shown when it paid out by itself).
  */
-export type StoryPage = { kind: 'tale'; act: string } | { kind: 'find'; quest: string } | { kind: 'sigil'; sigil: SigilId } | { kind: 'deed'; quest: string };
+/** Kept on the hero once the page of their first skill-changing piece has been shown. */
+export const KEEPSAKE_SEEN = 'hint:keepsake';
+
+export type StoryPage =
+  | { kind: 'tale'; act: string }
+  | { kind: 'find'; quest: string }
+  | { kind: 'sigil'; sigil: SigilId }
+  | { kind: 'deed'; quest: string }
+  /** The first piece of gear that changes a skill (data/items.ts FIRST_KEEPSAKE): the piece, its gold line and the skill. */
+  | { kind: 'gear'; uid: string };
 
 /** A quest page in a dialogue: one offered (Accept), one to hand in (Complete), one just paid (a talk quest). */
 export interface DialoguePage {
@@ -792,6 +802,12 @@ export class SigilEngine {
           // in a Riftstone run, nothing about a piece picked up: it waits in the bag, the run is a race (the owner,
           // 2026-11-24: "if ur doing riftstones, it should not be visible as its distracting")
           else if (w.keyRun) break;
+          // the Coffin Matron's keepsake, the first piece that changes a skill: a page of its own, once (NINE_PLAN.md
+          // piece 3), in place of the strip or the card any other piece gets
+          else if (this.hero && ev.item.base === FIRST_KEEPSAKE && !this.hero.opened.includes(KEEPSAKE_SEEN)) {
+            this.hero.opened.push(KEEPSAKE_SEEN);
+            this.pages.push({ kind: 'gear', uid: ev.item.uid });
+          }
           // on a touch screen a piece worth wearing has the one strip at the top (ui/EquipAsk.tsx), not a card as well
           // (the owner: "double item notifications on collecting items, it should only be the one on top")
           else if (this.offerEquip(ev.item)) changed = true;
@@ -1698,7 +1714,7 @@ export class SigilEngine {
     if (page.kind === 'find' && this.hero && !this.hero.opened.includes(`kept:${page.quest}`)) this.hero.opened.push(`kept:${page.quest}`);
     this.kbm?.release();
     this.touch.release();
-    this.sound.play(page.kind === 'sigil' ? 'sigil' : page.kind === 'find' ? 'pickupBig' : page.kind === 'tale' ? 'bell' : 'quest');
+    this.sound.play(page.kind === 'sigil' ? 'sigil' : page.kind === 'find' || page.kind === 'gear' ? 'pickupBig' : page.kind === 'tale' ? 'bell' : 'quest');
     this.setUi({ story: page });
   }
 

@@ -163,7 +163,9 @@ export const BOSSES: Record<string, BossDef> = {
         ],
       },
     ],
-    first: { any: ['static-band'] },
+    // (her first fall gives every hero her keepsake, the first piece that changes a skill: data/items.ts
+    // FIRST_KEEPSAKE. Static Band, which she gave before, is among what she may drop every time)
+    first: { any: ['sextons-handbell'] },
     drops: { items: { any: ['static-band', 'thornmail', 'wardens-aegis'] }, chance: [0.25, 0.4, 0.6] },
     intro: 'The keeper of the crypt’s coffins. She hides in one and moves them around. Watch where she goes.',
   },

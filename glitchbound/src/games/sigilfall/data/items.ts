@@ -941,6 +941,26 @@ export const ITEMS: ItemDef[] = [
     lore: 'It hums under the breath when it is drawn. Nobody has ever caught the tune twice.',
     minLevel: 10,
   },
+  /* ---------------------------------------------------------- the Coffin Matron's keepsake
+   * The first boss most heroes meet gives this the first time she falls (data/bosses.ts `first`): the first piece of
+   * gear that changes how a skill works. One piece for every class, and it changes the attack every hero has whatever
+   * they go on to specialize in (a piece for each class's first skill went dead for the specializations that drop that
+   * skill: the owner, 2026-11-24). Unlike Static Band it works on every blow, not only on a critical one. */
+  {
+    id: 'sextons-handbell',
+    name: 'Sexton’s Handbell',
+    slot: 'relic',
+    rarity: 'epic',
+    icon: 'relic',
+    tint: '#ffd88a',
+    stats: [
+      { stat: 'power', base: 4, per: 0.9 },
+      { stat: 'crit', base: 2, per: 0.2 },
+    ],
+    mods: [{ t: 'skill', skill: 'basic', op: { op: 'onHit', effect: { kind: 'chain', jumps: 1, range: 64, mul: 0.5 } } }],
+    lore: 'Rung once at every burial in Briarhollow. Now it rings when you strike, and something else answers.',
+    minLevel: 3,
+  },
 ];
 
 // each zone's and dungeon's own items
@@ -1134,3 +1154,9 @@ export const STAT_WORD: Record<StatKey, string> = {
 
 /** Suffixes for rare generated gear. */
 export const RARE_SUFFIX = ['of the Tear', 'of Embers', 'of the Grove', 'of Dusk', 'of the Wolf', 'of Echoes', 'of the Deep', 'of Dawn', 'of Storms', 'of the Ash'];
+
+/**
+ * The Coffin Matron's keepsake (above): the first piece a hero is given that changes a skill. When it is first picked
+ * up the game makes a moment of it (engine.ts, ui/StoryPages.tsx GearView).
+ */
+export const FIRST_KEEPSAKE = 'sextons-handbell';
