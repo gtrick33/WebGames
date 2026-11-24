@@ -92,8 +92,19 @@ function statusText(s: StatusId, dur: number, power: number): string {
   }
 }
 
+/** A field on the ground, by its look. */
+const GROUND_WORD: Partial<Record<GroundSpec['look'], string>> = {
+  fire: 'burning ground',
+  poison: 'a poison cloud',
+  frost: 'a patch of frost',
+  holy: 'hallowed ground',
+  shadow: 'a pool of shadow',
+  lightning: 'a crackling field',
+  nature: 'a tangle of thorns',
+  rift: 'a trail of starlight',
+};
 function groundText(g: GroundSpec): string {
-  const what = g.heal ? 'healing ground' : g.look === 'fire' ? 'burning ground' : g.look === 'poison' ? 'a poison cloud' : g.look === 'frost' ? 'a patch of frost' : 'a hazard';
+  const what = g.heal ? 'healing ground' : (GROUND_WORD[g.look] ?? 'a hazard');
   return `leaves ${what} for ${secs(g.dur)}${g.pull ? ' that drags enemies in' : ''}`;
 }
 
@@ -116,7 +127,7 @@ export function effectText(e: Effect): string {
     case 'shield':
       return `shields you for ${Math.round(e.pct)}% of your health for ${secs(e.dur)}`;
     case 'nova':
-      return `releases a burst around you (${pct(e.mul)} damage${e.dmgType ? `, ${DMG_NAME[e.dmgType]}` : ''})`;
+      return `releases a burst around you (${pct(e.mul)} damage${e.dmgType ? `, ${DMG_NAME[e.dmgType]}` : ''})${e.status ? ` that ${statusText(e.status.status, e.status.dur, e.status.power)}` : ''}`;
     case 'shockwave':
       return `sends a shockwave rolling forward (${pct(e.mul)} damage)`;
     case 'ground':
@@ -132,7 +143,8 @@ export function effectText(e: Effect): string {
     case 'riftBurst':
       return `tears a rift that bursts after ${secs(e.delay)}`;
     case 'buff':
-      return buffText(e.buff);
+      // (after a skill's name: "Shield Wall gives Ninth Winter for 6 s: ...")
+      return `gives ${buffText(e.buff)}`;
     case 'resource':
       return `gives ${e.n} ${e.n === 1 ? 'point' : 'points'} of your resource`;
     case 'points':
@@ -140,7 +152,7 @@ export function effectText(e: Effect): string {
     case 'fear':
       return `terrifies enemies around it for ${secs(e.dur)}`;
     case 'summon':
-      return `calls ${e.count === 1 ? `a ${PETS[e.pet]?.name ?? 'companion'}` : `${e.count} ${PETS[e.pet]?.name ?? 'companion'}s`}${e.dur ? ` for ${secs(e.dur)}` : ''}`;
+      return `calls ${e.count === 1 ? `${/^[aeiou]/i.test(PETS[e.pet]?.name ?? 'c') ? 'an' : 'a'} ${PETS[e.pet]?.name ?? 'companion'}` : `${e.count} ${PETS[e.pet]?.name ?? 'companion'}s`}${e.dur ? ` for ${secs(e.dur)}` : ''}`;
     case 'sacrifice':
       return `costs you ${Math.round(e.pct)}% of your health`;
     case 'cleanse':
@@ -177,7 +189,7 @@ export function buffText(b: BuffDef): string {
   return `${b.name} for ${secs(b.dur)}: ${parts.join(', ')}`;
 }
 
-const skillName = (id: string): string => (id === '*' ? 'Every skill' : id === 'dodge' ? 'Your dodge' : id === 'basic' ? 'Your basic attack' : SKILLS[id]?.name ?? id);
+const skillName = (id: string): string => (id === '*' ? 'Every skill' : id === 'dodge' ? 'Your dodge' : id === 'basic' ? 'Your basic attack' : id === 'ult' ? 'Your ultimate' : SKILLS[id]?.name ?? id);
 
 /** One modifier on one skill, as a sentence. */
 export function opText(skill: string, op: SkillOp): string {

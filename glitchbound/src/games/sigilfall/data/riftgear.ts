@@ -1,3 +1,4 @@
+import { SLOT_LEGENDS, type LegendSlot } from './riftlegends';
 import type { ClassId, Effect, ItemDef, ItemIcon, Material, Mod, ProcDef, SkillOp, SlotId, StatKey } from './types';
 
 /**
@@ -15,8 +16,10 @@ import type { ClassId, Effect, ItemDef, ItemIcon, Material, Mod, ProcDef, SkillO
  *   make two of the hero's skills play off each other; six multiply the set's own skill several times over and set an
  *   echo of it loose, a copy of the hero's spell cast at the nearest foe by itself (data/types.ts Effect 'cast').
  *   The rules of a set at 2, 4 and 6, and of an echo, are the genre's (as in Diablo III); every name and word is ours.
- * - Legendaries, in orange: a power for the whole of a class's play, whatever the specialization, on the places a set
- *   leaves free (weapon, off-hand, amulet, relic); and a few for any class at all.
+ * - Legendaries, in orange: a power for the whole of a class's play, whatever the specialization; and a few for any
+ *   class at all. Then weapons, three for the class and two for each specialization (2026-11-23); and since
+ *   2026-11-24 every other place too (data/riftlegends.ts): on each, three for the class and one for each
+ *   specialization, so a hero can wear a legendary wherever a set piece would go, and choose between them.
  *
  * Which stone opens what is `RIFT_TIERS`, and the Rift guide in the game reads it from here.
  */
@@ -313,7 +316,7 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#d8d0c0',
     names: 'Duelist’s',
     lore: 'Worn by the last one standing at every duel it was ever in.',
-    two: { need: 2, text: 'Grievous Strike comes back a quarter sooner.', mods: [K('mortal-strike', { op: 'cooldown', pct: -25 })] },
+    two: { need: 2, text: 'Grievous Strike comes back a quarter sooner.', mods: [K('mortal-strike', { op: 'cooldown', pct: 25 })] },
     four: {
       need: 4,
       text: 'Grievous Strike sends a shockwave rolling forward for 80% of its damage and opens a wound that Bleeds for 40% of the hit a second.',
@@ -338,7 +341,7 @@ const SPEC_SETS: SetSpec[] = [
     four: {
       need: 4,
       text: 'Flame Pillar leaves the ground burning for 5 s and comes back 30% sooner.',
-      mods: [K('flamestrike', { op: 'onImpact', effect: { kind: 'ground', ground: { radius: 46, dur: 5, tick: 0.5, mul: 0.14, dmgType: 'fire', look: 'fire', status: { status: 'burn', dur: 3, power: 0.2 } } } }), K('flamestrike', { op: 'cooldown', pct: -30 })],
+      mods: [K('flamestrike', { op: 'onImpact', effect: { kind: 'ground', ground: { radius: 46, dur: 5, tick: 0.5, mul: 0.14, dmgType: 'fire', look: 'fire', status: { status: 'burn', dur: 3, power: 0.2 } } } }), K('flamestrike', { op: 'cooldown', pct: 30 })],
     },
     six: {
       need: 6,
@@ -415,7 +418,7 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#c8b89a',
     names: 'Snareweave',
     lore: 'Every seam is a knot that tightens when pulled.',
-    two: { need: 2, text: 'Bear Trap comes back 40% sooner.', mods: [K('bear-trap', { op: 'cooldown', pct: -40 })] },
+    two: { need: 2, text: 'Bear Trap comes back 40% sooner.', mods: [K('bear-trap', { op: 'cooldown', pct: 40 })] },
     four: {
       need: 4,
       text: 'Two more Bear Traps can lie at once, and each bursts as it snaps for 110% of its damage, leaving a Bleed.',
@@ -476,7 +479,7 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#e0b040',
     names: 'Oathwall',
     lore: 'It has a dent for every promise kept.',
-    two: { need: 2, text: 'Thrown Aegis comes back 30% sooner.', mods: [K('avengers-shield', { op: 'cooldown', pct: -30 })] },
+    two: { need: 2, text: 'Thrown Aegis comes back 30% sooner.', mods: [K('avengers-shield', { op: 'cooldown', pct: 30 })] },
     four: {
       need: 4,
       text: 'Bastion Strike bursts around you for 90% of its damage, and Thrown Aegis leaps to three more enemies.',
@@ -578,7 +581,7 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#7ab04a',
     names: 'Blightscribe’s',
     lore: 'Every page is a different handwriting, and all of it is a warning.',
-    two: { need: 2, text: 'Wild Hex comes back 40% sooner.', mods: [K('unstable-affliction', { op: 'cooldown', pct: -40 })] },
+    two: { need: 2, text: 'Wild Hex comes back 40% sooner.', mods: [K('unstable-affliction', { op: 'cooldown', pct: 40 })] },
     four: {
       need: 4,
       text: 'Wild Hex leaps to three more enemies and bursts on each, cursing all it reaches.',
@@ -618,7 +621,7 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#ff5a2a',
     names: 'Ruinsinger’s',
     lore: 'It says one word. Nobody has heard it twice.',
-    two: { need: 2, text: 'Ruin Bolt comes back a quarter sooner.', mods: [K('chaos-bolt', { op: 'cooldown', pct: -25 })] },
+    two: { need: 2, text: 'Ruin Bolt comes back a quarter sooner.', mods: [K('chaos-bolt', { op: 'cooldown', pct: 25 })] },
     four: {
       need: 4,
       text: 'Ruin Bolt bursts into four lesser bolts where it lands and leaves the ground burning.',
@@ -659,7 +662,7 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#e0c080',
     names: 'Lynxmother’s',
     lore: 'Still sharp. Still hers, really.',
-    two: { need: 2, text: 'Rip comes back 35% sooner.', mods: [K('rip', { op: 'cooldown', pct: -35 })] },
+    two: { need: 2, text: 'Rip comes back 35% sooner.', mods: [K('rip', { op: 'cooldown', pct: 35 })] },
     four: {
       need: 4,
       text: 'Rip leaps on to two more enemies, and every Claw mends you a little.',
@@ -700,7 +703,7 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#a02a3a',
     names: 'Creditor’s',
     lore: 'It collects. With interest.',
-    two: { need: 2, text: 'Hollow Ward comes back a quarter sooner.', mods: [K('hollow-ward', { op: 'cooldown', pct: -25 })] },
+    two: { need: 2, text: 'Hollow Ward comes back a quarter sooner.', mods: [K('hollow-ward', { op: 'cooldown', pct: 25 })] },
     four: {
       need: 4,
       text: 'Hollow Ward bursts around you for 180% of its damage and mends 6% of your health.',
@@ -840,17 +843,48 @@ const LEGENDARY_SPECS: LegendarySpec[] = [
   { id: 'rift-heartsong', name: 'Heartsong', slot: 'relic', icon: 'relic', tint: '#ff8ab8', stat: 'ultCharge', lore: 'It keeps time with whoever is bravest in the room.', mods: [S('ultCharge', 20), P('heartsong', 'ult', { kind: 'heal', pct: 25 }, 'Your ultimate mends 25% of your health.'), P('heartsong-cd', 'ult', { kind: 'cdr', s: 3 }, 'Your ultimate takes 3 s off every cooldown.')] },
 ];
 
+/** Damage, of any kind: what grows a point at a time on a legendary. */
+const DAMAGE_STATS: readonly StatKey[] = ['power', 'physical', 'fire', 'frost', 'lightning', 'poison', 'arcane', 'shadow', 'holy', 'nature'];
+/**
+ * The stat a legendary of 2026-11-24 leans to, as its second line (data/riftlegends.ts): damage grows as a set piece's
+ * does, and the stats worth more a point (critical chance, haste, a share of health, pets, healing, speed, the
+ * ultimate's charge) grow slower, so that none runs past its cap (progress/build.ts heroStats) on a high stone.
+ */
+const LEAN: Partial<Record<StatKey, { base: number; per: number }>> = {
+  crit: { base: 1, per: 0.12 },
+  critDmg: { base: 6, per: 0.5 },
+  haste: { base: 3, per: 0.15 },
+  armor: { base: 4, per: 1.1 },
+  hp: { base: 10, per: 2.6 },
+  hpPct: { base: 2, per: 0.08 },
+  pet: { base: 6, per: 0.3 },
+  healing: { base: 6, per: 0.3 },
+  speed: { base: 3, per: 0.08 },
+  ultCharge: { base: 6, per: 0.25 },
+  regen: { base: 0.5, per: 0.1 },
+  potion: { base: 10, per: 0.4 },
+};
+const lean = (s: StatKey): ItemDef['stats'][number] => ({ stat: s, ...(LEAN[s] ?? { base: 6, per: 0.9 }) });
+/** An armor legendary: its place's first stat, as a set piece has it, and what it leans to (or the place's second). */
+const worn = (slot: SetSlot, s: StatKey): ItemDef['stats'] => {
+  const [first, second] = SET_STATS[slot] as [ItemDef['stats'][number], ItemDef['stats'][number]];
+  return [first, s === first.stat ? second : lean(s)];
+};
+
+// (what a legendary of before leans to keeps its numbers: the off-hands' armor and damage, the amulets' and relics'
+// damage, pets, speed, armor, healing, haste and charge, the rings' power and critical chance. Only the stats none
+// of them leaned to take `lean`)
 const LEGENDARY_STATS: Record<SlotId, (stat: StatKey) => ItemDef['stats']> = {
   weapon: (s) => [{ stat: 'power', base: 9, per: 1.7 }, { stat: s, base: 8, per: 1.2 }],
-  offhand: (s) => [{ stat: s === 'armor' ? 'armor' : 'power', base: 6, per: 1.3 }, { stat: s === 'armor' ? 'hp' : s, base: s === 'armor' ? 14 : 6, per: s === 'armor' ? 3.2 : 1.1 }],
-  amulet: (s) => [{ stat: 'power', base: 5, per: 0.9 }, { stat: s, base: 6, per: s === 'pet' || s === 'speed' || s === 'armor' ? 0.5 : 1.1 }],
-  relic: (s) => [{ stat: 'power', base: 5, per: 0.9 }, { stat: s, base: 6, per: s === 'pet' || s === 'healing' || s === 'haste' || s === 'ultCharge' ? 0.4 : 1.1 }],
-  ring: (s) => [{ stat: 'power', base: 4, per: 0.9 }, { stat: s === 'crit' ? 'critDmg' : 'hp', base: 6, per: s === 'crit' ? 0.6 : 2 }],
-  head: () => [],
-  chest: () => [],
-  legs: () => [],
-  hands: () => [],
-  feet: () => [],
+  offhand: (s) => [{ stat: s === 'armor' ? 'armor' : 'power', base: 6, per: 1.3 }, s === 'armor' ? { stat: 'hp', base: 14, per: 3.2 } : DAMAGE_STATS.includes(s) ? { stat: s, base: 6, per: 1.1 } : lean(s)],
+  amulet: (s) => [{ stat: 'power', base: 5, per: 0.9 }, s === 'pet' || s === 'speed' || s === 'armor' ? { stat: s, base: 6, per: 0.5 } : DAMAGE_STATS.includes(s) ? { stat: s, base: 6, per: 1.1 } : lean(s)],
+  relic: (s) => [{ stat: 'power', base: 5, per: 0.9 }, s === 'pet' || s === 'healing' || s === 'haste' || s === 'ultCharge' ? { stat: s, base: 6, per: 0.4 } : DAMAGE_STATS.includes(s) ? { stat: s, base: 6, per: 1.1 } : lean(s)],
+  ring: (s) => [{ stat: 'power', base: 4, per: 0.9 }, s === 'crit' ? { stat: 'critDmg', base: 6, per: 0.6 } : s === 'power' ? { stat: 'hp', base: 6, per: 2 } : lean(s)],
+  head: (s) => worn('head', s),
+  chest: (s) => worn('chest', s),
+  legs: (s) => worn('legs', s),
+  hands: (s) => worn('hands', s),
+  feet: (s) => worn('feet', s),
 };
 
 const LEGENDARY_ITEMS: ItemDef[] = LEGENDARY_SPECS.map((u) => ({
@@ -895,7 +929,7 @@ const PTS = (n: number): Effect => ({ kind: 'points', n });
 const WEAPON_SPECS: WeaponSpec[] = [
   /* warrior */
   { cls: 'warrior', id: 'rift-quarrel-of-kings', name: 'Quarrel of Kings', icon: 'sword', tint: '#c8b080', stat: 'physical', lore: 'Two kings drew it at once. It chose neither.', mods: [K('heavy-strike', { op: 'damage', pct: 60 }), K('heavy-strike', { op: 'onCast', effect: { kind: 'resource', n: 10 } })] },
-  { cls: 'warrior', id: 'rift-anvilbreaker', name: 'Anvilbreaker', icon: 'hammer', tint: '#8a8a9a', stat: 'physical', lore: 'The smith who made it never made another anvil.', mods: [K('charge', { op: 'onImpact', effect: { kind: 'explode', radius: 52, mul: 1.2 } }), K('charge', { op: 'cooldown', pct: -30 })] },
+  { cls: 'warrior', id: 'rift-anvilbreaker', name: 'Anvilbreaker', icon: 'hammer', tint: '#8a8a9a', stat: 'physical', lore: 'The smith who made it never made another anvil.', mods: [K('charge', { op: 'onImpact', effect: { kind: 'explode', radius: 52, mul: 1.2 } }), K('charge', { op: 'cooldown', pct: 30 })] },
   { cls: 'warrior', id: 'rift-wolfjaw-cleaver', name: 'Wolfjaw Cleaver', icon: 'axe', tint: '#a8a8a0', stat: 'physical', lore: 'It bites where the last one bled.', mods: [K('cleave', { op: 'bonusVs', status: 'bleed', pct: 40 }), K('cleave', { op: 'arc', pct: 50 }), K('cleave', { op: 'onKill', effect: { kind: 'resetCd', skill: 'charge' } })] },
   { cls: 'warrior', spec: 0, id: 'rift-ravening-maw', name: 'The Ravening Maw', icon: 'axe', tint: '#b8202a', stat: 'physical', lore: 'It is never full. It has stopped pretending to be.', mods: [K('bloodthirst', { op: 'damage', pct: 80 }), K('bloodthirst', { op: 'onHit', effect: PTS(1) })] },
   { cls: 'warrior', spec: 0, id: 'rift-frenzy-edge', name: 'Frenzy-Edge', icon: 'sword', tint: '#e04040', stat: 'physical', lore: 'The faster it is swung, the lighter it gets.', mods: [P('frenzy-edge', 'kill', { kind: 'buff', buff: { id: 'rift-frenzy-edge', name: 'Frenzy', dur: 5, color: '#e04040', max: 5, stats: { haste: 6, power: 4 } } }, 'Every kill: +6% haste and +4% damage for 5 s, stacking five times.'), K('red-tempest', { op: 'duration', pct: 30 })] },
@@ -912,31 +946,31 @@ const WEAPON_SPECS: WeaponSpec[] = [
   { cls: 'mage', spec: 1, id: 'rift-thundercall', name: 'Thundercall', icon: 'staff', tint: '#6ad8ff', stat: 'lightning', lore: 'Raise it and the sky answers. It does not ask twice.', mods: [K('ball-lightning', { op: 'damage', pct: 80 }), K('ball-lightning', { op: 'onHit', effect: PTS(1) })] },
   { cls: 'mage', spec: 1, id: 'rift-conductors-wand', name: 'Conductor’s Wand', icon: 'wand', tint: '#a8f0ff', stat: 'lightning', lore: 'The storm keeps time to it.', mods: [K('chain-lightning', { op: 'extra', key: 'jumps', n: 2, label: 'leaps' }), P('conductor', 'crit', ECHO('chain-lightning', 0.8), 'A critical hit: an echo of Chain Lightning (once every 2 s).', { icd: 2 })] },
   { cls: 'mage', spec: 2, id: 'rift-winterkeep', name: 'Winterkeep', icon: 'staff', tint: '#b8e8ff', stat: 'frost', lore: 'It keeps a winter in it, for later.', mods: [K('blizzard', { op: 'damage', pct: 80 }), P('winterkeep', 'hit', { kind: 'resetCd', skill: 'ice-lance' }, 'Ice Storm striking an enemy may make Ice Javelin ready at once (one in three, once a second).', { skill: 'blizzard', chance: 0.34, icd: 1 })] },
-  { cls: 'mage', spec: 2, id: 'rift-northshard', name: 'Northshard', icon: 'wand', tint: '#8ac8ff', stat: 'frost', lore: 'Broken from the top of the world.', mods: [K('ice-lance', { op: 'pierce', n: 2 }), K('ice-lance', { op: 'bonusVs', status: 'freeze', pct: 60 }), K('frost-nova', { op: 'cooldown', pct: -30 })] },
+  { cls: 'mage', spec: 2, id: 'rift-northshard', name: 'Northshard', icon: 'wand', tint: '#8ac8ff', stat: 'frost', lore: 'Broken from the top of the world.', mods: [K('ice-lance', { op: 'pierce', n: 2 }), K('ice-lance', { op: 'bonusVs', status: 'freeze', pct: 60 }), K('frost-nova', { op: 'cooldown', pct: 30 })] },
   /* ranger */
   { cls: 'ranger', id: 'rift-windstring', name: 'Windstring', icon: 'bow', tint: '#c8e8d0', stat: 'physical', lore: 'The wind strung it. The wind still plays it.', mods: [K('arrow', { op: 'projectiles', n: 1, spread: 0.2 }), K('arrow', { op: 'damage', pct: 25 })] },
   { cls: 'ranger', id: 'rift-hunters-reach', name: 'Hunter’s Reach', icon: 'bow', tint: '#d8c890', stat: 'physical', lore: 'Further than you can see, and then a little.', mods: [K('arrow', { op: 'range', pct: 30 }), K('*', { op: 'bonusVs', status: 'far', pct: 30 })] },
   { cls: 'ranger', id: 'rift-blackfeather', name: 'Blackfeather', icon: 'bow', tint: '#3a3a4a', stat: 'poison', lore: 'Its arrows land without a sound. So do you.', mods: [K('tumble', { op: 'trail', ground: { radius: 22, dur: 3, tick: 0.5, mul: 0.12, dmgType: 'poison', look: 'poison', status: { status: 'poison', dur: 3, power: 0.2 } } }), P('blackfeather', 'dodge', { kind: 'buff', buff: { id: 'rift-blackfeather', name: 'Unseen', dur: 3, color: '#6a6a8a', stats: { power: 20, crit: 10 } } }, 'Every Tumble: +20% damage and +10% critical chance for 3 s.')] },
   { cls: 'ranger', spec: 0, id: 'rift-patient-death', name: 'Patient Death', icon: 'bow', tint: '#e8d8a0', stat: 'physical', lore: 'It waits. It is very good at waiting.', mods: [K('aimed-shot', { op: 'damage', pct: 80 }), P('patient-death', 'crit', PTS(1), 'A critical hit gives a Poise (once every 0.5 s).', { icd: 0.5 })] },
-  { cls: 'ranger', spec: 0, id: 'rift-truesight', name: 'Truesight', icon: 'bow', tint: '#f0e8c0', stat: 'physical', lore: 'Nothing hides from it. Some things have stopped trying.', mods: [K('piercing-arrow', { op: 'pierce', n: 3 }), K('hunters-mark', { op: 'cooldown', pct: -30 }), K('aimed-shot', { op: 'onKill', effect: { kind: 'resetCd', skill: 'aimed-shot' } })] },
+  { cls: 'ranger', spec: 0, id: 'rift-truesight', name: 'Truesight', icon: 'bow', tint: '#f0e8c0', stat: 'physical', lore: 'Nothing hides from it. Some things have stopped trying.', mods: [K('piercing-arrow', { op: 'pierce', n: 3 }), K('hunters-mark', { op: 'cooldown', pct: 30 }), K('aimed-shot', { op: 'onKill', effect: { kind: 'resetCd', skill: 'aimed-shot' } })] },
   { cls: 'ranger', spec: 1, id: 'rift-tanglewood', name: 'Tanglewood', icon: 'bow', tint: '#8a9a5a', stat: 'poison', lore: 'Strung with a vine that is not quite dead.', mods: [K('bear-trap', { op: 'damage', pct: 80 }), K('bear-trap', { op: 'onHit', effect: PTS(1) })] },
   { cls: 'ranger', spec: 1, id: 'rift-tarbrand', name: 'Tarbrand', icon: 'bow', tint: '#4a3a2a', stat: 'poison', lore: 'Sticky, and getting stickier.', mods: [K('poison-trap', { op: 'area', pct: 40 }), K('explosive-shot', { op: 'charges', n: 1 }), K('explosive-shot', { op: 'bonusVs', status: 'poison', pct: 40 })] },
-  { cls: 'ranger', spec: 2, id: 'rift-howling-yew', name: 'Howling Yew', icon: 'bow', tint: '#c8b890', stat: 'pet', lore: 'Draw it, and every dog for a mile looks up.', mods: [S('pet', 40), K('call-wolf', { op: 'cooldown', pct: -30 })] },
+  { cls: 'ranger', spec: 2, id: 'rift-howling-yew', name: 'Howling Yew', icon: 'bow', tint: '#c8b890', stat: 'pet', lore: 'Draw it, and every dog for a mile looks up.', mods: [S('pet', 40), K('call-wolf', { op: 'cooldown', pct: 30 })] },
   { cls: 'ranger', spec: 2, id: 'rift-hawkspire', name: 'Hawkspire', icon: 'bow', tint: '#e0c080', stat: 'pet', lore: 'A hawk nests on it. Nobody remembers asking her.', mods: [S('pet', 20), EVERY('hawkspire', 6, 'hawk-call', 1, 'Every 6 s in a fight: an echo of Hawk Call.')] },
   /* paladin */
   { cls: 'paladin', id: 'rift-dawnhammer', name: 'Dawnhammer', icon: 'hammer', tint: '#ffe08a', stat: 'holy', lore: 'It rings in the morning, whether or not it is struck.', mods: [K('crusader-strike', { op: 'damage', pct: 40 }), K('crusader-strike', { op: 'gen', n: 1 })] },
-  { cls: 'paladin', id: 'rift-sunsteel-brand', name: 'Sunsteel Brand', icon: 'sword', tint: '#fff0b0', stat: 'holy', lore: 'Forged at noon, on the longest day.', mods: [K('judgment', { op: 'cooldown', pct: -30 }), K('judgment', { op: 'onHit', effect: { kind: 'explode', radius: 44, mul: 0.8, dmgType: 'holy' } })] },
+  { cls: 'paladin', id: 'rift-sunsteel-brand', name: 'Sunsteel Brand', icon: 'sword', tint: '#fff0b0', stat: 'holy', lore: 'Forged at noon, on the longest day.', mods: [K('judgment', { op: 'cooldown', pct: 30 }), K('judgment', { op: 'onHit', effect: { kind: 'explode', radius: 44, mul: 0.8, dmgType: 'holy' } })] },
   { cls: 'paladin', id: 'rift-gavel-of-mercy', name: 'Gavel of Mercy', icon: 'hammer', tint: '#e8d0a0', stat: 'healing', lore: 'It has never once found anyone guilty who was not.', mods: [K('hammer-of-justice', { op: 'charges', n: 1 }), K('hammer-of-justice', { op: 'onHit', effect: { kind: 'heal', pct: 1.5 } })] },
   { cls: 'paladin', spec: 0, id: 'rift-matins', name: 'Matins', icon: 'hammer', tint: '#fff2c0', stat: 'holy', lore: 'The first prayer of the day, said with a hammer.', mods: [K('holy-shock', { op: 'damage', pct: 80 }), K('holy-shock', { op: 'onHit', effect: PTS(1) })] },
-  { cls: 'paladin', spec: 0, id: 'rift-noonlight', name: 'Noonlight', icon: 'sword', tint: '#ffe9a0', stat: 'holy', lore: 'It casts no shadow, at any hour.', mods: [K('lance-of-noon', { op: 'damage', pct: 60 }), K('word-of-glory', { op: 'cooldown', pct: -30 })] },
+  { cls: 'paladin', spec: 0, id: 'rift-noonlight', name: 'Noonlight', icon: 'sword', tint: '#ffe9a0', stat: 'holy', lore: 'It casts no shadow, at any hour.', mods: [K('lance-of-noon', { op: 'damage', pct: 60 }), K('word-of-glory', { op: 'cooldown', pct: 30 })] },
   { cls: 'paladin', spec: 1, id: 'rift-wardens-oath', name: 'Warden’s Oath', icon: 'hammer', tint: '#d0a040', stat: 'armor', lore: 'It took the oath for you, and keeps it.', mods: [K('shield-of-the-righteous', { op: 'damage', pct: 70 }), P('wardens-oath', 'hurt', PTS(1), 'A blow taken gives a Valor (once a second).', { icd: 1 })] },
   { cls: 'paladin', spec: 1, id: 'rift-the-long-throw', name: 'The Long Throw', icon: 'sword', tint: '#e0c070', stat: 'armor', lore: 'It always comes back. It has never once been asked to.', mods: [K('avengers-shield', { op: 'bounce', n: 2 }), K('avengers-shield', { op: 'damage', pct: 60 })] },
   { cls: 'paladin', spec: 2, id: 'rift-edictor', name: 'Edictor', icon: 'sword', tint: '#fff8d8', stat: 'holy', lore: 'Two edges, two verdicts, one sentence.', mods: [K('templars-verdict', { op: 'damage', pct: 80 }), K('templars-verdict', { op: 'onKill', effect: PTS(1) })] },
   { cls: 'paladin', spec: 2, id: 'rift-dawnwrath', name: 'Dawnwrath', icon: 'hammer', tint: '#ffcf5a', stat: 'holy', lore: 'Its anger rises with the sun.', mods: [K('divine-storm', { op: 'area', pct: 30 }), P('dawnwrath', 'ult', ECHO('templars-verdict', 1, 3), 'Your ultimate calls three echoes of Twin Edict after it.')] },
   /* priest */
   { cls: 'priest', id: 'rift-vespers', name: 'Vespers', icon: 'staff', tint: '#ffe9c0', stat: 'holy', lore: 'The evening prayer, kept in wood.', mods: [K('smite', { op: 'damage', pct: 40 }), P('vespers', 'tick', { kind: 'heal', pct: 2 }, 'Every 3 s in a fight: 2% of your health back.', { icd: 3 })] },
-  { cls: 'priest', id: 'rift-mirrorwand', name: 'Mirrorwand', icon: 'wand', tint: '#c8c8ff', stat: 'shadow', lore: 'What it shows you is true, mostly.', mods: [K('mind-blast', { op: 'cooldown', pct: -25 }), P('mirrorwand', 'crit', { kind: 'cdr', s: 0.5 }, 'A critical hit takes 0.5 s off every cooldown (once every 0.3 s).', { icd: 0.3 })] },
-  { cls: 'priest', id: 'rift-pilgrims-crook', name: 'Pilgrim’s Crook', icon: 'staff', tint: '#d8c8a0', stat: 'healing', lore: 'It has walked every road there is. Twice.', mods: [K('power-word-shield', { op: 'cooldown', pct: -30 }), P('pilgrims-crook', 'dodge', { kind: 'shield', pct: 10, dur: 4 }, 'Every Swift Feather shields you for 10% of your health for 4 s.')] },
+  { cls: 'priest', id: 'rift-mirrorwand', name: 'Mirrorwand', icon: 'wand', tint: '#c8c8ff', stat: 'shadow', lore: 'What it shows you is true, mostly.', mods: [K('mind-blast', { op: 'cooldown', pct: 25 }), P('mirrorwand', 'crit', { kind: 'cdr', s: 0.5 }, 'A critical hit takes 0.5 s off every cooldown (once every 0.3 s).', { icd: 0.3 })] },
+  { cls: 'priest', id: 'rift-pilgrims-crook', name: 'Pilgrim’s Crook', icon: 'staff', tint: '#d8c8a0', stat: 'healing', lore: 'It has walked every road there is. Twice.', mods: [K('power-word-shield', { op: 'cooldown', pct: 30 }), P('pilgrims-crook', 'dodge', { kind: 'shield', pct: 10, dur: 4 }, 'Every Swift Feather shields you for 10% of your health for 4 s.')] },
   { cls: 'priest', spec: 0, id: 'rift-candlewick', name: 'Candlewick', icon: 'staff', tint: '#ffd890', stat: 'holy', lore: 'It burns at both ends and is never shorter.', mods: [K('penance', { op: 'damage', pct: 80 }), K('penance', { op: 'onHit', effect: PTS(1) })] },
   { cls: 'priest', spec: 0, id: 'rift-grace-note', name: 'Grace Note', icon: 'wand', tint: '#fff0d0', stat: 'healing', lore: 'One note, held. Everything near it heals.', mods: [K('holy-nova', { op: 'area', pct: 30 }), K('holy-nova', { op: 'onCast', effect: { kind: 'heal', pct: 4 } })] },
   { cls: 'priest', spec: 1, id: 'rift-the-psalter', name: 'The Psalter', icon: 'staff', tint: '#ffd27a', stat: 'holy', lore: 'Every psalm in it ends in fire.', mods: [K('holy-fire', { op: 'damage', pct: 80 }), K('holy-fire', { op: 'onHit', effect: PTS(1) })] },
@@ -946,11 +980,11 @@ const WEAPON_SPECS: WeaponSpec[] = [
   /* warlock */
   { cls: 'warlock', id: 'rift-witchfire', name: 'Witchfire', icon: 'staff', tint: '#8a4aff', stat: 'shadow', lore: 'It burns purple, and cold.', mods: [K('shadow-bolt', { op: 'damage', pct: 40 }), K('shadow-bolt', { op: 'onHit', effect: { kind: 'status', status: 'burn', dur: 3, power: 0.25 } })] },
   { cls: 'warlock', id: 'rift-tithing-wand', name: 'Tithing Wand', icon: 'wand', tint: '#a02a3a', stat: 'shadow', lore: 'It takes a tenth of everything. It gives back more.', mods: [K('drain-life', { op: 'damage', pct: 50 }), K('drain-life', { op: 'onHit', effect: { kind: 'heal', pct: 1 } })] },
-  { cls: 'warlock', id: 'rift-gatekeepers-rod', name: 'Gatekeeper’s Rod', icon: 'wand', tint: '#6a3a9a', stat: 'shadow', lore: 'It opens one door. Nobody has seen what is behind it and come back.', mods: [P('gatekeeper', 'dodge', { kind: 'riftBurst', radius: 52, mul: 2.4, delay: 0.5 }, 'Every Demonic Step leaves a gate where you stood that bursts after a moment.'), K('fear', { op: 'cooldown', pct: -30 })] },
+  { cls: 'warlock', id: 'rift-gatekeepers-rod', name: 'Gatekeeper’s Rod', icon: 'wand', tint: '#6a3a9a', stat: 'shadow', lore: 'It opens one door. Nobody has seen what is behind it and come back.', mods: [P('gatekeeper', 'dodge', { kind: 'riftBurst', radius: 52, mul: 2.4, delay: 0.5 }, 'Every Demonic Step leaves a gate where you stood that bursts after a moment.'), K('fear', { op: 'cooldown', pct: 30 })] },
   { cls: 'warlock', spec: 0, id: 'rift-malison', name: 'Malison', icon: 'staff', tint: '#5a8a3a', stat: 'shadow', lore: 'A curse in wood, carved to fit the hand.', mods: [K('unstable-affliction', { op: 'damage', pct: 80 }), K('unstable-affliction', { op: 'onHit', effect: PTS(1) })] },
   { cls: 'warlock', spec: 0, id: 'rift-rotscribe', name: 'Rotscribe', icon: 'wand', tint: '#7a9a4a', stat: 'shadow', lore: 'It writes a word and the word goes bad.', mods: [K('corruption', { op: 'onHit', effect: { kind: 'chain', jumps: 2, range: 80, mul: 0.8, dmgType: 'shadow' } }), P('rotscribe', 'kill', { kind: 'cdr', s: 1 }, 'A Cursed enemy that dies takes 1 s off every cooldown (once every 0.5 s).', { status: 'curse', icd: 0.5 })] },
   { cls: 'warlock', spec: 1, id: 'rift-the-pit-key', name: 'The Pit Key', icon: 'staff', tint: '#c84a3a', stat: 'pet', lore: 'It opens the pit. Closing it is your own affair.', mods: [S('pet', 40), K('summon-imp', { op: 'onCast', effect: { kind: 'summon', pet: 'imp', count: 1, dur: 0 } })] },
-  { cls: 'warlock', spec: 1, id: 'rift-chainward', name: 'Chainward', icon: 'wand', tint: '#a8502a', stat: 'pet', lore: 'Every link was a promise. Most were kept.', mods: [K('summon-felguard', { op: 'cooldown', pct: -30 }), P('chainward', 'ult', { kind: 'summon', pet: 'imp', count: 2, dur: 15 }, 'Your ultimate calls two imps to the fight for 15 s.')] },
+  { cls: 'warlock', spec: 1, id: 'rift-chainward', name: 'Chainward', icon: 'wand', tint: '#a8502a', stat: 'pet', lore: 'Every link was a promise. Most were kept.', mods: [K('summon-felguard', { op: 'cooldown', pct: 30 }), P('chainward', 'ult', { kind: 'summon', pet: 'imp', count: 2, dur: 15 }, 'Your ultimate calls two imps to the fight for 15 s.')] },
   { cls: 'warlock', spec: 2, id: 'rift-cataclast', name: 'Cataclast', icon: 'staff', tint: '#ff4a1a', stat: 'fire', lore: 'It does not break things. It reminds them they were always broken.', mods: [K('chaos-bolt', { op: 'damage', pct: 80 }), P('cataclast', 'crit', PTS(1), 'A critical hit gives a Doom (once every 0.5 s).', { icd: 0.5 })] },
   { cls: 'warlock', spec: 2, id: 'rift-brimfall', name: 'Brimfall', icon: 'wand', tint: '#ff7a2a', stat: 'fire', lore: 'The sky over it is always a little red.', mods: [K('rain-of-fire', { op: 'area', pct: 40 }), K('rain-of-fire', { op: 'duration', pct: 40 })] },
   /* druid */
@@ -965,14 +999,14 @@ const WEAPON_SPECS: WeaponSpec[] = [
   { cls: 'druid', spec: 2, id: 'rift-den-mothers-crook', name: 'Den Mother’s Crook', icon: 'staff', tint: '#8a6a4a', stat: 'armor', lore: 'She leaned on it. Nothing ever leaned on her.', mods: [K('maul', { op: 'damage', pct: 60 }), K('maul', { op: 'onHit', effect: { kind: 'heal', pct: 1 } })] },
   /* gloam knight */
   { cls: 'gloamknight', id: 'rift-duskreaver', name: 'Duskreaver', icon: 'sword', tint: '#5a4a90', stat: 'shadow', lore: 'It reaps at dusk, and dusk comes when it says.', mods: [K('gloam-cleave', { op: 'damage', pct: 40 }), K('gloam-cleave', { op: 'onHit', effect: { kind: 'status', status: 'curse', dur: 4, power: 0.3, chance: 0.2 } })] },
-  { cls: 'gloamknight', id: 'rift-gravecallers-edge', name: 'Gravecaller’s Edge', icon: 'sword', tint: '#4a4a6a', stat: 'shadow', lore: 'Graves turn over when it passes.', mods: [K('shadow-lunge', { op: 'cooldown', pct: -30 }), K('shadow-lunge', { op: 'onImpact', effect: { kind: 'nova', radius: 50, mul: 1, dmgType: 'shadow' } })] },
+  { cls: 'gloamknight', id: 'rift-gravecallers-edge', name: 'Gravecaller’s Edge', icon: 'sword', tint: '#4a4a6a', stat: 'shadow', lore: 'Graves turn over when it passes.', mods: [K('shadow-lunge', { op: 'cooldown', pct: 30 }), K('shadow-lunge', { op: 'onImpact', effect: { kind: 'nova', radius: 50, mul: 1, dmgType: 'shadow' } })] },
   { cls: 'gloamknight', id: 'rift-the-oathless', name: 'The Oathless', icon: 'sword', tint: '#2a2a3a', stat: 'armor', lore: 'It swore nothing. It owes nothing. It keeps you anyway.', mods: [P('oathless', 'dodge', { kind: 'shield', pct: 12, dur: 4 }, 'Every Stand Fast shields you for 12% of your health for 4 s.'), K('night-mantle', { op: 'duration', pct: 40 })] },
   { cls: 'gloamknight', spec: 0, id: 'rift-debtors-blade', name: 'The Debtor’s Blade', icon: 'sword', tint: '#a02a3a', stat: 'shadow', lore: 'It remembers what is owed to the coin.', mods: [K('hollow-ward', { op: 'damage', pct: 80 }), P('debtors-blade', 'hurt', PTS(1), 'A blow taken gives a Vengeance (once a second).', { icd: 1 })] },
-  { cls: 'gloamknight', spec: 0, id: 'rift-crimson-vow', name: 'Crimson Vow', icon: 'sword', tint: '#c03040', stat: 'shadow', lore: 'Sworn in blood, and it keeps the blood too.', mods: [P('crimson-vow', 'ult', { kind: 'heal', pct: 20 }, 'Your ultimate mends 20% of your health.'), K('black-oath', { op: 'cooldown', pct: -30 })] },
+  { cls: 'gloamknight', spec: 0, id: 'rift-crimson-vow', name: 'Crimson Vow', icon: 'sword', tint: '#c03040', stat: 'shadow', lore: 'Sworn in blood, and it keeps the blood too.', mods: [P('crimson-vow', 'ult', { kind: 'heal', pct: 20 }, 'Your ultimate mends 20% of your health.'), K('black-oath', { op: 'cooldown', pct: 30 })] },
   { cls: 'gloamknight', spec: 1, id: 'rift-worldsplitter', name: 'Worldsplitter', icon: 'sword', tint: '#3a2a6a', stat: 'physical', lore: 'It was made to cut a world in two. It has been practicing.', mods: [K('sundering-dark', { op: 'damage', pct: 80 }), K('sundering-dark', { op: 'onHit', effect: PTS(1) })] },
   { cls: 'gloamknight', spec: 1, id: 'rift-heavy-heart', name: 'Heavy Heart', icon: 'sword', tint: '#5a5a7a', stat: 'physical', lore: 'It weighs as much as everything it has ever ended.', mods: [K('dread-leap', { op: 'onImpact', effect: { kind: 'shockwave', length: 130, width: 26, mul: 0.8 } }), K('mourning-arc', { op: 'arc', pct: 40 })] },
   { cls: 'gloamknight', spec: 2, id: 'rift-omenblade', name: 'Omenblade', icon: 'sword', tint: '#7a6aa0', stat: 'shadow', lore: 'Every swing of it is a small prophecy.', mods: [K('creeping-dread', { op: 'damage', pct: 80 }), K('creeping-dread', { op: 'onKill', effect: PTS(1) })] },
-  { cls: 'gloamknight', spec: 2, id: 'rift-tollkeeper', name: 'Tollkeeper', icon: 'sword', tint: '#9a8ac0', stat: 'shadow', lore: 'Every soul pays it something on the way through.', mods: [K('dread-toll', { op: 'cooldown', pct: -30 }), P('tollkeeper', 'kill', ECHO('dread-toll', 1), 'A Cursed enemy that dies: an echo of Dread Toll (once every 1.5 s).', { status: 'curse', icd: 1.5 })] },
+  { cls: 'gloamknight', spec: 2, id: 'rift-tollkeeper', name: 'Tollkeeper', icon: 'sword', tint: '#9a8ac0', stat: 'shadow', lore: 'Every soul pays it something on the way through.', mods: [K('dread-toll', { op: 'cooldown', pct: 30 }), P('tollkeeper', 'kill', ECHO('dread-toll', 1), 'A Cursed enemy that dies: an echo of Dread Toll (once every 1.5 s).', { status: 'curse', icd: 1.5 })] },
 ];
 
 const WEAPON_ITEMS: ItemDef[] = WEAPON_SPECS.map((u) => ({
@@ -991,8 +1025,35 @@ const WEAPON_ITEMS: ItemDef[] = WEAPON_SPECS.map((u) => ({
   ...(u.spec !== undefined ? { forSpec: u.spec } : {}),
 }));
 
-/** Every Rift-forged piece: the sets (the class's, then the specializations'), the legendaries, then the weapons. */
-export const RIFT_ITEMS: ItemDef[] = [...SET_ITEMS, ...LEGENDARY_ITEMS, ...WEAPON_ITEMS];
+/* ------------------------------------------------------------------ a legendary on every other place (data/riftlegends.ts) */
+
+/** What an off-hand of each class looks like (the class's own off-hand, data/items.ts BASES). */
+const OFFHAND_ICON: Record<ClassId, ItemIcon> = { warrior: 'shield', paladin: 'shield', mage: 'orb', druid: 'orb', gloamknight: 'orb', ranger: 'quiver', priest: 'tome', warlock: 'tome' };
+const ARMOR: readonly LegendSlot[] = ['head', 'chest', 'legs', 'hands', 'feet'];
+/** A legendary's look on its place, for its class: armor of what the class wears, as its set pieces are. */
+const legendIcon = (cls: ClassId, slot: LegendSlot): ItemIcon => (slot === 'offhand' ? OFFHAND_ICON[cls] : slot === 'amulet' || slot === 'relic' ? slot : ICON[WEAR[cls]][slot]);
+
+// (the class's own come with its legendaries, at the second stone; a specialization's with its set and weapons, at
+// the third)
+const SLOT_ITEMS: ItemDef[] = SLOT_LEGENDS.map((u) => ({
+  id: u.id,
+  name: u.name,
+  slot: u.slot,
+  rarity: 'legendary' as const,
+  cls: u.cls,
+  icon: u.icon ?? legendIcon(u.cls, u.slot),
+  tint: u.tint,
+  ...(ARMOR.includes(u.slot) ? { mat: WEAR[u.cls] } : {}),
+  stats: LEGENDARY_STATS[u.slot](u.stat),
+  mods: u.mods,
+  lore: u.lore,
+  minLevel: 60,
+  rift: u.spec === undefined ? RIFT_TIERS.classLegendary : RIFT_TIERS.specSet,
+  ...(u.spec !== undefined ? { forSpec: u.spec } : {}),
+}));
+
+/** Every Rift-forged piece: the sets (the class's, then the specializations'), the legendaries, the weapons, then the rest. */
+export const RIFT_ITEMS: ItemDef[] = [...SET_ITEMS, ...LEGENDARY_ITEMS, ...WEAPON_ITEMS, ...SLOT_ITEMS];
 
 /** The set an item belongs to, if it belongs to one. */
 export const setOf = (item: Pick<ItemDef, 'set'> | undefined): SetDef | undefined => (item?.set ? SETS[item.set] : undefined);
