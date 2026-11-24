@@ -316,7 +316,7 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#d8d0c0',
     names: 'Duelist’s',
     lore: 'Worn by the last one standing at every duel it was ever in.',
-    two: { need: 2, text: 'Grievous Strike comes back a quarter sooner.', mods: [K('mortal-strike', { op: 'cooldown', pct: -25 })] },
+    two: { need: 2, text: 'Grievous Strike comes back a quarter sooner.', mods: [K('mortal-strike', { op: 'cooldown', pct: 25 })] },
     four: {
       need: 4,
       text: 'Grievous Strike sends a shockwave rolling forward for 80% of its damage and opens a wound that Bleeds for 40% of the hit a second.',
@@ -341,7 +341,7 @@ const SPEC_SETS: SetSpec[] = [
     four: {
       need: 4,
       text: 'Flame Pillar leaves the ground burning for 5 s and comes back 30% sooner.',
-      mods: [K('flamestrike', { op: 'onImpact', effect: { kind: 'ground', ground: { radius: 46, dur: 5, tick: 0.5, mul: 0.14, dmgType: 'fire', look: 'fire', status: { status: 'burn', dur: 3, power: 0.2 } } } }), K('flamestrike', { op: 'cooldown', pct: -30 })],
+      mods: [K('flamestrike', { op: 'onImpact', effect: { kind: 'ground', ground: { radius: 46, dur: 5, tick: 0.5, mul: 0.14, dmgType: 'fire', look: 'fire', status: { status: 'burn', dur: 3, power: 0.2 } } } }), K('flamestrike', { op: 'cooldown', pct: 30 })],
     },
     six: {
       need: 6,
@@ -418,7 +418,7 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#c8b89a',
     names: 'Snareweave',
     lore: 'Every seam is a knot that tightens when pulled.',
-    two: { need: 2, text: 'Bear Trap comes back 40% sooner.', mods: [K('bear-trap', { op: 'cooldown', pct: -40 })] },
+    two: { need: 2, text: 'Bear Trap comes back 40% sooner.', mods: [K('bear-trap', { op: 'cooldown', pct: 40 })] },
     four: {
       need: 4,
       text: 'Two more Bear Traps can lie at once, and each bursts as it snaps for 110% of its damage, leaving a Bleed.',
@@ -479,7 +479,7 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#e0b040',
     names: 'Oathwall',
     lore: 'It has a dent for every promise kept.',
-    two: { need: 2, text: 'Thrown Aegis comes back 30% sooner.', mods: [K('avengers-shield', { op: 'cooldown', pct: -30 })] },
+    two: { need: 2, text: 'Thrown Aegis comes back 30% sooner.', mods: [K('avengers-shield', { op: 'cooldown', pct: 30 })] },
     four: {
       need: 4,
       text: 'Bastion Strike bursts around you for 90% of its damage, and Thrown Aegis leaps to three more enemies.',
@@ -581,7 +581,7 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#7ab04a',
     names: 'Blightscribe’s',
     lore: 'Every page is a different handwriting, and all of it is a warning.',
-    two: { need: 2, text: 'Wild Hex comes back 40% sooner.', mods: [K('unstable-affliction', { op: 'cooldown', pct: -40 })] },
+    two: { need: 2, text: 'Wild Hex comes back 40% sooner.', mods: [K('unstable-affliction', { op: 'cooldown', pct: 40 })] },
     four: {
       need: 4,
       text: 'Wild Hex leaps to three more enemies and bursts on each, cursing all it reaches.',
@@ -621,7 +621,7 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#ff5a2a',
     names: 'Ruinsinger’s',
     lore: 'It says one word. Nobody has heard it twice.',
-    two: { need: 2, text: 'Ruin Bolt comes back a quarter sooner.', mods: [K('chaos-bolt', { op: 'cooldown', pct: -25 })] },
+    two: { need: 2, text: 'Ruin Bolt comes back a quarter sooner.', mods: [K('chaos-bolt', { op: 'cooldown', pct: 25 })] },
     four: {
       need: 4,
       text: 'Ruin Bolt bursts into four lesser bolts where it lands and leaves the ground burning.',
@@ -662,7 +662,7 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#e0c080',
     names: 'Lynxmother’s',
     lore: 'Still sharp. Still hers, really.',
-    two: { need: 2, text: 'Rip comes back 35% sooner.', mods: [K('rip', { op: 'cooldown', pct: -35 })] },
+    two: { need: 2, text: 'Rip comes back 35% sooner.', mods: [K('rip', { op: 'cooldown', pct: 35 })] },
     four: {
       need: 4,
       text: 'Rip leaps on to two more enemies, and every Claw mends you a little.',
@@ -703,7 +703,7 @@ const SPEC_SETS: SetSpec[] = [
     tint: '#a02a3a',
     names: 'Creditor’s',
     lore: 'It collects. With interest.',
-    two: { need: 2, text: 'Hollow Ward comes back a quarter sooner.', mods: [K('hollow-ward', { op: 'cooldown', pct: -25 })] },
+    two: { need: 2, text: 'Hollow Ward comes back a quarter sooner.', mods: [K('hollow-ward', { op: 'cooldown', pct: 25 })] },
     four: {
       need: 4,
       text: 'Hollow Ward bursts around you for 180% of its damage and mends 6% of your health.',

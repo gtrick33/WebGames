@@ -306,3 +306,28 @@ describe('Sigilfall: what a place’s legendary does goes off in a fight', () =>
     expect(quiet).toEqual([]);
   }, 300_000);
 });
+
+describe('Sigilfall: a cooldown bonus brings its skill back sooner (2026-11-24)', () => {
+  // (a cooldown's percentage is how much sooner: build.ts multiplies the wait by 1 - pct/100. Thirteen weapons and
+  // eight set bonuses were written with it negative, "comes back a quarter sooner" making the skill a quarter slower)
+  it('never has a negative cooldown on an item or a set bonus', () => {
+    const wrong: string[] = [];
+    const look = (where: string, mods: Mod[]) => {
+      for (const m of mods) if (m.t === 'skill' && m.op.op === 'cooldown' && m.op.pct <= 0) wrong.push(`${where}: ${m.skill} ${m.op.pct}`);
+    };
+    for (const d of Object.values(ITEM_DEFS)) look(d.id, d.mods);
+    for (const set of Object.values(SETS)) for (const b of set.bonuses) look(`${set.id} (${b.need})`, b.mods);
+    expect(wrong).toEqual([]);
+  });
+
+  it('shortens the wait as the words say', () => {
+    const c = readyHero('warrior', 60, 'epic', 5, 0);
+    const before = buildHero(c).skills['mortal-strike']!.spec.cooldown;
+    const set = Object.values(SETS).find((s) => s.bonuses.some((b) => b.mods.some((m) => m.t === 'skill' && m.skill === 'mortal-strike' && m.op.op === 'cooldown')))!;
+    for (const id of set.pieces.slice(0, 2)) {
+      const it = makeItem(id, 80)!;
+      c.equip[ITEM_DEFS[id]!.slot] = it;
+    }
+    expect(buildHero(c).skills['mortal-strike']!.spec.cooldown).toBeLessThan(before);
+  });
+});
