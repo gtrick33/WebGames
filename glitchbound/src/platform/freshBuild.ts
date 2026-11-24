@@ -31,8 +31,16 @@ export function reloadForNewBuild(): boolean {
  * is never cancelled: cancelling makes Vite resolve the import with `undefined`, which React.lazy
  * then crashed on (issue #19). Left alone, the import fails with the stale-build error that every
  * `fresh()` import and the game stage already turn into a quiet wait for the reload.
+ *
+ * Vite sends the same event for anything an import's own promise fails with, not only a missing file:
+ * `import('./x').then((m) => m.callTheApi())` arrives here with the API's error when that call fails. That is
+ * not a deploy. Reloading for it restarted a slow first visit in the middle of a game's files and dropped the
+ * Play from the address (found on a slow-4G run of Sigilfall, 2026-11-24). So the page reloads only when what
+ * failed says a file is gone; an event that says nothing of its cause is treated as before.
  */
-export const onPreloadError = (): void => {
+export const onPreloadError = (e?: Event): void => {
+  const cause = (e as (Event & { payload?: unknown }) | undefined)?.payload;
+  if (cause !== undefined && !isStaleBuildError(cause)) return;
   reloadForNewBuild();
 };
 
