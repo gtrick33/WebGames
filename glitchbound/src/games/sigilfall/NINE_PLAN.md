@@ -395,12 +395,13 @@ the rows is the line.)
   player's title shows no hero at all) would take about 2.4 MB, a third, off a slow line's wait. It changes the
   model builder and every menu that draws a hero; it is a piece of its own, after real phones have said how long
   the wait is.
-- **Found, in shared code, not changed:** `src/main.tsx` reloads the page on any `vite:preloadError`, taking it for a
+- **Found, in shared code, fixed in a pull request of its own:** `src/main.tsx` reloads the page on any `vite:preloadError`, taking it for a
   deploy. One of the site's first calls to its API failing (the call follows a lazily loaded part, so its failure
   arrives as that event) reloads the page once, in the middle of the game's files on a slow line, and the reload
   drops `?play=1`. Seen here because the test serves the site without its API; a real player meets it when that
   call fails on a bad line. The fix is one line (reload only when the error is a missing file:
-  `isStaleBuildError`), in the site's own start-up: the owner's go-ahead first.
+  `isStaleBuildError`), in the site's own start-up. The owner said yes (2026-11-24): it is #362, built on
+  `pre-release` alone.
 - **Frames.** The picture already steps down by itself on a machine that can't keep up (`render3d/pace.ts`), with a
   Light setting and a battery saver, so no new quality tier was added. Frames a second can't be measured here (a
   software graphics card under a slowed processor says nothing about a phone); draw calls and triangles are the
