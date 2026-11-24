@@ -39,7 +39,7 @@ requests open.**
 | 4 | Quests up to the Prologue's standard, one pull request per act | `claude/sf9-quests-act1` … `-act6` | | not started | 1 |
 | 5 | Sound with its own character | `claude/sf9-sound-mix`, `-music`, `-voices` | | not started | 1 |
 | 6 | One standard, act by act | `claude/sf9-standard-act1` … `-act6` | | not started | 2, 4 (the same act's) |
-| 7 | Phone and network readiness | `claude/sf9-phone` | #PRNUM | open | 1 |
+| 7 | Phone and network readiness | `claude/sf9-phone` | #361 | open | 1 |
 | 8 | The rough edges | `claude/sf9-rough-edges` | | not started | 1 |
 | 9 | Ready for players | `claude/sf9-playtest` | | not started | 1 |
 | 10 | The release bar | `claude/sf9-release` | | not started | all of them, merged |
@@ -367,7 +367,7 @@ the first fight; frame times in the heaviest battles (the chapel door, the crowd
 boss, a full Vigil night); memory over 30 minutes; touch play. What falls short is fixed (quality tiers chosen by the
 device, lazy loading). A short checklist for the owner to run on a real phone.
 
-**Done in #PRNUM (2026-11-24).** Measured with Chromium as a phone on its side (844 × 390, touch), the production
+**Done in #361 (2026-11-24).** Measured with Chromium as a phone on its side (844 × 390, touch), the production
 build, a first visit with nothing cached:
 
 | Line | The title is up | The first fight begins | Sent by then |
@@ -375,6 +375,7 @@ build, a first visit with nothing cached:
 | No limit | 10.1 s | 23.4 s | 6.8 MB at the title, 12.0 MB at the fight |
 | Fast 4G (9 Mbit/s, 60 ms) | 12.6 s | 26.1 s | 6.7 MB, 11.8 MB |
 | Slow 4G (1.6 Mbit/s, 150 ms) | 41.1 s | 54.5 s | 6.7 MB, 7.8 MB (the music is still coming) |
+| Slow 4G, and the processor slowed four times | 40.4 s | 55.5 s | 6.7 MB, 7.7 MB |
 
 (The seconds include the script's own reading pace and this machine's software graphics card; the difference between
 the rows is the line.)
