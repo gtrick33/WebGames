@@ -3,6 +3,23 @@
 First pass 2026-10-27, fixes the same day. A working record of licenses, names and borrowed material, for the
 owner (and a lawyer, if one is asked). It is **not legal advice** and not a trademark clearance.
 
+## Bosses of their own (2026-11-24)
+
+The pass to 9/10 (NINE_PLAN.md, piece 2) gives each boss a figure of its own in place of a soldier's model scaled up.
+The first, **the Coffin Matron**, is made only of packs the game already ships and credits: the **Complete KayKit
+Collection v8** by Kay Lousberg (its `License.txt`, read 2026-11-24: Creative Commons Zero). From it: the Witch (Mystery
+Monthly), the Skeleton Mage's arms (Skeletons), the coffin (Halloween Bits) and the shovel (RPG Tools Bits). CC0 allows
+commercial use in a web game, changing the models and shipping converted files, and asks for no credit; credit is given
+anyway (CREDITS_AND_LICENSES.md). The pack stays on the owner's machine (`~/Downloads`, where the builder reads it); only
+the built file ships (`public/games/sigilfall/3d/k/boss_matron.pack`). What else she wears (the veil, the candles on her
+crown) is built in code for this game (`render3d/bossKit.ts`).
+
+Her look is her own story's: an old woman of the dead who keeps the crypt's coffins and hides in one. No other game's
+character, art or signature colors were used or looked at for her; her name and title are unchanged. The owner's
+`~/Desktop/sigilfall assets` folder was checked for models first: it holds 2D packs and the KayKit Dungeon Pack only (no
+creatures), so nothing of it is used here. Quaternius's **Ultimate Monsters** (`~/Downloads`, its `License.txt`: CC0 1.0)
+is on the machine and unused so far; it is recorded here when a boss first takes a part from it.
+
 ## A Rift legendary on every place (2026-11-24)
 
 The owner asked for "a legendary for each spec and 3 legendaries common for the class" on every item slot. What is taken

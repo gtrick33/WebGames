@@ -157,8 +157,16 @@ hero is one draw call and a dye is a few bytes rewritten). The packs stay out of
   helmets look different and the same one always looks the same; rarity shows in the cut, dye and trim. The hero's
   look (`render/art/hero.ts`) is what they dress from; heads by hair style (`heads.ts`); skills have moves of their
   own (`moves.ts`).
-- **Creatures** (`kits.ts`, `repaint.ts`, `beast.ts`): every creature name has its model; a boss is its soldiers'
-  model repainted part by part and fitted with what it wears.
+- **Creatures** (`kits.ts`, `repaint.ts`, `beast.ts`): every creature name has its model.
+- **Bosses** (`bossKit.ts`; NINE_PLAN.md, piece 2): a boss is being given a figure of its own, one at a time, the
+  Coffin Matron first. Its file (`3d/k/boss_<id>.pack`, made by `SIGILFALL_ONLY=bosses node
+  scripts/sigilfall-3d-assets.mjs`) is parts of several of the packs' characters on one skeleton, with things from the
+  packs tied to its bones. In the browser it is painted part by part, what the packs have nothing for is built onto it
+  in code, it carries itself its own way (a turn laid over its skeleton's clips: a stoop, a breath), and it makes a
+  move of its own for each attack the rules give it, for its entrance, a phase changing, a daze and its fall. A boss
+  not yet reached is still its soldiers' model repainted and fitted with what it wears (the `boss()` lines at the end
+  of `kits.ts`). `node scripts/sigilfall-boss-shots.mjs --boss <id>` pictures every state of a boss's fight for
+  review, and `tests/sigilfall-bosses-own.test.ts` holds each to its budget, its footprint and its moves.
 - **Effects**: every spell, shot, flame and warning on the ground is drawn by the graphics card in the world
   (`render/effects.ts` says what each looks like and hands it to `fx3d.ts`), at its true depth: a wall hides what is
   behind it. Only names, bars, numbers and speech are drawn on the 2D layer over the picture.

@@ -26,7 +26,7 @@ requests open.**
 | # | Piece | Branch | Pull request | State | Needs first |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Baseline and plan | `claude/sf9-baseline` | #355 | open | nothing |
-| 2a | Boss pipeline and the Coffin Matron | `claude/sf9-boss-matron` | | not started | 1 |
+| 2a | Boss pipeline and the Coffin Matron | `claude/sf9-boss-matron` | (this one) | open | 1 (#355) |
 | 2b | Bosses: the Prologue (Ossric, Morgrave, Grimtusk) | `claude/sf9-bosses-prologue` | | not started | 2a |
 | 2c | Bosses: Act I (Gallows Keep) | `claude/sf9-bosses-act1` | | not started | 2a |
 | 2d | Bosses: Act II (the Barrow of Kings, the Crown Catacombs) | `claude/sf9-bosses-act2` | | not started | 2a |
@@ -283,9 +283,9 @@ attacks (`sim/patterns/<dungeon>.ts`) and its arena are read when its turn comes
 
 The lands' named foes (70 in `data/zones/*`, the story's own among them: the Grey Lady, Prince Thistlemourn, the
 Tearborn, the Gatewarden, the Weeping Lord, the Lich of Hollowmere, Vosk) come last, the story's first. A Riftstone
-run is the dungeon itself, so its bosses are the same ones. The Vigil's bosses carry a creature's sprite
-(`vigil/sim.ts`, `bossSprite`); where it and the Ring draw one of these is looked up in 2a, and each pull request
-looks at them.
+run is the dungeon itself, so its bosses are the same ones. The Vigil's champions are the lands' named foes and
+creatures (`vigil/kit.ts`: the Grey Lady, the Headless Lord and others), none of them a dungeon's boss, so they change
+with piece 2i; the Ring shows no boss.
 
 **Order.** 2a: the Coffin Matron, the first boss a player meets, as the showcase and to prove the pipeline. Then each
 act's bosses and the finale's (2b to 2h, rows 2 to 28). Then the rest (2i, rows 29 to 43 and the named foes).

@@ -3,6 +3,7 @@
  * only the files this writes to public/games/sigilfall/3d/ ship). Run by hand when the model list changes:
  *
  *   node scripts/sigilfall-3d-assets.mjs            (reads the packs from ~/Downloads)
+ *   SIGILFALL_ONLY=bosses node scripts/sigilfall-3d-assets.mjs     (only the bosses' own files, k/boss_*.pack)
  *   SIGILFALL_PACKS=/some/dir node scripts/sigilfall-3d-assets.mjs
  *
  * Every model becomes plain numbers with its colors baked into the vertices (the packs' textures are swatch
@@ -1811,6 +1812,101 @@ function builtKits(says) {
   says('bear', bearKit('bear', { main: '#7a5234', dark: '#4a2e1c', light: '#b99468' }).write('k/bear.pack'));
 }
 
+/* ------------------------------------------------------------------ bosses of their own */
+
+/**
+ * A boss is a figure of its own (src/games/sigilfall/NINE_PLAN.md, piece 2): parts of several of the packs' characters
+ * on one skeleton, some of them grown (a head, hands), and things from the packs tied to its bones. Its colors, what is
+ * built onto it in the browser and how it moves are the game's (render3d/kits.ts, render3d/bossKit.ts). Each is a file
+ * of its own, `k/boss_<id>.pack`: `SIGILFALL_ONLY=bosses` builds these alone and touches no other file.
+ *
+ * - `from`: the characters it is made of, and which of each one's parts (by name).
+ * - `grow`: joints whose flesh is made bigger or smaller about the joint, with everything that hangs below it.
+ * - `ties`: things tied to a joint: `at` from the joint (the figure's own right, up, forward), `size`, `turn` about
+ *   x, y and z in degrees, and `tint` multiplied into its colors.
+ */
+const BOSS_KITS = {
+  // The Coffin Matron, Mother of the Ossuary: an old woman of the dead in the Witch's long dress, with the dead's own
+  // arms (the Skeleton Mage's), who carries the coffin she hides in on her back and a sexton's spade beside it.
+  boss_matron: {
+    rig: 'medium',
+    from: [['Witch', /Body|Head|Leg/], [`${SK}Mage`, /Arm/]],
+    grow: [['head', 1.12], ['hand.l', 1.45], ['hand.r', 1.45]],
+    ties: [
+      { bit: 'coffin', joint: 'chest', at: [0, -0.2, -0.62], size: 1.05, turn: [-96, 0, 0], tint: [0.62, 0.56, 0.6] },
+      { bit: 'shovel', joint: 'chest', at: [0.78, 0.25, -0.5], size: 1.5, turn: [0, 0, 172], tint: [0.8, 0.78, 0.8] },
+    ],
+  },
+};
+
+const quatOf = (rx, ry, rz) => new THREE.Quaternion().setFromEuler(new THREE.Euler((rx * Math.PI) / 180, (ry * Math.PI) / 180, (rz * Math.PI) / 180, 'YXZ')).toArray();
+
+/** The model with what hangs from one joint, and from every joint under it, made `k` times its size about that joint. */
+function grown(m, rig, jointName, k) {
+  const j = rig.joints.indexOf(jointName);
+  if (j < 0) throw new Error(`no joint ${jointName}`);
+  const under = new Uint8Array(rig.joints.length);
+  under[j] = 1;
+  for (let i = 0; i < rig.joints.length; i++) if (rig.parents[i] >= 0 && under[rig.parents[i]]) under[i] = 1;
+  const world = invert(rig.ibm.slice(j * 16, j * 16 + 16));
+  const c = [world[12], world[13], world[14]];
+  const pos = new Float32Array(m.pos);
+  for (let v = 0; v < m.n; v++) {
+    // (a vertex shared with the joint above grows by its share, so the wrist stays joined to the arm)
+    const w = (under[m.skin[v * 3]] ? m.skin[v * 3 + 2] / 255 : 0) + (under[m.skin[v * 3 + 1]] ? 1 - m.skin[v * 3 + 2] / 255 : 0);
+    if (!w) continue;
+    const f = 1 + (k - 1) * w;
+    for (let a = 0; a < 3; a++) pos[v * 3 + a] = c[a] + (m.pos[v * 3 + a] - c[a]) * f;
+  }
+  return { ...m, pos };
+}
+
+/** A thing from the packs tied to a joint: turned and sized, then set `at` from where the joint is at rest. */
+function tiedTo(m, rig, t) {
+  const j = rig.joints.indexOf(t.joint);
+  if (j < 0) throw new Error(`no joint ${t.joint}`);
+  const k = t.size ?? 1;
+  const world = mul(invert(rig.ibm.slice(j * 16, j * 16 + 16)), trs(t.at ?? [0, 0, 0], quatOf(...(t.turn ?? [0, 0, 0])), [k, k, k]));
+  const pos = new Float32Array(m.n * 3);
+  const nor = new Float32Array(m.n * 3);
+  const skin = new Uint8Array(m.n * 3);
+  const col = t.tint ? Uint8Array.from(m.col, (x, i) => Math.min(255, Math.round(x * t.tint[i % 3]))) : m.col;
+  for (let v = 0; v < m.n; v++) {
+    pos.set(point(world, m.pos[v * 3], m.pos[v * 3 + 1], m.pos[v * 3 + 2]), v * 3);
+    const d = dirOf(world, m.nor[v * 3], m.nor[v * 3 + 1], m.nor[v * 3 + 2]);
+    const l = Math.hypot(d[0], d[1], d[2]) || 1;
+    nor.set([d[0] / l, d[1] / l, d[2] / l], v * 3);
+    skin[v * 3] = j;
+    skin[v * 3 + 1] = j;
+    skin[v * 3 + 2] = 255;
+  }
+  return { n: m.n, pos, nor, col, skin, idx: m.idx };
+}
+
+async function bossKits(says, medium, large) {
+  for (const [id, spec] of Object.entries(BOSS_KITS)) {
+    const rig = spec.rig === 'large' ? large : medium;
+    const list = [];
+    for (const [char, which] of spec.from) {
+      const doc = loadGltf(findChar(char));
+      const own = whichRig(doc, medium, large).rig === 'medium' ? medium : large;
+      for (const [name, part] of Object.entries(await partsOf(doc, own))) {
+        if (!which.test(name)) continue;
+        list.push(own === rig ? part : moveToRig(part, own, rig));
+      }
+    }
+    let body = joinParts(list);
+    for (const [joint, k] of spec.grow ?? []) body = grown(body, rig, joint, k);
+    const all = [body];
+    for (const t of spec.ties ?? []) all.push(tiedTo(await propOf(findBit(t.bit)), rig, t));
+    const pack = new Pack();
+    pack.addMesh('body', joinParts(all));
+    pack.meshes.body.rig = spec.rig;
+    const m = pack.meshes.body;
+    says(`${id} (${Math.round(m.i / 3)} triangles, ${(m.max[0] - m.min[0]).toFixed(2)} wide, ${(m.max[1] - m.min[1]).toFixed(2)} tall, ${(m.max[2] - m.min[2]).toFixed(2)} deep)`, pack.write(`k/${id}.pack`));
+  }
+}
+
 async function main() {
   mkdirSync(OUT, { recursive: true });
   const report = [];
@@ -1832,6 +1928,13 @@ async function main() {
 
   const knight = loadGltf(join(SRC, CHARS, 'Knight.glb'));
   const bigOne = loadGltf(join(SRC, CHARS, 'Barbarian_Large.glb'));
+
+  // (only the bosses' own files: nothing else is written, so no other model changes)
+  if (process.env.SIGILFALL_ONLY === 'bosses') {
+    await bossKits(says, rigFrom(knight), rigFrom(bigOne));
+    console.log(report.join('\n'));
+    return;
+  }
 
   // the two shared skeletons and their clips
   const rigPack = new Pack();
@@ -1932,6 +2035,7 @@ async function main() {
   };
   for (const [id, n] of Object.entries(ANIMALS)) await addOwn(id, join(SRC, 'Ultimate Animated Animals - July 2021/glTF', `${n}.gltf`));
   await mountKits(says);
+  await bossKits(says, medium, large);
 
   // the land
   for (const [file, set] of [['nature', NATURE], ['town', TOWN], ['indoor', INDOOR]]) {
