@@ -43,6 +43,7 @@ requests open.**
 | 8 | The rough edges | `claude/sf9-rough-edges` | | not started | 1 |
 | 9 | Ready for players | `claude/sf9-playtest` | | not started | 1 |
 | 10 | The release bar | `claude/sf9-release` | | not started | all of them, merged |
+| 11 | What would make it more fun (added by the owner: see its own section) | 11a and 11e in pieces 8 and 9; `claude/sf9-open-world`, `-vigil-return`, `-fewer-legends` | | not started | the playtest (11b); the owner's go-ahead (11c, 11d) |
 
 Every branch is cut from `origin/pre-release` in its own worktree. A piece that needs an earlier one that hasn't merged
 yet is built on that branch instead, and its pull request says which to merge first.
@@ -389,6 +390,24 @@ the numbers.
 Everything in the regression bar, measured against the baseline with all the pieces merged. Brings POLISH_PLAN.md,
 SIGILFALL_QA.md, DESIGN.md, CREDITS_AND_LICENSES.md and LEGAL_REVIEW.md up to date and gives a short readiness
 report: what was verified, how, and what wasn't.
+
+## Added by the owner: what would make it more fun (2026-11-24)
+
+A second review, of the gameplay alone, rated it about 7/10 "built on the right ideas" (the Ring 8, boss mechanics 8,
+campaign combat 7, the build system 8 on paper, the Vigil 6, the Riftstone 6 to 7 and unproven) and ended on five
+points. The owner added them to this pass. The review judged the design and the numbers, not how the game feels in the
+hand, and said so; it asked that the two changes of feel wait for what testers say.
+
+| # | The point | Where it goes | Before it is done |
+| --- | --- | --- | --- |
+| 11a | **Measure feel in the playtest.** Ask testers directly whether combat feels good, and be ready to speed up the basic attack. The basic attack is slowed on purpose (`paceBasics` in `progress/build.ts`: at most about 1.7 a second, "the skills carry the fight"), while the first-timer's hint says the opposite ("Your strikes do most of the work, so keep them coming", `progress/tips.ts`). | Piece 9: the question goes in `PLAYTEST_GUIDE.md`, and the pace becomes one number that can be turned without touching anything else. Piece 8: the hint is made to say what the game does. | The pace itself changes only after testers have answered. |
+| 11b | **Drop one of the open-world penalties.** A pack in the open lands has 1.8 times a dungeon's health and pays half the experience, so killing what is in front of you is both slower and worth less. | A small piece of its own after the playtest, `claude/sf9-open-world`. | **The owner chooses which one goes** (the health or the experience), after testers have played. Either changes how fast a hero levels: the campaign and bot tests are run again, and PROGRESSION_BALANCE.md brought up to date. |
+| 11c | **Give the Vigil a reason to come back:** spells from other classes in a run (or unlocked over time), something earned that lasts between runs, and a weekly challenge run. | Its own piece, `claude/sf9-vigil-return`, after piece 10. | **The owner's go-ahead on scope.** The brief put new modes and systems out of scope, and these are three new systems (a shared spell pool, lasting progress with its save fields, a weekly run with its seed and ranking). Each needs a short design first. |
+| 11d | **Fewer, more distinct legendaries in the endgame.** About 500 with the Rift's 419: no player can learn them all, and a chase works when each piece is memorable. | Its own piece, `claude/sf9-fewer-legends`, after piece 10. | **The owner's go-ahead, and a number.** The 419 were asked for on 2026-11-24 ("a legendary for each spec and 3 legendaries common for the class" on every slot). Taking pieces away needs a save migration for heroes who hold them (the finished hero of the save fixtures wears seven) and the brief's rule on endgame balance lifted. |
+| 11e | **Feature the Ring for playtesters.** It is the strongest mode and the quickest to enjoy. | Piece 9: `PLAYTEST_GUIDE.md` sends testers to the Ring first or second, and the title screen is looked at for whether a new player finds it. | Nothing. |
+
+So 11a and 11e are done inside pieces 8 and 9. 11b waits for the playtest and one choice. 11c and 11d are new work past
+what the brief allowed, and wait for the owner to say how far to go.
 
 ## Found while taking the baseline
 
