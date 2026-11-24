@@ -1,0 +1,124 @@
+{
+  "commit": "7dacaa4593b8f5beeaa8c40f05ba5819f3743d9f",
+  "saveVersion": 15,
+  "madeAt": "2026-11-24T12:00:00.000Z",
+  "saves": {
+    "mid-prologue.json": {
+      "cls": "mage",
+      "name": "Ilse",
+      "level": 3,
+      "region": "briarhollow",
+      "done": 6,
+      "active": [
+        "briar-hold-the-door"
+      ],
+      "sigils": 0,
+      "keystone": 0,
+      "lost": [],
+      "bytes": 1853
+    },
+    "mid-act-3.json": {
+      "cls": "ranger",
+      "name": "Corin",
+      "level": 36,
+      "region": "glimmerwood",
+      "done": 65,
+      "active": [
+        "hidden-grove",
+        "russet-hides",
+        "appleby-apples",
+        "tobins-fields",
+        "ashby-farm",
+        "borrowed-arrows",
+        "stormhoof",
+        "houndsmound",
+        "scorpions-in-the-well",
+        "the-sand-ship",
+        "khamsin",
+        "scarab-seals",
+        "the-moonwell",
+        "the-moth-glade",
+        "bloomrot",
+        "silvaines-song"
+      ],
+      "sigils": 2,
+      "keystone": 0,
+      "lost": [],
+      "bytes": 6680
+    },
+    "finished-riftward.json": {
+      "cls": "warrior",
+      "name": "Bryn",
+      "level": 60,
+      "region": "riftward",
+      "done": 215,
+      "active": [],
+      "sigils": 7,
+      "keystone": 16,
+      "lost": [],
+      "riftRuns": [
+        {
+          "region": "crypt",
+          "stone": 1,
+          "up": -1
+        },
+        {
+          "region": "gallows-keep",
+          "stone": 1,
+          "up": 3
+        },
+        {
+          "region": "smugglers-grotto",
+          "stone": 1,
+          "up": 3
+        },
+        {
+          "region": "rotmother-cistern",
+          "stone": 1,
+          "up": 3
+        },
+        {
+          "region": "deepforge-halls",
+          "stone": 1,
+          "up": 3
+        },
+        {
+          "region": "crypt",
+          "stone": 1,
+          "up": -1
+        },
+        {
+          "region": "gallows-keep",
+          "stone": 4,
+          "up": 3
+        },
+        {
+          "region": "gallows-keep",
+          "stone": 7,
+          "up": 3
+        },
+        {
+          "region": "crypt",
+          "stone": 1,
+          "up": 3
+        },
+        {
+          "region": "gallows-keep",
+          "stone": 10,
+          "up": 3
+        },
+        {
+          "region": "gallows-keep",
+          "stone": 13,
+          "up": 3
+        },
+        {
+          "region": "crypt",
+          "stone": 4,
+          "up": 3
+        }
+      ],
+      "bytes": 12473
+    }
+  }
+}
