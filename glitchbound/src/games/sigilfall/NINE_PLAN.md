@@ -40,7 +40,7 @@ requests open.**
 | 5 | Sound with its own character | `claude/sf9-sound-mix`, `-music`, `-voices` | | not started | 1 |
 | 6 | One standard, act by act | `claude/sf9-standard-act1` … `-act6` | | not started | 2, 4 (the same act's) |
 | 7 | Phone and network readiness | `claude/sf9-phone` | | not started | 1 |
-| 8 | The rough edges | `claude/sf9-rough-edges` | #PRNUM | open | 1 |
+| 8 | The rough edges | `claude/sf9-rough-edges` | #359 | open | 1 |
 | 9 | Ready for players | `claude/sf9-playtest` | | not started | 1 |
 | 10 | The release bar | `claude/sf9-release` | | not started | all of them, merged |
 | 11 | What would make it more fun (added by the owner: see its own section) | 11a and 11e in pieces 8 and 9; `claude/sf9-open-world`, `-vigil-return`, `-fewer-legends` | | not started | the playtest (11b); the owner's go-ahead (11c, 11d) |
@@ -374,7 +374,7 @@ The three from the review: the hint card over Mara's speech, and anything else t
 way to play full screen, without changing other games' pages: if it can't be done inside Sigilfall's own page, it goes
 to the owner first). Then a hunt: every panel, dialog and shop at the three sizes, with keyboard and with touch.
 
-**Done in #PRNUM (2026-11-24):**
+**Done in #359 (2026-11-24):**
 
 - While a first-timer's hint card is up, nothing is spoken on the screen (`renderer.hushed`); the line is there when
   the card is put down. `node scripts/sigilfall-overlap-check.mjs --hints` is the run the baseline lacked: a new hero
