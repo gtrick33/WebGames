@@ -1,0 +1,947 @@
+[
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "prologue-dusk",
+  "file": "phone/beat-01-prologue-dusk.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "prologue-raid",
+  "file": "phone/beat-02-prologue-raid.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "prologue-toll",
+  "file": "phone/beat-03-prologue-toll.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "prologue-rider",
+  "file": "phone/beat-04-prologue-rider.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "prologue-inn",
+  "file": "phone/beat-05-prologue-inn.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "camp-dawn",
+  "file": "phone/beat-06-camp-dawn.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "hearthstead",
+  "file": "phone/beat-07-hearthstead.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "hearth-ram",
+  "file": "phone/beat-08-hearth-ram.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "hearth-morning",
+  "file": "phone/beat-09-hearth-morning.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "chapel-door",
+  "file": "phone/beat-10-chapel-door.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "lantern-vigil",
+  "file": "phone/beat-11-lantern-vigil.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "camp-riders",
+  "file": "phone/beat-12-camp-riders.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "lantern-relit",
+  "file": "phone/beat-13-lantern-relit.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "crown-city",
+  "file": "phone/beat-14-crown-city.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "night-of-knives",
+  "file": "phone/beat-15-night-of-knives.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "after-knives",
+  "file": "phone/beat-16-after-knives.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "the-tear",
+  "file": "phone/beat-17-the-tear.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "fernstead-falls",
+  "file": "phone/beat-18-fernstead-falls.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "elyra-gone",
+  "file": "phone/beat-19-elyra-gone.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "fern-again",
+  "file": "phone/beat-20-fern-again.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "fern-home",
+  "file": "phone/beat-21-fern-home.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "highwall",
+  "file": "phone/beat-22-highwall.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "the-sortie",
+  "file": "phone/beat-23-the-sortie.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "highwall-holds",
+  "file": "phone/beat-24-highwall-holds.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "nyx-returns",
+  "file": "phone/beat-25-nyx-returns.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "gloam-cells",
+  "file": "phone/beat-26-gloam-cells.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "elyra-free",
+  "file": "phone/beat-27-elyra-free.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "ysane-echo",
+  "file": "phone/beat-28-ysane-echo.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "orren-shore",
+  "file": "phone/beat-29-orren-shore.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "every-banner",
+  "file": "phone/beat-30-every-banner.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "last-march",
+  "file": "phone/beat-31-last-march.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "siege-mages",
+  "file": "phone/beat-32-siege-mages.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "keep-the-door",
+  "file": "phone/beat-33-keep-the-door.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "crownfall-throne",
+  "file": "phone/beat-34-crownfall-throne.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "crownfall-memory",
+  "file": "phone/beat-35-crownfall-memory.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "crownfall-ash-crown",
+  "file": "phone/beat-36-crownfall-ash-crown.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "the-bell",
+  "file": "phone/beat-37-the-bell.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "beat",
+  "id": "mythic-plus",
+  "file": "phone/beat-38-mythic-plus.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "save",
+  "id": "finished-riftward",
+  "file": "phone/save-01-finished-riftward.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "save",
+  "id": "mid-act-3",
+  "file": "phone/save-02-mid-act-3.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "save",
+  "id": "mid-prologue",
+  "file": "phone/save-03-mid-prologue.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "prologue-dusk",
+  "file": "tablet/beat-01-prologue-dusk.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "prologue-raid",
+  "file": "tablet/beat-02-prologue-raid.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "prologue-toll",
+  "file": "tablet/beat-03-prologue-toll.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "prologue-rider",
+  "file": "tablet/beat-04-prologue-rider.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "prologue-inn",
+  "file": "tablet/beat-05-prologue-inn.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "camp-dawn",
+  "file": "tablet/beat-06-camp-dawn.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "hearthstead",
+  "file": "tablet/beat-07-hearthstead.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "hearth-ram",
+  "file": "tablet/beat-08-hearth-ram.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "hearth-morning",
+  "file": "tablet/beat-09-hearth-morning.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "chapel-door",
+  "file": "tablet/beat-10-chapel-door.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "lantern-vigil",
+  "file": "tablet/beat-11-lantern-vigil.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "camp-riders",
+  "file": "tablet/beat-12-camp-riders.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "lantern-relit",
+  "file": "tablet/beat-13-lantern-relit.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "crown-city",
+  "file": "tablet/beat-14-crown-city.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "night-of-knives",
+  "file": "tablet/beat-15-night-of-knives.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "after-knives",
+  "file": "tablet/beat-16-after-knives.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "the-tear",
+  "file": "tablet/beat-17-the-tear.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "fernstead-falls",
+  "file": "tablet/beat-18-fernstead-falls.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "elyra-gone",
+  "file": "tablet/beat-19-elyra-gone.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "fern-again",
+  "file": "tablet/beat-20-fern-again.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "fern-home",
+  "file": "tablet/beat-21-fern-home.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "highwall",
+  "file": "tablet/beat-22-highwall.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "the-sortie",
+  "file": "tablet/beat-23-the-sortie.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "highwall-holds",
+  "file": "tablet/beat-24-highwall-holds.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "nyx-returns",
+  "file": "tablet/beat-25-nyx-returns.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "gloam-cells",
+  "file": "tablet/beat-26-gloam-cells.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "elyra-free",
+  "file": "tablet/beat-27-elyra-free.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "ysane-echo",
+  "file": "tablet/beat-28-ysane-echo.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "orren-shore",
+  "file": "tablet/beat-29-orren-shore.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "every-banner",
+  "file": "tablet/beat-30-every-banner.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "last-march",
+  "file": "tablet/beat-31-last-march.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "siege-mages",
+  "file": "tablet/beat-32-siege-mages.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "keep-the-door",
+  "file": "tablet/beat-33-keep-the-door.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "crownfall-throne",
+  "file": "tablet/beat-34-crownfall-throne.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "crownfall-memory",
+  "file": "tablet/beat-35-crownfall-memory.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "crownfall-ash-crown",
+  "file": "tablet/beat-36-crownfall-ash-crown.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "the-bell",
+  "file": "tablet/beat-37-the-bell.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "beat",
+  "id": "mythic-plus",
+  "file": "tablet/beat-38-mythic-plus.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "save",
+  "id": "finished-riftward",
+  "file": "tablet/save-01-finished-riftward.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "save",
+  "id": "mid-act-3",
+  "file": "tablet/save-02-mid-act-3.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "save",
+  "id": "mid-prologue",
+  "file": "tablet/save-03-mid-prologue.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "prologue-dusk",
+  "file": "desktop/beat-01-prologue-dusk.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "prologue-raid",
+  "file": "desktop/beat-02-prologue-raid.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "prologue-toll",
+  "file": "desktop/beat-03-prologue-toll.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "prologue-rider",
+  "file": "desktop/beat-04-prologue-rider.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "prologue-inn",
+  "file": "desktop/beat-05-prologue-inn.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "camp-dawn",
+  "file": "desktop/beat-06-camp-dawn.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "hearthstead",
+  "file": "desktop/beat-07-hearthstead.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "hearth-ram",
+  "file": "desktop/beat-08-hearth-ram.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "hearth-morning",
+  "file": "desktop/beat-09-hearth-morning.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "chapel-door",
+  "file": "desktop/beat-10-chapel-door.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "lantern-vigil",
+  "file": "desktop/beat-11-lantern-vigil.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "camp-riders",
+  "file": "desktop/beat-12-camp-riders.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "lantern-relit",
+  "file": "desktop/beat-13-lantern-relit.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "crown-city",
+  "file": "desktop/beat-14-crown-city.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "night-of-knives",
+  "file": "desktop/beat-15-night-of-knives.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "after-knives",
+  "file": "desktop/beat-16-after-knives.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "the-tear",
+  "file": "desktop/beat-17-the-tear.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "fernstead-falls",
+  "file": "desktop/beat-18-fernstead-falls.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "elyra-gone",
+  "file": "desktop/beat-19-elyra-gone.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "fern-again",
+  "file": "desktop/beat-20-fern-again.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "fern-home",
+  "file": "desktop/beat-21-fern-home.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "highwall",
+  "file": "desktop/beat-22-highwall.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "the-sortie",
+  "file": "desktop/beat-23-the-sortie.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "highwall-holds",
+  "file": "desktop/beat-24-highwall-holds.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "nyx-returns",
+  "file": "desktop/beat-25-nyx-returns.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "gloam-cells",
+  "file": "desktop/beat-26-gloam-cells.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "elyra-free",
+  "file": "desktop/beat-27-elyra-free.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "ysane-echo",
+  "file": "desktop/beat-28-ysane-echo.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "orren-shore",
+  "file": "desktop/beat-29-orren-shore.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "every-banner",
+  "file": "desktop/beat-30-every-banner.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "last-march",
+  "file": "desktop/beat-31-last-march.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "siege-mages",
+  "file": "desktop/beat-32-siege-mages.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "keep-the-door",
+  "file": "desktop/beat-33-keep-the-door.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "crownfall-throne",
+  "file": "desktop/beat-34-crownfall-throne.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "crownfall-memory",
+  "file": "desktop/beat-35-crownfall-memory.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "crownfall-ash-crown",
+  "file": "desktop/beat-36-crownfall-ash-crown.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "the-bell",
+  "file": "desktop/beat-37-the-bell.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "beat",
+  "id": "mythic-plus",
+  "file": "desktop/beat-38-mythic-plus.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "save",
+  "id": "finished-riftward",
+  "file": "desktop/save-01-finished-riftward.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "save",
+  "id": "mid-act-3",
+  "file": "desktop/save-02-mid-act-3.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "save",
+  "id": "mid-prologue",
+  "file": "desktop/save-03-mid-prologue.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "mode",
+  "id": "riftward",
+  "file": "phone/mode-01-riftward.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "mode",
+  "id": "riftstone-run",
+  "file": "phone/mode-02-riftstone-run.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "mode",
+  "id": "vigil-night",
+  "file": "phone/mode-03-vigil-night.jpg",
+  "errors": []
+ },
+ {
+  "size": "phone",
+  "kind": "mode",
+  "id": "ring-match",
+  "file": "phone/mode-04-ring-match.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "mode",
+  "id": "riftward",
+  "file": "tablet/mode-01-riftward.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "mode",
+  "id": "riftstone-run",
+  "file": "tablet/mode-02-riftstone-run.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "mode",
+  "id": "vigil-night",
+  "file": "tablet/mode-03-vigil-night.jpg",
+  "errors": []
+ },
+ {
+  "size": "tablet",
+  "kind": "mode",
+  "id": "ring-match",
+  "file": "tablet/mode-04-ring-match.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "mode",
+  "id": "riftward",
+  "file": "desktop/mode-01-riftward.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "mode",
+  "id": "riftstone-run",
+  "file": "desktop/mode-02-riftstone-run.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "mode",
+  "id": "vigil-night",
+  "file": "desktop/mode-03-vigil-night.jpg",
+  "errors": []
+ },
+ {
+  "size": "desktop",
+  "kind": "mode",
+  "id": "ring-match",
+  "file": "desktop/mode-04-ring-match.jpg",
+  "errors": []
+ }
+]

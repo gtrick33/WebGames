@@ -15,6 +15,22 @@ this checkout). Review screenshots: on the dev server, `window.__rbShot('phase-X
 the game view to `docs/review/`; review presets (Settings, on the dev server or with `?review`) jump a hero to
 a story beat.
 
+## The pass to 9/10: its regression bar (2026-11-24)
+
+`NINE_PLAN.md` has the bar and the baseline every piece is measured against. Besides the four commands above:
+
+```
+node scripts/sigilfall-tour.mjs --out docs/review/sf9-<topic>     every act's beats at three sizes, the Riftstone, the
+                                                                  Vigil, the Ring and the old saves; fails on any error
+node scripts/sigilfall-overlap-check.mjs                          nothing on the screen covers anything else
+node scripts/sigilfall-bench.mjs --size desktop | phone           draw calls and triangles in the heaviest fights
+node scripts/sigilfall-load-check.mjs --size desktop | phone      what a new player loads before the first fight (after a build)
+```
+
+They need Playwright (`npm i --no-save playwright`, or `NODE_PATH` set to a folder that has it) and are run one at a
+time: two at once share the machine and spoil each other's numbers. `tests/sigilfall-save-fixtures.test.ts` loads three
+saves written by the game before the pass began (`tests/sigilfall-saves/`); the files are never made again or edited.
+
 ## Coverage by area
 
 | Area | Tests |
@@ -35,6 +51,7 @@ a story beat.
 | Scenes and review presets: everyone named is there, skip, once only, reload-safe | `sigilfall-scenes` |
 | The hero's look | `sigilfall-look` |
 | Riftstone (scaling, the week's affixes, the clock, levels opening, nothing lost when late, the Riftstone's source) and Paragon (levels, points, caps, stats, saves) | `sigilfall-keystones`, `sigilfall-rift-clock` |
+| Saves written before the pass to 9/10 (a hero mid-Prologue, one mid-Act III, a finished one in the Riftward in Rift gear) come back whole | `sigilfall-save-fixtures` |
 
 ## Known issues
 

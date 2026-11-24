@@ -15,7 +15,7 @@
  * screen check does. Pictures are JPEGs in <out>/<size>/; the report is <out>/tour.json, and the script fails if the
  * page reported an error anywhere. Calls to the site's API are not counted: the dev server has none.
  */
-import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -96,7 +96,10 @@ async function run() {
   await vite.listen();
   const server = { url: (vite.resolvedUrls?.local?.[0] ?? 'http://localhost:5196/').replace(/\/+$/, '') };
   const browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
-  const report = [];
+  // (a part of the tour run again, --only or --size, keeps the rest of the report as it was)
+  const kinds = { beats: 'beat', modes: 'mode', saves: 'save' };
+  const again = (r) => sizes.some((s) => s.id === r.size) && (!only || kinds[only] === r.kind) && (!value('preset') || r.id === value('preset'));
+  const report = existsSync(join(OUT, 'tour.json')) ? JSON.parse(readFileSync(join(OUT, 'tour.json'), 'utf8')).filter((r) => !again(r)) : [];
   const stop = async (page, errors, size, kind, id, n) => {
     const file = `${size.id}/${kind}-${String(n).padStart(2, '0')}-${id}.jpg`;
     if (shots) {
@@ -177,6 +180,9 @@ async function run() {
           if (!(await press(page, 'The Vigil:'))) errors.push('no Vigil on the title screen');
           await page.waitForTimeout(2500);
           if (!(await press(page, 'Keep the watch in'))) errors.push('the Vigil has no way to begin');
+          // (its card of how to play, then the night itself)
+          await page.waitForTimeout(3000);
+          if (!(await press(page, 'Begin the night'))) errors.push('the Vigil\u2019s night has no way to begin');
           await page.waitForTimeout(25_000);
           await stop(page, errors, size, 'mode', 'vigil-night', 3);
           await context.close();

@@ -27,8 +27,15 @@ const DIR = join(__dirname, 'sigilfall-saves');
 interface About {
   commit: string;
   saveVersion: number;
-  saves: Record<string, { cls: ClassId; name: string; level: number; region: string; sigils: number; keystone: number }>;
+  saves: Record<string, { cls: ClassId; name: string; level: number; region: string; sigils: number; keystone: number; done: number }>;
 }
+
+/**
+ * Quests a later piece has folded into another quest or a scene (NINE_PLAN.md, piece 4), each with its save migration:
+ * a hero who had finished one keeps what it led to, but no longer has it to count. A piece that folds a quest away
+ * names it here, in the same pull request as its migration; nothing else may make a save's finished quests fewer.
+ */
+const FOLDED: readonly string[] = [];
 const ABOUT = JSON.parse(readFileSync(join(DIR, 'about.json'), 'utf8')) as About;
 
 /** What the file itself says, before the game reads it: the worn pieces and the bag, as written. */
@@ -102,7 +109,10 @@ describe('Sigilfall: saves from before the pass to 9/10 still load', () => {
         const { hero } = load(file);
         for (const id of Object.keys(hero.quests)) expect(QUEST_DEFS[id], `quest ${id}`).toBeTruthy();
         expect(hero.opened.includes('act:prologue')).toBe(true);
-        expect(Object.values(hero.quests).some((e) => e.state === 'done')).toBe(true);
+        // nothing the hero had finished is forgotten, but for the quests folded away on purpose
+        const done = Object.values(hero.quests).filter((e) => e.state === 'done').length;
+        expect(done).toBeGreaterThanOrEqual(about.done - FOLDED.length);
+        for (const id of FOLDED) expect(QUEST_DEFS[id], `${id} is folded away, and still a quest`).toBeUndefined();
       });
 
       it('is written back and read again without a change', () => {

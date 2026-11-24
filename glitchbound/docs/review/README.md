@@ -34,3 +34,4 @@ The field before the Muster Hall (bonefields, review preset `muster-hall`): 212 
 six allies, the battle under way. In the dev browser with its pane hidden, a simulation step took under 0.2 ms
 (enemies far from the hero sleep) and a 1280 × 720 frame under 1 ms to submit. A hidden pane defers its
 drawing, so the draw figure is **indicative only**; frame times on a phone are **unverified**.
+| `sf9-baseline/` | The game before the pass to 9/10 (NINE_PLAN.md): every act's beats, the Riftward and a Riftstone run, a Vigil night, a Ring match and the three old saves played, at 844 × 390, 1024 × 768 and 1440 × 900, by `scripts/sigilfall-tour.mjs`; `tour.json` is what the page reported (nothing) | `claude/sf9-baseline` |
