@@ -57,6 +57,8 @@ export interface MountDef {
   /** What's built onto a shop mount, and the color of its plates. */
   extras?: MountExtra[];
   plate?: string;
+  /** Nobody rides it (a boss built as a mount is: render3d/kits.ts `steed`): no blanket or saddle, its bristles unbroken, its tusks grown long. */
+  bare?: boolean;
   /** The collection's grouping: an everyday mount, a story mount, a challenge's prize or one from the shop. */
   tier: 'travel' | 'story' | 'prestige' | 'shop';
 }

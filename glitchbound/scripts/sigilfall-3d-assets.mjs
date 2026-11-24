@@ -1839,6 +1839,30 @@ const BOSS_KITS = {
   },
 };
 
+// Warden Ossric, Keeper of the Crypt Gate: a warden of Aster three hundred years dead, still in his plate. The Knight's
+// armor and cape with the Skeleton Warrior's bare skull, broad in the chest; a halberd, and the
+// dead's own great shield. (His helm is long gone: the skull is bare.)
+BOSS_KITS.boss_ossric = {
+  rig: 'medium',
+  from: [['Knight', /Body|Arm|Leg|Cape/], [`${SK}Warrior`, /Head|Jaw|Eyes/]],
+  grow: [['chest', 1.18], ['upperarm.l', 1.15], ['upperarm.r', 1.15], ['head', 0.86]],
+  ties: [
+    { bit: 'halberd', joint: 'handslot.r', at: [0, 0, 0], size: 1.25 },
+    { bit: `${SK}Shield_Large_B`, joint: 'handslot.l', at: [0, 0, 0], size: 1.2 },
+  ],
+};
+// Morgrave, the Ash-Scholar: thrown out of the Crown City's college, sold to the Host. The Lorekeeper's head and
+// spectacles and his pack of books on the Necromancer's robes; an open book in one hand, a staff in the other.
+BOSS_KITS.boss_morgrave = {
+  rig: 'medium',
+  from: [['Necromancer', /Body|Arm|Leg/], ['Lorekeeper', /Head|Glasses|Backpack/]],
+  grow: [['head', 1.1], ['hand.l', 1.3], ['hand.r', 1.3]],
+  ties: [
+    { bit: 'spellbook_open', joint: 'handslot.l', at: [0, 0.05, 0.05], size: 0.85 },
+    { bit: 'staff_C', joint: 'handslot.r', at: [0, 0, 0], size: 1.2 },
+  ],
+};
+
 const quatOf = (rx, ry, rz) => new THREE.Quaternion().setFromEuler(new THREE.Euler((rx * Math.PI) / 180, (ry * Math.PI) / 180, (rz * Math.PI) / 180, 'YXZ')).toArray();
 
 /** The model with what hangs from one joint, and from every joint under it, made `k` times its size about that joint. */

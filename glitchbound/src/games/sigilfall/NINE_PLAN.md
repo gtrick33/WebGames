@@ -27,7 +27,7 @@ requests open.**
 | --- | --- | --- | --- | --- | --- |
 | 1 | Baseline and plan | `claude/sf9-baseline` | #355 | open | nothing |
 | 2a | Boss pipeline and the Coffin Matron | `claude/sf9-boss-matron` | #356 | open | 1 (#355) |
-| 2b | Bosses: the Prologue (Ossric, Morgrave, Grimtusk) | `claude/sf9-bosses-prologue` | | not started | 2a |
+| 2b | Bosses: the Prologue (Ossric, Morgrave, Grimtusk) | `claude/sf9-bosses-prologue` | (this one) | open | 2a (#356) |
 | 2c | Bosses: Act I (Gallows Keep) | `claude/sf9-bosses-act1` | | not started | 2a |
 | 2d | Bosses: Act II (the Barrow of Kings, the Crown Catacombs) | `claude/sf9-bosses-act2` | | not started | 2a |
 | 2e | Bosses: Act III (the Tomb of the Sun King, the Vault of Rime) | `claude/sf9-bosses-act3` | | not started | 2a |
