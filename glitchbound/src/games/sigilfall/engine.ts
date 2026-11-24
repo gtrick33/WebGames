@@ -747,7 +747,7 @@ export class SigilEngine {
     else if (!card && this.cards.length && !this.ui.dialogue && !this.ui.panel && !this.ui.death && !w.scene && !(this.renderer as SigilEngine['renderer'] | undefined)?.speechBoxes.length)
       this.setUi({ card: { ...this.cards.shift()!, id: t } });
     if (this.ui.levelUp && t - this.ui.levelUp.id > 3600) this.setUi({ levelUp: null });
-    if (this.ui.equipAsk && t - this.ui.equipAsk.id > EQUIP_ASK_MS) this.setUi({ equipAsk: null });
+    if (this.ui.equipAsk && (t - this.ui.equipAsk.id > EQUIP_ASK_MS || w.keyRun)) this.setUi({ equipAsk: null });
     if (this.ui.questCard && t - this.ui.questCard.id > QUEST_CARD_MS) this.setUi({ questCard: null });
     if (this.tipQueue.length) this.showTip(w);
     const boss = w.boss();
@@ -783,8 +783,13 @@ export class SigilEngine {
         case 'loot':
           // (a quest's reward is on the quest's card, not news of its own)
           if (card) card.items.push(ev.item);
+          // in a Riftstone run, nothing about a piece picked up: it waits in the bag, the run is a race (the owner,
+          // 2026-11-24: "if ur doing riftstones, it should not be visible as its distracting")
+          else if (w.keyRun) break;
+          // on a touch screen a piece worth wearing has the one strip at the top (ui/EquipAsk.tsx), not a card as well
+          // (the owner: "double item notifications on collecting items, it should only be the one on top")
+          else if (this.offerEquip(ev.item)) changed = true;
           else this.toast(itemName(ev.item), 'loot', ev.item);
-          if (this.offerEquip(ev.item)) changed = true;
           this.queueTip('bag');
           if (this.hero && !this.hero.opened.includes('hint:equip') && Object.keys(this.hero.equip).length < 2) this.hint('equip');
           break;
@@ -883,7 +888,8 @@ export class SigilEngine {
           this.rewardAt = performance.now() + 2800;
           break;
         case 'checkpoint':
-          this.toast('Checkpoint reached · potions refilled', 'good');
+          // (no words for it: the chime and the potions filling say it. The owner, 2026-11-24: "checkpoint reached text
+          // is also redundant")
           this.sound.play('checkpoint');
           this.scheduleSave(200);
           break;
@@ -1510,7 +1516,8 @@ export class SigilEngine {
   /** Loot still lying in a region goes with the hero (it is never left behind by leaving). */
   private collectLeftovers(w: World, leaving: boolean): void {
     const got = w.collectAll();
-    if (got.items > 0 && this.hero) {
+    // (in a Riftstone run the pieces go to the bag without a word, as each one picked up does)
+    if (got.items > 0 && this.hero && !w.keyRun) {
       const over = this.hero.bag.length > bagSize(this.hero);
       this.toast(`${leaving ? 'Picked up' : 'Collected'} ${got.items} item${got.items === 1 ? '' : 's'} ${leaving ? 'you left behind' : 'from the fight'}`, 'loot', undefined, over ? 'Your bag is over-full: salvage or wear something to pick up more.' : undefined);
     }

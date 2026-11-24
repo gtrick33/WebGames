@@ -47,10 +47,13 @@ export function EquipAsk({ engine }: { engine: SigilEngine }) {
           ))}
         </span>
       </div>
-      <button className="rb-equipask-yes" onClick={() => engine.answerEquip(true)}>
+      {/* (answered as the finger lifts, not on the click that follows it: on a phone in a fight the click was often
+          lost, and the cross, a speck, was barely hit. The owner, 2026-11-24: "i can barely click the X, make it more
+          responsive". A second answer, the click after it, finds the strip gone) */}
+      <button className="rb-equipask-yes" onPointerUp={(e) => e.pointerType !== 'mouse' && engine.answerEquip(true)} onClick={() => engine.answerEquip(true)}>
         Equip
       </button>
-      <button className="rb-equipask-no" onClick={() => engine.answerEquip(false)} aria-label="Later">
+      <button className="rb-equipask-no" onPointerUp={(e) => e.pointerType !== 'mouse' && engine.answerEquip(false)} onClick={() => engine.answerEquip(false)} aria-label="Later">
         ✕
       </button>
     </div>
