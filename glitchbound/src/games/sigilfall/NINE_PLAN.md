@@ -41,7 +41,7 @@ requests open.**
 | 6 | One standard, act by act | `claude/sf9-standard-act1` … `-act6` | | not started | 2, 4 (the same act's) |
 | 7 | Phone and network readiness | `claude/sf9-phone` | | not started | 1 |
 | 8 | The rough edges | `claude/sf9-rough-edges` | | not started | 1 |
-| 9 | Ready for players | `claude/sf9-playtest` | #PRNUM | open | 1 |
+| 9 | Ready for players | `claude/sf9-playtest` | #360 | open | 1 |
 | 10 | The release bar | `claude/sf9-release` | | not started | all of them, merged |
 | 11 | What would make it more fun (added by the owner: see its own section) | 11a and 11e in pieces 8 and 9; `claude/sf9-open-world`, `-vigil-return`, `-fewer-legends` | | not started | the playtest (11b); the owner's go-ahead (11c, 11d) |
 
@@ -381,7 +381,7 @@ land, nothing personal. "Report a bug" carries the build, land, quest, level and
 save. `PLAYTEST_GUIDE.md`: what testers should play and how to report, what the owner should watch for, where to read
 the numbers.
 
-**Done in #PRNUM (2026-11-24).** What following the numbers end to end found, and what was done about each:
+**Done in #360 (2026-11-24).** What following the numbers end to end found, and what was done about each:
 
 - **A phone's player was not counted as a stop.** A stop was sent when the page was left; a phone's browser is swiped
   away and its page only hidden. And an event sent as the page hid waited four seconds in the arcade's queue, which
