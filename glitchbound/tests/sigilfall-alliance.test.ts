@@ -177,6 +177,8 @@ describe('Sigilfall: the broken alliance (Act III)', () => {
   it('Highwall: Mara commands the relief and Cael’s sortie brings the relief camp its white rag', () => {
     const w = newWorld('highwall', heroAt('cael-the-sortie', 44));
     expect(w.npcs.some((n) => n.id === 'captain-mara')).toBe(true);
+    // (the riders are handed their lances first: that step's own test plays it)
+    doSteps(w, 'cael-the-sortie');
     goTo(w, 'sortie-ground');
     run(w, 0.3);
     expect(w.story.run?.def.id).toBe('highwall-sortie');
