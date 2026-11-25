@@ -380,6 +380,96 @@ FORMS.harlan = {
   fall: { clip: 'die', end: 'dead', kept: 2.8, sink: 0 },
 };
 
+/* ------------------------------------------------------------------ the Barrow of Kings (Act II) */
+
+// King Hrodric. A king's blows, wide and unhurried, from a man who has all the time the dead have: the sword goes
+// across for his cuts and down two-handed for his chops; he drives it into the mound's floor and the frost goes out
+// from it; he turns right round with it for his whirl. He lifts a hand and his court gets up. He is standing when the
+// hero comes, and says so. Struck dumb he stands behind his guard. He falls as a big man does and the mound keeps him.
+FORMS.hrodric = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'chop2', 'spin', 'slice', 'smash', 'cast', 'taunt', 'block'],
+  bend: (joint, clip, phase) => (joint === 'head' ? [0.1, 0, 0] : joint === 'chest' && clip === 'idle' ? [0.04 + Math.sin(phase * Math.PI * 2) * 0.02, 0, 0] : null),
+  moves: {
+    cleave: { clip: 'slice', rate: 0.9 },
+    chop: { clip: 'chop2', rate: 0.85 },
+    'barrow:frost-pulse': { clip: 'smash', rate: 0.85 },
+    'barrow:whirl': { clip: 'spin' },
+    summon: { clip: 'cast' },
+    roar: { clip: 'taunt' },
+  },
+  enter: { clip: 'taunt', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'block',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// Sir Corvane. A knight who was the best of his order and still fights like it: nothing wasted, everything through
+// the shield. He rides his passes down behind it; on foot he cuts, thrusts his lances of frost out along the blade,
+// and brings it down for the lines that split the floor. The doom he carries falls with a slow blow from overhead,
+// the rime grows where he points, his dead knights come at a lifted hand, and he stands behind his shield as the
+// cold gathers round him. He dies on his feet as long as he can, and lies under his banner.
+FORMS.corvane = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'chop', 'chop2', 'slice', 'smash', 'cast', 'taunt', 'bash', 'stab', 'block', 'dodge'],
+  bend: (joint, clip, phase) => (joint === 'head' ? [0.12, 0, 0] : joint === 'chest' && clip === 'idle' ? [0.03 + Math.sin(phase * Math.PI * 2) * 0.015, 0, 0] : null),
+  moves: {
+    'barrow:steed-charge': { clip: 'bash', rate: 1.2 },
+    tripleCharge: { clip: 'bash', rate: 1.4 },
+    cleave: { clip: 'slice' },
+    chop: { clip: 'chop2', rate: 0.9 },
+    'spell:lances': { clip: 'stab' },
+    'spell:halves': { clip: 'smash', rate: 0.85 },
+    'barrow:doom': { clip: 'chop', rate: 0.7 },
+    'barrow:rime': { clip: 'cast', rate: 0.8 },
+    'barrow:aura': { clip: 'block' },
+    'barrow:dismount': { clip: 'dodge' },
+    vanish: { clip: 'dodge', rate: 1.2 },
+    summon: { clip: 'taunt' },
+    roar: { clip: 'taunt', rate: 0.8 },
+  },
+  enter: { clip: 'block', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'block',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+/* ------------------------------------------------------------------ the Crown Catacombs (Act II) */
+
+// Silas Vey. A paymaster's moves: he has never needed to be strong. The ash-gold goes up out of both hands and comes
+// down all over the ossuary; the blades he sends out and calls back go with a flick; when the hero is on him he cuts,
+// once, quickly, and steps away. He steps out of the dark already smiling. He dies as a man does.
+FORMS.silas = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'throw', 'dodge', 'taunt', 'spawn', 'cheer'],
+  bend: (joint, clip, phase) => (joint === 'spine' ? [0.07, 0, 0] : joint === 'chest' && clip === 'idle' ? [0.03, Math.sin(phase * Math.PI * 2) * 0.04, 0] : joint === 'head' ? [0.05, 0, -0.05] : null),
+  moves: {
+    'crown:scatter': { clip: 'cheer', rate: 0.9 },
+    'spell:boomerang': { clip: 'throw', rate: 1.1 },
+    cleave: { clip: 'slice', rate: 1.2 },
+  },
+  enter: { clip: 'spawn', then: 'taunt' },
+  shift: { clip: 'taunt', rate: 1.2 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 2.8, sink: 0 },
+};
+
+// The Royal Auditor. A clerk's moves, exact and dry: he reads the ledger out with it held before him, flicks his
+// quills off the pen one after another, strikes with the back of the book when the hero stands too close, and for
+// the settling of accounts raises both arms and lets the page say what is owed. He gets up from where he died. Struck
+// dumb, he sits down where he is, as he did the day he died. He falls and lies among his papers.
+FORMS.auditor = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'channel', 'summon', 'throw', 'slice', 'rise', 'sitfloor', 'taunt'],
+  bend: (joint, clip, phase) => (joint === 'spine' ? [0.12, 0, 0] : joint === 'chest' ? [0.1 + (clip === 'idle' ? Math.sin(phase * Math.PI * 2) * 0.015 : 0), 0, 0] : joint === 'head' ? [0.06, 0, 0] : null),
+  moves: {
+    'crown:ledger': { clip: 'channel' },
+    'spell:quills': { clip: 'throw' },
+    cleave: { clip: 'slice', rate: 0.9 },
+    'crown:settle': { clip: 'summon', rate: 0.8 },
+  },
+  enter: { clip: 'rise', then: 'channel' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'sitfloor',
+  fall: { clip: 'die', end: 'dead', kept: 2.8, sink: 0 },
+};
+
 export const bossForm = (id: string | undefined): BossForm | undefined => (id ? FORMS[id] : undefined);
 export const BOSS_FORMS: Readonly<Record<string, BossForm>> = FORMS;
 
