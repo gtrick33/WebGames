@@ -64,6 +64,8 @@ describe('Sigilfall: the broken alliance (Act III)', () => {
     expect(acceptQuests(c, 'old-root').some((q) => q.id === 'the-thorn-court')).toBe(false);
     // the song: hold the knights off Silvaine
     const w = newWorld('glimmerwood', c);
+    // (their mother's lamp is carried to the hall first: that step's own test plays it)
+    doSteps(w, 'silvaines-song');
     goTo(w, 'thorn-hall');
     run(w, 0.3);
     expect(w.story.run?.def.id).toBe('thorn-song');

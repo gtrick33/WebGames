@@ -195,6 +195,10 @@ export function syncTasks(w: World): void {
   const live = new Set(steps.map((s) => s.key));
   T.subduing = null;
   for (const { q, o, key, n } of steps) {
+    if (o.kind === 'subdue') T.subduing = o;
+    // nothing is put down over a scene: what the story stages at a place is played first, and a guard set down beside
+    // the hero would break it off (a scene waits for calm, and ends when a fight begins)
+    if (w.scene) continue;
     const lair = lairOf(o);
     if (lair && !T.spawned.has(`${key}:lair`)) {
       const at = anchorOf(w, lair.at);
@@ -204,7 +208,6 @@ export function syncTasks(w: World): void {
         bring(w, lair.enemies, at.x, at.y, `${key}:lair`, 40, true);
       }
     }
-    if (o.kind === 'subdue') T.subduing = o;
     if (o.kind === 'use') {
       const at = anchorOf(w, o.at);
       if (!at) continue;

@@ -52,4 +52,6 @@ export const THINGS: Record<ThingLook, ThingDef> = {
   gibbet: { model: 'post_skull', h: 24, after: 'opened', glow: '#c8b0ff' },
   candle: { model: 'candle_triple', h: 9, tint: [0.7, 0.7, 0.75], after: 'lit', glow: '#ffd27a' },
   spear: { model: 'p_weaponrack', h: 15, after: 'same', glow: '#ffe08a' },
+  shelter: { model: 'b_tent', h: 20, tint: [0.6, 0.6, 0.6], after: 'lit', glow: '#9cffd0' },
+  rod: { model: 'post_lantern', h: 20, tint: [0.9, 0.75, 0.4], after: 'lit', glow: '#c8b0ff' },
 };
