@@ -1,0 +1,200 @@
+{
+  "boss": "general-morvain",
+  "file": "boss_morvain",
+  "form": "morvain",
+  "float": 0,
+  "walked": {
+    "samples": 183,
+    "moving": 68,
+    "walking": 67,
+    "clips": {
+      "walk": 67,
+      "chop2": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "siege:arrows",
+      "clips": [
+        "cast",
+        "walk",
+        "idle",
+        "chop2",
+        "taunt",
+        "smash"
+      ],
+      "readings": 33
+    },
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle"
+      ],
+      "readings": 56
+    },
+    {
+      "phase": 1,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle"
+      ],
+      "readings": 61
+    },
+    {
+      "phase": 1,
+      "id": "siege:squad",
+      "clips": [],
+      "note": "never began"
+    },
+    {
+      "phase": 1,
+      "id": "siege:banner",
+      "clips": [],
+      "note": "never began"
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "bash",
+        "run",
+        "chop2"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "run",
+        "slice",
+        "walk",
+        "idle"
+      ],
+      "readings": 66
+    },
+    {
+      "phase": 2,
+      "id": "siege:deathcharge",
+      "clips": [
+        "bash",
+        "idle"
+      ],
+      "readings": 62
+    },
+    {
+      "phase": 2,
+      "id": "siege:guard",
+      "clips": [
+        "block",
+        "idle"
+      ],
+      "readings": 47
+    },
+    {
+      "phase": 2,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle"
+      ],
+      "readings": 35
+    },
+    {
+      "phase": 2,
+      "id": "siege:arrows",
+      "clips": [
+        "cast",
+        "idle"
+      ],
+      "readings": 24
+    },
+    {
+      "phase": 2,
+      "id": "roar",
+      "clips": [
+        "taunt",
+        "idle"
+      ],
+      "readings": 27
+    },
+    {
+      "phase": 3,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "smash",
+        "cast",
+        "block"
+      ]
+    },
+    {
+      "phase": 3,
+      "id": "siege:last-volley",
+      "clips": [
+        "cast",
+        "idle",
+        "slice"
+      ],
+      "readings": 67
+    },
+    {
+      "phase": 3,
+      "id": "siege:arrows",
+      "clips": [
+        "cast",
+        "idle"
+      ],
+      "readings": 11
+    },
+    {
+      "phase": 3,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle",
+        "taunt"
+      ],
+      "readings": 58
+    },
+    {
+      "phase": 3,
+      "id": "siege:deathcharge",
+      "clips": [
+        "bash",
+        "idle"
+      ],
+      "readings": 43
+    },
+    {
+      "phase": 3,
+      "id": "siege:squad",
+      "clips": [],
+      "note": "never began"
+    },
+    {
+      "phase": 3,
+      "id": "siege:guard",
+      "clips": [
+        "idle",
+        "block"
+      ],
+      "readings": 42
+    },
+    {
+      "phase": 3,
+      "id": "siege:banner",
+      "clips": [],
+      "note": "never began"
+    }
+  ],
+  "found": [],
+  "errors": []
+}
