@@ -20,6 +20,12 @@ character, art or signature colors were used or looked at for her; her name and 
 creatures), so nothing of it is used here. Quaternius's **Ultimate Monsters** (`~/Downloads`, its `License.txt`: CC0 1.0)
 is on the machine and unused so far; it is recorded here when a boss first takes a part from it.
 
+The Prologue's other three (piece 2b, the same day) take nothing new either. **Warden Ossric** and **Morgrave** are
+made of the same KayKit collection (CC0): the Knight, the Skeleton Warrior, the Lorekeeper, the Necromancer, and things
+from its Fantasy Weapons, Skeletons and Adventurers packs. **Grimtusk** is built in code on the bull of Quaternius's
+Ultimate Animated Animals, as the boar mounts already are (see CREDITS_AND_LICENSES.md for that pack's terms: used
+inside the game only). Their names and titles are unchanged, and each one's look is its own story's.
+
 ## A Rift legendary on every place (2026-11-24)
 
 The owner asked for "a legendary for each spec and 3 legendaries common for the class" on every item slot. What is taken

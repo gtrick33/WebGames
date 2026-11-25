@@ -5,7 +5,9 @@ import { BOSS_FORMS, bossForm, bossRig } from '../src/games/sigilfall/render3d/b
 import { heightFromRadius } from '../src/games/sigilfall/render3d/cast';
 import { kitOf } from '../src/games/sigilfall/render3d/kits';
 import { repaint } from '../src/games/sigilfall/render3d/repaint';
-import type { MeshData } from '../src/games/sigilfall/render3d/pack';
+import { mountModel } from '../src/games/sigilfall/render3d/mountKit';
+import { shapeOf } from '../src/games/sigilfall/render3d/mountLook';
+import type { MeshData, RigData } from '../src/games/sigilfall/render3d/pack';
 import { readPack } from './sigilfall-packs';
 
 /**
@@ -23,8 +25,21 @@ const OWN = Object.values(BOSSES)
   .map((b) => ({ boss: b, kit: kitOf(b.sprite, b.id) }))
   .filter((x) => !!x.kit.form);
 
-/** The figure as it is drawn: its file's model, painted, with what is built onto it. */
+/** The skeleton a boss moves on: one of the two shared ones, or its own file's (a beast's). */
+function rigOf(kit: ReturnType<typeof kitOf>): RigData {
+  if (kit.steed) {
+    const pack = readPack(`k/${shapeOf(kit.steed).kit}`);
+    return Object.values(pack.rigs)[0]!;
+  }
+  return rigs.rigs[readPack(`k/${kit.k}`).meshes.body!.rig!]!;
+}
+
+/** The figure as it is drawn: its file's model, painted, with what is built onto it (a beast: built as a mount is). */
 function drawn(kit: ReturnType<typeof kitOf>): { mesh: MeshData; joints: string[] } {
+  if (kit.steed) {
+    const model = mountModel(kit.steed, readPack(`k/${shapeOf(kit.steed).kit}`));
+    return { mesh: model.mesh, joints: model.rig.joints };
+  }
   const pack = readPack(`k/${kit.k}`);
   let mesh = pack.meshes.body!;
   const joints = rigs.rigs[mesh.rig!]!.joints;
@@ -46,13 +61,19 @@ function heaviest(): { file: string; tris: number } {
 }
 
 describe('Sigilfall: bosses of their own', () => {
-  it('the first boss a player meets, the Coffin Matron, has one', () => {
-    expect(OWN.map((x) => x.boss.id)).toContain('coffin-matron');
+  it('the Prologue’s four have one: the Coffin Matron, Warden Ossric, Morgrave and Grimtusk', () => {
+    for (const id of ['coffin-matron', 'ossric', 'morgrave', 'grimtusk']) expect(OWN.map((x) => x.boss.id)).toContain(id);
   });
 
   it('each has a file of its own, shared with no other creature, on one of the shared skeletons', () => {
     const files = new Map<string, string>();
     for (const { boss, kit } of OWN) {
+      // (a beast built as the great mounts are is made in code from its animal's file, under an id of its own)
+      if (kit.steed) {
+        expect(kit.steed.id, boss.id).toBe(`boss-${boss.id}`);
+        expect(kit.steed.bare, `${boss.id} wears a saddle`).toBe(true);
+        continue;
+      }
       expect(kit.k, boss.id).toMatch(/^boss_/);
       expect(files.get(kit.k), `${boss.id} shares ${kit.k}`).toBeUndefined();
       files.set(kit.k, boss.id);
@@ -65,7 +86,7 @@ describe('Sigilfall: bosses of their own', () => {
   it('each has a move for every attack the rules give it, and for its entrance, a phase changing, a daze and its fall', () => {
     for (const { boss, kit } of OWN) {
       const form = bossForm(kit.form)!;
-      const rig = rigs.rigs[readPack(`k/${kit.k}`).meshes.body!.rig!]!;
+      const rig = rigOf(kit);
       const patterns = new Set(boss.phases.flatMap((p) => [...(p.enter ?? []), ...p.patterns].map((u) => u.id)));
       for (const id of patterns) expect(form.moves[id], `${boss.id} has no move for ${id}`).toBeTruthy();
       const named = [...Object.values(form.moves).map((m) => m.clip), form.enter.clip, form.enter.then, form.shift.clip, form.dazed, form.fall.clip, form.fall.end, 'idle', 'walk', 'run', 'hit', 'die'];
@@ -80,6 +101,7 @@ describe('Sigilfall: bosses of their own', () => {
 
   it('each one’s own copy of its skeleton is made of its clips alone, carried its own way', () => {
     for (const { boss, kit } of OWN) {
+      if (kit.steed) continue;
       const form = bossForm(kit.form)!;
       const rigName = readPack(`k/${kit.k}`).meshes.body!.rig!;
       const own = bossRig(kit.form!, form, rigs, rigName)!;
@@ -140,7 +162,8 @@ describe('Sigilfall: bosses of their own', () => {
       const { mesh } = drawn(kit);
       let lit = 0;
       for (let v = 0; v < mesh.n; v++) if (!mesh.nor[v * 3] && !mesh.nor[v * 3 + 1] && !mesh.nor[v * 3 + 2]) lit++;
-      expect(lit, `${boss.id} has nothing alight`).toBeGreaterThan(0);
+      // (a beast's light is in its eyes and the motes about it; one built from a file carries its magic on it)
+      if (!kit.steed) expect(lit, `${boss.id} has nothing alight`).toBeGreaterThan(0);
       expect(lit / mesh.n, `${boss.id}: ${Math.round((lit / mesh.n) * 100)}% of it glows`).toBeLessThan(0.06);
     }
   });

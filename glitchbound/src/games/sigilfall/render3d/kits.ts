@@ -385,7 +385,15 @@ put('werewolf werewolf-howler moonfang', { k: 'werewolf' });
 // (a boar is a boar: it was the wolf in a paler coat)
 put('boar', { k: 'fbx_pig', beast: BEASTS.boar });
 put('russet-boar', { k: 'fbx_pig', beast: BEASTS.russetBoar, size: 0.86 });
-put('grimtusk', { k: 'orc_brute', tint: '#8a7a6c', size: 1.4, ...SMASH });
+// Grimtusk, Warlord of the Whisperwood: "a boar the size of a cart", the Host's violet light in its eyes and in the
+// motes that hang about it. Built as the great boars are (render3d/mountKit.ts), bare of any saddle: black bristle
+// unbroken down its spine, tusks grown long and wide.
+put('grimtusk', {
+  k: 'a_bull',
+  size: 1.12,
+  form: 'grimtusk',
+  steed: { id: 'boss-grimtusk', name: 'Grimtusk', lore: '', from: '', source: { kind: 'clears', regions: ['whisperwood'], tier: 0 }, body: 'boar', bare: true, coat: '#2e2622', mane: '#120e0c', tack: '#2e2622', tusks: true, plate: '#3a2e3e', glow: { kind: 'motes', color: '#b48cff' }, tier: 'shop' },
+});
 put('stag', { k: 'a_stag', beast: BEASTS.stag });
 put('blighted-stag', { k: 'a_stag', beast: BEASTS.blightedStag });
 put('frost-ram', { k: 'fbx_sheep', beast: BEASTS.frostRam });
@@ -540,9 +548,44 @@ const molten = (rock: string, hot: string): Kit['paint'] => [
   { lum: [0, 0.36], to: hot, glow: true, keep: 0 },
   { to: rock, keep: 0.8 },
 ];
-boss('grimtusk', { size: 1.5, wears: [{ piece: 'horns', a: '#5a4a3a', b: '#e8dcc0', size: 0.9 }, { piece: 'eyes', b: '#ffb04d' }] });
-boss('ossric', { size: 1.4, wears: [{ piece: 'eyes', b: '#ffe08a' }, { piece: 'halo', a: '#c89a3a', b: '#fff2c0', size: 0.8 }] });
-boss('morgrave', { size: 1.35, wears: [{ piece: 'ice-crown', a: '#7a2ab8', b: '#ff9af0', band: '#4a3a5c' }, { piece: 'eyes', b: '#ff7ae8' }] });
+// Warden Ossric, Keeper of the Crypt Gate: a warden of Aster who died at this gate three hundred years ago, woken by
+// the raiders' grieflight. His own plate gone to verdigris, the Regent's blue faded on his cape, his skull bare
+// with two grave candles burning gold on it (the candles of his fight), a halberd and a great shield.
+TABLE.ossric = {
+  k: 'boss_ossric',
+  form: 'ossric',
+  size: 1.42,
+  atk: 'chop2',
+  paint: [
+    // his eyes: candle gold
+    { joint: 'head', lum: [0, 0.3], hue: [0, 360], to: '#ffd88a', glow: true, keep: 0.2 },
+    // the cape and what cloth he wears: the Regent's blue, three hundred years faded
+    { hue: [330, 25], sat: [0.45, 1], to: '#3d4f78', keep: 0.9 },
+    // the plate: old bronze gone green-grey (his bones are left bone)
+    { joint: 'head', lum: [0.3, 1], to: '#e6dfc8', keep: 0.9 },
+    { hue: [190, 260], sat: [0.08, 1], to: '#6f7d74', keep: 1 },
+  ],
+};
+// Morgrave, the Ash-Scholar: a scholar thrown out of the Crown City's college, who sold himself to the Host. Ash-grey
+// in the face behind his spectacles, his robes the Host's ash and violet, his pack of books still on his back, the
+// rift's light in the book he reads from and in the crown the Host gave him.
+TABLE.morgrave = {
+  k: 'boss_morgrave',
+  form: 'morgrave',
+  size: 1.38,
+  atk: 'cast',
+  paint: [
+    // the open book's pages: alight with the rift
+    { joint: 'handslot.l', lum: [0.82, 1], to: '#ff9af0', glow: true, keep: 0.3 },
+    { joint: 'handslot.l', to: '#3a2f48', keep: 0.9 },
+    // his face: ash
+    { joint: 'head', hue: [10, 40], sat: [0.2, 0.75], to: '#b9b4bf', keep: 0.9 },
+    // the robes: the Host's ash, and violet where they were bright
+    { hue: [240, 330], sat: [0.25, 1], to: '#5a3f7a', keep: 0.9 },
+    { hue: [60, 180], sat: [0.2, 1], to: '#4a4654', keep: 0.9 },
+  ],
+  wears: [{ piece: 'ice-crown', a: '#7a2ab8', b: '#ff9af0', band: '#4a3a5c' }],
+};
 boss('the-drowned', { size: 1.35, wears: [{ piece: 'eyes', b: '#9afff0' }] });
 boss('the-rot-mother', { size: 1.5, wears: [{ piece: 'horns', a: '#3a4a22', b: '#c8e070' }, { piece: 'eyes', b: '#e8ff70' }] });
 boss('slag-colossus', { size: 1.6, tint: undefined, paint: molten('#4a3a36', '#ff9a3a'), wears: [{ piece: 'eyes', b: '#fff0a0' }] });

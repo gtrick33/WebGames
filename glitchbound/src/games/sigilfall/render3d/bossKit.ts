@@ -218,6 +218,87 @@ const FORMS: Record<string, BossForm> = {
   },
 };
 
+/** Candles set on a crown or a helm: `n` of them across it, the middle one tallest, burning `flame`. */
+function crowned(m: MeshData, joints: readonly string[], n: number, flame: readonly number[]): MeshData {
+  const head = joints.indexOf('head');
+  const box = head >= 0 ? (boxOf(m, head) as Box | null) : null;
+  if (!box) return m;
+  const cx = (box.min[0] + box.max[0]) / 2;
+  const cz = (box.min[2] + box.max[2]) / 2;
+  const hh = box.max[1] - box.min[1];
+  const wide = box.max[0] - box.min[0];
+  const bits = new Bits();
+  for (let i = 0; i < n; i++) {
+    const u = n > 1 ? i / (n - 1) - 0.5 : 0;
+    candle(bits, [cx + u * wide * 0.56, box.max[1] - hh * (0.03 + Math.abs(u) * 0.22), cz - wide * 0.04], hh * (0.24 - Math.abs(u) * 0.12), wide * 0.085, WAX, flame);
+  }
+  return withBits(m, bits, head);
+}
+
+const CANDLE_GOLD = hex('#ffd88a');
+
+// Warden Ossric. A soldier's moves, slow and heavy: he comes on behind his shield, brings the halberd down two-handed
+// for his slams, thrusts for the spears, and raises it to call his candles alight. He gets up off the crypt's floor as
+// its dead do. Struck dumb against a wall, he stands behind his shield. He dies as bones do, and lies where he fell.
+FORMS.ossric = {
+  build: (m, joints) => crowned(m, joints, 2, CANDLE_GOLD),
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'chop2', 'stab', 'bash', 'block', 'rise', 'taunt'],
+  bend: (joint, clip, phase) => (joint === 'chest' && clip === 'idle' ? [Math.sin(phase * Math.PI * 2) * 0.02, 0, 0] : joint === 'head' ? [0.1, 0, 0] : null),
+  moves: {
+    charge: { clip: 'bash' },
+    slam: { clip: 'chop2', rate: 0.9 },
+    slamRings: { clip: 'chop2', rate: 0.8 },
+    spearFan: { clip: 'stab' },
+    'crypt:candles': { clip: 'taunt' },
+    summon: { clip: 'taunt' },
+  },
+  enter: { clip: 'rise', then: 'taunt' },
+  shift: { clip: 'taunt', rate: 1.2 },
+  dazed: 'block',
+  fall: { clip: 'die', end: 'dead', kept: 2.8, sink: 0 },
+};
+
+// Morgrave. A scholar's moves: everything is read out of the book or flung from the staff. He drifts (the rules float
+// him), stooped over his page. He dies as a man does, and the rift he opened takes him down.
+FORMS.morgrave = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'cast', 'channel', 'summon', 'dodge', 'spawn', 'cheer'],
+  bend: (joint, clip, phase) => (joint === 'spine' ? [0.1, 0, 0] : joint === 'chest' ? [0.12 + (clip === 'idle' ? Math.sin(phase * Math.PI * 2) * 0.02 : 0), 0, 0] : joint === 'head' ? [0.08, 0, 0] : null),
+  moves: {
+    soulVolley: { clip: 'cast' },
+    graveGrasp: { clip: 'channel' },
+    summon: { clip: 'summon' },
+    'crypt:soul-split': { clip: 'summon', rate: 0.8 },
+    riftSpiral: { clip: 'channel' },
+    riftBeams: { clip: 'cast', rate: 0.8 },
+    teleport: { clip: 'dodge' },
+    riftNova: { clip: 'summon' },
+    collapse: { clip: 'channel', rate: 0.8 },
+  },
+  enter: { clip: 'spawn', then: 'channel' },
+  shift: { clip: 'summon', rate: 1.1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 2.6, sink: 0.9 },
+};
+
+// Grimtusk, the great boar (built as the boar mounts are: render3d/kits.ts). A beast has few moves and makes each
+// count: its head goes down for every charge, gore and stomp; struck from its rush or roused to its second wind it
+// rears as a beast does when hurt; and it dies on its side where it stood, a carcass the size of a cart that stays.
+FORMS.grimtusk = {
+  clips: ['idle', 'walk', 'run', 'chop', 'hit', 'die'],
+  moves: {
+    charge: { clip: 'chop' },
+    tripleCharge: { clip: 'chop', rate: 1.3 },
+    stomp: { clip: 'chop', rate: 0.8 },
+    gore: { clip: 'chop', rate: 1.4 },
+    roar: { clip: 'hit', rate: 0.6 },
+    summon: { clip: 'hit', rate: 0.6 },
+  },
+  enter: { clip: 'hit', then: 'idle' },
+  shift: { clip: 'hit', rate: 0.5 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'die', kept: 3, sink: 0 },
+};
+
 export const bossForm = (id: string | undefined): BossForm | undefined => (id ? FORMS[id] : undefined);
 export const BOSS_FORMS: Readonly<Record<string, BossForm>> = FORMS;
 
