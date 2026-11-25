@@ -20,7 +20,13 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     giver: 'oasis-keeper-sefu',
     auto: true,
     text: 'Elyra now carries two sigils, Embers and the Sun, and the Host still has one. The second place on the wardens’ map is the Thorn Court, in the Glimmerwood, north of the Sunscorch. Lady Silvaine of Lumen Glade has written to Sefu for help, because a blight is killing her wood. Take the north road into the Glimmerwood and find Silvaine in Lumen Glade.',
-    objective: { kind: 'talk', npc: 'lady-silvaine', label: 'Talk to Lady Silvaine in Lumen Glade' },
+    // (it was a walk and a talk. The blight is the first thing met in the wood: it is cut off the glade's boundary trees
+    // by the hero's own hand before its Lady is spoken to)
+    objective: {
+      kind: 'use', region: 'glimmerwood', at: 'lady-silvaine', count: 3, thing: 'mushroom', verb: 'Cut it out', label: 'Cut the grey blight off Lumen Glade’s boundary trees', secs: 1.1, spread: 10, ambush: ['thornling', 'thornling'],
+      notes: ['Grey rot, cold to the touch. No plant’s sickness.', 'Under the bark, the wood is ash.', 'A fey-light gutters on this branch, and steadies.'],
+    },
+    then: [{ kind: 'talk', npc: 'lady-silvaine', label: 'Talk to Lady Silvaine in Lumen Glade' }],
     after: ['the-sun-king'],
     level: 31,
     reward: { xp: 800, gold: 260 },
@@ -33,7 +39,15 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     giver: 'lady-silvaine',
     text: 'The blight began at the Withered Ring, south-west of Lumen Glade, where the Summer Court used to dance. The Summer Court is the court of Silvaine’s brother, Prince Thistlemourn. One night in spring, the music at the ring stopped. Silvaine’s scouts won’t go near it. Go and find out what happened.',
     objective: { kind: 'explore', spot: 'withered-ring', label: 'Find the Withered Ring' },
+    // (it was a walk to the ring. What happened the night the music stopped is read from the ground)
+    then: [
+      {
+        kind: 'use', region: 'glimmerwood', at: 'withered-ring', count: 3, thing: 'mushroom', verb: 'Look closer', label: 'Search the dancers’ ring', secs: 1, spread: 5, guards: ['blighted-dryad'],
+        notes: ['The dancers’ ring: every cap grey and split.', 'A whole court’s footprints, all leaving at once.', 'A reed-pipe in the moss. It makes no sound at all.'],
+      },
+    ],
     find: {
+      step: 1,
       name: 'A Silent Reed-Pipe',
       kind: 'relic',
       about: 'A reed-pipe of the Summer Court, found in the thorns at the Withered Ring. One of the prince’s musicians dropped it the night the music stopped. Violet light runs in the cracks of the reed, and it will not play.',
@@ -49,8 +63,17 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     auto: true,
     giver: 'lady-silvaine',
     text: 'The blight is the Host’s doing. Now Silvaine’s own knights are leaving her, a few at a time, for the Pale Pavilion, a camp of grey tents in the far south-west of the wood. Find out who they are joining before you go to the Thorn Court.',
-    objective: { kind: 'explore', spot: 'pale-pavilion', label: 'Scout the Pale Pavilion' },
+    objective: { kind: 'explore', spot: 'pale-pavilion', label: 'Find the Pale Pavilion' },
+    // (it was a walk to the tents. Who the knights are joining is heard at the tent walls, and the bargain is lifted
+    // from a camp table)
+    then: [
+      {
+        kind: 'use', region: 'glimmerwood', at: 'pale-pavilion', count: 3, thing: 'tent', verb: 'Listen', label: 'Listen at the grey tents', secs: 1.4, spread: 6, guards: ['fey-knight'],
+        notes: ['“He pays in summers. A hundred years to each of us.”', '“Our prince signed first. We only follow.”', 'On a camp table: a contract, sealed in grey wax.'],
+      },
+    ],
     find: {
+      step: 1,
       name: 'The Herald’s Bargain',
       kind: 'letter',
       about: 'Found on the table in the prince’s tent at the Pale Pavilion. It is written in grey ink and sealed with the empty crown. Prince Thistlemourn has signed it.',
@@ -69,7 +92,9 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     choice: 'thistlemourn',
     offer: ['The prince is gone. The Host’s thorns have grown into him, and they will not let him go.', 'Silvaine will ask you to try to save him. I say end it quickly, for his sake. (Taking this path closes Silvaine’s.)'],
     text: 'Prince Thistlemourn has agreed to give the Sigil of Thorns to the Pale Herald. He rules from the Thorn Court, north-west of Lumen Glade, and his knights now serve the Host. Old Root, the treant who keeps the inn, believes the prince is lost. Defeat Thistlemourn at the Thorn Court before he hands over the sigil.',
-    objective: { kind: 'kill', region: 'glimmerwood', count: 1, enemies: ['prince-thistlemourn'], label: 'Defeat Prince Thistlemourn at the Thorn Court' },
+    // (it was one kill. His court has grown shut round him: its briar wards are cut through first)
+    objective: { kind: 'use', region: 'glimmerwood', at: 'thorn-court', count: 3, thing: 'totem', verb: 'Cut the briar', label: 'Cut through the briar wards of the Thorn Court', secs: 1.2, spread: 6, guards: ['thorn-archer'] },
+    then: [{ kind: 'kill', region: 'glimmerwood', count: 1, enemies: ['prince-thistlemourn'], label: 'Defeat Prince Thistlemourn', lair: { at: 'thorn-court', enemies: ['prince-thistlemourn'] } }],
     thanks: ['I felt the thorns let go of the wood when he fell. It was quick, then. Good.', 'Silvaine came in an hour ago. She took the circlet off her own head and left it on my bar for you.'],
     after: ['the-pale-pavilion'],
     zone: 'glimmerwood',
@@ -89,7 +114,9 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     choice: 'thistlemourn',
     offer: ['Old Root thinks my brother is lost. I don’t believe it.', 'Our mother sang him a song when he was small. If I sing it to him in the Thorn Court, he may remember who he is. His knights will try to stop me. Will you hold them off? (Taking this path closes Old Root’s.)'],
     text: 'Silvaine will go to the Thorn Court and sing her brother the song their mother sang to him. She hopes it will make him remember who he is. His knights will attack her while she sings. Hold them off until the song is done.',
-    objective: { kind: 'event', event: 'thorn-song', label: 'Protect Silvaine at the Thorn Court while she sings' },
+    // (she sings by their mother's lamp, and it is the hero who carries it into her brother's hall through his knights)
+    objective: { kind: 'carry', region: 'glimmerwood', from: 'lady-silvaine', to: 'thorn-hall', thing: 'lantern', verb: 'Take the lamp', label: 'Carry their mother’s lamp to the Thorn Court', ambush: [['fey-knight'], ['thorn-archer', 'thornling']] },
+    then: [{ kind: 'event', event: 'thorn-song', label: 'Hold the prince’s knights off while Silvaine sings' }],
     thanks: ['He knew me. He sat down on the floor of his own court and cried like a child, and he knew me.', 'He wants to make it right. He gave up the sigil himself, and I want you to have our mother’s circlet.'],
     after: ['the-pale-pavilion'],
     zone: 'glimmerwood',
@@ -108,7 +135,9 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     giver: 'lady-silvaine',
     auto: true,
     text: 'The forest clans have seen what the Herald’s bargain cost the prince and his court. Silvaine has called them to Lumen Glade to decide whether they will march with the Regent against the Host. She wants you there when they answer.',
-    objective: { kind: 'talk', npc: 'lady-silvaine', label: 'Talk to Lady Silvaine in Lumen Glade' },
+    // (the clans answer round their fires, and a guest of the wood lights them)
+    objective: { kind: 'use', region: 'glimmerwood', at: 'lady-silvaine', count: 3, thing: 'campfire', verb: 'Light', label: 'Light the three council fires for the forest clans', secs: 1, spread: 8 },
+    then: [{ kind: 'talk', npc: 'lady-silvaine', label: 'Hear the clans’ answer with Lady Silvaine' }],
     after: ['the-thorn-court', 'silvaines-song'],
     zone: 'glimmerwood',
     level: 35,
@@ -121,8 +150,16 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     name: 'The Moonwell',
     giver: 'lady-silvaine',
     text: 'Every fey court draws its light from a well. Lumen Glade’s is the Moonwell, in the old stones north-east of the glade, and it grows dimmer every night. Silvaine can’t leave the glade unguarded. Go and look into the Moonwell for her.',
-    objective: { kind: 'explore', spot: 'moonwell', label: 'Look into the Moonwell' },
+    objective: { kind: 'explore', spot: 'moonwell', label: 'Find the Moonwell' },
+    // (it was a look into the water. What dims it is pulled out by hand, and the last thing out is not of this wood)
+    then: [
+      {
+        kind: 'use', region: 'glimmerwood', at: 'moonwell', count: 3, thing: 'mushroom', verb: 'Pull the root', label: 'Pull the blight-roots out of the Moonwell', secs: 1.3, spread: 4, ambush: ['blighted-dryad'],
+        notes: ['A root as thick as an arm, grey to the core.', 'The water is brighter where it lay.', 'At the bottom: a black thorn. Not from this wood.'],
+      },
+    ],
     find: {
+      step: 1,
       name: 'A Blighted Thorn',
       kind: 'relic',
       about: 'It was growing out of the Moonwell’s stone lip, as long as a finger, with the Host’s violet light inside it. Its roots go down into the water. Silvaine will want to see it.',
@@ -136,8 +173,10 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     id: 'moonwater',
     name: 'Moonwater',
     giver: 'lady-silvaine',
-    text: 'The blight is choking the Moonwell, and the creatures near it keep making it worse. Blighted dryads grow roots into the water, and glimmer moths shake sick dust over it. Defeat eight of them so Silvaine’s handmaids can clean the well.',
-    objective: { kind: 'kill', region: 'glimmerwood', count: 8, enemies: ['blighted-dryad', 'glimmer-moth'], label: 'Defeat blighted dryads and glimmer moths' },
+    text: 'The blight is choking the Moonwell, and the creatures near it keep making it worse. Blighted dryads grow roots into the water, and glimmer moths shake sick dust over it. Defeat five of them, and carry the first clean water back to the glade, so Silvaine’s handmaids can clean the well.',
+    objective: { kind: 'kill', region: 'glimmerwood', count: 5, enemies: ['blighted-dryad', 'glimmer-moth'], label: 'Defeat blighted dryads and glimmer moths near the Moonwell' },
+    // (it was eight kills. The glade drinks from the well: the first clean water goes back to it in the hero's arms)
+    then: [{ kind: 'carry', region: 'glimmerwood', from: 'moonwell', to: 'lady-silvaine', thing: 'barrel', verb: 'Draw the moonwater', label: 'Carry clean moonwater to Lumen Glade', ambush: [['glimmer-moth', 'glimmer-moth'], ['blighted-dryad']] }],
     after: ['the-moonwell'],
     zone: 'glimmerwood',
     level: 33,
@@ -149,8 +188,16 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     name: 'The Moth Glade',
     giver: 'pip-thistledown',
     text: 'Pip Thistledown sells lamps lit with dust from the moths of Moth Glade, north of Lumen Glade. The moths used to come to the glade at dusk so Pip could collect their dust. Now they attack anyone who comes near. Go and find out what is wrong in Moth Glade.',
-    objective: { kind: 'explore', spot: 'moth-glade', label: 'Go to Moth Glade' },
+    objective: { kind: 'explore', spot: 'moth-glade', label: 'Find Moth Glade' },
+    // (it was a walk to the glade. Pip's lure-lamps stand there still, and what is wrong is seen at each)
+    then: [
+      {
+        kind: 'use', region: 'glimmerwood', at: 'moth-glade', count: 3, thing: 'lantern', verb: 'Check the lamp', label: 'Check Pip’s lure-lamps in Moth Glade', secs: 0.9, spread: 6, guards: ['glimmer-moth'],
+        notes: ['Pip’s lure-lamp. The dust in it has gone grey.', 'Moths on the ground, wings folded, still breathing.', 'A grey wing the size of a cloak, caught in a web.'],
+      },
+    ],
     find: {
+      step: 1,
       name: 'A Grey Moth Wing',
       kind: 'relic',
       about: 'Found on the moss in Moth Glade. Pip’s moths used to shed silver dust. This wing sheds grey dust that stings the fingers. The blight has reached the moths.',
@@ -164,8 +211,10 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     id: 'glimmerdust',
     name: 'Glimmerdust',
     giver: 'pip-thistledown',
-    text: 'Every moth in Moth Glade has turned wild. Pip still needs their dust, because it keeps half the lamps in Lumen Glade burning. Collect six pinches of glimmerdust from glimmer moths anywhere in the wood.',
-    objective: { kind: 'loot', region: 'glimmerwood', item: 'Pinch of Glimmerdust', from: ['glimmer-moth', 'mother-of-moths'], chance: 0.45, count: 6, label: 'Collect Glimmerdust from glimmer moths' },
+    text: 'Every moth in Moth Glade has turned wild. Pip still needs their dust, because it keeps half the lamps in Lumen Glade burning. Collect four pinches of glimmerdust from glimmer moths anywhere in the wood, and fill the glade’s lamps with it.',
+    objective: { kind: 'loot', region: 'glimmerwood', item: 'Pinch of Glimmerdust', from: ['glimmer-moth', 'mother-of-moths'], chance: 0.45, count: 4, label: 'Collect Glimmerdust from glimmer moths' },
+    // (it was six pinches handed over. The dust is for the glade's lamps, and the hero fills them)
+    then: [{ kind: 'use', region: 'glimmerwood', at: 'pip-thistledown', count: 3, thing: 'lantern', verb: 'Fill the lamp', label: 'Fill Lumen Glade’s lamps with the dust', secs: 0.9, spread: 9 }],
     after: ['the-moth-glade'],
     zone: 'glimmerwood',
     level: 33,
@@ -176,7 +225,12 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     name: 'The Mother of Moths',
     giver: 'pip-thistledown',
     text: 'The glimmerdust is turning grey. Pip saw this once before, a hundred years ago, when the Mother of Moths fell sick. She is the oldest moth in the wood, as big as a cart, and every moth hatched from her. Now the blight has made her sick. Defeat her in Moth Glade, so the next brood can hatch healthy.',
-    objective: { kind: 'kill', region: 'glimmerwood', count: 1, enemies: ['mother-of-moths'], label: 'Defeat the Mother of Moths in Moth Glade' },
+    // (it was one kill. She is drawn down by Pip's three great lures; and what she leaves is why it was done)
+    objective: { kind: 'use', region: 'glimmerwood', at: 'moth-glade', count: 3, thing: 'brazier', verb: 'Light the lure', label: 'Light Pip’s three great lures in Moth Glade', secs: 1.1, spread: 6, ambush: ['glimmer-moth', 'glimmer-moth'] },
+    then: [
+      { kind: 'kill', region: 'glimmerwood', count: 1, enemies: ['mother-of-moths'], label: 'Defeat the Mother of Moths', lair: { at: 'moth-glade', enemies: ['mother-of-moths'] } },
+      { kind: 'use', region: 'glimmerwood', at: 'moth-glade', count: 1, thing: 'mushroom', verb: 'Gather the clutch', label: 'Gather her last clutch of eggs for Pip', secs: 1.3, spread: 3, notes: ['A clutch of eggs, white as milk. Not grey. Not yet.'] },
+    ],
     after: ['glimmerdust'],
     zone: 'glimmerwood',
     level: 34,
@@ -187,8 +241,10 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     id: 'bloomrot',
     name: 'Bloomrot',
     giver: 'old-root',
-    text: 'Old Root is a treant, a living tree, and his roots run under half the wood. The blight-blooms of Bloomrot Hollow, south-east of Lumen Glade, are chewing on them. Blight-blooms are walking flowers full of spores that burst when they die. Pull up eight of them.',
-    objective: { kind: 'kill', region: 'glimmerwood', count: 8, enemies: ['blight-bloom'], label: 'Defeat blight-blooms' },
+    text: 'Old Root is a treant, a living tree, and his roots run under half the wood. The blight-blooms of Bloomrot Hollow, south-east of Lumen Glade, are chewing on them. Blight-blooms are walking flowers full of spores that burst when they die. Pull up five of them, and dig his roots free.',
+    objective: { kind: 'kill', region: 'glimmerwood', count: 5, enemies: ['blight-bloom'], label: 'Pull up blight-blooms' },
+    // (it was eight kills. What they were chewing is dug free)
+    then: [{ kind: 'use', region: 'glimmerwood', at: 'bloomrot-hollow', count: 3, thing: 'herb', verb: 'Dig the root free', label: 'Dig Old Root’s chewed roots free in Bloomrot Hollow', secs: 1.2, spread: 6, ambush: ['blight-bloom', 'blight-bloom'] }],
     after: ['the-fading-lights'],
     zone: 'glimmerwood',
     level: 32,
@@ -199,8 +255,14 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     name: 'The Hart’s Trail',
     giver: 'old-root',
     text: 'Old Root is worried about an old friend, the Pale Hart. The Hart is a white stag who comes to drink at Old Root’s pool every midsummer, but he didn’t come this year. He lives in the Hart’s Dell, in the far north-west of the wood past Moth Glade. Find him.',
-    objective: { kind: 'explore', spot: 'harts-dell', label: 'Find the Hart’s Dell' },
+    // (the quest is named for a trail, and now there is one)
+    objective: {
+      kind: 'trail', region: 'glimmerwood', from: 'moth-glade', to: 'harts-dell', marks: 3, label: 'Follow the Pale Hart’s trail north-west from Moth Glade',
+      notes: ['A cloven hoofprint, wider than your hand.', 'Bark stripped by thorns, at the height of a stag’s head.', 'White hair on a briar. The blood on it is black.'],
+    },
+    then: [{ kind: 'explore', spot: 'harts-dell', label: 'Find the Hart’s Dell' }],
     find: {
+      step: 0,
       name: 'A Tuft of White Hair',
       kind: 'relic',
       about: 'Caught on the thorns at the mouth of the Hart’s Dell. It is the Pale Hart’s, and it is stained violet where the thorns went in. Old Root will know it.',
@@ -215,7 +277,10 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     name: 'Rest for the Hart',
     giver: 'old-root',
     text: 'The blight has grown thorns on the Pale Hart where his antlers were, and he attacked you on sight. Old Root is too old to walk to the Hart’s Dell. He asks you to go back and put his friend to rest.',
-    objective: { kind: 'kill', region: 'glimmerwood', count: 1, enemies: ['the-pale-hart'], label: 'Put the Pale Hart to rest in the Hart’s Dell' },
+    // (it was a kill, of a friend. He is fought until he can fight no more, and then a hand is laid on him; and what is
+    // left of him goes home to the pool he drank at)
+    objective: { kind: 'subdue', region: 'glimmerwood', enemies: ['the-pale-hart'], count: 1, verb: 'Give him rest', label: 'Wear the Pale Hart down, and give him rest', lair: { at: 'harts-dell', enemies: ['the-pale-hart'] } },
+    then: [{ kind: 'use', region: 'glimmerwood', at: 'old-root', count: 1, thing: 'herb', verb: 'Plant it', label: 'Plant the Hart’s white thorn by Old Root’s pool', secs: 1.6, spread: 3, notes: ['It takes. By midsummer it will flower white.'] }],
     after: ['the-harts-trail'],
     zone: 'glimmerwood',
     level: 34,
@@ -273,7 +338,7 @@ export const GLIMMERWOOD_NPCS: Record<string, NpcDef> = {
         when: { quest: 'the-moth-glade', state: 'active' },
         lines: ['All my lamps burn dust from the moths of Moth Glade, north of here.', 'The moths used to come to me every evening. Now they attack me. Please find out why.'],
       },
-      { when: { quest: 'glimmerdust', state: 'active' }, lines: ['The moths have all gone wild, but I still need their dust for my lamps.', 'Bring me six pinches from glimmer moths. Let them dive at you, then shake the dust off their wings.'] },
+      { when: { quest: 'glimmerdust', state: 'active' }, lines: ['The moths have all gone wild, but I still need their dust for my lamps.', 'Bring me four pinches from glimmer moths, and fill the lamps round the glade for me. My wings aren’t what they were. Let them dive at you, then shake the dust off their wings.'] },
       {
         when: { quest: 'the-mother-of-moths', state: 'active' },
         lines: ['The dust is going grey. I saw that once before, a hundred years ago, when the Mother of Moths fell sick.', 'Every moth in the wood hatched from her. Put her to rest in Moth Glade, so the next brood hatches healthy.'],
@@ -296,7 +361,7 @@ export const GLIMMERWOOD_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'bloomrot', state: 'active' },
-        lines: ['Something is chewing on my roots. It’s the blight-blooms in Bloomrot Hollow, south-east of the glade.', 'Please pull up eight of them. I can’t do it myself.'],
+        lines: ['Something is chewing on my roots. It’s the blight-blooms in Bloomrot Hollow, south-east of the glade.', 'Please pull up five of them, and dig my roots free where they’ve been at them. I can’t do it myself.'],
       },
       {
         when: { quest: 'the-harts-trail', state: 'active' },
