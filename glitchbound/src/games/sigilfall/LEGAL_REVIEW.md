@@ -52,6 +52,15 @@ daggers from the Fantasy Weapons Bits and a keyring from the Dungeon Pack; his c
 same KayKit collection (CC0), each pack already credited. Their names and titles are unchanged. A headsman's hood and
 a self-crowned bandit are stock figures of the genre, and neither copies a named character of another game.
 
+Act II's four (piece 2d, 2026-11-25) take nothing new. **King Hrodric** is the large Barbarian's body with the
+Skeleton Warrior's skull, the Adventurers pack's two-handed sword and the Barbarian's round shield; his crown is built
+in code. **Sir Corvane** is the Black Knight with his own sword and shield and a banner from the Dungeon Pack. **Silas
+Vey** is the hooded Rogue with the Hoarder's pouches (Mystery Monthly), a dagger from the Fantasy Weapons Bits and a
+coin stack from the Dungeon Pack. **The Royal Auditor** is the Cleric's robes with the Skeleton Mage's skull, the
+Lorekeeper's spectacles, an open spellbook, a wand and a candle. All of the same KayKit collection (CC0), each pack
+already credited. Their names and titles are unchanged. A crowned dead king, a fallen knight under his banner, a
+hooded paymaster and a skeletal clerk are stock figures, and none copies a named character of another game.
+
 ## A Rift legendary on every place (2026-11-24)
 
 The owner asked for "a legendary for each spec and 3 legendaries common for the class" on every item slot. What is taken

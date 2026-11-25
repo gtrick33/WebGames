@@ -741,7 +741,7 @@ const CORVANE: Kit = {
     // the bright of his blade: the frost his lances are thrown from
     { joint: 'handslot.r', lum: [0.52, 1], sat: [0, 0.4], to: '#a8c8ff', glow: true, keep: 0.3 },
     // the Watch's banner on his back: Aster's blue, ten years faded
-    { joint: 'chest', hue: [190, 270], sat: [0.3, 1], lum: [0.3, 1], to: '#34446e', keep: 0.95 },
+    { joint: 'chest', hue: [190, 270], sat: [0.3, 1], lum: [0.3, 1], to: '#2e3c66', keep: 0.2 },
     { hue: [320, 20], sat: [0.5, 1], to: '#5a7ad8' },
     { hue: [190, 270], lum: [0.5, 1], to: '#8a8ea8' },
     { hue: [190, 270], to: '#2c2c3c', keep: 0.9 },
