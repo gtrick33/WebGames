@@ -17544,3 +17544,46 @@ button.rb-scard:not(:disabled):hover {
     font-size: 14px;
   }
 }
+
+/* The first piece that changes a skill (ui/StoryPages.tsx GearView): its gold line, and the skill it changes. */
+.rb-gear-line {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid rgb(255 207 90 / 55%);
+  border-radius: 8px;
+  background: rgb(255 207 90 / 9%);
+}
+.rb-gear-line p {
+  margin: 0;
+  color: #ffcf5a;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.rb-gear-skill {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgb(0 0 0 / 28%);
+}
+.rb-gear-skill > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.rb-gear-skill span {
+  font-size: 0.86em;
+  opacity: 0.86;
+  line-height: 1.35;
+}
+.rb-gear-skill .rb-gear-now {
+  color: #ffcf5a;
+  opacity: 1;
+}
+.rb-story.is-gear .rb-find {
+  max-height: calc(100% - 12px);
+  overflow-y: auto;
+}

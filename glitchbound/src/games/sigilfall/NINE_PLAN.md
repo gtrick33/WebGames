@@ -26,16 +26,16 @@ requests open.**
 | # | Piece | Branch | Pull request | State | Needs first |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Baseline and plan | `claude/sf9-baseline` | #355 | open | nothing |
-| 2a | Boss pipeline and the Coffin Matron | `claude/sf9-boss-matron` | | not started | 1 |
-| 2b | Bosses: the Prologue (Ossric, Morgrave, Grimtusk) | `claude/sf9-bosses-prologue` | | not started | 2a |
-| 2c | Bosses: Act I (Gallows Keep) | `claude/sf9-bosses-act1` | | not started | 2a |
+| 2a | Boss pipeline and the Coffin Matron | `claude/sf9-boss-matron` | #356 | open | 1 (#355) |
+| 2b | Bosses: the Prologue (Ossric, Morgrave, Grimtusk) | `claude/sf9-bosses-prologue` | #357 | open | 2a (#356) |
+| 2c | Bosses: Act I (Gallows Keep): the Hangman and Harlan Blackglove; Gnasher's moves; a move for every attack of all 43 bosses | `claude/sf9-bosses-act1` | #363 | open | 2b (#357) |
 | 2d | Bosses: Act II (the Barrow of Kings, the Crown Catacombs) | `claude/sf9-bosses-act2` | | not started | 2a |
 | 2e | Bosses: Act III (the Tomb of the Sun King, the Vault of Rime) | `claude/sf9-bosses-act3` | | not started | 2a |
 | 2f | Bosses: Act IV (the Siege of Highwall) | `claude/sf9-bosses-act4` | | not started | 2a |
 | 2g | Bosses: Act V (the Molten Throne) | `claude/sf9-bosses-act5` | | not started | 2a |
 | 2h | Bosses: the finale (Duskspire) | `claude/sf9-bosses-finale` | | not started | 2a |
 | 2i | Bosses: the rest (the Rift's five other dungeons, the lands' named foes) | `claude/sf9-bosses-rest` | | not started | 2a |
-| 3 | The signature system in the first twenty minutes | `claude/sf9-first-epic` | | not started | 1 |
+| 3 | The signature system in the first twenty minutes | `claude/sf9-first-epic` | #358 | open | 1 (#355) |
 | 4 | Quests up to the Prologue's standard, one pull request per act | `claude/sf9-quests-act1` … `-act6` | | not started | 1 |
 | 5 | Sound with its own character | `claude/sf9-sound-mix`, `-music`, `-voices` | | not started | 1 |
 | 6 | One standard, act by act | `claude/sf9-standard-act1` … `-act6` | | not started | 2, 4 (the same act's) |
@@ -284,24 +284,51 @@ attacks (`sim/patterns/<dungeon>.ts`) and its arena are read when its turn comes
 
 The lands' named foes (70 in `data/zones/*`, the story's own among them: the Grey Lady, Prince Thistlemourn, the
 Tearborn, the Gatewarden, the Weeping Lord, the Lich of Hollowmere, Vosk) come last, the story's first. A Riftstone
-run is the dungeon itself, so its bosses are the same ones. The Vigil's bosses carry a creature's sprite
-(`vigil/sim.ts`, `bossSprite`); where it and the Ring draw one of these is looked up in 2a, and each pull request
-looks at them.
+run is the dungeon itself, so its bosses are the same ones. The Vigil's champions are the lands' named foes and
+creatures (`vigil/kit.ts`: the Grey Lady, the Headless Lord and others), none of them a dungeon's boss, so they change
+with piece 2i; the Ring shows no boss.
 
 **Order.** 2a: the Coffin Matron, the first boss a player meets, as the showcase and to prove the pipeline. Then each
 act's bosses and the finale's (2b to 2h, rows 2 to 28). Then the rest (2i, rows 29 to 43 and the named foes).
 
+**2c, Gallows Keep (#363, 2026-11-24).** Two of its three:
+
+- **The Hangman**: a giant bare to the waist under a headsman's black hood, a great axe in his hand and the second
+  he takes up at half health slung on his back, the rope coiled at his hip. On the large skeleton, 11,135 triangles.
+  His wide cut is a full turn of his body, his chop comes down two-handed, the gallows floor drops when he smashes
+  down on it, the noose and the thrown axes go out with a flung arm.
+- **Harlan Blackglove**: a bandit who crowned himself. The gang's red, a black plate gauntlet on his left arm with a
+  hand too big for a man, a knife in each hand, the cage keys at his belt, and a crown of stolen gold with a shard of
+  rift-glass in its brow (his first drop is that shard). 7,690 triangles and what the crown adds. Two cuts, a
+  flick for the thrown knives, a thrust for each dash, a sidestep into his smoke, a wave of the glove for his
+  cutthroats.
+- **Gnasher** keeps his look and the shared wolf's file (the owner, 2026-11-24: "gnasher is fine"), and now leaps
+  into his charges, digs for his burrow and lowers himself to call the pack: the wolf's file gained those clips.
+- **Every boss moves** (the owner, same day: check that none floats and each has real animations, "and keep that in
+  mind for any future boss"). `render3d/bossMoves.ts` gives every attack of every boss a clip of its kind from the
+  boss's own skeleton, so no boss makes one swing for everything; four bosses on foot were lifted off the ground and
+  are not now (four that fly still drift); a struck pose that stuck after a daze is fixed.
+  `tests/sigilfall-bosses-move.test.ts` holds all 43 to it, and a new boss fails it until it moves. Twelve were run
+  in motion in the browser: `docs/review/sf9-bosses-act1/README.md`.
+- Learned: a part made for the large skeleton does not come across to the medium one at its own size (the Black
+  Knight's arm arrived as tall as the man). Parts go from medium to large, or between figures of the same skeleton.
+
+
 ### 3. The signature system in the first twenty minutes (`claude/sf9-first-epic`)
 
-The Coffin Matron's first-clear drop (`first` in `data/bosses.ts`) becomes, for each class, a hand-made item that
-visibly changes a skill the hero has by then: the skill looks and behaves differently, and the item's gold line says
-how. When it drops it is a moment: a short hint about gold lines, and the changed skill shown under the item. Its
-numbers are checked against the skill by the rules of `progress/build.ts`. A test holds that every class gets one and
-that it changes that class's skill. Static Band stays in the game (her later drops, the quartermaster).
+The Coffin Matron's first-clear drop (`first` in `data/bosses.ts`) becomes a hand-made piece that visibly changes a
+skill, with a moment made of it when it drops: a page with the piece, its gold line and the skill it changes.
 
-**Touches:** `data/items.ts`, `data/bosses.ts`, `progress/describe.ts`, `ui/` (the reward and the hint),
-`render/effects.ts` where a changed skill needs a look, `progress/tips.ts`, a new test, `LEGAL_REVIEW.md` (eight new
-item names). Saves: new item ids only; nothing renamed.
+**One piece for every class, on the basic attack** (the owner, 2026-11-24). The brief asked for a piece per class on a
+skill the hero has by then, and eight were built that way, each on its class's first skill. The owner's objection: a
+mage who becomes a Cryomancer at level 10 no longer casts Fireball (only the Pyromancer keeps it on its bar), so the
+first thing the game taught about gold lines would stop applying; a piece per specialization would be 24. The basic
+attack is the one skill no specialization drops. So: the Sexton's Handbell, for anyone, whose gold line makes the
+basic attack leap to a second enemy on every blow (Static Band does it only on a critical hit). Static Band stays
+in the game, among what she may drop every time.
+
+**Touches:** `data/items.ts`, `data/bosses.ts`, `engine.ts` (a `gear` story page, shown once), `ui/StoryPages.tsx`,
+`Game.css`, a new test, `LEGAL_REVIEW.md` (one new item name). Saves: one new item id; nothing renamed.
 
 ### 4. Quests up to the Prologue's standard (one pull request per act)
 

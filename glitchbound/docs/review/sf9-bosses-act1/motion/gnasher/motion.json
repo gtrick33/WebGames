@@ -1,0 +1,96 @@
+{
+  "boss": "gnasher",
+  "file": "a_wolf",
+  "form": null,
+  "float": 0,
+  "walked": {
+    "samples": 184,
+    "moving": 0,
+    "walking": 0,
+    "clips": {}
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "chop",
+        "idle",
+        "hit"
+      ],
+      "readings": 89
+    },
+    {
+      "phase": 1,
+      "id": "charge",
+      "clips": [
+        "leap",
+        "hit",
+        "idle",
+        "chop"
+      ],
+      "readings": 64
+    },
+    {
+      "phase": 1,
+      "id": "gallows:burrow",
+      "clips": [
+        "dig",
+        "idle",
+        "chop"
+      ],
+      "readings": 82
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "idle",
+        "low",
+        "dig"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "chop",
+        "idle",
+        "hit"
+      ],
+      "readings": 96
+    },
+    {
+      "phase": 2,
+      "id": "tripleCharge",
+      "clips": [
+        "leap",
+        "idle"
+      ],
+      "readings": 24
+    },
+    {
+      "phase": 2,
+      "id": "gallows:burrow",
+      "clips": [
+        "dig",
+        "idle",
+        "chop"
+      ],
+      "readings": 75
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "low",
+        "idle"
+      ],
+      "readings": 29
+    }
+  ],
+  "found": [
+    "it was never seen moving (0 of 184 readings)"
+  ],
+  "errors": []
+}

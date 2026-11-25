@@ -105,6 +105,7 @@ function choose(w: World, e: Enemy): PatternUse | null {
 function startPattern(e: Enemy, use: PatternUse): void {
   const b = e.boss!;
   b.pattern = { use, t: 0, step: 0, data: {} };
+  b.began = { id: use.id };
   // a phase's opening move (often cd 0) still rests its own copy in the phase's list
   const own = b.def.phases[b.phase]?.patterns.find((u) => u.id === use.id);
   b.cds[use.id] = Math.max(use.cd, own?.cd ?? 0);

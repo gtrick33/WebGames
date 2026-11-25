@@ -3,6 +3,43 @@
 First pass 2026-10-27, fixes the same day. A working record of licenses, names and borrowed material, for the
 owner (and a lawyer, if one is asked). It is **not legal advice** and not a trademark clearance.
 
+## The Coffin Matron's keepsake (2026-11-24)
+
+One hand-made epic, the **Sexton's Handbell**, given to every hero the first time the first boss falls (NINE_PLAN.md,
+piece 3). Its name, its one-line story and what it does (the basic attack leaps to a second enemy) were written for this
+game from the Matron's own story; they are plain words of burial, not another game's item. Not searched on the web:
+worth doing with the other item names before release.
+
+## Bosses of their own (2026-11-24)
+
+The pass to 9/10 (NINE_PLAN.md, piece 2) gives each boss a figure of its own in place of a soldier's model scaled up.
+The first, **the Coffin Matron**, is made only of packs the game already ships and credits: the **Complete KayKit
+Collection v8** by Kay Lousberg (its `License.txt`, read 2026-11-24: Creative Commons Zero). From it: the Witch (Mystery
+Monthly), the Skeleton Mage's arms (Skeletons), the coffin (Halloween Bits) and the shovel (RPG Tools Bits). CC0 allows
+commercial use in a web game, changing the models and shipping converted files, and asks for no credit; credit is given
+anyway (CREDITS_AND_LICENSES.md). The pack stays on the owner's machine (`~/Downloads`, where the builder reads it); only
+the built file ships (`public/games/sigilfall/3d/k/boss_matron.pack`). What else she wears (the veil, the candles on her
+crown) is built in code for this game (`render3d/bossKit.ts`).
+
+Her look is her own story's: an old woman of the dead who keeps the crypt's coffins and hides in one. No other game's
+character, art or signature colors were used or looked at for her; her name and title are unchanged. The owner's
+`~/Desktop/sigilfall assets` folder was checked for models first: it holds 2D packs and the KayKit Dungeon Pack only (no
+creatures), so nothing of it is used here. Quaternius's **Ultimate Monsters** (`~/Downloads`, its `License.txt`: CC0 1.0)
+is on the machine and unused so far; it is recorded here when a boss first takes a part from it.
+
+The Prologue's other three (piece 2b, the same day) take nothing new either. **Warden Ossric** and **Morgrave** are
+made of the same KayKit collection (CC0): the Knight, the Skeleton Warrior, the Lorekeeper, the Necromancer, and things
+from its Fantasy Weapons, Skeletons and Adventurers packs. **Grimtusk** is built in code on the bull of Quaternius's
+Ultimate Animated Animals, as the boar mounts already are (see CREDITS_AND_LICENSES.md for that pack's terms: used
+inside the game only). Their names and titles are unchanged, and each one's look is its own story's.
+
+Gallows Keep's two (piece 2c, the same day) take nothing new. **The Hangman** is the large Barbarian with the hooded
+Rogue's head and mask, the Adventurers pack's great axe (twice) and a coil of rope from the RPG Tools Bits. **Harlan
+Blackglove** is the Rogue with the Survivalist's head (Mystery Monthly Series 4) and the Knight's plate arm, two
+daggers from the Fantasy Weapons Bits and a keyring from the Dungeon Pack; his crown is built in code. All of the
+same KayKit collection (CC0), each pack already credited. Their names and titles are unchanged. A headsman's hood and
+a self-crowned bandit are stock figures of the genre, and neither copies a named character of another game.
+
 ## A Rift legendary on every place (2026-11-24)
 
 The owner asked for "a legendary for each spec and 3 legendaries common for the class" on every item slot. What is taken

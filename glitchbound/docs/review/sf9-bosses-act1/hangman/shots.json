@@ -1,0 +1,184 @@
+{
+ "boss": "hangman",
+ "shots": [
+  {
+   "state": "entrance",
+   "close": "01-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "02-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "03-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "04-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "05-entrance-close.jpg"
+  },
+  {
+   "state": "line-up",
+   "file": "06-line-up.jpg",
+   "close": "06-line-up-close.jpg"
+  },
+  {
+   "state": "portrait",
+   "file": "07-portrait.jpg"
+  },
+  {
+   "state": "phase-1-cleave-windup",
+   "file": "08-phase-1-cleave-windup.jpg",
+   "close": "08-phase-1-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-cleave-strike",
+   "file": "09-phase-1-cleave-strike.jpg",
+   "close": "09-phase-1-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-chop-windup",
+   "file": "10-phase-1-chop-windup.jpg",
+   "close": "10-phase-1-chop-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-chop-strike",
+   "file": "11-phase-1-chop-strike.jpg",
+   "close": "11-phase-1-chop-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-hook-windup",
+   "file": "12-phase-1-hook-windup.jpg",
+   "close": "12-phase-1-hook-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-hook-strike",
+   "file": "13-phase-1-hook-strike.jpg",
+   "close": "13-phase-1-hook-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-gallows-trapdoors-windup",
+   "file": "14-phase-1-gallows-trapdoors-windup.jpg",
+   "close": "14-phase-1-gallows-trapdoors-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-gallows-trapdoors-strike",
+   "file": "15-phase-1-gallows-trapdoors-strike.jpg",
+   "close": "15-phase-1-gallows-trapdoors-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-change",
+   "file": "16-phase-2-change.jpg",
+   "close": "16-phase-2-change-close.jpg"
+  },
+  {
+   "state": "phase-2-chop-windup",
+   "file": "17-phase-2-chop-windup.jpg",
+   "close": "17-phase-2-chop-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-chop-strike",
+   "file": "18-phase-2-chop-strike.jpg",
+   "close": "18-phase-2-chop-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-volley-windup",
+   "file": "19-phase-2-volley-windup.jpg",
+   "close": "19-phase-2-volley-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-volley-strike",
+   "file": "20-phase-2-volley-strike.jpg",
+   "close": "20-phase-2-volley-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-cleave-windup",
+   "file": "21-phase-2-cleave-windup.jpg",
+   "close": "21-phase-2-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-cleave-strike",
+   "file": "22-phase-2-cleave-strike.jpg",
+   "close": "22-phase-2-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-gallows-hook-drop-windup",
+   "file": "23-phase-2-gallows-hook-drop-windup.jpg",
+   "close": "23-phase-2-gallows-hook-drop-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-gallows-hook-drop-strike",
+   "file": "24-phase-2-gallows-hook-drop-strike.jpg",
+   "close": "24-phase-2-gallows-hook-drop-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-gallows-trapdoors-windup",
+   "file": "25-phase-2-gallows-trapdoors-windup.jpg",
+   "close": "25-phase-2-gallows-trapdoors-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-gallows-trapdoors-strike",
+   "file": "26-phase-2-gallows-trapdoors-strike.jpg",
+   "close": "26-phase-2-gallows-trapdoors-strike-close.jpg"
+  },
+  {
+   "state": "dazed",
+   "close": "27-dazed-close.jpg"
+  },
+  {
+   "state": "struck",
+   "file": "28-struck.jpg",
+   "close": "28-struck-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "29-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "30-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "31-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "32-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "33-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "34-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "35-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "36-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "37-death-close.jpg"
+  }
+ ],
+ "errors": [],
+ "cost": {
+  "file": "boss_hangman",
+  "tris": 11135,
+  "frame": {
+   "calls": 29,
+   "tris": 102248,
+   "quality": 0.85
+  }
+ }
+}

@@ -3,6 +3,8 @@
  * only the files this writes to public/games/sigilfall/3d/ ship). Run by hand when the model list changes:
  *
  *   node scripts/sigilfall-3d-assets.mjs            (reads the packs from ~/Downloads)
+ *   SIGILFALL_ONLY=bosses node scripts/sigilfall-3d-assets.mjs     (only the bosses' own files, k/boss_*.pack)
+ *   SIGILFALL_ONLY=rigs node scripts/sigilfall-3d-assets.mjs       (only the two shared skeletons and their clips)
  *   SIGILFALL_PACKS=/some/dir node scripts/sigilfall-3d-assets.mjs
  *
  * Every model becomes plain numbers with its colors baked into the vertices (the packs' textures are swatch
@@ -1024,6 +1026,57 @@ function bugKit(id, o) {
         return null;
       },
     },
+    // More than one blow, for a great one of the kind that is a boss (render3d/bossMoves.ts picks them by name):
+    // drawn in under its shell with its claws shut before its face
+    tuck: {
+      dur: 0.9,
+      pose: (n, j, t, u) => {
+        const k = Math.sin(Math.min(1, u * 2.2) * Math.PI * 0.5) * (u > 0.8 ? (1 - u) / 0.2 : 1);
+        if (n === 'body') return { dy: -k * o.h * 0.5, rx: k * 0.12 };
+        if (n === 'clawL') return { ry: -k * 0.7, rx: k * 0.25 };
+        if (n === 'clawR') return { ry: k * 0.7, rx: k * 0.25 };
+        if (n.startsWith('leg')) return { rz: (Number(n.slice(3)) % 2 ? -1 : 1) * k * 0.3 };
+        return null;
+      },
+    },
+    // reared back on its hind legs, claws thrown wide and high, and held there shaking
+    rear: {
+      dur: 1.0,
+      pose: (n, j, t, u) => {
+        const k = Math.sin(Math.min(1, u * 2.5) * Math.PI * 0.5) * (u > 0.75 ? (1 - u) / 0.25 : 1);
+        const shake = Math.sin(u * tau * 7) * 0.05 * k;
+        if (n === 'body') return { rx: -k * 0.5 + shake, dy: k * o.h * 0.7 };
+        if (n === 'clawL') return { ry: k * 0.9 + shake, rx: -k * 0.7 };
+        if (n === 'clawR') return { ry: -k * 0.9 - shake, rx: -k * 0.7 };
+        if (n.startsWith('tail')) return { rx: k * 0.4 };
+        return null;
+      },
+    },
+    // a rush: low, claws out ahead, legs going
+    leap: {
+      dur: 0.5,
+      pose: (n, j, t, u) => {
+        const k = Math.sin(Math.min(1, u * 1.4) * Math.PI);
+        if (n === 'body') return { rx: k * 0.16, dz: k * 0.2, dy: -k * o.h * 0.2 };
+        if (n === 'clawL') return { ry: -k * 0.35, rx: -k * 0.2 };
+        if (n === 'clawR') return { ry: k * 0.35, rx: -k * 0.2 };
+        if (n.startsWith('leg')) return legSwing(n, u * tau * 2, 0.5);
+        return null;
+      },
+    },
+    // crouched and rattling: its call
+    low: {
+      dur: 0.9,
+      pose: (n, j, t, u) => {
+        const k = Math.sin(Math.min(1, u * 3) * Math.PI * 0.5) * (u > 0.8 ? (1 - u) / 0.2 : 1);
+        const rattle = Math.sin(u * tau * 9) * k;
+        if (n === 'body') return { dy: -k * o.h * 0.3, rz: rattle * 0.05 };
+        if (n === 'clawL') return { ry: 0.3 * k + rattle * 0.25 };
+        if (n === 'clawR') return { ry: -0.3 * k - rattle * 0.25 };
+        if (n.startsWith('tail')) return { rx: k * 0.5 + rattle * 0.1 };
+        return null;
+      },
+    },
     hit: { dur: 0.3, pose: (n, j, t, u) => (n === 'body' ? { rx: Math.sin(u * Math.PI) * 0.2, dz: -Math.sin(u * Math.PI) * 0.06 } : null) },
     die: {
       dur: 0.7,
@@ -1203,6 +1256,50 @@ function serpentKit(id, o) {
         return reach(n, u, 0.12, -k * (up - r) * 0.45, k * o.len * 0.2, k * 0.35);
       },
     },
+    // More than one blow, for a great one of the kind that is a boss (render3d/bossMoves.ts picks them by name).
+    // Its breath: the head brought low and far forward and swept from side to side, held while it pours
+    breath: {
+      dur: 1.3,
+      pose: (n, j, t, u) => {
+        const k = Math.sin(Math.min(1, u * 3) * Math.PI * 0.5) * (u > 0.8 ? (1 - u) / 0.2 : 1);
+        const p = reach(n, u, 0.1, -k * (up - r) * 0.35, k * o.len * 0.24, k * 0.2);
+        if (n === 's0') return { ...p, ry: (p.ry ?? 0) + Math.sin(u * tau * 1.5) * 0.5 * k };
+        if (n === 'wingL') return { rz: 0.5 * k };
+        if (n === 'wingR') return { rz: -0.5 * k };
+        return p;
+      },
+    },
+    // a spat thing: the head drawn back and up, then snapped forward
+    spit: {
+      dur: 0.6,
+      pose: (n, j, t, u) => {
+        const back = u < 0.45 ? Math.sin((u / 0.45) * Math.PI * 0.5) : Math.max(0, 1 - (u - 0.45) / 0.12);
+        const out = u < 0.45 ? 0 : Math.sin(Math.min(1, (u - 0.45) / 0.4) * Math.PI);
+        return reach(n, u, 0.08, back * r * 1.1, -back * r * 0.9 + out * o.len * 0.14, -back * 0.45 + out * 0.3);
+      },
+    },
+    // reared: the head as high as the neck will take it, wings thrown up and beating
+    rear: {
+      dur: 1.1,
+      pose: (n, j, t, u) => {
+        const k = Math.sin(Math.min(1, u * 2.4) * Math.PI * 0.5) * (u > 0.78 ? (1 - u) / 0.22 : 1);
+        if (n === 'wingL') return { rz: (0.75 + Math.sin(u * tau * 3) * 0.3) * k };
+        if (n === 'wingR') return { rz: -(0.75 + Math.sin(u * tau * 3) * 0.3) * k };
+        return reach(n, u, 0.1, k * r * 1.6, -k * r * 0.5, -k * 0.5);
+      },
+    },
+    // its roar: the head thrust out level and shaken
+    roar: {
+      dur: 1.1,
+      pose: (n, j, t, u) => {
+        const k = Math.sin(Math.min(1, u * 3) * Math.PI * 0.5) * (u > 0.8 ? (1 - u) / 0.2 : 1);
+        const p = reach(n, u, 0.1, k * r * 0.5, k * o.len * 0.12, -k * 0.25);
+        if (n === 's0') return { ...p, ry: (p.ry ?? 0) + Math.sin(u * tau * 6) * 0.14 * k, rz: Math.sin(u * tau * 5) * 0.1 * k };
+        if (n === 'wingL') return { rz: 0.35 * k };
+        if (n === 'wingR') return { rz: -0.35 * k };
+        return p;
+      },
+    },
     hit: { dur: 0.3, pose: (n, j, t, u) => reach(n, u, 0.1, 0, -Math.sin(u * Math.PI) * r * 0.8, -Math.sin(u * Math.PI) * 0.3) },
     die: {
       dur: 0.8,
@@ -1341,7 +1438,7 @@ async function fbxKit(id, path, picks) {
   const rig = { joints: names, parents: orderedParents, rest, ibm, base: root.parent ? root.parent.matrixWorld.toArray() : IDENT, clips: {} };
   const mixer = new THREE.AnimationMixer(object);
   const all = object.animations;
-  for (const [want, re] of picks) {
+  for (const [want, re, warp] of picks) {
     const clean = (a) => a.name.split('|').pop().replace(/^[A-Z][A-Za-z]+_(?=[A-Z])/, '');
     const clip = all.find((a) => re.test(clean(a)));
     if (!clip) {
@@ -1349,14 +1446,17 @@ async function fbxKit(id, path, picks) {
       continue;
     }
     const fps = 15;
-    const n = Math.max(1, Math.round(clip.duration * fps));
+    // (`warp`: the same clip read at other times, to make a second move of it: how long, and where in the clip each
+    // moment of it is)
+    const long = warp ? warp.dur : clip.duration;
+    const n = Math.max(1, Math.round(long * fps));
     mixer.stopAllAction();
     const action = mixer.clipAction(clip);
     action.reset().play();
     const quats = new Int16Array(n * J * 4);
     const moves = new Float32Array(n * J * 3);
     for (let f = 0; f < n; f++) {
-      mixer.setTime((f / n) * clip.duration);
+      mixer.setTime(warp ? Math.min(0.999, Math.max(0, warp.at(f / n))) * clip.duration : (f / n) * clip.duration);
       order.forEach((o, j) => {
         const b = bones[o];
         quats[(f * J + j) * 4] = b.quaternion.x * 32767;
@@ -1369,7 +1469,7 @@ async function fbxKit(id, path, picks) {
       });
     }
     action.stop();
-    rig.clips[want] = { n, fps: n / clip.duration, q: pack.put(quats), tj: Array.from({ length: J }, (_, i) => i), t: pack.put(moves), sj: [], s: 0 };
+    rig.clips[want] = { n, fps: n / long, q: pack.put(quats), tj: Array.from({ length: J }, (_, i) => i), t: pack.put(moves), sj: [], s: 0 };
   }
   pack.rigs[id] = rig;
   return pack;
@@ -1649,7 +1749,7 @@ const MEDIUM_CLIPS = {
   sit: 'Sit_Chair_Idle', sitfloor: 'Sit_Floor_Idle', lie: 'Lie_Idle', cheer: 'Cheering', wave: 'Waving', interact: 'Interact', pickup: 'PickUp', use: 'Use_Item', throw: 'Throw',
   dodge: 'Dodge_Forward', spawn: 'Spawn_Ground', rise: 'Skeletons_Awaken_Floor', skelwalk: 'Skeletons_Walking', skelidle: 'Skeletons_Idle', taunt: 'Skeletons_Taunt', work: 'Working_A', hammer: 'Hammering', jump: 'Jump_Idle',
 };
-const LARGE_CLIPS = { idle: 'Idle_A', walk: 'Walking_A', run: 'Running_A', hit: 'Hit_A', die: 'Death_A', dead: 'Death_A_Pose', chop: 'Melee_1H_Slash', chop2: 'Melee_2H_Attack', spin: 'Melee_2H_Slam', punch: 'Melee_Unarmed_Punch', smash: 'Melee_Unarmed_Smash', cast: 'Melee_Unarmed_Smash', spawn: 'Spawn_Ground', cheer: 'Cheering' };
+const LARGE_CLIPS = { idle: 'Idle_A', walk: 'Walking_A', run: 'Running_A', hit: 'Hit_A', die: 'Death_A', dead: 'Death_A_Pose', chop: 'Melee_1H_Slash', chop2: 'Melee_2H_Attack', spin: 'Melee_2H_Slam', punch: 'Melee_Unarmed_Punch', smash: 'Melee_Unarmed_Smash', cast: 'Melee_Unarmed_Smash', spawn: 'Spawn_Ground', cheer: 'Cheering', taunt: 'Flexing', kick: 'Melee_Unarmed_Kick', stab: 'Melee_1H_Stab', bash: 'Melee_Block_Attack', block: 'Melee_Blocking', dodge: 'Dodge_Backwards', slice: 'Melee_Dualwield_Slash' };
 
 /** What the monsters' and animals' own clips are called, for each name the game uses. */
 const OWN_CLIPS = [
@@ -1770,6 +1870,15 @@ const INDOOR = {
 
 /** The horses that are ridden (render3d/mountLook.ts says who is which), and the beast a drake is built on. */
 const HORSES = ['02', '04', '05', '10', '11', '12', '13', '16', '17'];
+/**
+ * More for the drake a boss is drawn with (the Barrow's Gloomwing: render3d/bossMoves.ts picks them by name): it leaps
+ * into its charges, and roars with its bite held open at full stretch, shaking, where it used to bite the air.
+ */
+const DRAKE_MORE = [
+  ['leap', /^Jump/i],
+  ['roar', /^(Attack|Bite)/i, { dur: 1.2, at: (u) => (u < 0.25 ? (u / 0.25) * 0.42 : u < 0.8 ? 0.42 + Math.sin((u - 0.25) * 40) * 0.035 : 0.42 + ((u - 0.8) / 0.2) * 0.58) }],
+];
+
 const DRAKE_CLIPS = [
   ['idle', /^Idle/i],
   ['walk', /^Walk/i],
@@ -1796,7 +1905,7 @@ async function mountKits(says) {
     says(id, pack.write(`k/${id}.pack`));
   };
   for (const n of HORSES) await add(`m_horse_${n}`, join(SRC, `PLUS/GLB/horse-${n}.glb`));
-  says('fbx_trex', (await fbxKit('fbx_trex', join(SRC, `${DINO}Trex.fbx`), DRAKE_CLIPS)).write('k/fbx_trex.pack'));
+  says('fbx_trex', (await fbxKit('fbx_trex', join(SRC, `${DINO}Trex.fbx`), [...DRAKE_CLIPS, ...DRAKE_MORE])).write('k/fbx_trex.pack'));
 }
 
 /** The creatures that are made here from nothing, with no art pack behind them. */
@@ -1809,6 +1918,183 @@ function builtKits(says) {
   for (const [id, o] of Object.entries(SERPENTS)) says(id, serpentKit(id, o).write(`k/${id}.pack`));
   for (const [id, o] of Object.entries(COILS)) says(id, coilKit(id, o).write(`k/${id}.pack`));
   says('bear', bearKit('bear', { main: '#7a5234', dark: '#4a2e1c', light: '#b99468' }).write('k/bear.pack'));
+}
+
+/* ------------------------------------------------------------------ bosses of their own */
+
+/**
+ * A boss is a figure of its own (src/games/sigilfall/NINE_PLAN.md, piece 2): parts of several of the packs' characters
+ * on one skeleton, some of them grown (a head, hands), and things from the packs tied to its bones. Its colors, what is
+ * built onto it in the browser and how it moves are the game's (render3d/kits.ts, render3d/bossKit.ts). Each is a file
+ * of its own, `k/boss_<id>.pack`: `SIGILFALL_ONLY=bosses` builds these alone and touches no other file.
+ *
+ * - `from`: the characters it is made of, and which of each one's parts (by name).
+ * - `grow`: joints whose flesh is made bigger or smaller about the joint, with everything that hangs below it.
+ * - `ties`: things tied to a joint: `at` from the joint (the figure's own right, up, forward), `size`, `turn` about
+ *   x, y and z in degrees, and `tint` multiplied into its colors.
+ */
+const BOSS_KITS = {
+  // The Coffin Matron, Mother of the Ossuary: an old woman of the dead in the Witch's long dress, with the dead's own
+  // arms (the Skeleton Mage's), who carries the coffin she hides in on her back and a sexton's spade beside it.
+  boss_matron: {
+    rig: 'medium',
+    from: [['Witch', /Body|Head|Leg/], [`${SK}Mage`, /Arm/]],
+    grow: [['head', 1.12], ['hand.l', 1.45], ['hand.r', 1.45]],
+    ties: [
+      { bit: 'coffin', joint: 'chest', at: [0, -0.2, -0.62], size: 1.05, turn: [-96, 0, 0], tint: [0.62, 0.56, 0.6] },
+      { bit: 'shovel', joint: 'chest', at: [0.78, 0.25, -0.5], size: 1.5, turn: [0, 0, 172], tint: [0.8, 0.78, 0.8] },
+    ],
+  },
+};
+
+// Warden Ossric, Keeper of the Crypt Gate: a warden of Aster three hundred years dead, still in his plate. The Knight's
+// armor and cape with the Skeleton Warrior's bare skull, broad in the chest; a halberd, and the
+// dead's own great shield. (His helm is long gone: the skull is bare.)
+BOSS_KITS.boss_ossric = {
+  rig: 'medium',
+  from: [['Knight', /Body|Arm|Leg|Cape/], [`${SK}Warrior`, /Head|Jaw|Eyes/]],
+  grow: [['chest', 1.18], ['upperarm.l', 1.15], ['upperarm.r', 1.15], ['head', 0.86]],
+  ties: [
+    { bit: 'halberd', joint: 'handslot.r', at: [0, 0, 0], size: 1.25 },
+    { bit: `${SK}Shield_Large_B`, joint: 'handslot.l', at: [0, 0, 0], size: 1.2 },
+  ],
+};
+// Morgrave, the Ash-Scholar: thrown out of the Crown City's college, sold to the Host. The Lorekeeper's head and
+// spectacles and his pack of books on the Necromancer's robes; an open book in one hand, a staff in the other.
+BOSS_KITS.boss_morgrave = {
+  rig: 'medium',
+  from: [['Necromancer', /Body|Arm|Leg/], ['Lorekeeper', /Head|Glasses|Backpack/]],
+  grow: [['head', 1.1], ['hand.l', 1.3], ['hand.r', 1.3]],
+  ties: [
+    { bit: 'spellbook_open', joint: 'handslot.l', at: [0, 0.05, 0.05], size: 0.85 },
+    { bit: 'staff_C', joint: 'handslot.r', at: [0, 0, 0], size: 1.2 },
+  ],
+};
+
+// The Hangman, Headsman of the Gallows Gang: a giant of a man bare to the waist under a headsman's hood. The large
+// Barbarian's body with the hooded Rogue's head and mask; the great axe in his hand, the second he takes up when he
+// is half down slung across his back, and the rope he hangs Millbrook with coiled at his hip.
+BOSS_KITS.boss_hangman = {
+  rig: 'large',
+  from: [['Barbarian_Large', /Body|Arm|Leg/], ['Rogue_Hooded', /Head|Mask/]],
+  grow: [['chest', 1.12], ['upperarm.l', 1.12], ['upperarm.r', 1.12]],
+  ties: [
+    { bit: 'axe_2handed_Large', joint: 'handslot.r', at: [0, 0, 0], size: 1.15 },
+    { bit: 'axe_2handed_Large', joint: 'chest', at: [0.1, 0.25, -0.5], size: 1, turn: [0, 90, 150], tint: [0.8, 0.8, 0.85] },
+    { bit: 'rope_bundle_A', joint: 'hips', at: [0.55, 0.05, 0.1], size: 1.3, turn: [0, 0, 90] },
+  ],
+};
+// Harlan Blackglove, King of the Gallows Gang: a bandit who crowned himself. The Rogue's leathers and cape with the
+// Survivalist's head; his left arm is the Knight's plate, painted black: the black gauntlet he is named for, with a hand grown too
+// big for a man; a long knife in each hand, and the keys of the cages he hangs his hostages in at his belt.
+BOSS_KITS.boss_harlan = {
+  rig: 'medium',
+  // (the Knight's plate arm, not the Black Knight's: that one is made for the large skeleton, and came across as an
+  // arm the size of the man)
+  from: [['Rogue', /Body|Leg|Cape|ArmRight/], ['Survivalist', /Head/], ['Knight', /ArmLeft/]],
+  grow: [['hand.l', 1.4], ['lowerarm.l', 1.15], ['chest', 1.08]],
+  ties: [
+    { bit: 'dagger_A', joint: 'handslot.r', at: [0, 0, 0], size: 1.05 },
+    { bit: 'dagger_A', joint: 'handslot.l', at: [0, 0, 0], size: 1.05 },
+    { bit: 'keyring', joint: 'hips', at: [-0.3, -0.12, 0.22], size: 0.7 },
+  ],
+};
+
+const quatOf = (rx, ry, rz) => new THREE.Quaternion().setFromEuler(new THREE.Euler((rx * Math.PI) / 180, (ry * Math.PI) / 180, (rz * Math.PI) / 180, 'YXZ')).toArray();
+
+/** The model with what hangs from one joint, and from every joint under it, made `k` times its size about that joint. */
+function grown(m, rig, jointName, k) {
+  const j = rig.joints.indexOf(jointName);
+  if (j < 0) throw new Error(`no joint ${jointName}`);
+  const under = new Uint8Array(rig.joints.length);
+  under[j] = 1;
+  for (let i = 0; i < rig.joints.length; i++) if (rig.parents[i] >= 0 && under[rig.parents[i]]) under[i] = 1;
+  const world = invert(rig.ibm.slice(j * 16, j * 16 + 16));
+  const c = [world[12], world[13], world[14]];
+  const pos = new Float32Array(m.pos);
+  for (let v = 0; v < m.n; v++) {
+    // (a vertex shared with the joint above grows by its share, so the wrist stays joined to the arm)
+    const w = (under[m.skin[v * 3]] ? m.skin[v * 3 + 2] / 255 : 0) + (under[m.skin[v * 3 + 1]] ? 1 - m.skin[v * 3 + 2] / 255 : 0);
+    if (!w) continue;
+    const f = 1 + (k - 1) * w;
+    for (let a = 0; a < 3; a++) pos[v * 3 + a] = c[a] + (m.pos[v * 3 + a] - c[a]) * f;
+  }
+  return { ...m, pos };
+}
+
+/** A thing from the packs tied to a joint: turned and sized, then set `at` from where the joint is at rest. */
+function tiedTo(m, rig, t) {
+  const j = rig.joints.indexOf(t.joint);
+  if (j < 0) throw new Error(`no joint ${t.joint}`);
+  const k = t.size ?? 1;
+  const world = mul(invert(rig.ibm.slice(j * 16, j * 16 + 16)), trs(t.at ?? [0, 0, 0], quatOf(...(t.turn ?? [0, 0, 0])), [k, k, k]));
+  const pos = new Float32Array(m.n * 3);
+  const nor = new Float32Array(m.n * 3);
+  const skin = new Uint8Array(m.n * 3);
+  const col = t.tint ? Uint8Array.from(m.col, (x, i) => Math.min(255, Math.round(x * t.tint[i % 3]))) : m.col;
+  for (let v = 0; v < m.n; v++) {
+    pos.set(point(world, m.pos[v * 3], m.pos[v * 3 + 1], m.pos[v * 3 + 2]), v * 3);
+    const d = dirOf(world, m.nor[v * 3], m.nor[v * 3 + 1], m.nor[v * 3 + 2]);
+    const l = Math.hypot(d[0], d[1], d[2]) || 1;
+    nor.set([d[0] / l, d[1] / l, d[2] / l], v * 3);
+    skin[v * 3] = j;
+    skin[v * 3 + 1] = j;
+    skin[v * 3 + 2] = 255;
+  }
+  return { n: m.n, pos, nor, col, skin, idx: m.idx };
+}
+
+async function bossKits(says, medium, large) {
+  for (const [id, spec] of Object.entries(BOSS_KITS)) {
+    const rig = spec.rig === 'large' ? large : medium;
+    const list = [];
+    for (const [char, which] of spec.from) {
+      const doc = loadGltf(findChar(char));
+      const own = whichRig(doc, medium, large).rig === 'medium' ? medium : large;
+      for (const [name, part] of Object.entries(await partsOf(doc, own))) {
+        if (!which.test(name)) continue;
+        list.push(own === rig ? part : moveToRig(part, own, rig));
+      }
+    }
+    let body = joinParts(list);
+    for (const [joint, k] of spec.grow ?? []) body = grown(body, rig, joint, k);
+    const all = [body];
+    for (const t of spec.ties ?? []) all.push(tiedTo(await propOf(findBit(t.bit)), rig, t));
+    const pack = new Pack();
+    pack.addMesh('body', joinParts(all));
+    pack.meshes.body.rig = spec.rig;
+    const m = pack.meshes.body;
+    says(`${id} (${Math.round(m.i / 3)} triangles, ${(m.max[0] - m.min[0]).toFixed(2)} wide, ${(m.max[1] - m.min[1]).toFixed(2)} tall, ${(m.max[2] - m.min[2]).toFixed(2)} deep)`, pack.write(`k/${id}.pack`));
+  }
+}
+
+/**
+ * More of an animal's own clips, for one that a boss is drawn with (render3d/kits.ts `moves`): the war-hound of Gallows
+ * Keep leaps into his charges, digs to go under the floor, lands as he comes up and stands low to call his pack.
+ */
+const MORE_CLIPS = {
+  a_wolf: [['leap', /^Gallop_Jump$/], ['dig', /^Eating$/], ['low', /^Idle_2_HeadLow$/], ['land', /^Jump_ToIdle$/]],
+  // (Grimtusk is built on the bull: he kicks the ground for his stomp, and lowers his head and paws to roar)
+  a_bull: [['kick', /^Attack_Kick$/], ['low', /^Idle_Headlow$/]],
+};
+
+/** An animal on its own skeleton, with its own clips. `SIGILFALL_ONLY=animal SIGILFALL_ANIMAL=a_wolf` builds one alone. */
+async function ownKit(says, id, path) {
+  const doc = loadGltf(path);
+  const rig = rigFrom(doc);
+  const parts = await partsOf(doc, rig);
+  const pack = new Pack();
+  const whole = joinParts(Object.values(parts));
+  pack.addMesh('body', whole);
+  pack.meshes.body.rig = id;
+  const names = (doc.g.animations ?? []).map((a) => a.name);
+  for (const [want, re] of [...OWN_CLIPS, ...(MORE_CLIPS[id] ?? [])]) {
+    const anim = (doc.g.animations ?? []).find((a) => re.test(a.name));
+    if (anim) bakeClip(pack, id, rig, doc, anim, want, 15);
+    else console.log(`  ${id}: no ${want} in ${names.join(',')}`);
+  }
+  pack.rigs[id] = cleanRig(rig);
+  says(id, pack.write(`k/${id}.pack`));
 }
 
 async function main() {
@@ -1833,6 +2119,20 @@ async function main() {
   const knight = loadGltf(join(SRC, CHARS, 'Knight.glb'));
   const bigOne = loadGltf(join(SRC, CHARS, 'Barbarian_Large.glb'));
 
+  // (only the bosses' own files: nothing else is written, so no other model changes)
+  if (process.env.SIGILFALL_ONLY === 'animal') {
+    const id = process.env.SIGILFALL_ANIMAL;
+    if (!ANIMALS[id]) throw new Error(`no animal ${id}`);
+    await ownKit(says, id, join(SRC, 'Ultimate Animated Animals - July 2021/glTF', `${ANIMALS[id]}.gltf`));
+    console.log(report.join('\n'));
+    return;
+  }
+  if (process.env.SIGILFALL_ONLY === 'bosses') {
+    await bossKits(says, rigFrom(knight), rigFrom(bigOne));
+    console.log(report.join('\n'));
+    return;
+  }
+
   // the two shared skeletons and their clips
   const rigPack = new Pack();
   const medium = rigFrom(knight);
@@ -1855,6 +2155,11 @@ async function main() {
     rigPack.rigs[rigName] = cleanRig(rig);
   }
   says('rigs', rigPack.write('rigs.pack'));
+  // (only the shared skeletons: a clip added to one, and nothing else written)
+  if (process.env.SIGILFALL_ONLY === 'rigs') {
+    console.log(report.join('\n'));
+    return;
+  }
 
   // the hero's wardrobe, weapons and bits
   const heroPack = new Pack();
@@ -1913,25 +2218,10 @@ async function main() {
   for (const [id, rel] of [['fbx_pig', `${FARM}Pig.fbx`], ['fbx_sheep', `${FARM}Sheep.fbx`], ['fbx_raptor', `${DINO}Velociraptor.fbx`]]) {
     says(id, (await fbxKit(id, join(SRC, rel), FBX_CLIPS)).write(`k/${id}.pack`));
   }
-  const addOwn = async (id, path) => {
-    const doc = loadGltf(path);
-    const rig = rigFrom(doc);
-    const parts = await partsOf(doc, rig);
-    const pack = new Pack();
-    const whole = joinParts(Object.values(parts));
-    pack.addMesh('body', whole);
-    pack.meshes.body.rig = id;
-    const names = (doc.g.animations ?? []).map((a) => a.name);
-    for (const [want, re] of OWN_CLIPS) {
-      const anim = (doc.g.animations ?? []).find((a) => re.test(a.name));
-      if (anim) bakeClip(pack, id, rig, doc, anim, want, 15);
-      else console.log(`  ${id}: no ${want} in ${names.join(',')}`);
-    }
-    pack.rigs[id] = cleanRig(rig);
-    says(id, pack.write(`k/${id}.pack`));
-  };
+  const addOwn = (id, path) => ownKit(says, id, path);
   for (const [id, n] of Object.entries(ANIMALS)) await addOwn(id, join(SRC, 'Ultimate Animated Animals - July 2021/glTF', `${n}.gltf`));
   await mountKits(says);
+  await bossKits(says, medium, large);
 
   // the land
   for (const [file, set] of [['nature', NATURE], ['town', TOWN], ['indoor', INDOOR]]) {
