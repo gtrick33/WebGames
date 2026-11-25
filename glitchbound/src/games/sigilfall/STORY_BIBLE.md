@@ -526,6 +526,7 @@ words and kept in the Journal. The Tear alone has none: the Veil pulled from the
 | `the-duskspire-gate` | The Wardens’ Lock-Plate | page | story |
 | `old-wintersend` | The Notice on the Hall Door | note | side |
 | `a-hound-named-bran` | Bran’s Collar | token | side |
+| `riveted-coats` | A Plate with Aster’s Armory Stamp | relic | side |
 
 Flow changes in v4 (each removes a walk back with nothing in it, or puts a turn of the story on the screen):
 
