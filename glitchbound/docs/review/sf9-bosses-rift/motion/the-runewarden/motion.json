@@ -1,0 +1,136 @@
+{
+  "boss": "the-runewarden",
+  "file": "boss_runewarden",
+  "form": "runewarden",
+  "float": 0,
+  "walked": {
+    "samples": 185,
+    "moving": 62,
+    "walking": 57,
+    "clips": {
+      "walk": 55,
+      "smash": 1,
+      "bash": 1,
+      "run": 2,
+      "block": 2,
+      "punch": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "slam",
+      "clips": [
+        "smash",
+        "idle",
+        "walk",
+        "block"
+      ],
+      "readings": 74
+    },
+    {
+      "phase": 1,
+      "id": "spearFan",
+      "clips": [
+        "punch",
+        "idle"
+      ],
+      "readings": 60
+    },
+    {
+      "phase": 1,
+      "id": "charge",
+      "clips": [
+        "bash",
+        "block",
+        "idle",
+        "smash"
+      ],
+      "readings": 52
+    },
+    {
+      "phase": 1,
+      "id": "forge:runes",
+      "clips": [
+        "cast",
+        "idle",
+        "smash"
+      ],
+      "readings": 55
+    },
+    {
+      "phase": 1,
+      "id": "forge:bound",
+      "clips": [],
+      "note": "never began"
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "cast",
+        "chop2",
+        "kick"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "slamRings",
+      "clips": [
+        "chop2",
+        "idle"
+      ],
+      "readings": 54
+    },
+    {
+      "phase": 2,
+      "id": "spearFan",
+      "clips": [
+        "punch",
+        "idle"
+      ],
+      "readings": 42
+    },
+    {
+      "phase": 2,
+      "id": "charge",
+      "clips": [
+        "bash",
+        "block",
+        "idle"
+      ],
+      "readings": 37
+    },
+    {
+      "phase": 2,
+      "id": "forge:runes",
+      "clips": [
+        "cast",
+        "idle"
+      ],
+      "readings": 55
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "kick",
+        "idle"
+      ],
+      "readings": 26
+    },
+    {
+      "phase": 2,
+      "id": "roar",
+      "clips": [
+        "taunt",
+        "idle"
+      ],
+      "readings": 40
+    }
+  ],
+  "found": [],
+  "errors": []
+}

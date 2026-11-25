@@ -1,0 +1,112 @@
+{
+  "boss": "the-drowned",
+  "file": "boss_drowned",
+  "form": "drowned",
+  "float": 0,
+  "walked": {
+    "samples": 184,
+    "moving": 34,
+    "walking": 33,
+    "clips": {
+      "walk": 33,
+      "channel": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "spell:wall",
+      "clips": [
+        "cast",
+        "idle"
+      ],
+      "readings": 37
+    },
+    {
+      "phase": 1,
+      "id": "spell:undertow",
+      "clips": [
+        "channel",
+        "idle"
+      ],
+      "readings": 82
+    },
+    {
+      "phase": 1,
+      "id": "tide",
+      "clips": [
+        "wave",
+        "idle"
+      ],
+      "readings": 41
+    },
+    {
+      "phase": 1,
+      "id": "grotto:flood",
+      "clips": [
+        "cheer",
+        "idle"
+      ],
+      "readings": 43
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "summon",
+        "cheer",
+        "cast",
+        "channel"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "grotto:flood",
+      "clips": [
+        "cheer",
+        "idle"
+      ],
+      "readings": 36
+    },
+    {
+      "phase": 2,
+      "id": "tide",
+      "clips": [
+        "wave",
+        "idle"
+      ],
+      "readings": 88
+    },
+    {
+      "phase": 2,
+      "id": "spell:wall",
+      "clips": [
+        "cast",
+        "idle"
+      ],
+      "readings": 42
+    },
+    {
+      "phase": 2,
+      "id": "spell:undertow",
+      "clips": [
+        "channel",
+        "idle"
+      ],
+      "readings": 40
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "summon",
+        "idle"
+      ],
+      "readings": 42
+    }
+  ],
+  "found": [],
+  "errors": []
+}

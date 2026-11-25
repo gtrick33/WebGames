@@ -1,0 +1,223 @@
+{
+  "boss": "forgemaster-grold",
+  "file": "boss_grold",
+  "form": "grold",
+  "float": 0,
+  "walked": {
+    "samples": 183,
+    "moving": 75,
+    "walking": 71,
+    "clips": {
+      "channel": 1,
+      "walk": 70,
+      "chop2": 1,
+      "slice": 2,
+      "run": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "run",
+        "slice",
+        "idle"
+      ],
+      "readings": 50
+    },
+    {
+      "phase": 1,
+      "id": "forge:quake",
+      "clips": [
+        "chop2",
+        "idle",
+        "walk"
+      ],
+      "readings": 47
+    },
+    {
+      "phase": 1,
+      "id": "forge:pour",
+      "clips": [
+        "channel",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 38
+    },
+    {
+      "phase": 1,
+      "id": "forge:blades",
+      "clips": [
+        "throw",
+        "idle"
+      ],
+      "readings": 65
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "wave",
+        "cheer",
+        "slice",
+        "channel",
+        "bash"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "forge:bellows",
+      "clips": [
+        "cheer",
+        "idle",
+        "walk"
+      ],
+      "readings": 46
+    },
+    {
+      "phase": 2,
+      "id": "forge:pour",
+      "clips": [
+        "channel",
+        "walk",
+        "idle",
+        "slice"
+      ],
+      "readings": 51
+    },
+    {
+      "phase": 2,
+      "id": "forge:quake",
+      "clips": [
+        "chop2",
+        "idle",
+        "walk",
+        "slice",
+        "wave"
+      ],
+      "readings": 61
+    },
+    {
+      "phase": 2,
+      "id": "forge:blades",
+      "clips": [
+        "throw",
+        "idle",
+        "walk"
+      ],
+      "readings": 58
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "run",
+        "slice",
+        "idle",
+        "walk"
+      ],
+      "readings": 26
+    },
+    {
+      "phase": 2,
+      "id": "slamRings",
+      "clips": [
+        "bash",
+        "idle",
+        "walk"
+      ],
+      "readings": 39
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "wave",
+        "idle",
+        "walk"
+      ],
+      "readings": 32
+    },
+    {
+      "phase": 3,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "channel",
+        "throw",
+        "slice"
+      ]
+    },
+    {
+      "phase": 3,
+      "id": "forge:bellows",
+      "clips": [
+        "cheer",
+        "idle"
+      ],
+      "readings": 66
+    },
+    {
+      "phase": 3,
+      "id": "forge:quake",
+      "clips": [
+        "chop2",
+        "idle"
+      ],
+      "readings": 44
+    },
+    {
+      "phase": 3,
+      "id": "forge:blades",
+      "clips": [
+        "throw",
+        "idle"
+      ],
+      "readings": 30
+    },
+    {
+      "phase": 3,
+      "id": "slamRings",
+      "clips": [
+        "bash",
+        "idle"
+      ],
+      "readings": 29
+    },
+    {
+      "phase": 3,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle"
+      ],
+      "readings": 23
+    },
+    {
+      "phase": 3,
+      "id": "roar",
+      "clips": [
+        "taunt",
+        "idle"
+      ],
+      "readings": 21
+    },
+    {
+      "phase": 3,
+      "id": "forge:pour",
+      "clips": [
+        "channel",
+        "idle"
+      ],
+      "readings": 24
+    }
+  ],
+  "found": [],
+  "errors": []
+}

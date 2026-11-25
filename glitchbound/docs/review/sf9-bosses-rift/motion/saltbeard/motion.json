@@ -1,0 +1,196 @@
+{
+  "boss": "saltbeard",
+  "file": "boss_saltbeard",
+  "form": "saltbeard",
+  "float": 0,
+  "walked": {
+    "samples": 183,
+    "moving": 71,
+    "walking": 67,
+    "clips": {
+      "walk": 67,
+      "slice": 4
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "walk",
+        "slice",
+        "idle",
+        "throw"
+      ],
+      "readings": 66
+    },
+    {
+      "phase": 1,
+      "id": "volley",
+      "clips": [
+        "throw",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 63
+    },
+    {
+      "phase": 1,
+      "id": "kegs",
+      "clips": [
+        "throw",
+        "idle",
+        "slice"
+      ],
+      "readings": 49
+    },
+    {
+      "phase": 1,
+      "id": "barrage",
+      "clips": [
+        "wave",
+        "idle",
+        "throw",
+        "slice"
+      ],
+      "readings": 61
+    },
+    {
+      "phase": 1,
+      "id": "grotto:black-spot",
+      "clips": [
+        "stab",
+        "idle",
+        "slice"
+      ],
+      "readings": 43
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "cheer",
+        "stab",
+        "wave",
+        "slice",
+        "throw"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "grotto:black-spot",
+      "clips": [
+        "stab",
+        "idle"
+      ],
+      "readings": 30
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle",
+        "throw"
+      ],
+      "readings": 34
+    },
+    {
+      "phase": 2,
+      "id": "volley",
+      "clips": [
+        "idle",
+        "throw",
+        "slice"
+      ],
+      "readings": 49
+    },
+    {
+      "phase": 2,
+      "id": "kegs",
+      "clips": [
+        "throw",
+        "idle"
+      ],
+      "readings": 34
+    },
+    {
+      "phase": 2,
+      "id": "barrage",
+      "clips": [
+        "wave",
+        "idle",
+        "throw",
+        "slice"
+      ],
+      "readings": 53
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "cheer",
+        "idle"
+      ],
+      "readings": 46
+    },
+    {
+      "phase": 3,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "throw",
+        "stab"
+      ]
+    },
+    {
+      "phase": 3,
+      "id": "grotto:black-spot",
+      "clips": [],
+      "note": "never began"
+    },
+    {
+      "phase": 3,
+      "id": "barrage",
+      "clips": [
+        "wave",
+        "idle"
+      ],
+      "readings": 63
+    },
+    {
+      "phase": 3,
+      "id": "volley",
+      "clips": [
+        "throw",
+        "idle",
+        "slice"
+      ],
+      "readings": 56
+    },
+    {
+      "phase": 3,
+      "id": "kegs",
+      "clips": [
+        "throw",
+        "idle"
+      ],
+      "readings": 19
+    },
+    {
+      "phase": 3,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle"
+      ],
+      "readings": 46
+    }
+  ],
+  "found": [],
+  "errors": []
+}
