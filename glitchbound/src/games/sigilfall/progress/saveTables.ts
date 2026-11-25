@@ -263,4 +263,6 @@ export const OPENED_TABLE: readonly string[] = [
   'crown-catacombs:cc-cache:30:43',
   // the Riftward, the postgame's sanctuary round the Rift Gate (2026-11-22)
   'land:riftward',
+  // the pass to 9/10: Act I's side stories turn (what is found on the three old beasts)
+  'kept:hunt-old-greymane', 'kept:old-rustback', 'kept:hunt-goldmane',
 ];

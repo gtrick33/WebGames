@@ -215,7 +215,13 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     after: ['the-pride'],
     zone: 'amberfield',
     level: 19,
-    reward: { xp: 720, gold: 200, item: 'goldmane-hood', text: 'Tess has the mane cured and sewn into a hood for you.' },
+    // (the side story's turn: what a town under siege turns out of its gate comes back hungry)
+    find: {
+      name: 'A Gilt Collar',
+      kind: 'token',
+      about: 'Under Goldmane’s mane at Lion Rocks, grown so deep into the fur that it had to be cut free: a cub’s collar of gilt leather, stamped with the hearth-mark of Hearthstead. This lion was raised inside the town’s walls.',
+    },
+    reward: { xp: 720, gold: 200, item: 'goldmane-hood', text: 'Tess knows the collar. Hearthstead’s gate guard raised a steppe cub on kitchen scraps for nine years, and when the refugees came and there was no meat to spare, somebody opened the gate and let him go. He went no further than the herds he could smell. Tess has the mane cured and sewn into a hood for you, and buries the collar by the gate herself.' },
   },
   /* ---------------------------------------------------- the Amber Lancers */
   /* --------------------------------------------------------- Wynn's bow */
@@ -304,7 +310,7 @@ export const AMBERFIELD_NPCS: Record<string, NpcDef> = {
         when: { quest: 'hunt-goldmane', state: 'active' },
         lines: ['Garrick came back with three goats, no boots, and a story about a lion with a golden mane.', 'It lives at Lion Rocks, out west. Garrick says it leaps farther than the other lions.'],
       },
-      { when: { quest: 'hunt-goldmane', state: 'done' }, lines: ['Garrick wants you to teach him to fight. Thank you for bringing him home.'] },
+      { when: { quest: 'hunt-goldmane', state: 'done' }, lines: ['Garrick wants you to teach him to fight. Thank you for bringing him home.', 'The old gate guard asked to see where I buried the collar. I showed him.'] },
       { lines: ['This is the Open Hearth. We have soup for everyone, and potions for anyone who needs them.', 'Rest by the fire before you go out. Lions hide in the tall grass.'] },
     ],
   },

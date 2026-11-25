@@ -30,14 +30,17 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     name: 'The Burnt Farm',
     giver: 'reeve-aldous',
     auto: true,
-    text: 'The Kettle family refused to pay the Gallows Gang’s rope tax. Two nights later, their farm burned down. Reeve Aldous wants to know who did it. The Burnt Farm is north-east of Millbrook.',
+    text: 'The Kettle family refused to pay the Gallows Gang’s rope tax. Two nights later, their farm burned down. Reeve Aldous wants to know who did it. The Burnt Farm is north-east of Millbrook. Red Caps were seen on the road there again this morning.',
     objective: { kind: 'explore', spot: 'east-farm', label: 'Look around the Burnt Farm' },
+    // (it was a walk to a spot: the gang's men stood at the farm and nothing asked the hero to deal with them. Now
+    // they have come back for what their dead man carries, and the orders are won from them)
+    then: [{ kind: 'kill', region: 'thornvale', count: 2, enemies: ['bandit-cutthroat'], label: 'Drive off the Red Caps searching the farm' }],
     after: ['south-road'],
     zone: 'thornvale',
     find: {
       name: 'The Gang’s Orders',
       kind: 'orders',
-      about: 'Folded papers from the coat of a dead Red Cap by the well at the Burnt Farm. They are written in thieves’ cant, with a code of numbers under it, and nobody in Millbrook can read them. Pim the peddler, by Millbrook’s well, has a friend named Nyx who can.',
+      about: 'Folded papers from the coat of a dead Red Cap by the well at the Burnt Farm. His own gang came back to take them off him, and didn’t get to. They are written in thieves’ cant, with a code of numbers under it, and nobody in Millbrook can read them. Pim the peddler, by Millbrook’s well, has a friend named Nyx who can.',
       body: ['Blackglove. Skelp the dinger-kens of the Vale, high and low, and grub under every one.', 'Tote the warm smit to the grey cove at the four-ways. He drops full.', 'Keep the grist-wheel dumb till the white falls.', '7 14 2 · 9 9 21 · 3 18 4 11'],
     },
     reward: { xp: 160, gold: 64, text: 'The Kettles got out alive, with nothing. One of the men who burned them out lies dead by the well, a Red Cap with a pitchfork wound in his side. Old Kettle fought back, and the gang left their own man where he fell.' },
@@ -124,7 +127,13 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     after: ['wolf-pelts'],
     zone: 'thornvale',
     level: 11,
-    reward: { xp: 360, gold: 110, perk: 'flask', text: 'Tobin gives you his grandfather’s old flask. With it, you can carry one more potion.' },
+    // (the side story's turn: the wolves were not hunger. Tobin's fold and the Kettles' farm were the same lesson)
+    find: {
+      name: 'A Bone Whistle on a Red Cord',
+      kind: 'token',
+      about: 'Found in Old Greymane’s den in the Wolfrun Hills, among the bones of Tobin’s sheep and a heap of butcher’s scraps no wolf killed. It is a drover’s whistle, the kind that calls dogs off a flock, on the red cord the Gallows Gang’s men wear. Someone fed these wolves, and called them down onto the farms.',
+    },
+    reward: { xp: 360, gold: 110, perk: 'flask', text: 'Tobin turns the whistle over twice. He never paid the rope tax. The Kettles, who didn’t pay either, got fire, and he got wolves, and he had thought it was only a bad winter coming. He gives you his grandfather’s old flask, which lets you carry one more potion, and goes to tell the Reeve what the gang does to farms that say no.' },
   },
   /* ------------------------------------------------------ Hanna's tonic */
   /* ------------------------------------------------------------ errands */
@@ -209,7 +218,7 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
         lines: ['The pack follows Old Greymane, the oldest wolf in the hills.', 'He dens in the Wolfrun Hills, south of my farm. Kill him, and I’ll give you my granddad’s flask.'],
       },
       { when: { quest: 'tobins-letter', state: 'active' }, lines: ['Will you take this letter to Hanna at the inn? Please don’t read it.', 'I wrote it six times. I think this one is good enough.'] },
-      { when: { quest: 'hunt-old-greymane', state: 'done' }, lines: ['The hills are quiet. I slept through the night for the first time in weeks.', 'Use that flask well. My granddad carried it for forty years.'] },
+      { when: { quest: 'hunt-old-greymane', state: 'done' }, lines: ['The hills are quiet. I slept through the night for the first time in weeks.', 'The Reeve is taking that whistle round every farm. Nobody is calling it a bad winter now.', 'Use that flask well. My granddad carried it for forty years.'] },
       { when: { quest: 'tobins-letter', state: 'done' }, lines: ['She said yes! Dinner on Tuesday!'] },
       { lines: ['Thornvale is good farmland. The gang and the wolves make it hard to live here.'] },
     ],

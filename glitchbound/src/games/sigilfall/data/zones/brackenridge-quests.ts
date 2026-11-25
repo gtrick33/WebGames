@@ -152,7 +152,13 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     after: ['tusker-gully'],
     zone: 'brackenridge',
     level: 8,
-    reward: { xp: 280, gold: 90, item: 'rustback-jerkin', text: 'Pip works all night and makes you a jerkin from Old Rustback’s bristly hide.' },
+    // (the side story's turn: the old boar was not what was wrong with the hills)
+    find: {
+      name: 'Barrow-Bronze Arrowheads',
+      kind: 'relic',
+      about: 'Cut out of Old Rustback’s hide in Tusker Gully. Only one arrow in him was Grandad Tanner’s. The other ten are bronze, green with age, the kind buried with the dead in the Old Barrows, and the wounds around them are new. The gully lies between the barrows and Fernstead.',
+    },
+    reward: { xp: 280, gold: 90, item: 'rustback-jerkin', text: 'Pip counts the arrowheads twice. Every night since the barrows woke, their dead have walked toward Fernstead’s lights, and the ones that came by way of the gully met the old boar first. Pip works all night and makes you a jerkin from the bristly hide. He sews the bronze into its collar, and says the tannery owes that boar a better name than the one it had.' },
   },
   /* ------------------------------------------------- Mother Alsa's cordial */
   {
@@ -161,6 +167,8 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     giver: 'mother-alsa',
     text: 'The Applebys fled their orchard when the kobolds came, and the last cider apples are rotting on the trees. Mother Alsa makes her harvest cordial from them every autumn. Fill a sack at Appleby Orchard, south-east of Fernstead. Watch out for kobolds there.',
     objective: { kind: 'explore', spot: 'appleby-orchard', label: 'Pick apples at Appleby Orchard' },
+    // (it was a walk to a spot with kobolds standing in it: now the orchard is cleared for the Applebys to come home to)
+    then: [{ kind: 'kill', region: 'brackenridge', count: 3, enemies: ['ridge-kobold', 'kobold-candler'], label: 'Clear the kobolds out of the orchard' }],
     after: ['west-road'],
     zone: 'brackenridge',
     level: 6,
@@ -170,8 +178,9 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
       about: 'Pinned to the press-house door at Appleby Orchard, left when the family fled to Fernstead. The last cider apples are still on the trees.',
       body: ['Gone to Fernstead. Kobolds in the cellar.', 'Take what apples you need. Leave the old tree for the bees.'],
       sign: 'Jem Appleby',
+      step: 0,
     },
-    reward: { xp: 65, gold: 30 },
+    reward: { xp: 65, gold: 30, text: 'The sack is full and the kobolds are out of the cellar. Mother Alsa sends word to the Applebys that the press-house is theirs again, and sets the first apples to steep.' },
   },
   {
     id: 'the-harvest-stones',
@@ -281,7 +290,7 @@ export const BRACKENRIDGE_NPCS: Record<string, NpcDef> = {
       },
       { when: { quest: 'fern-retaken', state: 'done' }, lines: ['The tannery is ash, but the vats came through the fire. I can start again.', 'The first jerkin I make goes to whoever rides north with you.'] },
       { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['My tannery burned with everything in it. My grandad’s tools, too.', 'I’m sewing jerkins out of tent canvas now. They’re better than nothing.'] },
-      { when: { quest: 'old-rustback', state: 'done' }, lines: ['The jerkin suits you. Its bristles hurt anything that hits you.'] },
+      { when: { quest: 'old-rustback', state: 'done' }, lines: ['The jerkin suits you. Its bristles hurt anything that hits you.', 'The bronze in the collar came out of him. He stood between us and the barrows, and we never knew.'] },
       { lines: ['Leather armor and hides. Have a look.', 'I make armor from what the hills give me, and that’s mostly boars.'] },
     ],
   },
