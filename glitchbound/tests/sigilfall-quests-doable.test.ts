@@ -101,7 +101,7 @@ describe('sigilfall quests can be finished', () => {
 });
 
 describe('sigilfall: a place found early still counts', () => {
-  it('a sight found before its quest was given finishes the quest when the hero goes back', async () => {
+  it('a sight found before its quest was given counts for the quest when the hero goes back', async () => {
     const { newWorld, readyHero } = await import('./sigilfall-bot');
     const { TILE } = await import('../src/games/sigilfall/sim/map');
     const hero = readyHero('warrior', 30, 'uncommon');
@@ -118,12 +118,13 @@ describe('sigilfall: a place found early still counts', () => {
     stand();
     expect(hero.opened.some((k) => k.endsWith(':kings-mound'))).toBe(true);
     expect(hero.quests['the-kings-mound']?.state).not.toBe('done');
-    // later the quest is given; going back finishes it
+    // later the quest is given; going back does its step of finding the place (the quest has more to do there since
+    // the pass that gave every quest something to do: it goes on to its next step, where it used to be finished)
     hero.quests['the-kings-mound'] = { state: 'active', n: 0 };
     w.player.x = mound.x + mound.r * TILE * 3;
     w.step(1 / 60);
     stand();
-    expect(hero.quests['the-kings-mound']?.state).toBe('done');
+    expect(hero.quests['the-kings-mound']).toMatchObject({ state: 'active', step: 1 });
     expect(TILE).toBeGreaterThan(0);
   });
 });
