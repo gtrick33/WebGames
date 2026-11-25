@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { beastOf } from './beast';
+import { bossForm, bossRig } from './bossKit';
 import { dressed, repaint } from './repaint';
 import { ART_TILE, TILE } from '../sim/map';
 import { Crowd, Stand } from './crowd';
@@ -236,7 +237,7 @@ export class Cast {
 
   private entry(file: string, kit: Kit): KitEntry {
     // (a model painted or dressed for one creature is its own: the plain one stays as its file has it)
-    const id = kit.paint || kit.wears || kit.beast || kit.gear ? `${file}@${ownKey(kit)}` : file;
+    const id = kit.paint || kit.wears || kit.beast || kit.gear || kit.form ? `${file}@${ownKey(kit)}` : file;
     let e = this.kits.get(id);
     if (!e) {
       e = { crowd: null, rig: null, mesh: null, kit, loading: true };
@@ -251,10 +252,15 @@ export class Cast {
             this.kits.delete(id);
             return;
           }
-          const rig = mesh.rig === 'medium' ? w.medium : mesh.rig === 'large' ? w.large : rigAnimOf(pack, mesh.rig!);
+          const form = bossForm(kit.form);
+          // (a boss of its own has its own copy of the shared skeleton: its clips, carried its way; render3d/bossKit.ts)
+          const shared = mesh.rig === 'medium' || mesh.rig === 'large';
+          const rig = (form && shared ? bossRig(kit.form!, form, w.rigs, mesh.rig!) : null) ?? (mesh.rig === 'medium' ? w.medium : mesh.rig === 'large' ? w.large : rigAnimOf(pack, mesh.rig!));
           // a boss painted part by part, and what's built onto it (kits.ts paint, wears)
           if (kit.paint) mesh = repaint(mesh, rig.joints, kit.paint);
           if (kit.wears) mesh = dressed(mesh, rig.joints, kit.wears);
+          // a boss of its own: what is built onto it (render3d/bossKit.ts)
+          if (form?.build) mesh = form.build(mesh, rig.joints);
           entry.rig = rig;
           entry.mesh = mesh;
           // (the animals of their set are flat-faceted and flat-colored: lit by their smooth normals they read rounded, as
@@ -648,7 +654,7 @@ const ownKeys = new WeakMap<Kit, string>();
 function ownKey(kit: Kit): string {
   let k = ownKeys.get(kit);
   if (!k) {
-    k = JSON.stringify([kit.paint ?? null, kit.wears ?? null, kit.beast ?? null, kit.gear ?? null]);
+    k = JSON.stringify([kit.paint ?? null, kit.wears ?? null, kit.beast ?? null, kit.gear ?? null, kit.form ?? null]);
     ownKeys.set(kit, k);
   }
   return k;

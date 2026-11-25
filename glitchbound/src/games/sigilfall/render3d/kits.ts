@@ -57,6 +57,11 @@ export interface Kit {
   wears?: readonly Wear[];
   /** An animal's coat, markings, eyes and what it has that its plain model hasn't (render3d/beast.ts). */
   beast?: Beast;
+  /**
+   * A boss of its own (render3d/bossKit.ts): what is built onto its file's model in the browser, how it carries itself
+   * and the moves it makes for what the rules have it do. Its file is `k/boss_<id>.pack`.
+   */
+  form?: string;
 }
 
 const ASH = '#b9b4bf';
@@ -188,7 +193,32 @@ put('ilvane-the-unmoored', { k: 'witch', look: 'foe-ilvane', held: { kind: 'staf
 // Duskspire's Last Mourner in black, veiled, her staff's light violet; and the dead she bids keep vigil, ash-grey
 put('lady-cendre', { k: 'witch', look: 'foe-cendre', held: { kind: 'staff', tint: '#c08aff' }, size: 1.3, float: 0.12, ...CASTER });
 put('mourning-dead', { k: 'sk_minion', tint: '#c8c4d0' });
-put('coffin-matron', { k: 'witch', look: 'foe-coffin-matron', held: { kind: 'staff' }, size: 1.2, float: 0.15, ...CASTER });
+// The Coffin Matron, Mother of the Ossuary: an old woman of the dead, pale as her charges, white-haired under a
+// mourner's veil, in grave linen and black; the dead's own arms; the coffin she hides in strapped to her back, a
+// sexton's spade beside it, and eyes of the crypt's green light (her file: scripts/sigilfall-3d-assets.mjs
+// BOSS_KITS; the veil, the candles on her crown and the straps: render3d/bossKit.ts).
+put('coffin-matron', {
+  k: 'boss_matron',
+  form: 'matron',
+  size: 1.5,
+  float: 0.1,
+  ...CASTER,
+  paint: [
+    // her eyes: the same light
+    { joint: 'head', lum: [0, 0.32], to: '#9cff9c', glow: true, keep: 0.2 },
+    // her hair, gone white
+    { joint: 'head', hue: [335, 14], sat: [0.4, 1], to: '#dedad0', keep: 0.9 },
+    // her face: the pallor of the dead
+    { joint: 'head', hue: [14, 40], sat: [0.2, 0.7], to: '#cfd3c2', keep: 0.9 },
+    // the bodice and the sleeves: mourning black
+    { hue: [20, 36], sat: [0.7, 1], to: '#2b2632', keep: 0.9 },
+    { hue: [215, 255], sat: [0.3, 1], to: '#2b2632', keep: 0.9 },
+    // the skirt: grave linen
+    { hue: [50, 95], sat: [0.4, 1], to: '#d6d0bd', keep: 0.9 },
+    // stockings and shoes
+    { hue: [5, 26], sat: [0.45, 0.75], lum: [0.3, 0.78], to: '#3a343c', keep: 0.9 },
+  ],
+});
 put('morgrave-soul', { k: 'ghost', tint: '#9cff9c', float: 0.6, size: 0.7, ghost: 0.7, walk: 'skelidle' });
 put('the-weeping-lord the-tearborn', { k: 'ghost', tint: '#bfd8f0', float: 0.45, size: 1.25, ghost: 0.82, walk: 'skelidle' });
 put('corpse-candle candle-wraith', { k: 'wisp', tint: FIRE, size: 0.7, float: 0.35 });
