@@ -2114,6 +2114,84 @@ BOSS_KITS.boss_hallvor = {
   ],
 };
 
+// Prior Vessant, Chaplain of the Host: he buried Highwall's dead in this chapel for thirty years, and was promised his
+// dead brother back. A living man in a chaplain's long habit (the Druid's robes, the Cleric's head); his hymnal open
+// in one hand, a staff in the other.
+BOSS_KITS.boss_vessant = {
+  rig: 'medium',
+  from: [['Druid', /Body|Arm|Leg/], ['Cleric', /Head/]],
+  grow: [['head', 1.05], ['hand.l', 1.2]],
+  ties: [
+    { bit: 'paladin_book', joint: 'handslot.l', at: [0, 0.05, 0.05], size: 0.9 },
+    { bit: `${SK}Staff`, joint: 'handslot.r', at: [0, 0, 0], size: 1.15 },
+  ],
+};
+// General Morvain, Lieutenant of the Hallow King: a death knight who has never lost a siege. The Black Knight's plate,
+// broad in the chest and arm, no shield (he has never needed to hold), his great sword, and on his
+// back the Host's war banner he plants.
+BOSS_KITS.boss_morvain = {
+  rig: 'large',
+  from: [['BlackKnight', /Body|Arm|Leg|Cape|Shoulder|Head/]],
+  grow: [['chest', 1.16], ['upperarm.l', 1.1], ['upperarm.r', 1.1]],
+  ties: [
+    { bit: 'BlackKnight_Sword_Large', joint: 'handslot.r', at: [0, 0, 0], size: 1.2 },
+    { bit: 'banner_thin_red', joint: 'chest', at: [0, 0.1, -0.55], size: 1.7, turn: [-38, 0, 0] },
+  ],
+};
+// The Magma Warden, Keeper of the Host's Forges: "a guardian of bone-steel with molten rock for a heart", built by
+// the Host. The rock golem's body with the bone golem's skull on it, and a forge hammer.
+BOSS_KITS.boss_magmawarden = {
+  rig: 'large',
+  from: [['FrostGolem', /Body|Arm|Leg/], [`${SK}Golem`, /Head|Jaw|Eyes/]],
+  grow: [['chest', 1.1]],
+  ties: [{ bit: 'hammer_large_red', joint: 'handslot.r', at: [0, 0, 0], size: 0.36 }],
+};
+// Ossa the Founder, Mistress of the Bone-Steel Foundry: she pours the bone-steel for every blade and chain the Host
+// makes. The bone golem's frame with a founder's goggles and pack, and a hammer in her hand.
+BOSS_KITS.boss_ossa = {
+  rig: 'large',
+  from: [[`${SK}Golem`, /Body|Arm|Leg|Head|Jaw|Eyes/], ['Engineer', /Goggles|Backpack/]],
+  grow: [['hand.l', 1.2], ['hand.r', 1.2]],
+  ties: [{ bit: 'hammer_large_yellow', joint: 'handslot.r', at: [0, 0, 0], size: 0.45 }],
+};
+// Ashkar the Bound, Fire Lord of Emberdeep: chained to his own throne and made to forge the Pale Crown. The rock
+// golem whole, broad in the shoulder, a shackle on each wrist and a link of the Host's chain still hanging from it.
+BOSS_KITS.boss_ashkar = {
+  rig: 'large',
+  from: [['FrostGolem', /Body|Arm|Leg|Head/]],
+  grow: [['chest', 1.12], ['upperarm.l', 1.1], ['upperarm.r', 1.1]],
+  ties: [
+    { bit: 'chain_shackle', joint: 'lowerarm.l', at: [0, -0.3, 0], size: 1.6 },
+    { bit: 'chain_shackle', joint: 'lowerarm.r', at: [0, -0.3, 0], size: 1.6 },
+    { bit: 'chain_link', joint: 'lowerarm.l', at: [0, -0.6, 0], size: 1.6 },
+    { bit: 'chain_link', joint: 'lowerarm.r', at: [0, -0.6, 0], size: 1.6 },
+  ],
+};
+// Lady Cendre, the Last Mourner: a lady of Vaelor's court who has kept vigil over the King's dead for three hundred
+// years. The Witch's long dress with a court lady's cape and the pale head of the dead court (the Vampire's); the
+// vigil's candles in one hand, a staff in the other.
+BOSS_KITS.boss_cendre = {
+  rig: 'medium',
+  from: [['Witch', /Body|Arm|Leg/], ['Vampire', /Head/], ['Mage', /Cape/]],
+  grow: [['head', 1.05]],
+  ties: [
+    { bit: 'candle_triple', joint: 'handslot.l', at: [0, 0, 0.02], size: 0.9 },
+    { bit: 'staff_B', joint: 'handslot.r', at: [0, 0, 0], size: 1.2 },
+  ],
+};
+// Captain Ser Maltheus, First of the Ashen Guard: he held this court nine days three hundred years ago and has not
+// left his post. The Black Knight's plate with no cape (a guardsman, not a lord), the guard's great shield, and a
+// long spear: he holds, and lets the hero come to him.
+BOSS_KITS.boss_maltheus = {
+  rig: 'large',
+  from: [['BlackKnight', /Body|Arm|Leg|Shoulder|Head/]],
+  grow: [['chest', 1.1]],
+  ties: [
+    { bit: 'spear_A', joint: 'handslot.r', at: [0, 0, 0], size: 1.5 },
+    { bit: 'BlackKnight_Shield_Large', joint: 'handslot.l', at: [0, 0, 0], size: 1.2 },
+  ],
+};
+
 const quatOf = (rx, ry, rz) => new THREE.Quaternion().setFromEuler(new THREE.Euler((rx * Math.PI) / 180, (ry * Math.PI) / 180, (rz * Math.PI) / 180, 'YXZ')).toArray();
 
 /** The model with what hangs from one joint, and from every joint under it, made `k` times its size about that joint. */

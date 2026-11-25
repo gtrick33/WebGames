@@ -188,7 +188,6 @@ put('weeping-specter tear-wraith', { k: 'ghost', tint: '#bfd8f0', float: 0.45, g
 // the Chapel Crypt's boss fights (sim/patterns/crypt.ts): the Matron of the Ossuary, a pale old witch of the dead, and Morgrave's soul-shards
 // the first of the Sigil-wardens, frozen at her post: rime-white plate, a helm of ice, the halberd of the watch
 // the Host's chaplain in Highwall's chapel: a prior's grey robe and hood, the censer-staff glowing with his dirge
-put('prior-vessant', { k: 'sk_necro', look: 'foe-prior-vessant', held: { kind: 'staff', tint: '#9cff9c' }, size: 1.3, ...CASTER });
 // Highwall's own dead, sung up again: grey-green, in what is left of their mail
 put('risen-defender', { k: 'sk_guard', tint: '#a8c0a0' });
 // the Faded Lights' lamp-wardens: Elowen in the morning's gold with her lamp-staff, her sister Merrin in the evening's violet
@@ -197,7 +196,6 @@ put('merrin-of-the-dusk', { k: 'witch', look: 'foe-merrin', held: { kind: 'wand'
 // the Weightless Gallery's astronomer: a robe of night and starlight, a star-crowned hat, floating well off her floor
 put('ilvane-the-unmoored', { k: 'witch', look: 'foe-ilvane', held: { kind: 'staff', tint: '#c8b8ff' }, size: 1.3, float: 0.7, ...CASTER });
 // Duskspire's Last Mourner in black, veiled, her staff's light violet; and the dead she bids keep vigil, ash-grey
-put('lady-cendre', { k: 'witch', look: 'foe-cendre', held: { kind: 'staff', tint: '#c08aff' }, size: 1.3, ...CASTER });
 put('mourning-dead', { k: 'sk_minion', tint: '#c8c4d0' });
 // The Coffin Matron, Mother of the Ossuary: an old woman of the dead, pale as her charges, white-haired under a
 // mourner's veil, in grave linen and black; the dead's own arms; the coffin she hides in strapped to her back, a
@@ -331,18 +329,6 @@ put('the-runewarden', {
 });
 // the Host's founder in the Bone-Steel Foundry: a giant of fused bone, her anvil slung on her back, the founder's hammer
 // and her crucible white-hot
-put('ossa-the-founder', {
-  k: 'sk_golem',
-  tint: '#e8dcc8',
-  gain: 1.05,
-  size: 1.55,
-  ...SMASH,
-  gear: [
-    { m: 'anvil', y: 0.6, z: -0.17, h: 0.36, tint: '#6a6670' },
-    { m: 'w_hammer_C', x: 0.36, y: 0.28, z: 0.1, h: 0.6, tipZ: 0.35, tint: '#ffb070' },
-    { m: 'bucket', x: -0.36, y: 0.38, z: 0.14, h: 0.2, tint: '#ff8a3a' },
-  ],
-});
 put('veil-sentinel', { k: 'golem', tint: VOID, ...SMASH });
 
 /* ------------------------------------------------------------------ the living */
@@ -507,7 +493,6 @@ put('cinder-imp slag-imp imp chained-emberkin', { k: 'tiefling', tint: FIRE, siz
 put('pyrebrand', { k: 'tiefling', tint: FIRE, float: 0.3, ...CASTER });
 put('felguard', { k: 'orc_brute', tint: FIRE, ...SMASH });
 put('voidwalker', { k: 'ghost', tint: VOID, float: 0.3, ghost: 0.85, walk: 'skelidle' });
-put('ashkar-the-bound', { k: 'golem', tint: FIRE, size: 1.3, ...SMASH });
 // a druid's shapes
 // (its own model, built in scripts/sigilfall-3d-assets.mjs bearKit: it was a werewolf in brown)
 put('bear', { k: 'bear', size: 1.2 });
@@ -689,8 +674,6 @@ TABLE['the-royal-auditor'] = {
 boss('the-drowned', { size: 1.35, wears: [{ piece: 'eyes', b: '#9afff0' }] });
 boss('the-rot-mother', { size: 1.5, wears: [{ piece: 'horns', a: '#3a4a22', b: '#c8e070' }, { piece: 'eyes', b: '#e8ff70' }] });
 boss('slag-colossus', { size: 1.6, tint: undefined, paint: molten('#4a3a36', '#ff9a3a'), wears: [{ piece: 'eyes', b: '#fff0a0' }] });
-boss('magma-warden', { size: 1.5, tint: undefined, paint: molten('#3c2c2c', '#ff6a2a'), wears: [{ piece: 'horns', a: '#2a2020', b: '#ff8a3a', size: 0.8 }, { piece: 'eyes', b: '#ffe08a' }] });
-boss('ashkar-the-bound', { size: 1.65, tint: undefined, paint: molten('#2e2428', '#ff5a1e'), wears: [{ piece: 'horns', a: '#1e181a', b: '#ff9a3a', size: 1.15 }, { piece: 'eyes', b: '#fff0a0' }] });
 boss('veil-sentinel', { size: 1.5, tint: undefined, paint: molten('#3a2e58', '#d8a8ff'), wears: [{ piece: 'eyes', b: '#f4e0ff' }, { piece: 'halo', a: '#8a4ae0', b: '#f0d8ff', size: 0.85 }] });
 boss('the-runewarden', { tint: undefined, paint: molten('#6a5c44', '#ffd27a'), wears: [{ piece: 'eyes', b: '#fff2c0' }] });
 boss('forgemaster-grold', { size: 1.45, wears: [{ piece: 'horns', a: '#3a2a22', b: '#ff9a4a', size: 0.9 }, { piece: 'eyes', b: '#ffd27a' }] });
@@ -808,10 +791,129 @@ TABLE['hallvor-the-unthawed'] = {
   ],
   wears: [{ piece: 'eyes', b: '#dff6ff' }],
 };
+/* The Siege of Highwall (Act IV) */
+// Prior Vessant, Chaplain of the Host: thirty years burying Highwall's dead, and then the Herald promised him his
+// brother back. Still a living man, in a chaplain's black habit; the hymnal he raises the dead from is open in his
+// hand, its page the grave's green.
+TABLE['prior-vessant'] = {
+  k: 'boss_vessant',
+  form: 'vessant',
+  size: 1.5,
+  atk: 'cast',
+  paint: [
+    { joint: 'handslot.l', lum: [0.7, 1], to: '#9cff9c', glow: true, keep: 0.3 },
+    { joint: 'handslot.l', to: '#2a2630', keep: 0.9 },
+    // the habit: black, its trim a tarnished silver
+    { hue: [60, 200], sat: [0.15, 1], to: '#26232c', keep: 0.9 },
+    { hue: [200, 360], sat: [0.2, 1], to: '#3a3442', keep: 0.9 },
+    { hue: [0, 25], sat: [0.45, 1], to: '#3a3442', keep: 0.9 },
+  ],
+};
+// General Morvain, Lieutenant of the Hallow King: a death knight who has never lost a siege. Black plate with the
+// Host's red at plume and cape, the war banner he plants on his back, and an ember's light along his blade.
+TABLE['general-morvain'] = {
+  k: 'boss_morvain',
+  form: 'morvain',
+  // (his banner stands over him: sized so that the man keeps his size)
+  size: 1.72,
+  atk: 'chop2',
+  paint: [
+    { joint: 'handslot.r', lum: [0.4, 1], sat: [0, 0.4], to: '#ff8a4a', glow: true, keep: 0.3 },
+    { hue: [320, 20], sat: [0.5, 1], to: '#c8242c' },
+    { hue: [190, 270], lum: [0.5, 1], to: '#7a7480' },
+    { hue: [190, 270], to: '#1e1c24', keep: 0.9 },
+  ],
+  wears: [{ piece: 'horns', a: '#1a181c', b: '#8a8490', size: 0.8 }, { piece: 'eyes', b: '#ff6a3a' }],
+};
+/* The Molten Throne (Act V) */
+// The Magma Warden, Keeper of the Host's Forges: bone-steel with molten rock for a heart. A body of dark rock with
+// its cracks alight, and on it a skull of the Host's pale bone-steel: nobody mistakes whose it is.
+TABLE['magma-warden'] = {
+  k: 'boss_magmawarden',
+  form: 'magmawarden',
+  size: 2.1,
+  atk: 'smash',
+  paint: [
+    { joint: 'head', lum: [0.3, 1], to: '#d8d0c0', keep: 0.9 },
+    // (the pack's golem is ice, and nothing of it is dark: what was its brightest is where the fire shows)
+    { lum: [0.935, 1], to: '#ff6a2a', glow: true, keep: 0 },
+    { lum: [0.6, 0.88], to: '#4a3432', keep: 0.9 },
+    { to: '#2c2224', keep: 0.9 },
+  ],
+  wears: [{ piece: 'horns', a: '#2a2020', b: '#ff8a3a', size: 0.8 }, { piece: 'eyes', b: '#ffe08a' }],
+};
+// Ossa the Founder, Mistress of the Bone-Steel Foundry: she pours the bone-steel for every blade and chain the Host
+// makes. Pale bone-steel herself from skull to heel, a founder's goggles over her eye-pits, and a hammer whose head
+// is still hot from the pour.
+TABLE['ossa-the-founder'] = {
+  k: 'boss_ossa',
+  form: 'ossa',
+  size: 1.95,
+  atk: 'smash',
+  paint: [
+    // the hammer's head: hot
+    { joint: 'handslot.r', hue: [25, 75], sat: [0.4, 1], to: '#ffb070', glow: true, keep: 0.3 },
+    // bone-steel
+    { lum: [0.5, 1], to: '#e8dcc8', keep: 0.8 },
+    { lum: [0, 0.5], to: '#8a8274', keep: 0.8 },
+  ],
+  wears: [{ piece: 'eyes', b: '#fff6e0' }],
+};
+// Ashkar the Bound, Fire Lord of Emberdeep: chained to his own throne and made to forge the Pale Crown. Rock near
+// black with the fire showing through every crack, great horns, and the Host's pale shackles on his wrists: the only
+// cold thing on him.
+TABLE['ashkar-the-bound'] = {
+  k: 'boss_ashkar',
+  form: 'ashkar',
+  size: 2.15,
+  atk: 'smash',
+  paint: [
+    // the shackles and chain: the Host's bone-steel
+    { joint: 'lowerarm.l', hue: [0, 360], sat: [0, 0.25], lum: [0.3, 1], to: '#d8d0c0', keep: 0.9 },
+    { joint: 'lowerarm.r', hue: [0, 360], sat: [0, 0.25], lum: [0.3, 1], to: '#d8d0c0', keep: 0.9 },
+    { lum: [0.935, 1], to: '#ff5a1e', glow: true, keep: 0 },
+    { lum: [0.6, 0.88], to: '#3a2a2c', keep: 0.9 },
+    { to: '#221a1e', keep: 0.9 },
+  ],
+  wears: [{ piece: 'horns', a: '#1e181a', b: '#ff9a3a', size: 1.15 }, { piece: 'eyes', b: '#fff0a0' }],
+};
+/* Duskspire (the finale) */
+// Lady Cendre, the Last Mourner: three hundred years keeping vigil over the King's dead. Mourning black gone violet
+// with age, a court cape, a face as pale as the dead she watches, and the vigil's three candles in her hand burning
+// the violet of the grief she casts.
+TABLE['lady-cendre'] = {
+  k: 'boss_cendre',
+  form: 'cendre',
+  size: 1.5,
+  atk: 'cast',
+  paint: [
+    { joint: 'handslot.l', lum: [0.6, 1], to: '#c08aff', glow: true, keep: 0.3 },
+    { joint: 'head', hue: [5, 45], sat: [0.15, 0.9], to: '#d8d0dc', keep: 0.8 },
+    { hue: [45, 200], sat: [0.15, 1], to: '#2a2233', keep: 0.9 },
+    { hue: [200, 360], sat: [0.15, 1], to: '#3a2a4a', keep: 0.9 },
+    { hue: [0, 5], sat: [0.3, 1], to: '#3a2a4a', keep: 0.9 },
+  ],
+};
+// Captain Ser Maltheus, First of the Ashen Guard: he held this court nine days and has not left his post since. Plate
+// the pale blue of Vaelor's court over its deep blue, no cape, the guard's great shield, and a spear with the court's cold light at its point.
+TABLE['hollow-guard'] = {
+  k: 'boss_maltheus',
+  form: 'maltheus',
+  // (his spear makes him longer than he is tall: sized so that he stands on his circle)
+  size: 1.95,
+  atk: 'chop2',
+  paint: [
+    { joint: 'handslot.r', lum: [0.36, 1], sat: [0, 0.35], to: '#cfe0ff', glow: true, keep: 0.3 },
+    // (his colors as they were: the court's pale blue over deep blue)
+    { hue: [320, 20], sat: [0.5, 1], to: '#e4ecfa' },
+    { hue: [190, 270], lum: [0.5, 1], to: '#a4b8d8' },
+    { hue: [190, 270], to: '#3a4a70', keep: 0.9 },
+  ],
+  wears: [{ piece: 'eyes', b: '#cfe0ff' }],
+};
 boss('rotwood-colossus', { size: 1.35, wears: [{ piece: 'horns', a: '#4a3a22', b: '#8ab04a', size: 1.2 }, { piece: 'eyes', b: '#c8ff70' }] });
 boss('the-withered-queen', { size: 1.35, wears: [{ piece: 'ice-crown', a: '#4a6a2a', b: '#d8ff8a', band: '#3a3a2a' }, { piece: 'eyes', b: '#e0ff9a' }] });
 boss('herald-in-the-spire', { size: 1.35, wears: [{ piece: 'halo', a: '#a03ae0', b: '#ffd0ff', size: 0.9 }, { piece: 'eyes', b: '#ff9af0' }] });
-boss('ossa-the-founder', { wears: [{ piece: 'eyes', b: '#fff6e0' }] });
 // the Host's knights: black plate, each with their own color where the pack's knight wears red
 // Sir Corvane the Fallen, First Grave Knight of the Hallow King: he held the downs nine days for a relief that was
 // called off, then knelt to get his dead knights back. Black plate rimed pale at its edges, a plume gone from red to
@@ -836,8 +938,6 @@ const CORVANE: Kit = {
 };
 TABLE['sir-corvane'] = CORVANE;
 TABLE['sir-corvane-foot'] = CORVANE;
-boss('general-morvain', { size: 1.4, tint: undefined, paint: [{ hue: [320, 20], sat: [0.5, 1], to: '#c8242c' }, { hue: [190, 270], lum: [0.5, 1], to: '#7a7480' }, { hue: [190, 270], to: '#1e1c24', keep: 0.9 }], wears: [{ piece: 'horns', a: '#1a181c', b: '#8a8490', size: 0.8 }, { piece: 'eyes', b: '#ff6a3a' }] });
-boss('hollow-guard', { size: 1.35, tint: undefined, paint: [{ hue: [320, 20], sat: [0.5, 1], to: '#e4ecfa' }, { hue: [190, 270], lum: [0.5, 1], to: '#a4b8d8' }, { hue: [190, 270], to: '#3a4a70', keep: 0.9 }], wears: [{ piece: 'eyes', b: '#dff6ff' }] });
 
 const FALLBACK: Kit = { k: 'sk_minion', tint: ASH };
 

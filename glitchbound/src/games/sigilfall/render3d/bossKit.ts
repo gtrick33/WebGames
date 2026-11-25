@@ -603,6 +603,155 @@ FORMS.hallvor = {
   fall: { clip: 'die', end: 'dead', kept: 2.8, sink: 0.4 },
 };
 
+/* ------------------------------------------------------------------ the Siege of Highwall, the Molten Throne, Duskspire */
+
+// Prior Vessant. A priest's gestures turned to the Host's use: he reads the fallen up out of the hymnal with both
+// arms raised, waves the woken on, draws the life out of the hero with the book held out, casts his mines with a
+// flick, and sings the dirge with his arms wide. He strikes with the staff only when cornered. He dies as a man does.
+FORMS.vessant = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'summon', 'wave', 'channel', 'throw', 'slice', 'cheer', 'taunt', 'spawn'],
+  bend: (joint, clip, phase) => (joint === 'spine' ? [0.05, 0, 0] : joint === 'chest' && clip === 'idle' ? [0.03 + Math.sin(phase * Math.PI * 2) * 0.02, 0, 0] : null),
+  moves: {
+    'siege:fallen': { clip: 'summon' },
+    summon: { clip: 'wave' },
+    'spell:drain': { clip: 'channel' },
+    'spell:mines': { clip: 'throw' },
+    cleave: { clip: 'slice' },
+    'siege:dirge': { clip: 'cheer', rate: 0.8 },
+  },
+  enter: { clip: 'spawn', then: 'channel' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 2.8, sink: 0 },
+};
+
+// General Morvain. A commander first: he plants the banner with one blow into the ground, calls his squad and his
+// archers with a lifted arm, and stands behind his guard while they work. When he fights himself it is the long
+// cut, the blow down, and his shoulder into the death-charge. He has never lost a siege, and stands like it.
+FORMS.morvain = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'chop2', 'smash', 'cast', 'taunt', 'bash', 'block'],
+  bend: (joint) => (joint === 'head' ? [0.1, 0, 0] : null),
+  moves: {
+    'siege:banner': { clip: 'smash', rate: 0.8 },
+    'siege:squad': { clip: 'taunt' },
+    'siege:arrows': { clip: 'cast' },
+    'siege:last-volley': { clip: 'cast', rate: 0.8 },
+    cleave: { clip: 'slice' },
+    chop: { clip: 'chop2', rate: 0.9 },
+    roar: { clip: 'taunt', rate: 0.8 },
+    'siege:deathcharge': { clip: 'bash', rate: 1.3 },
+    'siege:guard': { clip: 'block' },
+  },
+  enter: { clip: 'taunt', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'block',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// The Magma Warden. A forge's guardian works like a forge: the hammer across, the hammer down and the floor erupts,
+// the molten rock poured from a held-out hand, its core shut behind its arms. It was built standing at its post.
+FORMS.magmawarden = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'chop2', 'smash', 'cast', 'punch', 'taunt', 'block', 'bash'],
+  moves: {
+    cleave: { clip: 'slice', rate: 0.85 },
+    'throne:eruption': { clip: 'smash', rate: 0.85 },
+    'throne:pour': { clip: 'cast', rate: 0.8 },
+    slamRings: { clip: 'chop2', rate: 0.8 },
+    barrage: { clip: 'punch' },
+    roar: { clip: 'taunt' },
+    'throne:core': { clip: 'block' },
+    summon: { clip: 'bash' },
+  },
+  enter: { clip: 'block', then: 'idle' },
+  shift: { clip: 'taunt', rate: 0.9 },
+  dazed: 'block',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// Ossa the Founder. A founder at her work: she casts a likeness with a held-out hand, pours her pools with a blow
+// on the floor, and uses the hammer as a hammer. She looks up from the mould when the hero comes.
+FORMS.ossa = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'chop2', 'smash', 'cast', 'taunt', 'bash', 'block'],
+  moves: {
+    'throne:likeness': { clip: 'cast' },
+    cleave: { clip: 'slice' },
+    chop: { clip: 'chop2' },
+    'spell:pools': { clip: 'smash', rate: 0.8 },
+    roar: { clip: 'taunt' },
+    summon: { clip: 'bash' },
+  },
+  enter: { clip: 'cast', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// Ashkar the Bound. Everything he does he does against his chains: they shut on the hero when he closes his arms,
+// go taut when he throws his weight forward, come round as a flail when he turns, and tear when he wrenches at them.
+// He hammers at the crown he is made to forge, throws fire with his fists, and screams the inferno. He is chained to
+// his throne when the hero comes. Beaten, he goes to his knees, and the chains are what break.
+FORMS.ashkar = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'chop2', 'smash', 'cast', 'punch', 'taunt', 'bash', 'block', 'spin', 'stab', 'kick'],
+  moves: {
+    'throne:shackles': { clip: 'block' },
+    cleave: { clip: 'slice' },
+    'throne:taut': { clip: 'bash' },
+    volley: { clip: 'punch' },
+    barrage: { clip: 'punch', rate: 1.3 },
+    'throne:forge': { clip: 'chop2', rate: 1.1 },
+    roar: { clip: 'taunt' },
+    'throne:tear': { clip: 'kick' },
+    'throne:flail': { clip: 'spin', rate: 0.9 },
+    hook: { clip: 'stab' },
+    'throne:eruption': { clip: 'smash', rate: 0.85 },
+    'throne:crown': { clip: 'cast' },
+    'throne:lake': { clip: 'cast', rate: 0.7 },
+    'throne:inferno': { clip: 'taunt', rate: 0.7 },
+  },
+  enter: { clip: 'taunt', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// Lady Cendre. A mourner's gestures: she keeps her vigil with the candles held before her, draws the ring with a
+// slow hand, calls the grief up with both arms, and wards the hero off with the staff. She is at her vigil when the
+// hero comes and does not rise for them at first. She dies as a lady of the court does, and her candles go out.
+FORMS.cendre = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'channel', 'cast', 'summon', 'slice', 'taunt', 'sitfloor', 'rise'],
+  bend: (joint, clip, phase) => (joint === 'head' ? [0.12, 0, 0] : joint === 'chest' && clip === 'idle' ? [0.05 + Math.sin(phase * Math.PI * 2) * 0.015, 0, 0] : null),
+  moves: {
+    'dusk:vigil': { clip: 'channel', rate: 0.8 },
+    'spell:ring': { clip: 'cast' },
+    'spell:grief': { clip: 'summon' },
+    cleave: { clip: 'slice' },
+    roar: { clip: 'taunt' },
+  },
+  enter: { clip: 'rise', then: 'channel' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'sitfloor',
+  fall: { clip: 'die', end: 'dead', kept: 2.8, sink: 0 },
+};
+
+// Captain Ser Maltheus. A guardsman's fight, all of it from behind the shield: his oath is said from his guard, the
+// spear thrusts out for the hook, cuts across, comes down, and goes in behind the shield for his rushes. He has stood
+// at this door three hundred years and is standing at it now.
+FORMS.maltheus = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'chop2', 'stab', 'bash', 'block', 'taunt'],
+  moves: {
+    'dusk:oath': { clip: 'block' },
+    cleave: { clip: 'slice' },
+    chop: { clip: 'chop2' },
+    hook: { clip: 'stab' },
+    roar: { clip: 'taunt' },
+    tripleCharge: { clip: 'bash', rate: 1.3 },
+  },
+  enter: { clip: 'block', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'block',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
 export const bossForm = (id: string | undefined): BossForm | undefined => (id ? FORMS[id] : undefined);
 export const BOSS_FORMS: Readonly<Record<string, BossForm>> = FORMS;
 
