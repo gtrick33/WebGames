@@ -212,7 +212,11 @@ describe('Sigilfall: a place held (hold)', () => {
     expect(state(w, q).n).toBe(0);
     expect(w.enemies).toHaveLength(0);
     goTo(w, at.x + 10, at.y);
-    run(w, 2.2);
+    // (it begins a breath after the hero steps in: a scene staged at the place plays first)
+    run(w, 1.4);
+    expect(state(w, q).n).toBe(0);
+    expect(w.enemies).toHaveLength(0);
+    run(w, 2.3);
     expect(state(w, q).n).toBe(2);
     expect(questProgress(w.hero, q).of).toBe(6);
     expect(w.enemies.length).toBe(1);

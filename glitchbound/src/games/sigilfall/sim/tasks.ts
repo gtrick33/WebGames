@@ -48,7 +48,7 @@ export interface Tasks {
   /** What the hero carries. */
   carrying: { key: string; look: ThingLook; total: number; sprung: number } | null;
   /** The place being held. */
-  hold: { key: string; acc: number; wave: number; x: number; y: number; r: number; inside: boolean; warned: number } | null;
+  hold: { key: string; acc: number; wave: number; x: number; y: number; r: number; inside: boolean; warned: number; ready: number } | null;
   /** What has been put down already in this visit to the land (guards, lairs). */
   spawned: Set<string>;
   nextId: number;
@@ -63,6 +63,8 @@ export const newTasks = (): Tasks => ({ things: [], channel: null, carrying: nul
 export const THING_REACH = 26;
 const MARK_REACH = 20;
 const CHANNEL_DRIFT = 30;
+/** Seconds the hero stands in a place before its hold begins. */
+const HOLD_BREATH = 1.5;
 /** A foe yields at this share of its health. */
 export const YIELD_AT = 0.25;
 
@@ -147,14 +149,18 @@ export function trailSpots(w: World, key: string, from: { x: number; y: number }
   return out;
 }
 
-/** Foes put down round a place by a step (never in a guest's game: the host's runs the enemies). */
-function bring(w: World, ids: string[], x: number, y: number, key: string, ring = 34): Enemy[] {
+/**
+ * Foes put down round a place by a step (never in a guest's game: the host's runs the enemies). `waiting`: they stand
+ * there as a land's own packs do, until the hero comes near (a thing's guards, a lair's quarry); otherwise they rise
+ * and come for the hero at once (an ambush, a hold's wave).
+ */
+function bring(w: World, ids: string[], x: number, y: number, key: string, ring = 34, waiting = false): Enemy[] {
   if (w.puppet || !ids.length) return [];
   const rnd = seeded(`${key}:foes`);
   const out: Enemy[] = [];
   for (const id of ids) {
     const at = placeNear(w, x, y, rnd, ring / TILE, out, 0.6);
-    const e = w.addEnemy(id, at.x, at.y, w.level, { room: -1, pack: -1, spawn: true });
+    const e = w.addEnemy(id, at.x, at.y, w.level, { room: -1, pack: -1, ...(waiting ? {} : { spawn: true }) });
     out.push(e);
   }
   return out;
@@ -195,7 +201,7 @@ export function syncTasks(w: World): void {
       const wanted = new Set(lair.enemies);
       if (at && !w.enemies.some((e) => !e.dead && wanted.has(e.def.id))) {
         T.spawned.add(`${key}:lair`);
-        bring(w, lair.enemies, at.x, at.y, `${key}:lair`, 40);
+        bring(w, lair.enemies, at.x, at.y, `${key}:lair`, 40, true);
       }
     }
     if (o.kind === 'subdue') T.subduing = o;
@@ -209,7 +215,7 @@ export function syncTasks(w: World): void {
         addThing(w, { key, quest: q.id, idx: i, look: o.thing, role: 'use', x: s.x, y: s.y, verb: o.verb, secs: o.secs ?? 1.4 });
         if (o.guards && !T.spawned.has(`${key}:g${i}`)) {
           T.spawned.add(`${key}:g${i}`);
-          bring(w, o.guards, s.x, s.y, `${key}:g${i}`, 30);
+          bring(w, o.guards, s.x, s.y, `${key}:g${i}`, 30, true);
         }
       }
     } else if (o.kind === 'carry') {
@@ -225,7 +231,7 @@ export function syncTasks(w: World): void {
     } else if (o.kind === 'hold') {
       const at = anchorOf(w, o.at);
       if (!at) continue;
-      if (T.hold?.key !== key) T.hold = { key, acc: 0, wave: Math.floor((n / o.secs) * o.waves.length), x: at.x, y: at.y, r: (o.radius ?? 5) * TILE, inside: false, warned: 0 };
+      if (T.hold?.key !== key) T.hold = { key, acc: 0, wave: Math.floor((n / o.secs) * o.waves.length), x: at.x, y: at.y, r: (o.radius ?? 5) * TILE, inside: false, warned: 0, ready: 0 };
     } else if (o.kind === 'trail') {
       const from = anchorOf(w, o.from);
       const to = anchorOf(w, o.to);
@@ -448,8 +454,13 @@ export function stepTasks(w: World, dt: number): void {
     const o = step?.o;
     if (!o || o.kind !== 'hold') T.hold = null;
     else {
-      const inside = !p.dead && dist(p.x, p.y, h.x, h.y) <= h.r;
+      const there = !p.dead && dist(p.x, p.y, h.x, h.y) <= h.r;
       const done = w.hero.quests[step!.q.id]?.n ?? 0;
+      // it begins a breath after the hero steps in, and never over a scene: what the story stages at the place is
+      // played first (a scene waits for calm, and a wave of foes would keep it waiting for good)
+      if (w.scene || !there) h.ready = 0;
+      else h.ready += dt;
+      const inside = there && !w.scene && (done > 0 || h.acc > 0 || h.ready >= HOLD_BREATH);
       if (inside && !h.inside && done === 0 && h.acc === 0) w.emit({ t: 'banner', text: 'Hold!', sub: o.label });
       h.inside = inside;
       if (inside) {
@@ -471,7 +482,7 @@ export function stepTasks(w: World, dt: number): void {
             syncTasks(w);
           }
         }
-      } else if ((h.warned -= dt) <= 0 && done > 0) {
+      } else if (!there && (h.warned -= dt) <= 0 && done > 0) {
         h.warned = 4;
         w.text(p.x, p.y - 26, 'Get back!', '#ff8a8a', false);
       }
