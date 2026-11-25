@@ -680,7 +680,7 @@ TABLE['the-royal-auditor'] = {
     { joint: 'handslot.l', lum: [0.8, 1], to: '#f0e0a0', glow: true, keep: 0.3 },
     { joint: 'handslot.l', to: '#3a3040', keep: 0.9 },
     // his skull
-    { joint: 'head', lum: [0.35, 1], sat: [0, 0.45], to: '#e6dfc8', keep: 0.9 },
+    { joint: 'head', lum: [0.35, 1], sat: [0, 0.45], to: '#cfc6aa', keep: 0.9 },
     // the robes: old ink, with what was bright on them left a dull gold
     { hue: [25, 65], sat: [0.45, 1], to: '#b8963e', keep: 0.85 },
     { hue: [65, 360], sat: [0.15, 1], to: '#2e3550', keep: 0.9 },
@@ -702,7 +702,7 @@ boss('forgemaster-grold', { size: 1.45, wears: [{ piece: 'horns', a: '#3a2a22', 
 TABLE['king-hrodric'] = {
   k: 'boss_hrodric',
   form: 'hrodric',
-  size: 1.65,
+  size: 1.76,
   atk: 'chop2',
   paint: [
     // the great sword's bright edge: rimed, and alight with the cold he strikes the floor with
@@ -717,7 +717,7 @@ TABLE['king-hrodric'] = {
     // what was bright in his gear: the tarnish of the mound
     { hue: [330, 8], sat: [0.3, 1], to: '#4a5a78', keep: 0.9 },
   ],
-  wears: [{ piece: 'eyes', b: '#bfe8ff' }],
+  wears: [{ piece: 'ice-crown', a: '#8a6a22', b: '#f0d27a', band: '#c9a24a' }, { piece: 'eyes', b: '#bfe8ff' }],
 };
 boss('the-sand-warden', { size: 1.45, wears: [{ piece: 'eyes', b: '#ffe08a' }] });
 boss('the-sun-king', { size: 1.4, wears: [{ piece: 'halo', a: '#e8a030', b: '#fff4c0', size: 1.1 }, { piece: 'ice-crown', a: '#d89a2a', b: '#fff6c8', band: '#b8862a' }, { piece: 'eyes', b: '#fff2a0' }] });
@@ -734,13 +734,14 @@ boss('ossa-the-founder', { wears: [{ piece: 'eyes', b: '#fff6e0' }] });
 const CORVANE: Kit = {
   k: 'boss_corvane',
   form: 'corvane',
-  size: 1.42,
+  // (his banner stands over him and a figure is sized by its greatest measure: this keeps the man his size)
+  size: 1.62,
   atk: 'chop2',
   paint: [
     // the bright of his blade: the frost his lances are thrown from
     { joint: 'handslot.r', lum: [0.52, 1], sat: [0, 0.4], to: '#a8c8ff', glow: true, keep: 0.3 },
     // the Watch's banner on his back: Aster's blue, ten years faded
-    { joint: 'chest', hue: [190, 270], sat: [0.45, 1], to: '#3d4f78', keep: 0.9 },
+    { joint: 'chest', hue: [190, 270], sat: [0.3, 1], lum: [0.3, 1], to: '#34446e', keep: 0.95 },
     { hue: [320, 20], sat: [0.5, 1], to: '#5a7ad8' },
     { hue: [190, 270], lum: [0.5, 1], to: '#8a8ea8' },
     { hue: [190, 270], to: '#2c2c3c', keep: 0.9 },

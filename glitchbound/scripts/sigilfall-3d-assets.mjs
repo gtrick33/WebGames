@@ -2002,12 +2002,13 @@ BOSS_KITS.boss_harlan = {
 
 // King Hrodric, the Barrow King: "the first king buried on the downs", woken with his whole court. A king of the old
 // north, bigger than the men of now: the large Barbarian's body in his bear pelt and shoulder plates, the bare skull of
-// the barrow's dead, the crown he was buried in, the great sword laid on his chest in the mound, and his round shield
+// the barrow's dead (his crown is built on it in the browser: render3d/kits.ts), the great sword laid on his chest in the mound, and his round shield
 // slung behind him.
 BOSS_KITS.boss_hrodric = {
   rig: 'large',
-  from: [['Barbarian_Large', /Body|Arm|Leg|BearPelt|Shoulderpad/], [`${SK}Warrior`, /Head|Jaw|Eyes/], ['Necromancer', /Crown/]],
-  grow: [['chest', 1.08]],
+  // (not his bear pelt: its hood sat over the skull and the crown, and from above he was a heap of white fur)
+  from: [['Barbarian_Large', /Body|Arm|Leg|Shoulderpad/], [`${SK}Warrior`, /Head|Jaw|Eyes/]],
+  grow: [['chest', 1.08], ['head', 1.25]],
   ties: [
     { bit: 'sword_2handed', joint: 'handslot.r', at: [0, 0, 0], size: 1.35 },
     { bit: 'shield_round_barbarian_Large', joint: 'chest', at: [0, 0.15, -0.55], size: 1.05, turn: [0, 180, 0], tint: [0.7, 0.72, 0.8] },
@@ -2023,7 +2024,8 @@ BOSS_KITS.boss_corvane = {
   ties: [
     { bit: 'BlackKnight_Sword_Large', joint: 'handslot.r', at: [0, 0, 0], size: 1.1 },
     { bit: 'BlackKnight_Shield_Large', joint: 'handslot.l', at: [0, 0, 0], size: 1 },
-    { bit: 'banner_thin_blue', joint: 'chest', at: [0, 0.2, -0.5], size: 1.1, turn: [0, 0, 0] },
+    // (leaned back, so that its cloth faces the game's steep camera and is not a pole seen end on)
+    { bit: 'banner_thin_blue', joint: 'chest', at: [0, 0.1, -0.55], size: 1.7, turn: [-38, 0, 0] },
   ],
 };
 
@@ -2046,9 +2048,9 @@ BOSS_KITS.boss_silas = {
 BOSS_KITS.boss_auditor = {
   rig: 'medium',
   from: [['Cleric', /Body|Arm|Leg/], [`${SK}Mage`, /Skull|Jaw|Eyes/], ['Lorekeeper', /Glasses/]],
-  grow: [['head', 1.08], ['hand.l', 1.2], ['hand.r', 1.2]],
+  grow: [['head', 0.8], ['hand.l', 1.2], ['hand.r', 1.2]],
   ties: [
-    { bit: 'spellbook_open', joint: 'handslot.l', at: [0, 0.05, 0.05], size: 1 },
+    { bit: 'spellbook_open', joint: 'handslot.l', at: [0, 0.05, 0.05], size: 0.72 },
     { bit: 'wand_A', joint: 'handslot.r', at: [0, 0, 0], size: 0.9 },
     { bit: 'candle_lit', joint: 'chest', at: [-0.42, 0.42, -0.05], size: 0.8 },
   ],
