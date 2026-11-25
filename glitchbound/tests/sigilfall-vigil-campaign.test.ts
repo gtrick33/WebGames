@@ -16,14 +16,14 @@ describe('The Vigil: the campaign’s own', () => {
     const skills = Object.values(SKILLS);
     for (const cls of CLASS_IDS) {
       const kit = spellsOf(cls);
-      expect(kit, cls).toHaveLength(6);
+      expect(kit, cls).toHaveLength(10);
       for (const s of kit) {
         // (a mage's motes are their Arcane Bolt, many of them)
         const known = skills.find((k) => k.cls === cls && (k.name === s.name || `${k.name}s` === s.name));
         expect(known, `${cls}: ${s.name} is not a campaign skill of the class`).toBeTruthy();
         expect(s.icon, `${cls}: ${s.name}`).toBe(SKILL_ICON[known!.id]);
       }
-      expect(new Set(kit.map((s) => s.name)).size, cls).toBe(6);
+      expect(new Set(kit.map((s) => s.name)).size, cls).toBe(10);
     }
     // nothing an upgrade is called is also a spell of the same class (two cards with one name)
     for (const s of ALL_SPELLS) expect(spellsOf(s.cls).some((o) => o.name === s.sig.name), `${s.cls}: ${s.sig.name}`).toBe(false);

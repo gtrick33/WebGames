@@ -1,5 +1,7 @@
+import { readBests, readClassBests, readCodex } from './bests';
+import { deedsDue, type Deed, type DeedState } from './deeds';
 import { SPELLS } from './kit';
-import { BOON_COST, BOON_IDS, BOON_MAX, motesFor, WEEKLY_BOUNTY, WEEKLY_HOLD, WILD_COST, WILD_SPELLS, type BoonId, type Feats, type HeroKit } from './night';
+import { BOON_COST, BOON_IDS, BOON_MAX, EVENT_KINDS, motesFor, WEEKLY_BOUNTY, WEEKLY_HOLD, WILD_COST, WILD_SPELLS, type BoonId, type EventKind, type Feats, type HeroKit } from './night';
 
 /**
  * The Vigil's return: what a keeper has earned across all their nights, on this device, beside the longest nights
@@ -29,13 +31,19 @@ export interface Returns {
   wilds: string[];
   wild: string | null;
   weekly: Record<string, WeekBest>;
+  /** How many times each kind of event has been won, every champion ever felled (by name), and the deeds paid. */
+  won: Partial<Record<EventKind, number>>;
+  felled: string[];
+  deeds: string[];
+  /** The longest night with each class in the week's watch, which the lands' records don't hold. */
+  weekClass: Record<string, number>;
 }
 
 const count = (n: unknown): number => (typeof n === 'number' && Number.isFinite(n) && n > 0 ? Math.floor(n) : 0);
 
 /** What was kept, made whole: every field has a value whatever was (or wasn't) there. */
 export function cleanReturns(raw: unknown): Returns {
-  const out: Returns = { motes: 0, earned: 0, nights: 0, boons: {}, wilds: [], wild: null, weekly: {} };
+  const out: Returns = { motes: 0, earned: 0, nights: 0, boons: {}, wilds: [], wild: null, weekly: {}, won: {}, felled: [], deeds: [], weekClass: {} };
   if (!raw || typeof raw !== 'object') return out;
   const r = raw as Record<string, unknown>;
   out.motes = count(r.motes);
@@ -56,7 +64,24 @@ export function cleanReturns(raw: unknown): Returns {
       out.weekly[week] = { best: count(b.best), cls: typeof b.cls === 'string' ? b.cls.slice(0, 24) : '', paid: !!b.paid };
     }
   }
+  if (r.won && typeof r.won === 'object') {
+    for (const k of EVENT_KINDS) {
+      const n = count((r.won as Record<string, unknown>)[k]);
+      if (n) out.won[k] = n;
+    }
+  }
+  const words = (v: unknown): string[] => (Array.isArray(v) ? [...new Set(v.filter((x): x is string => typeof x === 'string' && x.length < 60))].slice(0, 200) : []);
+  out.felled = words(r.felled);
+  out.deeds = words(r.deeds);
+  if (r.weekClass && typeof r.weekClass === 'object') for (const [cls, n] of Object.entries(r.weekClass as Record<string, unknown>)) if (/^[a-z]{1,24}$/.test(cls) && count(n)) out.weekClass[cls] = count(n);
   return out;
+}
+
+/** What the deeds are judged from: this device's records, all of them. */
+export function deedState(r: Returns = readReturns()): DeedState {
+  const classBest: Record<string, number> = { ...r.weekClass };
+  for (const per of Object.values(readClassBests())) for (const [cls, n] of Object.entries(per)) classBest[cls] = Math.max(classBest[cls] ?? 0, n);
+  return { classBest, landBest: readBests(), won: r.won, felled: r.felled, codex: readCodex() };
 }
 
 export function readReturns(): Returns {
@@ -88,11 +113,24 @@ export interface Banked {
   /** The best this week, after this night, and whether this night set it. */
   weekBest: number;
   newWeekBest: boolean;
+  /** The deeds this night finished, already paid. */
+  deeds: Deed[];
 }
 
-/** A night is over: its motes are banked, and the week's watch keeps its best. */
-export function bankNight(seconds: number, feats: Feats, cls: string, week?: number): Banked {
+/** What a night did that the deeds count: the events it won and the champions it felled. */
+export interface NightLog {
+  won: readonly EventKind[];
+  felled: readonly string[];
+}
+
+/**
+ * A night is over: its motes are banked, the week's watch keeps its best, and any deed it finished is paid. Call it
+ * after the night's longest-night records have been kept (vigil/bests.ts): the deeds read them.
+ */
+export function bankNight(seconds: number, feats: Feats, cls: string, week?: number, log: NightLog = { won: [], felled: [] }): Banked {
   const r = readReturns();
+  for (const k of log.won) if (EVENT_KINDS.includes(k)) r.won[k] = (r.won[k] ?? 0) + 1;
+  for (const name of log.felled) if (!r.felled.includes(name)) r.felled.push(name);
   const motes = motesFor(seconds, feats);
   let bounty = 0;
   let weekBest = 0;
@@ -105,12 +143,19 @@ export function bankNight(seconds: number, feats: Feats, cls: string, week?: num
     r.weekly[week] = { best: Math.max(was.best, held), cls: newWeekBest ? cls : was.cls, paid: was.paid || bounty > 0 };
     weekBest = r.weekly[week]!.best;
     for (const k of Object.keys(r.weekly)) if (Number(k) <= week - WEEKS_KEPT) delete r.weekly[k];
+    r.weekClass[cls] = Math.max(r.weekClass[cls] ?? 0, Math.floor(seconds));
   }
-  r.motes += motes + bounty;
-  r.earned += motes + bounty;
+  const deeds = deedsDue(deedState(r), r.deeds);
+  let paid = 0;
+  for (const d of deeds) {
+    r.deeds.push(d.id);
+    paid += d.motes;
+  }
+  r.motes += motes + bounty + paid;
+  r.earned += motes + bounty + paid;
   r.nights++;
   writeReturns(r);
-  return { motes, bounty, weekBest, newWeekBest };
+  return { motes, bounty, weekBest, newWeekBest, deeds };
 }
 
 /** What the next rank of a boon costs, or nothing once it is at its top. */

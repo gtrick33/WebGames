@@ -804,10 +804,10 @@ describe('The Vigil’s return: what lasts between nights', () => {
   it('a device from before any of this reads as nothing earned, and broken keeping does no harm', () => {
     // only what the Vigil kept before: its longest nights
     localStorage.setItem('sigilfall.vigil.bests', JSON.stringify({ whisperwood: 400 }));
-    expect(readReturns()).toEqual({ motes: 0, earned: 0, nights: 0, boons: {}, wilds: [], wild: null, weekly: {} });
+    expect(readReturns()).toMatchObject({ motes: 0, earned: 0, nights: 0, boons: {}, wilds: [], wild: null, weekly: {} });
     localStorage.setItem('sigilfall.vigil.return', '{not json');
     expect(readReturns().motes).toBe(0);
-    expect(cleanReturns({ motes: -5, boons: { hearth: 99, nonsense: 3 }, wilds: ['wolf-pack', 'not-a-spell', 'ember-bolt'], wild: 'ember-bolt', weekly: { 2970: { best: 'x' }, bad: 1 } })).toEqual({ motes: 0, earned: 0, nights: 0, boons: { hearth: BOON_MAX }, wilds: ['wolf-pack'], wild: null, weekly: { 2970: { best: 0, cls: '', paid: false } } });
+    expect(cleanReturns({ motes: -5, boons: { hearth: 99, nonsense: 3 }, wilds: ['wolf-pack', 'not-a-spell', 'ember-bolt'], wild: 'ember-bolt', weekly: { 2970: { best: 'x' }, bad: 1 } })).toMatchObject({ motes: 0, earned: 0, nights: 0, boons: { hearth: BOON_MAX }, wilds: ['wolf-pack'], wild: null, weekly: { 2970: { best: 0, cls: '', paid: false } } });
     expect(cleanReturns([1, 2])).toMatchObject({ motes: 0 });
     // and the nights kept before are untouched by it
     expect(JSON.parse(localStorage.getItem('sigilfall.vigil.bests')!)).toEqual({ whisperwood: 400 });

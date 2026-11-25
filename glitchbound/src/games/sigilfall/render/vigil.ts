@@ -295,6 +295,31 @@ export class VigilPainter implements LandLayer {
       this.auras(fx, cast, h, time);
     }
     this.land(fx, time);
+    // what the spells left standing: traps waiting, totems burning
+    for (const p of v.posts) {
+      const tone = toneOfEl(p.el);
+      const color = SPELLS[p.spell]?.color ?? tone.b;
+      const seed = (p.x * 0.11 + p.y * 0.07) % 9;
+      const fade = Math.min(1, (p.life - p.t) / 0.6, p.t / 0.25 + 0.2);
+      if (p.kind === 'mine') {
+        // (armed once it has settled: its ring closes in and then beats)
+        const armed = p.t >= 0.45;
+        fx.put({ kind: FX.rune, x: p.x, y: p.y, flat: true, w: 20, a: color, b: '#ffffff', t: 0.5, seed, alpha: fade });
+        fx.put({ kind: FX.mark, x: p.x, y: p.y, flat: true, w: armed ? 15 + Math.sin(time * 7 + seed) * 2 : 30 - p.t * 30, a: color, alpha: fade * 0.9 });
+        fx.put({ kind: FX.glow, x: p.x, y: p.y, up: 4, w: 16, a: tone.a, alpha: fade * (armed ? 0.8 : 0.4) });
+      } else {
+        fx.put({ kind: FX.rune, x: p.x, y: p.y, flat: true, w: 30, a: color, b: '#ffffff', t: 0.5, seed, alpha: fade });
+        fx.put({ kind: FX.shaft, x: p.x, y: p.y, base: true, w: 9, h: 46, a: color, alpha: fade * 0.8, seed });
+        fx.put({ kind: FX.flame, x: p.x, y: p.y, base: true, w: 16, h: 30, a: tone.a, b: tone.b, seed, alpha: fade });
+        fx.put({ kind: FX.orb, x: p.x, y: p.y, up: 30 + Math.sin(time * 4 + seed) * 1.5, w: 13, a: tone.a, b: tone.b, seed, alpha: fade });
+      }
+    }
+    for (const h of v.heroes) {
+      if (h.down || h.ward <= 0) continue;
+      const def = SPELLS[h.wardSpell];
+      const left = h.wardMax > 0 ? Math.min(1, h.ward / h.wardMax) : 1;
+      fx.put({ kind: FX.bubble, x: h.x, y: h.y, up: 16, w: 46, a: def?.color ?? '#cfe8ff', alpha: 0.3 + left * 0.45 });
+    }
     // where the blows are about to land
     for (const s of v.slams) this.slam(fx, s);
     for (const f of v.foes) {
@@ -309,6 +334,9 @@ export class VigilPainter implements LandLayer {
       if (f.trait === TRAIT.thief) fx.put({ kind: FX.shaft, x: f.x, y: f.y, base: true, w: 16, h: 60, a: '#ffd257', alpha: 0.8, seed: f.id });
       if (!f.boss) {
         const ai = f.def.ai;
+        // each kind that asks for a different answer stands in a ring of its own color, so it is told at a glance
+        const kind = FOE_KINDS[ai];
+        if (kind && !f.elite) fx.put({ kind: FX.mark, x: f.x, y: f.y, flat: true, w: (f.r + 4) * 2, a: kind.color, alpha: 0.8 });
         // a Wallbearer's guard: an arc before it, gone while it is stopped
         if (ai === 'guard' && f.frozen <= 0 && f.stun <= 0) fx.put({ kind: FX.slash, x: f.x + Math.cos(f.face) * 4, y: f.y + Math.sin(f.face) * 4, up: 7, flat: true, w: ((f.r + 8) * 2) / 0.82, rot: f.face, a: FOE_KINDS.guard!.color, t: 0.45, p1: 1.7, p2: 1, alpha: 0.85 });
         // a Hostcaller's voice: how far it carries
@@ -619,6 +647,23 @@ export class VigilPainter implements LandLayer {
       case 'bomb':
         spell(fx, 'blast', tone, f.x, f.y, u, r, seed);
         break;
+      case 'sweep': {
+        // a beam turning all the way round whoever cast it, as they move
+        const h = f.who !== undefined ? this.v.heroOf(f.who) : undefined;
+        const x = h?.x ?? f.x;
+        const y = (h?.y ?? f.y) - 4;
+        const len = f.len ?? 70;
+        const alpha = u < 0.8 ? 1 : 1 - (u - 0.8) / 0.2;
+        for (let k = 0; k < (f.n && f.n > 1 ? 2 : 1); k++) {
+          const a = (f.a ?? 0) + u * TAU + k * Math.PI;
+          const ex = x + Math.cos(a) * len;
+          const ey = y + Math.sin(a) * len;
+          fx.put({ kind: FX.beam, x: (x + ex) / 2, y: (y + ey) / 2, up: 10, flat: true, w: len, h: (f.w ?? 7) * 2.6, rot: a, a: tone.a, b: tone.b, seed, alpha });
+          fx.put({ kind: FX.slash, x, y, up: 9, flat: true, w: (len * 2) / 0.82, rot: a - 0.5, a: f.color, t: 0.5, p1: 1.1, p2: 1, alpha: alpha * 0.5 });
+          fx.put({ kind: FX.impact, x: ex, y: ey, up: 10, w: 26, a: tone.a, b: tone.b, t: (u * 6) % 1, seed: seed + k });
+        }
+        break;
+      }
       case 'grave':
         // something is getting up here
         fx.put({ kind: FX.mark, x: f.x, y: f.y, flat: true, w: r * 2 * (0.5 + u * 0.5), a: f.color, alpha: 0.5 + u * 0.5 });

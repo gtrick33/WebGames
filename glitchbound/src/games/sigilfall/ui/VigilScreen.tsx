@@ -27,7 +27,8 @@ import { readBests, saveBest, VigilLobby } from './VigilLobby';
 import { part, say } from './hudWrite';
 import { addToCodex, markVigilTaught, saveClassBest, vigilTaught } from '../vigil/bests';
 import { cleanKit, EVENTS, GALE, galeAngle, inPhase, nearPhase, RULES, TIDE, TRAITS, type Weekly } from '../vigil/night';
-import { bankNight, kitOf, readReturns, type Banked } from '../vigil/returns';
+import { bankNight, deedState, kitOf, readReturns, type Banked } from '../vigil/returns';
+import { deedProgress, nextDeeds } from '../vigil/deeds';
 
 const clock = (t: number): string => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
@@ -49,9 +50,10 @@ const cardText = (c: Card): string => {
   return c.evolve ? SPELLS[c.id]!.evolve!.text : SPELLS[c.id]!.text;
 };
 const cardIcon = (c: Card): string => (c.kind === 'strength' ? strengthIcon(c.id) : spellIcon(c.id, c.kind === 'spell' && c.evolve));
-const cardTag = (c: Card): string => {
+const cardTag = (c: Card, cls?: ClassId): string => {
   if (c.kind === 'up') return SPELLS[c.id]!.name;
-  if (c.kind === 'spell') return c.evolve ? 'Evolves' : 'New spell';
+  // (a spell carried in from another class says so: vigil/night.ts's wild spells)
+  if (c.kind === 'spell') return c.evolve ? 'Evolves' : cls && SPELLS[c.id]!.cls !== cls ? 'Wild spell' : SPELLS[c.id]!.kind === 'dash' ? 'New spell · on your dash' : 'New spell';
   return c.level === 1 ? 'New relic' : `Level ${c.level}`;
 };
 /** A relic that a spell you hold is waiting for. */
@@ -114,6 +116,8 @@ export function fxSound(kind: Fx['kind'], el: Element): [string, number, number]
       return [el === 'nature' ? 'swing' : 'swingBig', 0.12, 0.6];
     case 'beam':
       return [el === 'nature' ? 'bow' : el === 'holy' ? 'holy' : 'beam', 0.2, 0.55];
+    case 'sweep':
+      return [el === 'blood' || el === 'shadow' ? 'swingBig' : el === 'holy' ? 'holy' : 'beam', 0.3, 0.6];
     case 'heal':
       return ['heal', 0.3, 0.6];
     case 'guard':
@@ -282,7 +286,7 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, weekly, onB
   const [paused, setPaused] = useState(teach);
   const [quiet, setQuiet] = useState(false);
   const [found, setFound] = useState<string[]>([]);
-  const [banked, setBanked] = useState<(Banked & { champions: number; events: number }) | null>(null);
+  const [banked, setBanked] = useState<(Banked & { champions: number; events: number; next: string[] }) | null>(null);
   const pausedRef = useRef(false);
   useEffect(() => {
     pausedRef.current = paused;
@@ -591,6 +595,8 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, weekly, onB
         }
       }
       hudHp.current?.classList.toggle('is-venom', me.venom > 0);
+      // a ward shows over the health it guards
+      hudHp.current?.parentElement?.style.setProperty('--ward', me.ward > 0 && me.wardMax > 0 ? part(me.ward / me.wardMax) : '0%');
       say(hudT.current, clock(v.t));
       say(hudK.current, String(v.kills));
       say(hudL.current, String(v.level));
@@ -651,7 +657,11 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, weekly, onB
           saveClassBest(land.id, mine.cls, v.t);
         }
         // what the night earned, kept for the nights after (vigil/returns.ts), and the evolutions found added to the codex
-        setBanked({ ...bankNight(v.t, v.feats, mine.cls, weekly?.week), champions: v.feats.champions, events: v.feats.events });
+        const bank = bankNight(v.t, v.feats, mine.cls, weekly?.week, { won: v.wonLog, felled: v.felledLog });
+        // (and what is nearest done of what is still to do, this class's and this land's first: a reason for the next night)
+        const state = deedState();
+        const next = nextDeeds(state, readReturns().deeds, 2, [`class:${mine.cls}`, `land:${land.id}`]).map((d) => `${d.text} (${deedProgress(d, state)})`);
+        setBanked({ ...bank, champions: v.feats.champions, events: v.feats.events, next });
         setFound(addToCodex(mine.evolved));
         tick((x) => x + 1);
       }
@@ -793,7 +803,7 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, weekly, onB
                 const hint = evolvesWith(me, c);
                 return (
                   <button key={`${c.kind}-${i}`} className={`rb-vigil-card${c.kind === 'spell' && c.evolve ? ' is-evolve' : ''}${c.kind === 'strength' ? ' is-strength' : ''}${c.kind === 'up' ? ' is-up' : ''}`} style={{ ['--i' as string]: i }} onClick={() => pickRef.current(i)}>
-                    <span className="rb-vigil-tag">{cardTag(c)}</span>
+                    <span className="rb-vigil-tag">{cardTag(c, me.cls)}</span>
                     <span className="rb-vigil-icon">
                       <img src={cardIcon(c)} alt="" draggable={false} />
                     </span>
@@ -907,14 +917,19 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, weekly, onB
               </div>
               {banked && (
                 <p className="rb-vigil-motes">
-                  <b>+{banked.motes + banked.bounty} motes</b>
+                  <b>+{banked.motes + banked.bounty + banked.deeds.reduce((a, d) => a + d.motes, 0)} motes</b>
                   <small>
                     {clock(v.t)} held
                     {banked.champions > 0 && ` · ${banked.champions} ${banked.champions === 1 ? 'champion' : 'champions'} felled`}
                     {banked.events > 0 && ` · ${banked.events} ${banked.events === 1 ? 'event' : 'events'} won`}
                     {banked.bounty > 0 && ' · the week’s bounty'}
                   </small>
-                  <small>Spend them at the Watchfire, in the Vigil’s lobby.</small>
+                  {banked.deeds.map((d) => (
+                    <small key={d.id} className="rb-vigil-deed">
+                      Deed done: <b>{d.name}</b> · +{d.motes}
+                    </small>
+                  ))}
+                  {banked.next.length > 0 && <small className="rb-vigil-next">Still to do: {banked.next.join(' · ')}</small>}
                 </p>
               )}
               {opened && <p className="rb-vigil-opened">A new land opens: {opened}</p>}

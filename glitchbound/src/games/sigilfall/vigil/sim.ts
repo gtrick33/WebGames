@@ -22,6 +22,7 @@ const HERO_R = 7;
 const MAX_FIELDS = 36;
 const MAX_SHOTS = 140;
 const MAX_FX = 140;
+const MAX_POSTS = 24;
 const REVIVE_REACH = 30;
 const REVIVE_SECONDS = 3;
 const DASH_SECONDS = 0.18;
@@ -203,6 +204,32 @@ export interface Pet {
   walk: number;
 }
 
+/** Something a spell put on the ground that stays there: a trap waiting to be stepped on, a totem that shoots. */
+export interface Post {
+  kind: 'mine' | 'totem';
+  owner: number;
+  spell: string;
+  el: Element;
+  x: number;
+  y: number;
+  r: number;
+  t: number;
+  life: number;
+  /** Until a totem next shoots. */
+  fireT: number;
+  st: SpellStats;
+}
+
+/** A beam going round a hero (host only: the drawing has its own from the effect). */
+interface Sweep {
+  owner: number;
+  st: SpellStats;
+  a0: number;
+  t: number;
+  dur: number;
+  hit: Set<number>;
+}
+
 export type PickupKind = 'meat' | 'magnet' | 'bomb' | 'frenzy' | 'chest';
 
 export interface Pickup {
@@ -215,7 +242,7 @@ export interface Pickup {
 
 /** Something to draw for a moment; the drawing picks its picture from the kind and the element. */
 export interface Fx {
-  kind: 'nova' | 'chain' | 'strike' | 'drop' | 'burst' | 'hit' | 'cone' | 'beam' | 'heal' | 'guard' | 'cast' | 'dash' | 'level' | 'frenzy' | 'summon' | 'slam' | 'bomb' | 'grave' | 'rake';
+  kind: 'nova' | 'chain' | 'strike' | 'drop' | 'burst' | 'hit' | 'cone' | 'beam' | 'heal' | 'guard' | 'cast' | 'dash' | 'level' | 'frenzy' | 'summon' | 'slam' | 'bomb' | 'grave' | 'rake' | 'sweep';
   x: number;
   y: number;
   t: number;
@@ -233,6 +260,10 @@ export interface Fx {
   look?: SpellDef['look'];
   freeze?: boolean;
   pts?: [number, number][];
+  /** The hero it stays with (a sweeping beam turns about them as they move). */
+  who?: number;
+  /** How many of them: a sweep with two is a beam each way. */
+  n?: number;
 }
 
 export type Card = { kind: 'spell'; id: string; level: number; evolve?: boolean } | { kind: 'up'; id: string; up: string; level: number } | { kind: 'strength'; id: StrengthId; level: number };
@@ -270,6 +301,8 @@ export interface SpellStats {
   guard: number;
   heal: number;
   evo: boolean;
+  /** × the time between casts that its upgrades have made it, for what has no clock of its own (a dash-strike quickens the dash). */
+  rate?: number;
 }
 
 /** A blast with nothing else about it (a keg, a bomb). */
@@ -329,6 +362,14 @@ export interface Hero {
   /** Seconds of venom left, and what it does a second. */
   venom: number;
   venomDps: number;
+  /** What a ward will still take before it breaks, the most it held, and the spell it is. */
+  ward: number;
+  wardMax: number;
+  wardSpell: string;
+  /** Where the dash under way began, and whether one has just ended (a dash-strike goes off then). */
+  dashFromX: number;
+  dashFromY: number;
+  dashed: boolean;
 }
 
 function rng(seed: number): () => number {
@@ -425,6 +466,12 @@ function newHero(id: number, cls: ClassId, name: string, x: number, y: number, k
     chill: 0,
     venom: 0,
     venomDps: 0,
+    ward: 0,
+    wardMax: 0,
+    wardSpell: '',
+    dashFromX: x,
+    dashFromY: y,
+    dashed: false,
   };
 }
 
@@ -449,6 +496,8 @@ export class Vigil {
   sparks: Spark[] = [];
   fields: Field[] = [];
   pets: Pet[] = [];
+  posts: Post[] = [];
+  private sweeps: Sweep[] = [];
   pickups: Pickup[] = [];
   fx: Fx[] = [];
   /** What just happened, for a banner. */
@@ -471,8 +520,12 @@ export class Vigil {
   tip: { text: string; t: number } | null = null;
   /** What the night has earned so far (night.ts's motesFor). */
   feats: Feats = { champions: 0, events: 0 };
-  /** Every event this night has seen, in order. */
+  /** Every event this night has seen, in order; the ones won; and the champions felled, by name. */
   eventLog: EventKind[] = [];
+  wonLog: EventKind[] = [];
+  /** What has hurt the heroes this night, by what it was (for tuning and the review's notes; not sent to a party). */
+  harm: Record<string, number> = {};
+  felledLog: string[] = [];
 
   private rand: () => number;
   /** A second run of numbers, for what the night holds in store: the same for everyone on the same seed, however they play. */
@@ -605,7 +658,10 @@ export class Vigil {
   }
   /** How long until a dash, from empty. */
   dashEvery(h: Hero): number {
-    return Math.max(1, DASH_EVERY * 0.75 ** this.str(h, 'ghost'));
+    let k = 0.75 ** this.str(h, 'ghost');
+    // (a dash-strike quickened by its upgrades quickens the dash it rides on)
+    for (const id of Object.keys(h.spells)) if (SPELLS[id]?.kind === 'dash') k *= h.built[id]?.rate ?? 1;
+    return Math.max(1, DASH_EVERY * k);
   }
   /** How many kills fill the frenzy meter: it never gets too easy, however fast they fall. */
   private frenzyNeed(h: Hero): number {
@@ -636,7 +692,7 @@ export class Vigil {
     let dmg = 0;
     let every = 0;
     let size = 0;
-    const s: SpellStats = { ...PLAIN, l, slow: !!def.slow, pierce: def.pierce ?? 0 };
+    const s: SpellStats = { ...PLAIN, l, slow: !!def.slow, pierce: def.pierce ?? 0, stun: def.stun ?? 0, pull: !!def.pull, leech: def.leech ?? 0 };
     const add = (m: (typeof upgradesOf extends (d: SpellDef) => (infer U)[] ? U : never) | NonNullable<SpellDef['evolve']>): void => {
       dmg += m.dmg ?? 0;
       every += m.every ?? 0;
@@ -681,6 +737,14 @@ export class Vigil {
     s.burst *= area;
     s.crit += this.str(h, 'coin') * 0.08;
     s.heal = def.heal ? ((def.heal[0] + l * def.heal[1]) / 100) * (1 + dmg) : 0;
+    s.rate = Math.max(0.4, 1 + every);
+    // what is put on the ground stays longer and stands bigger with Fieldcraft; a ward holds more with Stout Heart
+    if (def.kind === 'mine' || def.kind === 'totem' || def.kind === 'field') {
+      const craft = this.str(h, 'craft');
+      s.last += craft * (def.kind === 'field' ? 0.5 : 1.5);
+      s.size *= 1 + craft * 0.06;
+    }
+    if (def.kind === 'ward') s.heal *= 1 + this.str(h, 'stout') * 0.2;
     return s;
   }
 
@@ -722,6 +786,8 @@ export class Vigil {
     this.runLater();
     this.moveShots(dt);
     this.burnFields(dt);
+    this.runPosts(dt);
+    this.runSweeps(dt);
     this.movePets(dt);
     this.moveSparks(dt);
     this.takePickups(dt);
@@ -770,6 +836,8 @@ export class Vigil {
       h.dashX = h.dirX / dl;
       h.dashY = h.dirY / dl;
       h.dashT = DASH_SECONDS;
+      h.dashFromX = h.x;
+      h.dashFromY = h.y;
       h.dashCd = this.dashEvery(h);
       h.iframe = Math.max(h.iframe, DASH_SECONDS + 0.08);
       h.dashHit.clear();
@@ -778,6 +846,7 @@ export class Vigil {
     const speed = this.speedOf(h);
     if (h.dashT > 0) {
       h.dashT -= dt;
+      if (h.dashT <= 0) h.dashed = true;
       h.vx = h.dashX * speed * DASH_SPEED;
       h.vy = h.dashY * speed * DASH_SPEED;
       const ghost = this.str(h, 'ghost');
@@ -870,6 +939,7 @@ export class Vigil {
     for (const s of this.slams) s.t += dt;
     for (const l of this.lanes) l.t += dt;
     for (const z of this.zones) z.t += dt;
+    for (const p of this.posts) p.t += dt;
     if (this.event) this.event.t += dt;
     for (const f of this.fields) f.life = Math.max(0, f.life - dt);
     for (const p of this.pickups) p.t += dt;
@@ -1092,7 +1162,10 @@ export class Vigil {
   }
 
   private endEvent(won: boolean, say?: string): void {
-    if (won) this.feats.events++;
+    if (won) {
+      this.feats.events++;
+      if (this.event) this.wonLog.push(this.event.kind);
+    }
     this.event = null;
     if (say) this.banner = { text: say, t: 2.4 };
   }
@@ -1154,7 +1227,7 @@ export class Vigil {
         // (a dash through it is a dash through it: only a blow that lands counts)
         if (h.iframe > 0) continue;
         l.hit.add(h.id);
-        this.wound(h, 20 * this.bite);
+        this.wound(h, 20 * this.bite, undefined, 'the Wild Run');
       }
     }
     this.lanes = this.lanes.filter((l) => l.t < LANE_WARN + LANE_RUN);
@@ -1204,8 +1277,9 @@ export class Vigil {
   }
 
   /** What wears a hero down without striking them: cold, venom, thorns. Not through a dash. */
-  private sap(h: Hero, dmg: number): void {
+  private sap(h: Hero, dmg: number, why = 'the land'): void {
     if (h.down || h.dashT > 0) return;
+    this.harm[why] = (this.harm[why] ?? 0) + dmg;
     h.hp -= dmg;
     if (h.hp <= 0) this.fall(h);
   }
@@ -1221,7 +1295,7 @@ export class Vigil {
     for (const h of this.heroes) {
       if (h.venom > 0 && !h.down) {
         h.venom -= dt;
-        this.sap(h, h.venomDps * dt);
+        this.sap(h, h.venomDps * dt, 'venom');
       }
     }
     if (on.glade) {
@@ -1250,7 +1324,7 @@ export class Vigil {
       }
       for (const z of this.zones) {
         if (z.kind !== 'bramble' || z.t <= 0) continue;
-        for (const h of this.heroes) if (Math.hypot(h.x - z.x, h.y - z.y) < z.r) this.sap(h, 7 * this.bite * dt);
+        for (const h of this.heroes) if (Math.hypot(h.x - z.x, h.y - z.y) < z.r) this.sap(h, 7 * this.bite * dt, 'bramble');
         this.around(z.x, z.y, z.r + 12, (f) => {
           if (Math.hypot(f.x - z.x, f.y - z.y) < z.r + f.r) f.slow = Math.max(f.slow, 0.3);
         });
@@ -1276,7 +1350,7 @@ export class Vigil {
         if (h.down) continue;
         const still = Math.hypot(h.vx, h.vy) < 12;
         h.chill = Math.max(0, Math.min(1, h.chill + (still ? dt / 2.5 : -dt / 1.2)));
-        if (h.chill >= 1) this.sap(h, this.maxHpOf(h) * 0.06 * dt);
+        if (h.chill >= 1) this.sap(h, this.maxHpOf(h) * 0.06 * dt, 'cold');
       }
     }
     if (on.vents && t > VENT_QUIET) {
@@ -1301,7 +1375,7 @@ export class Vigil {
     this.addFx({ kind: 'burst', x: s.x, y: s.y, t: 0, dur: 0.5, el: 'fire', color: '#ff7a1e', r: s.r });
     for (const h of this.heroes) {
       const d = Math.hypot(h.x - s.x, h.y - s.y);
-      if (d < s.r) this.wound(h, 16 * this.bite);
+      if (d < s.r) this.wound(h, 16 * this.bite, undefined, 'vent');
       if (d < 120) this.shake = Math.max(this.shake, 5);
     }
     this.around(s.x, s.y, s.r + 12, (f) => {
@@ -1639,7 +1713,7 @@ export class Vigil {
       for (const h of this.heroes) {
         if (h.down || Math.hypot(h.x - s.x, h.y - 5 - s.y) > HERO_R + s.r) continue;
         s.dead = true;
-        this.wound(h, s.dmg);
+        this.wound(h, s.dmg, undefined, 'shot');
         break;
       }
     }
@@ -1669,7 +1743,7 @@ export class Vigil {
       else this.addFx({ kind: 'slam', x: s.x, y: s.y, t: 0, dur: 0.45, el: 'shadow', color: '#ff6a4a', r: s.r });
       if (!s.tone) this.shake = Math.max(this.shake, 8);
       for (const h of this.heroes) {
-        if (this.inSlam(s, h.x, h.y)) this.wound(h, s.dmg);
+        if (this.inSlam(s, h.x, h.y)) this.wound(h, s.dmg, undefined, s.tone === 2 ? 'cinderbloat' : s.tone === 1 ? 'rockfall' : 'champion’s blow');
       }
       const both = s.both;
       if (both) {
@@ -1682,8 +1756,21 @@ export class Vigil {
   }
 
   /** A foe (or what it threw) reaches a hero. */
-  private wound(h: Hero, dmg: number, f?: Foe): void {
+  private wound(h: Hero, dmg: number, f?: Foe, why = f ? (f.boss ? 'champion' : f.elite ? 'marked foe' : f.def.ai) : 'blow'): void {
     if (h.down || h.iframe > 0) return;
+    this.harm[why] = (this.harm[why] ?? 0) + dmg;
+    dmg *= 1 - this.str(h, 'stout') * 0.04;
+    if (h.ward > 0) {
+      // a ward takes the blow, and what is left of it if it breaks
+      const took = Math.min(h.ward, dmg);
+      h.ward -= took;
+      dmg -= took;
+      if (h.ward <= 0) this.breakWard(h);
+      if (dmg <= 0) {
+        h.iframe = 0.6;
+        return;
+      }
+    }
     h.hp -= dmg;
     h.iframe = 0.6;
     h.struck = 1;
@@ -1711,6 +1798,7 @@ export class Vigil {
     h.down = true;
     h.venom = 0;
     h.chill = 0;
+    h.ward = 0;
     h.reviveT = 0;
     h.dashT = 0;
     if (this.heroes.length > 1 && this.standing().length) this.banner = { text: `${h.name} is down!`, t: 2.4 };
@@ -1759,12 +1847,14 @@ export class Vigil {
     // something, and the crowd only now and then
     if (f.boss) {
       this.feats.champions++;
+      this.felledLog.push(f.boss);
       this.pickups.push({ kind: 'chest', x: f.x, y: f.y, t: 0, dead: false });
     } else if (f.trait === TRAIT.thief) {
       // caught: its chest, and the sparks it stole
       this.pickups.push({ kind: 'chest', x: f.x, y: f.y, t: 0, dead: false });
       for (let i = 0; i < 6; i++) this.sparks.push({ x: f.x + (this.rand() - 0.5) * 30, y: f.y + (this.rand() - 0.5) * 30, xp: 3, age: 0, pulled: false, dead: false });
       this.feats.events++;
+      this.wonLog.push('thief');
       if (this.event?.kind === 'thief') this.event = null;
       this.banner = { text: 'Caught! The thief drops a chest', t: 2.4 };
     } else if (f.pack) {
@@ -1772,6 +1862,7 @@ export class Vigil {
       if (--this.packLeft === 0) {
         this.pickups.push({ kind: 'chest', x: f.x, y: f.y, t: 0, dead: false });
         this.feats.events++;
+        this.wonLog.push('pack');
         if (this.event?.kind === 'pack') this.event = null;
         this.banner = { text: 'The pack is broken: a chest!', t: 2.4 };
       } else this.drop(f.x, f.y);
@@ -1972,6 +2063,7 @@ export class Vigil {
       if (def.kind === 'orbit') this.castOrbit(h, def, s, dt);
       else if (def.kind === 'aura') this.castAura(h, s, dt);
       else if (def.kind === 'pet') this.syncPets(h, def, s.n);
+      else if (def.kind === 'dash') this.castDash(h, def, s);
       // the rest come round on a clock, and wait for something to hit
       else {
         const left = (h.cool[id] ?? 0) - dt * pace;
@@ -1986,6 +2078,7 @@ export class Vigil {
         }
       }
     }
+    h.dashed = false;
   }
 
   private cast(h: Hero, def: SpellDef, s: SpellStats): boolean {
@@ -2010,14 +2103,22 @@ export class Vigil {
         return this.castPulse(h, def, s);
       case 'boomerang':
         return this.castBoomerang(h, def, s);
+      case 'mine':
+        return this.castMine(h, def, s);
+      case 'totem':
+        return this.castTotem(h, def, s);
+      case 'sweep':
+        return this.castSweep(h, def, s);
+      case 'ward':
+        return this.castWard(h, def, s);
       default:
         return false;
     }
   }
 
-  private shoot(h: Hero, def: SpellDef, s: SpellStats, ang: number, speed: number, r: number, life: number, back: boolean, pierce: number): void {
+  private shoot(h: Hero, def: SpellDef, s: SpellStats, ang: number, speed: number, r: number, life: number, back: boolean, pierce: number, from: { x: number; y: number } = h): void {
     if (this.shots.length >= MAX_SHOTS) return;
-    this.shots.push({ owner: h.id, spell: def.id, el: def.el, x: h.x, y: h.y - 6, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r, dmg: s.dmg, life, pierce, bounce: s.bounce, color: def.color, back, spin: 0, st: s, hit: new Set(), dead: false });
+    this.shots.push({ owner: h.id, spell: def.id, el: def.el, x: from.x, y: from.y - 6, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r, dmg: s.dmg, life, pierce, bounce: s.bounce, color: def.color, back, spin: 0, st: s, hit: new Set(), dead: false });
   }
 
   private castBolt(h: Hero, def: SpellDef, s: SpellStats): boolean {
@@ -2029,7 +2130,9 @@ export class Vigil {
       any = true;
       taken.add(t.id);
       const ang = Math.atan2(t.y - h.y, t.x - h.x) + (i ? (this.rand() - 0.5) * 0.25 : 0);
-      this.shoot(h, def, s, ang, 210, 4 * s.grow, 1.5, false, s.pierce);
+      // (a slow heavy one rolls on through the crowd: Ball Lightning)
+      if (def.orb) this.shoot(h, def, s, ang, 70, 7 * s.grow, 3.4, false, 99);
+      else this.shoot(h, def, s, ang, 210, 4 * s.grow, 1.5, false, s.pierce);
     }
     return any;
   }
@@ -2127,9 +2230,11 @@ export class Vigil {
   }
 
   private castField(h: Hero, def: SpellDef, s: SpellStats): boolean {
-    if (!this.nearest(h, 150)) return false;
+    if (!this.nearest(h, def.far ? 200 : 150)) return false;
     const life = 2.4 + s.l * 0.4 + s.last;
-    this.scorch(h, def, s, h.x, h.y, s.size, s.dmg, life);
+    // underfoot, or (a Gravity Well) out where the Host is thickest
+    const at = (def.far ? this.thickest(h) : null) ?? h;
+    this.scorch(h, def, s, at.x, at.y, s.size, s.dmg, life);
     return true;
   }
 
@@ -2247,6 +2352,144 @@ export class Vigil {
     if (a0 === null) return false;
     for (let i = 0; i < s.n; i++) this.shoot(h, def, s, a0 + (i / s.n) * Math.PI * 2, 190, s.size, 1.5, true, 99);
     return true;
+  }
+
+  /* -------------------------------------------------------------- traps, totems, dash-strikes, sweeps, wards */
+
+  private addPost(p: Post): void {
+    if (this.posts.length >= MAX_POSTS) this.posts.shift();
+    this.posts.push(p);
+  }
+
+  /** Traps thrown down between the hero and the Host: the first foe to step on one sets it off. */
+  private castMine(h: Hero, def: SpellDef, s: SpellStats): boolean {
+    const t = this.nearest(h, 200);
+    if (!t) return false;
+    const a0 = Math.atan2(t.y - h.y, t.x - h.x);
+    for (let i = 0; i < s.n; i++) {
+      const a = a0 + (i ? (this.rand() - 0.5) * 1.6 : 0);
+      const d = 34 + this.rand() * 26;
+      this.addPost({ kind: 'mine', owner: h.id, spell: def.id, el: def.el, x: h.x + Math.cos(a) * d, y: h.y + Math.sin(a) * d, r: s.size, t: 0, life: 14 + s.last, fireT: 0, st: s });
+    }
+    return true;
+  }
+
+  /** A totem planted where the hero stands: it stays, and shoots at whatever comes near it. */
+  private castTotem(h: Hero, def: SpellDef, s: SpellStats): boolean {
+    if (!this.nearest(h, 220)) return false;
+    for (let i = 0; i < s.n; i++) {
+      const a = (i / s.n) * TAU + this.t;
+      const d = i ? 26 : 0;
+      const x = h.x + Math.cos(a) * d;
+      const y = h.y + Math.sin(a) * d;
+      this.addPost({ kind: 'totem', owner: h.id, spell: def.id, el: def.el, x, y, r: 150 * (1 + (s.grow - 1) * 0.5), t: 0, life: 9 + s.last, fireT: 0.3, st: s });
+      this.addFx({ kind: 'summon', x, y, t: 0, dur: 0.6, el: def.el, color: def.color });
+    }
+    return true;
+  }
+
+  private runPosts(dt: number): void {
+    if (!this.posts.length) return;
+    for (const p of this.posts) {
+      p.t += dt;
+      const h = this.heroOf(p.owner) ?? this.me;
+      const def = SPELLS[p.spell];
+      if (!def) continue;
+      if (p.kind === 'mine') {
+        if (p.t < 0.45) continue;
+        let sprung = false;
+        this.around(p.x, p.y, p.r * 0.5 + 12, (f) => {
+          if (!sprung && Math.hypot(f.x - p.x, f.y - p.y) < p.r * 0.45 + f.r) sprung = true;
+        });
+        if (!sprung) continue;
+        p.t = p.life;
+        this.blast(h, p.st, p.x, p.y, p.r, p.st.dmg, p.el, def.color);
+        if (p.st.trail) this.scorch(h, def, p.st, p.x, p.y, p.r * 0.8, p.st.dmg * 0.25, 3);
+      } else if ((p.fireT -= dt) <= 0) {
+        const f = this.closest(p.x, p.y, p.r);
+        if (!f) continue;
+        p.fireT = 0.72 / (1 + p.st.speed);
+        this.shoot(h, def, p.st, Math.atan2(f.y - p.y, f.x - p.x), 220, 3.5 * p.st.grow, 1, false, p.st.pierce, p);
+      }
+    }
+    this.posts = this.posts.filter((p) => p.t < p.life);
+  }
+
+  /** A dash-strike has no clock: it goes off where a dash ends (and, echoed, where it began). */
+  private castDash(h: Hero, def: SpellDef, s: SpellStats): void {
+    if (!h.dashed) return;
+    this.shake = Math.max(this.shake, 5);
+    this.blast(h, s, h.x, h.y, s.size, s.dmg, def.el, def.color);
+    if (s.echo) this.blast(h, s, h.dashFromX, h.dashFromY, s.size * 0.8, s.dmg * 0.6, def.el, def.color);
+    if (s.trail) this.scorch(h, def, s, (h.x + h.dashFromX) / 2, (h.y + h.dashFromY) / 2, s.size * 0.7, s.dmg * 0.3, 3);
+    if (s.guard) h.iframe = Math.max(h.iframe, s.guard);
+  }
+
+  /** A beam that goes all the way round the hero: whatever it passes over is struck once. */
+  private castSweep(h: Hero, def: SpellDef, s: SpellStats): boolean {
+    const a0 = this.aimAt(h, s.size);
+    if (a0 === null) return false;
+    const dur = 0.85;
+    this.sweeps.push({ owner: h.id, st: s, a0, t: 0, dur, hit: new Set() });
+    this.addFx({ kind: 'sweep', x: h.x, y: h.y - 4, t: 0, dur, el: def.el, color: def.color, a: a0, len: s.size, w: 7 * s.grow, who: h.id, n: s.n });
+    return true;
+  }
+
+  private runSweeps(dt: number): void {
+    if (!this.sweeps.length) return;
+    for (const w of this.sweeps) {
+      const h = this.heroOf(w.owner);
+      const was = w.t;
+      w.t += dt;
+      if (!h || h.down) {
+        w.t = w.dur;
+        continue;
+      }
+      const s = w.st;
+      // the wedge the beam crossed this frame (and, with two beams, the one opposite it)
+      const from = (was / w.dur) * TAU;
+      const span = ((Math.min(w.t, w.dur) - was) / w.dur) * TAU;
+      const arms = s.n > 1 ? 2 : 1;
+      this.around(h.x, h.y, s.size + 12, (f) => {
+        if (w.hit.has(f.id)) return;
+        const d = Math.hypot(f.x - h.x, f.y - h.y);
+        if (d > s.size + f.r) return;
+        const rel = Math.atan2(f.y - h.y, f.x - h.x) - w.a0;
+        const wide = Math.atan2(7 * s.grow + f.r, Math.max(8, d));
+        for (let k = 0; k < arms; k++) {
+          const at = (((rel - k * Math.PI - from + wide) % TAU) + TAU) % TAU;
+          if (at <= span + wide * 2) {
+            w.hit.add(f.id);
+            this.land(h, f, s, s.dmg, h.x, h.y);
+            return;
+          }
+        }
+      });
+    }
+    this.sweeps = this.sweeps.filter((w) => w.t < w.dur);
+  }
+
+  /** A ward goes up when there is none: it holds a share of the hero's health, and bursts when it breaks. */
+  private castWard(h: Hero, def: SpellDef, s: SpellStats): boolean {
+    if (h.ward > 0) return false;
+    h.wardMax = this.maxHpOf(h) * s.heal;
+    h.ward = h.wardMax;
+    h.wardSpell = def.id;
+    this.addFx({ kind: 'guard', x: h.x, y: h.y, t: 0, dur: 0.6, el: def.el, color: def.color, r: 22 });
+    return true;
+  }
+
+  private breakWard(h: Hero): void {
+    h.ward = 0;
+    const def = SPELLS[h.wardSpell];
+    if (!def) return;
+    const s = h.built[def.id] ?? this.statsOf(h, def);
+    // (its clock starts again from when it broke, not from when it went up)
+    h.cool[def.id] = s.every;
+    this.shake = Math.max(this.shake, 6);
+    const { x, y } = h;
+    this.after(0, () => this.blast(h, s, x, y, s.size, s.dmg, def.el, def.color));
+    if (s.guard) h.iframe = Math.max(h.iframe, s.guard);
   }
 
   private syncPets(h: Hero, def: SpellDef, n: number): void {

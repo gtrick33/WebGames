@@ -19,7 +19,8 @@ import { iconPicture, iconsReady } from '../render/art/gameIcons';
 import { heldWeapon, heroDollUrl, heroLook, portraitUrl } from '../render/sprites';
 import { readBests, readClassBests, readCodex } from '../vigil/bests';
 import { RULES, weekEnds, weeklyOf, weekOf, WEEKLY_BOUNTY, WEEKLY_HOLD, type Weekly } from '../vigil/night';
-import { readReturns } from '../vigil/returns';
+import { deedState, readReturns } from '../vigil/returns';
+import { DEEDS } from '../vigil/deeds';
 import { Watchfire } from './VigilWatchfire';
 import { EVOLVE_AT } from '../vigil/sim';
 import { CLASS_BODY, mapOpen, partyScale, spellsOf, STRENGTHS, UNLOCK_HOLD, VIGIL_MAPS, type VigilMap } from '../vigil/kit';
@@ -282,6 +283,9 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
           )}
           <button className="rb-btn is-small rb-vlobby-fire" onClick={() => setFire(true)} aria-label={`The Watchfire: ${ret.motes} motes`}>
             <b>{ret.motes}</b> motes · Watchfire
+            <small>
+              {ret.deeds.length}/{DEEDS.length} deeds
+            </small>
           </button>
           <GameMenuButton className="rb-iconbtn" />
         </header>
@@ -449,7 +453,7 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
           )}
           {friends && inRoom && !hosting && <p className="rb-vparty-waiting">Waiting for {hostName} to begin the night…</p>}
         </footer>
-        {fire && <Watchfire cls={pick} ret={ret} onChange={setRet} onClose={() => setFire(false)} />}
+        {fire && <Watchfire cls={pick} ret={ret} state={deedState(ret)} onChange={setRet} onClose={() => setFire(false)} />}
         {looksOpen && engine && (
           <LooksDialog
             engine={engine}

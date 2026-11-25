@@ -230,11 +230,11 @@ describe('The Vigil', () => {
       return v;
     };
 
-    it('each class has six spells of its own, two that evolve, and a real first spell', () => {
+    it('each class has ten spells of its own, several that evolve, and a real first spell', () => {
       for (const cls of CLASS_IDS) {
         const kit = spellsOf(cls);
-        expect(kit, cls).toHaveLength(6);
-        expect(kit.filter((s) => s.evolve).length, cls).toBeGreaterThanOrEqual(1);
+        expect(kit, cls).toHaveLength(10);
+        expect(kit.filter((s) => s.evolve).length, cls).toBeGreaterThanOrEqual(3);
         expect(firstSpell(cls).cls).toBe(cls);
         expect(firstSpell(cls).dmg[0], `${cls} starts with something that kills`).toBeGreaterThan(0);
       }

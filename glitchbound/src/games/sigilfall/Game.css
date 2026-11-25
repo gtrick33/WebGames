@@ -17739,9 +17739,35 @@ button.rb-scard:not(:disabled):hover {
   opacity: 0;
   transition: opacity 0.8s;
 }
+/* (dark against the sand it blows over: as a paler haze it could not be seen on Sunscorch's own ground. Streaks of
+   grit go by across it) */
 .rb-vigil-weather.is-storm::after {
   opacity: 1;
-  background: radial-gradient(ellipse at center, rgb(216 168 96 / 0.26) 8%, rgb(190 140 70 / 0.88) 88%);
+  background:
+    repeating-linear-gradient(98deg, rgb(70 42 16 / 0) 0 34px, rgb(70 42 16 / 0.2) 34px 40px, rgb(70 42 16 / 0) 40px 88px, rgb(255 236 200 / 0.14) 88px 91px),
+    radial-gradient(ellipse at center, rgb(120 78 34 / 0.3) 10%, rgb(84 52 22 / 0.92) 92%);
+  background-size: 182px 100%, 100% 100%;
+  animation: rb-vigil-grit 0.9s linear infinite;
+}
+@keyframes rb-vigil-grit {
+  to {
+    background-position: 182px 0, 0 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-vigil-weather.is-storm::after {
+    animation: none;
+  }
+}
+.rb-vigil-hp {
+  position: relative;
+}
+.rb-vigil-hp::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--ward, 0%);
+  background: linear-gradient(180deg, rgb(200 232 255 / 0.95), rgb(120 180 255 / 0.8));
 }
 .rb-vigil-weather.is-tide::after {
   opacity: 1;
@@ -17900,4 +17926,81 @@ button.rb-scard:not(:disabled):hover {
 }
 .rb-vfire-pips i.is-on {
   background: #ffd257;
+}
+
+/* the Watchfire's tabs, deeds and codex */
+.rb-vfire-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 12px;
+  width: 100%;
+  padding: 4px 0;
+  background: #07050d;
+}
+.rb-vfire-head h2 {
+  font-size: clamp(18px, 3cqw, 28px);
+}
+.rb-vfire-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.rb-vfire-deeds,
+.rb-vfire-codex {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 100%;
+}
+.rb-vfire-item.is-deed {
+  cursor: default;
+}
+.rb-vfire-item.is-done {
+  border-color: #a8863a;
+  background: linear-gradient(90deg, rgb(255 210 87 / 0.12), #0e091c 70%);
+}
+.rb-vfire-item.is-done > b {
+  color: #9fe86a;
+}
+.rb-vfire-item.is-unknown img {
+  filter: grayscale(1) brightness(0.45);
+}
+.rb-vfire-item.is-full:disabled {
+  opacity: 1;
+  border-color: #a8863a;
+}
+.rb-vfire-bar {
+  display: block;
+  height: 3px;
+  margin-top: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #241c34;
+}
+.rb-vfire-bar u {
+  display: block;
+  height: 100%;
+  background: #ffd257;
+}
+.rb-vlobby-fire small {
+  display: block;
+  color: #b8afc8;
+  font-size: 10px;
+  line-height: 1;
+}
+.rb-vigil-motes .rb-vigil-deed {
+  color: #9fe86a;
+}
+.rb-vigil-motes .rb-vigil-deed b {
+  font: inherit;
+  font-weight: 700;
+  color: #d8ffb0;
+}
+.rb-vigil-motes .rb-vigil-next {
+  color: #e9dfc6;
 }

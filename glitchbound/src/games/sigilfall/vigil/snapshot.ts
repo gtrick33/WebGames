@@ -43,6 +43,8 @@ interface HeroSnap {
   /** The cold, as a percentage, and whether venom is in them. */
   ch: number;
   vn: number;
+  /** A ward: how much of it is left, as a percentage. */
+  sh: number;
   b?: HeroBuild;
 }
 
@@ -63,8 +65,10 @@ export interface Snap {
   ln: number[];
   /** A land's patches: kind, x, y, size, time × 10, length × 10. */
   zn: number[];
-  /** Champions felled and events won. */
+  /** Champions felled and events won; then which events (by kind) and which champions (by name), for the deeds. */
   ft: [number, number];
+  wl: number[];
+  cf: string[];
   h: HeroSnap[];
   /** Foes: id, flags, x, y, health as a percentage, facing. */
   f: number[];
@@ -84,6 +88,8 @@ export interface Snap {
   sl: number[];
   /** Companions: owner, spell, x, y, facing. */
   pe: number[];
+  /** Traps and totems: kind, owner, spell, x, y, size, time × 10, length × 10. */
+  po: number[];
   fx: Fx[];
   /** Numbers: x, y, n, big + crit × 2. */
   pp: number[];
@@ -150,6 +156,8 @@ export class SnapWriter {
     const e = v.event;
     const pe: number[] = [];
     for (const o of v.pets) pe.push(o.owner, SPELL_AT.get(o.spell) ?? 0, Math.round(o.x), Math.round(o.y), Math.round(o.face * 10));
+    const po: number[] = [];
+    for (const o of v.posts) po.push(o.kind === 'mine' ? 0 : 1, o.owner, SPELL_AT.get(o.spell) ?? 0, Math.round(o.x), Math.round(o.y), Math.round(o.r), Math.round(o.t * 10), Math.round(o.life * 10));
     const pp: number[] = [];
     for (const o of v.pops.slice(-16)) pp.push(Math.round(o.x), Math.round(o.y), o.n, (o.big ? 1 : 0) + (o.crit ? 2 : 0));
     const fa: number[] = [];
@@ -171,8 +179,10 @@ export class SnapWriter {
       ln,
       zn,
       ft: [v.feats.champions, v.feats.events],
+      wl: v.wonLog.map((k) => EVENT_KINDS.indexOf(k)),
+      cf: v.felledLog,
       h: v.heroes.map((h) => {
-        const snap: HeroSnap = { id: h.id, x: Math.round(h.x), y: Math.round(h.y), vx: Math.round(h.vx), vy: Math.round(h.vy), dx: Math.round(h.dirX * 10) / 10, dy: Math.round(h.dirY * 10) / 10, hp: Math.round(h.hp), i: h.iframe > 0 ? 1 : 0, dn: h.down ? 1 : 0, rv: Math.round(h.reviveT * 10) / 10, fz: Math.round(h.frenzy * 100) / 100, fT: Math.round(h.frenzyT * 10) / 10, dc: Math.round(h.dashCd * 10) / 10, rr: h.rerolls, c: h.cards, cT: Math.round(h.cardT), w: h.struck > 0.9 ? 1 : 0, ch: Math.round(h.chill * 100), vn: h.venom > 0 ? 1 : 0 };
+        const snap: HeroSnap = { id: h.id, x: Math.round(h.x), y: Math.round(h.y), vx: Math.round(h.vx), vy: Math.round(h.vy), dx: Math.round(h.dirX * 10) / 10, dy: Math.round(h.dirY * 10) / 10, hp: Math.round(h.hp), i: h.iframe > 0 ? 1 : 0, dn: h.down ? 1 : 0, rv: Math.round(h.reviveT * 10) / 10, fz: Math.round(h.frenzy * 100) / 100, fT: Math.round(h.frenzyT * 10) / 10, dc: Math.round(h.dashCd * 10) / 10, rr: h.rerolls, c: h.cards, cT: Math.round(h.cardT), w: h.struck > 0.9 ? 1 : 0, ch: Math.round(h.chill * 100), vn: h.venom > 0 ? 1 : 0, sh: h.ward > 0 && h.wardMax > 0 ? Math.max(1, Math.round((h.ward / h.wardMax) * 100)) : 0 };
         if (resend || this.sent.get(h.id) !== h.rev) {
           this.sent.set(h.id, h.rev);
           snap.b = { sp: h.spells, tk: h.took, ev: [...h.evolved], st: h.strengths, bn: h.boons, wd: h.wild };
@@ -188,6 +198,7 @@ export class SnapWriter {
       pk,
       sl,
       pe,
+      po,
       fx,
       pp,
       fa,
@@ -215,6 +226,8 @@ export function applySnap(v: Vigil, n: Snap, meId: number): void {
   v.zones = [];
   for (let i = 0; i + 5 < n.zn.length; i += 6) v.zones.push({ kind: ZONE_KINDS[n.zn[i]!] ?? 'glade', x: n.zn[i + 1]!, y: n.zn[i + 2]!, r: n.zn[i + 3]!, t: n.zn[i + 4]! / 10, dur: n.zn[i + 5]! / 10 });
   v.feats = { champions: n.ft[0], events: n.ft[1] };
+  v.wonLog = n.wl.map((i) => EVENT_KINDS[i]!).filter(Boolean);
+  v.felledLog = n.cf;
   for (const s of n.h) {
     const h = v.heroOf(s.id);
     if (h) applyHero(h, s, s.id === meId);
@@ -284,6 +297,11 @@ export function applySnap(v: Vigil, n: Snap, meId: number): void {
     pets.push(p);
   }
   v.pets = pets;
+  v.posts = [];
+  for (let i = 0; i + 7 < n.po.length; i += 8) {
+    const spell = spellAt(n.po[i + 2]!);
+    v.posts.push({ kind: n.po[i] ? 'totem' : 'mine', owner: n.po[i + 1]!, spell, el: SPELLS[spell]!.el, x: n.po[i + 3]!, y: n.po[i + 4]!, r: n.po[i + 5]!, t: n.po[i + 6]! / 10, life: n.po[i + 7]! / 10, fireT: 0, st: PLAIN_STATS });
+  }
   const me = v.heroOf(meId);
   for (const e of n.fx) {
     // (this game already showed its own hero's dash when it happened)
@@ -316,6 +334,8 @@ function applyHero(h: Hero, s: HeroSnap, mine: boolean): void {
   h.cardT = s.cT;
   if (s.w) h.struck = 1;
   h.chill = s.ch / 100;
+  h.wardMax = 100;
+  h.ward = s.sh;
   h.venom = s.vn;
   if (s.b) {
     h.spells = s.b.sp;
