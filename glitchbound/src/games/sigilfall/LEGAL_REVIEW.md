@@ -3,6 +3,13 @@
 First pass 2026-10-27, fixes the same day. A working record of licenses, names and borrowed material, for the
 owner (and a lawyer, if one is asked). It is **not legal advice** and not a trademark clearance.
 
+## The keepsakes of Acts III and VI (2026-11-25)
+
+Four keepsakes written for side stories of Acts III and VI (NINE_PLAN.md, piece 4): **A Spearhead with the
+Well-Mark**, **A Notched Stick from the Mead-Hall**, **A Shard That Hums a Cradle Song** and **A Plate with Aster's
+Armory Stamp**. Each is a plain description of a thing found in this game's own story, not a named item of another
+game. Not searched on the web: worth doing with the other item names before release.
+
 ## Act I's keepsakes and the bosses' new moves (2026-11-25)
 
 Three keepsakes written for Act I's side stories (NINE_PLAN.md, piece 4): **A Bone Whistle on a Red Cord**,
