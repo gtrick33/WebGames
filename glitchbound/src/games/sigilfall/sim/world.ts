@@ -43,6 +43,7 @@ import { blowFloor, healPlayer, hurtPlayer, playerSlow, playerStunned, runProcs,
 import { breakWall, circleHitsWall, flowField, K, markerPos, moveCircle, parseRegion, pushOut, setDoors, TILE, tileAt, type PlacedMarker, type TileMap } from './map';
 import { roomBannerSub, updateRooms, type RoomPlay } from './rooms';
 import type { Chest, CoopSide, Drop, Enemy, Field, FloatText, Fx, Ghost, Interactable, NpcActor, Pet, Player, Projectile, Telegraph, Trap, Wave, WorldEvent, Callout } from './types';
+import { newTasks, stepTasks, thingInReach, yieldedInReach, type Tasks } from './tasks';
 import { inCone, inLine } from '../core/math';
 
 /** What the input adapters hand the world every frame. */
@@ -447,6 +448,8 @@ export class World {
   /** The boss being fought (for the health bar). */
   bossId: number | null = null;
   interactable: Interactable | null = null;
+  /** Quest steps with something in the world to do: their things, what the hero carries, the place held (sim/tasks.ts). */
+  tasks: Tasks = newTasks();
   /** When "Not enough mana" was last said (it isn't repeated every frame). */
   noManaAt = -99;
   /** Combo blows landed (sim/combat.ts landCombo), for the record and the tests. */
@@ -1723,6 +1726,7 @@ export class World {
       }
     }
     this.fx = this.fx.filter((f) => f.t < f.life);
+    stepTasks(this, dt);
     this.updateInteractable();
   }
 
@@ -2315,6 +2319,8 @@ export class World {
     this.enemyGone(e);
     const here = this.region.id;
     this.questProgress((o) => o.kind === 'kill' && o.region === here && (!o.enemies || o.enemies.includes(e.def.id)));
+    // (a guest in co-op can't make the host's foe yield: for them the kill counts)
+    if (this.puppet) this.questProgress((o) => o.kind === 'subdue' && o.region === here && o.enemies.includes(e.def.id));
     // quest items some enemies carry
     for (const [id, q] of Object.entries(h.quests)) {
       if (q.state !== 'active') continue;
@@ -3095,6 +3101,11 @@ export class World {
         best = { kind: 'exit', to: x.to, x: x.x, y: x.y, label: x.label, locked: this.exitLock(x), ...(x.door ? { door: true } : {}) };
       }
     });
+    // a quest's thing, or a foe that has yielded: nearer than whoever stands about, it is what the hero means
+    const thing = thingInReach(this);
+    if (thing && onExit < 0 && dist(p.x, p.y, thing.x, thing.y) <= bd + 4) best = { kind: 'thing', id: thing.id, x: thing.x, y: thing.y, label: thing.verb };
+    const bound = yieldedInReach(this);
+    if (bound && onExit < 0 && !thing) best = { kind: 'yield', id: bound.id, x: bound.x, y: bound.y, label: this.tasks.subduing?.verb ?? 'Bind' };
     // the portal after the final boss
     if (this.portal && dist(p.x, p.y, this.portal.x, this.portal.y) < 22) best = { kind: 'exit', ...this.portalWay(), x: this.portal.x, y: this.portal.y, locked: null };
     this.interactable = p.dead ? null : best;

@@ -638,7 +638,7 @@ export function currentObjective(c: Character, q: QuestDef): Objective {
 export function questProgress(c: Character, q: QuestDef): { n: number; of: number } {
   const n = c.quests[q.id]?.n ?? 0;
   const o = currentObjective(c, q);
-  const of = o.kind === 'kill' || o.kind === 'tutorial' || o.kind === 'collect' || o.kind === 'loot' ? o.count : 1;
+  const of = o.kind === 'kill' || o.kind === 'tutorial' || o.kind === 'collect' || o.kind === 'loot' || o.kind === 'use' || o.kind === 'subdue' ? o.count : o.kind === 'hold' ? o.secs : o.kind === 'trail' ? o.marks : 1;
   return { n: Math.min(n, of), of };
 }
 
@@ -739,7 +739,7 @@ export const questDef = (id: string): QuestDef | undefined => QUEST_DEFS[id];
 /** Where a quest is done (its objective's region, else its zone). */
 export function questRegion(q: QuestDef): RegionId | undefined {
   const o = q.objective;
-  if (o.kind === 'kill' || o.kind === 'loot' || o.kind === 'clear') return o.region;
+  if ('region' in o) return o.region;
   return q.zone;
 }
 

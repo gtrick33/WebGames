@@ -1,3 +1,4 @@
+import { THINGS } from '../data/things';
 import { clamp, hash2, TAU } from '../core/math';
 import { DAY_LIGHT, DOOR_LIGHT, zoneLight } from './zoneLight';
 import type { MountDef } from '../data/mounts';
@@ -1357,6 +1358,22 @@ export class Effects {
       fx.put({ kind: FX.shaft, x: d.x, y: d.y, base: true, w: 16, h: 70, a: QUEST_GOLD, alpha: 0.85 * beat, seed: d.x * 0.1 });
       fx.put({ kind: FX.glow, x: d.x, y: d.y, flat: true, w: 40, a: QUEST_GOLD, alpha: 0.7 * beat });
     }
+    // a quest's things still to do (sim/tasks.ts): each in a shaft of its own color, as what a quest asks for is; the
+    // place to hold or to carry to, a wide pool of light on the ground
+    for (const t of w.tasks.things) {
+      if (t.used || !sc.near(t.x, t.y)) continue;
+      const color = THINGS[t.look].glow;
+      const beat = 0.75 + Math.sin(sc.time * 4 + t.x) * 0.2;
+      if (t.role === 'goal') {
+        fx.put({ kind: FX.shaft, x: t.x, y: t.y, base: true, w: 22, h: 90, a: color, alpha: 0.8 * beat, seed: t.x * 0.1 });
+        fx.put({ kind: FX.glow, x: t.x, y: t.y, flat: true, w: 70, a: color, alpha: 0.6 * beat });
+        continue;
+      }
+      fx.put({ kind: FX.shaft, x: t.x, y: t.y, base: true, w: 12, h: t.role === 'mark' ? 34 : 54, a: color, alpha: 0.7 * beat, seed: t.x * 0.1 });
+      fx.put({ kind: FX.glow, x: t.x, y: t.y, flat: true, w: 34, a: color, alpha: 0.55 * beat });
+    }
+    const held = w.tasks.hold;
+    if (held && sc.near(held.x, held.y)) fx.put({ kind: FX.glow, x: held.x, y: held.y, flat: true, w: held.r * 2.2, a: held.inside ? '#9cffd0' : '#ffe08a', alpha: 0.22 + Math.sin(sc.time * 3) * 0.05 });
     // a piece of gear on the ground stands in a beam of its rarity's color, taller and wider the rarer it is, and an epic or
     // a legendary one breathes, so it is seen across a field and known before it is reached (POLISH_PLAN.md piece 22)
     for (const d of w.drops) {
