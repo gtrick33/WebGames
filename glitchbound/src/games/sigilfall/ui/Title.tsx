@@ -422,7 +422,7 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
                 <p className="rb-small rb-dim">Short hints pause the game to show this hero the controls, the bag, new skills and talents.</p>
               </>
             )}
-            <p className="rb-small rb-dim">Both can be changed any time in Settings.</p>
+            <p className="rb-small rb-dim">{engine.asksForTips ? 'Both can be changed any time in Settings.' : 'You can change it any time in Settings.'}</p>
             <div className="rb-vigil-actions">
               <button className="rb-btn" onClick={() => setAskTips(false)}>
                 Back

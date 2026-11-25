@@ -12,6 +12,8 @@
  *   node scripts/sigilfall-overlap-check.mjs --all           every preset there is (over a hundred and fifty: hours)
  *   node scripts/sigilfall-overlap-check.mjs --quick         six presets that cover the kinds of moment
  *   node scripts/sigilfall-overlap-check.mjs --size phone --preset hearthstead
+ *   node scripts/sigilfall-overlap-check.mjs --hints         a first-timer's opening: a new hero with the hints on, at
+ *                                                           the gate, the hint cards left up (the other runs turn them off)
  *   node scripts/sigilfall-overlap-check.mjs --url http://localhost:5173   (a dev server already running)
  *
  * Without --url it starts its own dev server. It needs Playwright, as the key-art script does
@@ -71,7 +73,10 @@ const PIECES = [
   ['bar', '.rb-bar6 > .rb-slot6, .rb-bar6 > button'],
   ['prompt', '.rb-prompt'],
   ['teach', '.rb-teach'],
-  ['thumb', '.rb-cluster .rb-sb, .rb-potion-dock, .rb-interact'],
+  // a first-timer's hint card (it pauses the game: whatever is under it stays under it until it is put down)
+  ['hint', '.rb-tip-card'],
+  // (a slot with no skill in it yet is no button: `is-empty` in ui/Touch.tsx)
+  ['thumb', '.rb-cluster .rb-sb:not(.is-empty), .rb-potion-dock, .rb-interact'],
   // (where the stick rests: a thumb is on it, and words under it are lost)
   ['stick', '.rb-joy'],
   ['party', '.rb-party-frames'],
@@ -80,7 +85,14 @@ const PIECES = [
 ];
 
 /** Pairs that may meet: a piece and the piece it belongs to. */
-const ALLOWED = new Set([]);
+const ALLOWED = new Set([
+  // a hint card holds the game still and dims the screen: the buttons and the map under it can't be used until it is
+  // put down, and the one it speaks of stays lit beside it (words spoken under it are another matter: `hint×speech`)
+  'hint|thumb',
+  'hint|map',
+  'hint|menu',
+  'hint|stick',
+]);
 
 async function devServer() {
   const url = value('url');
@@ -188,7 +200,7 @@ function overlaps(boxes) {
 async function run() {
   const only = value('preset');
   const sizes = SIZES.filter((s) => !value('size') || s.id === value('size'));
-  const secs = Number(value('secs') ?? 9);
+  const secs = Number(value('secs') ?? (flag('hints') ? 45 : 9));
   rmSync(OUT, { recursive: true, force: true });
   mkdirSync(OUT, { recursive: true });
   const server = await devServer();
@@ -200,7 +212,7 @@ async function run() {
       const page = await context.newPage();
       const errors = [];
       page.on('pageerror', (e) => errors.push(e.message));
-      await page.goto(`${server.url}/sigilfall?play=1`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`${server.url}/sigilfall?play=1${flag('hints') ? '&hints' : ''}`, { waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => !!globalThis.__rb?.ui, null, { timeout: 120_000 });
       // a phone or a tablet plays the game filling the screen
       if (size.touch) {
@@ -209,17 +221,19 @@ async function run() {
       }
       await page.evaluate(() => {
         const e = globalThis.__rb;
-        e.setTutorial(false);
-        if (!e.heroes().some(Boolean)) e.createHero(0, 'warrior', 'Overlap', 'm', undefined, false);
+        const hints = new globalThis.URLSearchParams(globalThis.location.search).has('hints');
+        e.setTutorial(hints);
+        if (!e.heroes().some(Boolean)) e.createHero(0, 'warrior', 'Overlap', 'm', undefined, hints);
         else e.play(0);
       });
       await page.waitForFunction(() => globalThis.__rb.ui.screen === 'game' && !!globalThis.__rb.world, null, { timeout: 120_000 });
       const presets = await page.evaluate(async () => (await import('/src/games/sigilfall/progress/presets.ts')).PRESETS.map((p) => ({ id: p.id, region: p.region })));
       // (the presets of the later passes, v3- and v4-, are the same moments seen again: the story's own beats are enough
       // for a run, and --all takes every one)
-      const list = presets.filter((p) => (only ? p.id === only : flag('quick') ? QUICK.includes(p.id) : flag('all') ? true : !/^v\d-/.test(p.id)));
+      // (a first-timer's opening is one stop: the new hero at the gate, as they are)
+      const list = flag('hints') ? [{ id: 'first-fight', region: 'briarhollow', asIs: true }] : presets.filter((p) => (only ? p.id === only : flag('quick') ? QUICK.includes(p.id) : flag('all') ? true : !/^v\d-/.test(p.id)));
       for (const p of list) {
-        await page.evaluate((id) => globalThis.__rb.usePreset(id), p.id);
+        if (!p.asIs) await page.evaluate((id) => globalThis.__rb.usePreset(id), p.id);
         await page.waitForFunction((region) => globalThis.__rb.world?.region.id === region && !globalThis.__rb.renderer.waiting, p.region, { timeout: 60_000 }).catch(() => undefined);
         // the news a fight brings, all at once: a quest done, its reward, the next quest
         await page.evaluate(() => {
@@ -243,11 +257,19 @@ async function run() {
           }
           await page.evaluate(() => {
             const e = globalThis.__rb;
-            if (e.ui.tip) e.skipTips();
+            const hints = new globalThis.URLSearchParams(globalThis.location.search).has('hints');
+            // (with the hints on, a card is left up six seconds before it is put down, as a reader would leave it)
+            if (e.ui.tip && (!hints || (globalThis.__tipUp ??= Date.now()) < Date.now() - 6000)) {
+              // (with the hints on it is read on to the next, as its own button does: every card of a set is seen)
+              if (hints) e.tipNext();
+              else e.skipTips();
+              globalThis.__tipUp = undefined;
+            }
             if (e.ui.story) e.closeStory();
             if (e.ui.travel) e.cancelTravel();
             if (e.ui.death) e.respawn();
             if (e.ui.dialogue) e.closeDialogue();
+            if (hints && e.world) e.world.player.iframe = 99;
           });
           // scenes go on a line every second and a half or so, as a reader would take them
           if ((Date.now() - t0) % 1500 < 600) await page.evaluate(() => globalThis.__rb.world?.scene && globalThis.__rb.sceneNext());

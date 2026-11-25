@@ -23,6 +23,9 @@ const SLIDE_LIMIT = 0.55;
 /** How tall the hero stands on the picture with their bar over them (world px): what slides down stops above it. */
 const FIGURE_H = 52;
 
+/** Where the hero's head is when the camera has come to rest on them, as a share of the picture's height. */
+const HERO_TOP = 0.4;
+
 /**
  * How far down a sliding box may go: the slide's own limit, and, where the hero stands under it, no further than
  * above the hero's head. The middle of the picture is the fight: a quest's card that slid off the quest under it came
@@ -149,7 +152,14 @@ export function placeDown(engine: SigilEngine, el: HTMLElement, avoid: readonly 
   const r = engine.renderer as SigilEngine['renderer'] | undefined;
   const box = natural(engine, el);
   if (!r || !box) return;
-  const dy = slideClear(box, taken(engine, avoid, self), slideLimit(box, r.viewH, pastHero ? null : figureOf(engine)));
+  const figure = pastHero ? null : figureOf(engine);
+  let limit = slideLimit(box, r.viewH, figure);
+  // The hero's place is the middle of the picture, wherever they stand this instant: a wide banner placed while the
+  // camera was still coming to them (a land just entered) slid down past the quest to where the hero then stood, on a
+  // phone (the screen check, NINE_PLAN.md piece 8). What can't get clear above that stays where it was meant to be,
+  // and the quest steps aside for it (ui/GameScreen.tsx is-under-announce).
+  if (figure) limit = Math.min(limit, Math.min(figure.y, r.viewH * HERO_TOP) - box.h - 6);
+  const dy = slideClear(box, taken(engine, avoid, self), limit);
   shift(engine, el, keepInside({ ...box, y: box.y + dy }, 8, r.viewW - 8), dy, self);
 }
 

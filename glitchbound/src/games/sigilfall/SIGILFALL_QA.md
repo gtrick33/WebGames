@@ -23,6 +23,8 @@ a story beat.
 node scripts/sigilfall-tour.mjs --out docs/review/sf9-<topic>     every act's beats at three sizes, the Riftstone, the
                                                                   Vigil, the Ring and the old saves; fails on any error
 node scripts/sigilfall-overlap-check.mjs                          nothing on the screen covers anything else
+node scripts/sigilfall-overlap-check.mjs --hints                  the same through the first fight, a first-timer's hints on
+node scripts/sigilfall-panel-audit.mjs                            every panel and shop at three sizes: nothing cut off or covered
 node scripts/sigilfall-bench.mjs --size desktop | phone           draw calls and triangles in the heaviest fights
 node scripts/sigilfall-load-check.mjs --size desktop | phone      what a new player loads before the first fight (after a build)
 node scripts/sigilfall-load-check.mjs --size phone --net slow4g   the same on a slow phone line (fast4g too)

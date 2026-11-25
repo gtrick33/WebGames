@@ -3353,7 +3353,7 @@ html.rb-touch-playing textarea {
   bottom: 2px;
   left: 0;
   right: 0;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   text-align: center;
   color: #cfc4e8;
@@ -3412,7 +3412,7 @@ html.rb-touch-playing textarea {
 }
 .rb-look-tile.is-shop .rb-look-tag {
   bottom: 0;
-  font-size: 8px;
+  font-size: 10px;
 }
 .rb-mount-pic {
   display: grid;
@@ -17543,6 +17543,21 @@ button.rb-scard:not(:disabled):hover {
   .rb-boon strong {
     font-size: 14px;
   }
+}
+
+/* The title's Full screen button (desktop, inside the site's page: NINE_PLAN.md piece 8): said in words at any size. */
+.cs-top-btns .rb-iconbtn.cs-topbtn.cs-fullbtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  min-width: 0;
+  height: 42px;
+  padding: 0 12px;
+}
+.cs-top-btns .cs-topbtn.cs-fullbtn small {
+  display: inline;
+  font-size: 12px;
 }
 
 /* The first piece that changes a skill (ui/StoryPages.tsx GearView): its gold line, and the skill it changes. */

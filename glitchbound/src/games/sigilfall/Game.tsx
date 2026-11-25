@@ -6,6 +6,7 @@ import { SigilEngine } from './engine';
 import { ArrivalCard } from './ui/Arrival';
 import { GameScreen } from './ui/GameScreen';
 import { isTurned, setTurned } from './ui/turn';
+import { FullscreenContext } from './ui/fullscreen';
 import { CreateScreen, TitleScreen } from './ui/Title';
 import { warmPortraits } from './render3d/portrait';
 import { Warming } from './ui/Warming';
@@ -15,8 +16,12 @@ import './Game.css';
  * Sigilfall: a low-poly action RPG. The arcade bumps restartKey on Restart (a fresh mount reloads
  * the save); pauseKey asks for a pause when the player leaves full screen or scrolls away.
  */
-export default function Game({ host, restartKey, pauseKey, playerName }: GameModuleProps) {
-  return <Sigilfall key={restartKey} host={host} pauseKey={pauseKey} playerName={playerName ?? ''} />;
+export default function Game({ host, restartKey, pauseKey, playerName, enterFullscreen }: GameModuleProps) {
+  return (
+    <FullscreenContext.Provider value={enterFullscreen}>
+      <Sigilfall key={restartKey} host={host} pauseKey={pauseKey} playerName={playerName ?? ''} />
+    </FullscreenContext.Provider>
+  );
 }
 
 function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: number; playerName: string }) {

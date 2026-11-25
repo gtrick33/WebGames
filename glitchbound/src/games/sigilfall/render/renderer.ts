@@ -183,6 +183,8 @@ export class Renderer {
   }
   /** Every card drawn this frame, a scene's too, with its words (scripts/sigilfall-overlap-check.mjs reads them). */
   readonly speechCards: (ViewBox & { text: string })[] = [];
+  /** A hint that pauses the game is on the screen (the engine says so each frame): speech is not drawn under it. */
+  hushed = false;
   /** Where each line on the screen was put last frame, so it stays there while it is free (render/speech.ts SpeechKeep). */
   private readonly speechKept = new WeakMap<object, SpeechKeep>();
 
@@ -1429,6 +1431,9 @@ export class Renderer {
     this.drawEmotes(w);
     this.speechBoxes.length = 0;
     this.speechCards.length = 0;
+    // a first-timer's hint is up and the world waits: what was being said waits with it, out of the hint's way (it
+    // stood under the hint's card in the first fight, Mara's words half covered), and is back the moment the hint goes
+    if (this.hushed) return;
     const speech = w.story.speech;
     if (!speech.length) return;
     const g = this.g;

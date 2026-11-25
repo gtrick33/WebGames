@@ -64,6 +64,8 @@ interface Props {
   challenge?: ChallengeSpec;
   /** Opens the full-screen game menu (passed to module games that draw their own button). */
   openMenu?: () => void;
+  /** Takes the game to full screen (the page's own way); undefined while it already is. Passed on to a module game. */
+  enterFullscreen?: () => void;
   /** Set to the poster's Play while it shows (null otherwise), for the page to press it (How to play's last step). */
   playRef?: RefObject<(() => void) | null>;
 }
@@ -72,7 +74,7 @@ interface Props {
  * The game viewport. Nothing game-related loads until the player presses Play, so the page itself
  * stays fast. Each game is isolated: an iframe for embedded games, an error boundary for modules.
  */
-export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef, playerName, onPlayClick, frameRef, overlay, pauseSignal = 0, challenge, openMenu, playRef }: Props) {
+export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef, playerName, onPlayClick, frameRef, overlay, pauseSignal = 0, challenge, openMenu, enterFullscreen, playRef }: Props) {
   useT();
   // The game's own content follows the site's language when the game has it (a change restarts it).
   const lang = contentLangFor(game.contentLangs, useLang());
@@ -261,7 +263,7 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
             {savesIn ? (
               <div className="stage-module">
                 <GameMenuContext.Provider value={openMenu}>
-                  <Module host={host} restartKey={attempt} pauseKey={pauseKey} challenge={challenge} playerName={playerName} lang={lang} openMenu={openMenu} />
+                  <Module host={host} restartKey={attempt} pauseKey={pauseKey} challenge={challenge} playerName={playerName} lang={lang} openMenu={openMenu} enterFullscreen={enterFullscreen} />
                 </GameMenuContext.Provider>
               </div>
             ) : (
