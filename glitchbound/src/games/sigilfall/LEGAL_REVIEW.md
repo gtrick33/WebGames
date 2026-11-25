@@ -3,6 +3,19 @@
 First pass 2026-10-27, fixes the same day. A working record of licenses, names and borrowed material, for the
 owner (and a lawyer, if one is asked). It is **not legal advice** and not a trademark clearance.
 
+## Every quest given something to do (2026-11-26)
+
+The quest pass (NINE_PLAN.md, piece 4b) added no item, no keepsake, no place and no creature: the things a quest now
+has the hero burn, search, carry or light are drawn with models already in the game's packs (`data/things.ts`), each
+already credited in CREDITS_AND_LICENSES.md. What it added is words: the steps' labels, what the hero finds at each
+thing, and new lines for the people who give the quests.
+
+A few of those words are names of the dead, read off a tag, a grave or a letter: Wil Tanner, Ilse Marrow, Old Harl,
+Ser Aldric of the Vale, Dame Ysolt, Aunt Wyn, Bram Hollin (already on the Watch's roll). They are plain invented
+names of nobody in particular, not characters of another work. The mechanics are the genre's common ones (things to
+use, something to carry, a place to hold, a trail, a foe taken alive) under Sigilfall's own names and telling; no
+quest, line or name was taken from another game. Not searched on the web.
+
 ## The keepsakes of Acts III and VI (2026-11-25)
 
 Four keepsakes written for side stories of Acts III and VI (NINE_PLAN.md, piece 4): **A Spearhead with the
