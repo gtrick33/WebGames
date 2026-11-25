@@ -338,12 +338,16 @@ export class VigilPainter implements LandLayer {
       if (!f.boss) {
         const ai = f.def.ai;
         // each kind that asks for a different answer stands in a ring of its own color, so it is told at a glance
-        const kind = FOE_KINDS[ai];
-        if (kind && !f.elite) fx.put({ kind: FX.mark, x: f.x, y: f.y, flat: true, w: (f.r + 4) * 2, a: kind.color, alpha: 0.8 });
+        // (one mark each and no more: late in a night a third of the Host is one of these, and every mark is drawn)
+        if (ai === 'split' && !f.elite) fx.put({ kind: FX.mark, x: f.x, y: f.y, flat: true, w: (f.r + 4) * 2, a: FOE_KINDS.split!.color, alpha: 0.8 });
         // a Wallbearer's guard: an arc before it, gone while it is stopped
         if (ai === 'guard' && f.frozen <= 0 && f.stun <= 0) fx.put({ kind: FX.slash, x: f.x + Math.cos(f.face) * 4, y: f.y + Math.sin(f.face) * 4, up: 7, flat: true, w: ((f.r + 8) * 2) / 0.82, rot: f.face, a: FOE_KINDS.guard!.color, t: 0.45, p1: 1.7, p2: 1, alpha: 0.85 });
         // a Hostcaller's voice: how far it carries
-        else if (ai === 'rally') fx.put({ kind: FX.mark, x: f.x, y: f.y, flat: true, w: RALLY_R * 2, a: FOE_KINDS.rally!.color, alpha: 0.28 + Math.sin(time * 4 + f.id) * 0.1 });
+        // (a ring at its feet and a faint one at the edge of its reach; those it heartens are washed gold in `cast`)
+        else if (ai === 'rally') {
+          fx.put({ kind: FX.mark, x: f.x, y: f.y, flat: true, w: (f.r + 6) * 2, a: FOE_KINDS.rally!.color, alpha: 0.9 });
+          if (f.id % 3 === 0) fx.put({ kind: FX.ring, x: f.x, y: f.y, flat: true, w: RALLY_R * 2, a: FOE_KINDS.rally!.color, t: (time * 0.7 + f.id * 0.13) % 1, seed: f.id });
+        }
         // a Cinderbloat glows hotter and hotter
         else if (ai === 'burst') fx.put({ kind: FX.glow, x: f.x, y: f.y, up: 8, w: f.r * 5, a: FOE_KINDS.burst!.color, alpha: 0.55 + Math.sin(time * 10 + f.id) * 0.3 });
       }

@@ -1,0 +1,464 @@
+{
+ "name": "priest-greyfen-marsh",
+ "class": "priest",
+ "land": "Greyfen Marsh",
+ "seed": 14,
+ "samples": [
+  {
+   "t": 1,
+   "real": 0,
+   "hp": 100,
+   "level": 1,
+   "kills": 1,
+   "foes": 1,
+   "event": null,
+   "banner": "",
+   "tip": "Sucking Mire: Bog pools slow everything that wades in. A dash gets you out."
+  },
+  {
+   "t": 20,
+   "real": 20,
+   "hp": 100,
+   "level": 3,
+   "kills": 41,
+   "foes": 11,
+   "event": null,
+   "banner": "",
+   "tip": ""
+  },
+  {
+   "t": 40,
+   "real": 41,
+   "hp": 100,
+   "level": 5,
+   "kills": 103,
+   "foes": 16,
+   "event": null,
+   "banner": "",
+   "tip": ""
+  },
+  {
+   "t": 55,
+   "real": 57,
+   "hp": 100,
+   "level": 7,
+   "kills": 170,
+   "foes": 18,
+   "event": "hour",
+   "banner": "The Ember Hour",
+   "tip": ""
+  },
+  {
+   "t": 60,
+   "real": 63,
+   "hp": 100,
+   "level": 8,
+   "kills": 199,
+   "foes": 45,
+   "event": "hour",
+   "banner": "",
+   "tip": ""
+  },
+  {
+   "t": 80,
+   "real": 85,
+   "hp": 100,
+   "level": 14,
+   "kills": 458,
+   "foes": 16,
+   "event": null,
+   "banner": "",
+   "tip": ""
+  },
+  {
+   "t": 100,
+   "real": 106,
+   "hp": 100,
+   "level": 15,
+   "kills": 598,
+   "foes": 31,
+   "event": null,
+   "banner": "",
+   "tip": ""
+  },
+  {
+   "t": 112,
+   "real": 118,
+   "hp": 82,
+   "level": 16,
+   "kills": 705,
+   "foes": 28,
+   "event": "thief",
+   "banner": "Spark Thief",
+   "tip": "Cinderbloats: They burst where they die. Fell them at arm’s length."
+  },
+  {
+   "t": 120,
+   "real": 126,
+   "hp": 95,
+   "level": 16,
+   "kills": 771,
+   "foes": 38,
+   "event": "thief",
+   "banner": "",
+   "tip": ""
+  },
+  {
+   "t": 140,
+   "real": 146,
+   "hp": 100,
+   "level": 16,
+   "kills": 981,
+   "foes": 22,
+   "event": null,
+   "banner": "",
+   "tip": ""
+  },
+  {
+   "t": 160,
+   "real": 168,
+   "hp": 94,
+   "level": 19,
+   "kills": 1181,
+   "foes": 51,
+   "event": null,
+   "banner": "",
+   "tip": ""
+  },
+  {
+   "t": 168,
+   "real": 176,
+   "hp": 94,
+   "level": 19,
+   "kills": 1288,
+   "foes": 79,
+   "event": "ring",
+   "banner": "The Closing Ring",
+   "tip": ""
+  },
+  {
+   "t": 180,
+   "real": 188,
+   "hp": 100,
+   "level": 20,
+   "kills": 1500,
+   "foes": 49,
+   "event": null,
+   "banner": "",
+   "tip": ""
+  },
+  {
+   "t": 200,
+   "real": 208,
+   "hp": 100,
+   "level": 21,
+   "kills": 1790,
+   "foes": 59,
+   "event": null,
+   "banner": "",
+   "tip": ""
+  },
+  {
+   "t": 220,
+   "real": 229,
+   "hp": 100,
+   "level": 23,
+   "kills": 2130,
+   "foes": 66,
+   "event": null,
+   "banner": "",
+   "tip": ""
+  },
+  {
+   "t": 221,
+   "real": 230,
+   "hp": 100,
+   "level": 23,
+   "kills": 2151,
+   "foes": 67,
+   "event": "pack",
+   "banner": "Ashsworn Pack: Venomous",
+   "tip": ""
+  }
+ ],
+ "picks": [
+  {
+   "t": 11,
+   "level": 2,
+   "offered": [
+    "spell:seraph-lance",
+    "up:lance-of-dawn:0",
+    "strength:swift"
+   ],
+   "took": 0
+  },
+  {
+   "t": 15,
+   "level": 3,
+   "offered": [
+    "spell:halo-ring",
+    "up:seraph-lance:4",
+    "strength:drum"
+   ],
+   "took": 1
+  },
+  {
+   "t": 22,
+   "level": 4,
+   "offered": [
+    "spell:ward-of-grace",
+    "up:lance-of-dawn:3",
+    "strength:might"
+   ],
+   "took": 0
+  },
+  {
+   "t": 30,
+   "level": 5,
+   "offered": [
+    "up:lance-of-dawn:2",
+    "up:ward-of-grace:5",
+    "spell:searing-hymn"
+   ],
+   "took": 2
+  },
+  {
+   "t": 41,
+   "level": 6,
+   "offered": [
+    "up:seraph-lance:0",
+    "up:ward-of-grace:5",
+    "spell:thought-lash"
+   ],
+   "took": 2
+  },
+  {
+   "t": 52,
+   "level": 7,
+   "offered": [
+    "up:seraph-lance:1",
+    "up:lance-of-dawn:4",
+    "up:ward-of-grace:3"
+   ],
+   "took": 0
+  },
+  {
+   "t": 57,
+   "level": 8,
+   "offered": [
+    "up:ward-of-grace:0",
+    "up:seraph-lance:3",
+    "strength:reach"
+   ],
+   "took": 0
+  },
+  {
+   "t": 61,
+   "level": 9,
+   "offered": [
+    "up:searing-hymn:2",
+    "up:thought-lash:6",
+    "up:lance-of-dawn:1"
+   ],
+   "took": 2
+  },
+  {
+   "t": 64,
+   "level": 10,
+   "offered": [
+    "up:seraph-lance:3",
+    "up:ward-of-grace:1",
+    "up:searing-hymn:0"
+   ],
+   "took": 2
+  },
+  {
+   "t": 67,
+   "level": 11,
+   "offered": [
+    "up:searing-hymn:3",
+    "up:seraph-lance:3",
+    "up:lance-of-dawn:2"
+   ],
+   "took": 1
+  },
+  {
+   "t": 73,
+   "level": 12,
+   "offered": [
+    "up:thought-lash:1",
+    "up:ward-of-grace:5",
+    "up:seraph-lance:2"
+   ],
+   "took": 0
+  },
+  {
+   "t": 73,
+   "level": 13,
+   "offered": [
+    "up:lance-of-dawn:2",
+    "up:ward-of-grace:4",
+    "strength:mend"
+   ],
+   "took": 0
+  },
+  {
+   "t": 78,
+   "level": 14,
+   "offered": [
+    "up:thought-lash:0",
+    "up:ward-of-grace:5",
+    "strength:keg"
+   ],
+   "took": 2
+  },
+  {
+   "t": 97,
+   "level": 15,
+   "offered": [
+    "up:searing-hymn:4",
+    "up:ward-of-grace:5",
+    "up:thought-lash:6"
+   ],
+   "took": 1
+  },
+  {
+   "t": 109,
+   "level": 16,
+   "offered": [
+    "up:lance-of-dawn:0",
+    "strength:mend",
+    "up:seraph-lance:5"
+   ],
+   "took": 2
+  },
+  {
+   "t": 141,
+   "level": 17,
+   "offered": [
+    "up:lance-of-dawn:3",
+    "strength:magnet",
+    "strength:haste"
+   ],
+   "took": 2
+  },
+  {
+   "t": 143,
+   "level": 18,
+   "offered": [
+    "up:thought-lash:6",
+    "strength:swift",
+    "up:seraph-lance:2"
+   ],
+   "took": 0
+  },
+  {
+   "t": 150,
+   "level": 19,
+   "offered": [
+    "up:searing-hymn:1",
+    "strength:fang",
+    "strength:stout"
+   ],
+   "took": 0
+  },
+  {
+   "t": 179,
+   "level": 20,
+   "offered": [
+    "up:searing-hymn:5",
+    "up:ward-of-grace:3",
+    "up:seraph-lance:2"
+   ],
+   "took": 2
+  },
+  {
+   "t": 192,
+   "level": 21,
+   "offered": [
+    "up:lance-of-dawn:5",
+    "up:thought-lash:0",
+    "strength:fang"
+   ],
+   "took": 1
+  },
+  {
+   "t": 205,
+   "level": 22,
+   "offered": [
+    "up:ward-of-grace:3",
+    "strength:vigor",
+    "strength:coin"
+   ],
+   "took": 2
+  },
+  {
+   "t": 212,
+   "level": 23,
+   "offered": [
+    "up:searing-hymn:2",
+    "strength:might",
+    "strength:haste"
+   ],
+   "took": 1
+  },
+  {
+   "t": 225,
+   "level": 24,
+   "offered": [
+    "up:searing-hymn:5",
+    "up:lance-of-dawn:4",
+    "strength:ghost"
+   ],
+   "took": 0
+  }
+ ],
+ "errors": [],
+ "held": 232,
+ "ended": "the line broke",
+ "real": 243,
+ "level": 24,
+ "kills": 2334,
+ "spells": [
+  "lance-of-dawn:3",
+  "seraph-lance:6",
+  "ward-of-grace:3",
+  "searing-hymn:4",
+  "thought-lash:4"
+ ],
+ "relics": [
+  "keg:1",
+  "haste:1",
+  "coin:1",
+  "might:1"
+ ],
+ "events": [
+  "hour",
+  "thief",
+  "ring",
+  "pack"
+ ],
+ "won": [
+  "hour",
+  "ring"
+ ],
+ "felled": [
+  "Mother Mire"
+ ],
+ "frenzies": 14,
+ "dashes": 80,
+ "overlaps": {},
+ "harm": {
+  "shot": 319,
+  "marked foe": 114,
+  "champion’s blow": 101,
+  "guard": 53,
+  "cinderbloat": 50,
+  "charge": 27,
+  "venom": 15,
+  "walk": 13,
+  "rush": 10
+ },
+ "endText": "GREYFEN MARSH\n\nThe line broke\n\nYou held for\n3:51\n\nYour longest night here is 5:00\n\n2334\nfelled\n24\nlevel\n14\nfrenzies\n\n+52 motes\n3:51 held · 1 champion felled · 2 events won\nDeed done: Every Line Held · +30\nDeed done: The Closing Ring · +4\nDeed done: The Ember Hour · +4\nStill to do: Hold 5:00 as the Priest (3:51 of 5:00) · Fell Mother Mire and The Bog Hag (1 of 2)\n\nHold again\nChoose again",
+ "kept": "{\"motes\":52,\"earned\":52,\"nights\":1,\"boons\":{},\"wilds\":[],\"wild\":null,\"weekly\":{},\"won\":{\"hour\":1,\"ring\":1},\"felled\":[\"Mother Mire\"],\"deeds\":[\"lands:all\",\"event:ring\",\"event:hour\"],\"weekClass\":{}}"
+}

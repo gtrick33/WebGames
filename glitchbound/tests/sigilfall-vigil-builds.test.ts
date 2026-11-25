@@ -13,9 +13,9 @@ import { SPELL_SLOTS, SPELLS, spellsOf } from '../src/games/sigilfall/vigil/kit'
 import { Vigil, type VigilInput } from '../src/games/sigilfall/vigil/sim';
 
 const OUT = process.env.VIGIL_BUILDS;
-const SEEDS = OUT ? 40 : 8;
+const SEEDS = OUT ? 30 : 8;
 /** A night is stopped here: long enough for five spells to be chosen, and for the table, to say who was still standing. */
-const CAP = OUT ? 600 : 300;
+const CAP = OUT ? 480 : 300;
 /** What fell short, said together at the end so the table is whole. */
 const wrong: string[] = [];
 const hold = (ok: boolean, what: string): void => {

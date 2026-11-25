@@ -384,3 +384,38 @@ describe('The Vigil: deeds', () => {
     expect(r.weekClass).toEqual({ mage: 100 });
   });
 });
+
+describe('The Vigil: what playing whole nights changed', () => {
+  it('the night’s first event is never a pack or a ring: those two ended nights in their first minute', () => {
+    for (let seed = 1; seed <= 30; seed++) {
+      const v = new Vigil(seed, 2000, 2000);
+      for (let t = 0; t < 80 && !v.eventLog.length; t += 1 / 10) {
+        v.me.hp = 1e9;
+        if (v.cards) v.choose(0);
+        v.step(1 / 10, STILL);
+      }
+      expect(v.eventLog.length, `seed ${seed}`).toBe(1);
+      expect(['pack', 'ring'], `seed ${seed}`).not.toContain(v.eventLog[0]);
+    }
+    // and every kind still comes in the first seven
+    const v = new Vigil(4, 2000, 2000);
+    for (let t = 0; t < 600 && v.eventLog.length < EVENT_KINDS.length; t += 1 / 10) {
+      v.me.hp = 1e9;
+      if (v.cards) v.choose(0);
+      v.step(1 / 10, STILL);
+    }
+    expect([...v.eventLog].sort()).toEqual([...EVENT_KINDS].sort());
+  });
+
+  it('the Fang feeds a hero only so fast, however many fall at once', () => {
+    const v = alone('ember-bolt');
+    v.me.spells = {};
+    v.me.strengths = { fang: 5 };
+    v.step(DT, STILL);
+    v.me.hp = 10;
+    for (let i = 0; i < 200; i++) inside(v).hurt(put(v, 2300 + i, 2300), 1e7, v.me);
+    // (200 kills at 2.5 each would have been 500: far more than the hero has)
+    expect(v.me.hp).toBeLessThan(10 + v.maxHp * 0.09);
+    expect(v.me.hp).toBeGreaterThan(10);
+  });
+});

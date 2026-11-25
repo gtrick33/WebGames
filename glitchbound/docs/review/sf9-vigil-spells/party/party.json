@@ -1,0 +1,824 @@
+{
+ "steps": [
+  "the rooms worker and the pages worker are up",
+  "the host opened a party: HEBUV",
+  "the friend joined by the code: two seats taken",
+  "the night began on both",
+  "looked at 7 times over 80s: clock 77s, 66 of the Host on the host's game and 64 on the friend's, level 12, 1 event(s)",
+  "the host sees the friend carrying {\"hearth\":3,\"rethink\":1}; the friend sees the host carrying {\"hearth\":2} and chain-spark"
+ ],
+ "errors": [],
+ "checks": [
+  {
+   "t": 8,
+   "host": {
+    "t": 8.309900000047723,
+    "foes": 21,
+    "level": 2,
+    "kills": 13,
+    "event": null,
+    "events": 0,
+    "posts": 0,
+    "zones": 0,
+    "tip": null,
+    "over": false,
+    "me": {
+     "id": 1,
+     "hp": 106,
+     "max": 121,
+     "x": 1283,
+     "y": 991,
+     "spells": [
+      "seeking-arrow",
+      "poison-trap"
+     ],
+     "rerolls": 3,
+     "boons": {
+      "hearth": 2
+     },
+     "wild": "chain-spark"
+    },
+    "heroes": [
+     {
+      "id": 1,
+      "cls": "ranger",
+      "max": 121,
+      "boons": {
+       "hearth": 2
+      },
+      "wild": "chain-spark",
+      "down": false,
+      "x": 1283,
+      "y": 991
+     },
+     {
+      "id": 2,
+      "cls": "priest",
+      "max": 140,
+      "boons": {
+       "hearth": 3,
+       "rethink": 1
+      },
+      "wild": null,
+      "down": false,
+      "x": 1268,
+      "y": 795
+     }
+    ]
+   },
+   "friend": {
+    "t": 8.3,
+    "foes": 21,
+    "level": 2,
+    "kills": 13,
+    "event": null,
+    "events": 0,
+    "posts": 0,
+    "zones": 0,
+    "tip": null,
+    "over": false,
+    "me": {
+     "id": 2,
+     "hp": 133,
+     "max": 140,
+     "x": 1268,
+     "y": 795,
+     "spells": [
+      "lance-of-dawn"
+     ],
+     "rerolls": 4,
+     "boons": {
+      "hearth": 3,
+      "rethink": 1
+     },
+     "wild": null
+    },
+    "heroes": [
+     {
+      "id": 1,
+      "cls": "ranger",
+      "max": 121,
+      "boons": {
+       "hearth": 2
+      },
+      "wild": "chain-spark",
+      "down": false,
+      "x": 1283,
+      "y": 991
+     },
+     {
+      "id": 2,
+      "cls": "priest",
+      "max": 140,
+      "boons": {
+       "hearth": 3,
+       "rethink": 1
+      },
+      "wild": null,
+      "down": false,
+      "x": 1268,
+      "y": 795
+     }
+    ]
+   }
+  },
+  {
+   "t": 20,
+   "host": {
+    "t": 19.326200000047514,
+    "foes": 28,
+    "level": 3,
+    "kills": 57,
+    "event": null,
+    "events": 0,
+    "posts": 2,
+    "zones": 1,
+    "tip": null,
+    "over": false,
+    "me": {
+     "id": 1,
+     "hp": 40,
+     "max": 121,
+     "x": 1181,
+     "y": 971,
+     "spells": [
+      "seeking-arrow",
+      "poison-trap",
+      "wolf-pack"
+     ],
+     "rerolls": 3,
+     "boons": {
+      "hearth": 2
+     },
+     "wild": "chain-spark"
+    },
+    "heroes": [
+     {
+      "id": 1,
+      "cls": "ranger",
+      "max": 121,
+      "boons": {
+       "hearth": 2
+      },
+      "wild": "chain-spark",
+      "down": false,
+      "x": 1181,
+      "y": 971
+     },
+     {
+      "id": 2,
+      "cls": "priest",
+      "max": 140,
+      "boons": {
+       "hearth": 3,
+       "rethink": 1
+      },
+      "wild": null,
+      "down": false,
+      "x": 1253,
+      "y": 626
+     }
+    ]
+   },
+   "friend": {
+    "t": 19.349999999999998,
+    "foes": 32,
+    "level": 3,
+    "kills": 53,
+    "event": null,
+    "events": 0,
+    "posts": 2,
+    "zones": 1,
+    "tip": null,
+    "over": false,
+    "me": {
+     "id": 2,
+     "hp": 118,
+     "max": 140,
+     "x": 1258,
+     "y": 624,
+     "spells": [
+      "lance-of-dawn",
+      "mending-light",
+      "halo-ring"
+     ],
+     "rerolls": 4,
+     "boons": {
+      "hearth": 3,
+      "rethink": 1
+     },
+     "wild": null
+    },
+    "heroes": [
+     {
+      "id": 1,
+      "cls": "ranger",
+      "max": 121,
+      "boons": {
+       "hearth": 2
+      },
+      "wild": "chain-spark",
+      "down": false,
+      "x": 1192,
+      "y": 977
+     },
+     {
+      "id": 2,
+      "cls": "priest",
+      "max": 140,
+      "boons": {
+       "hearth": 3,
+       "rethink": 1
+      },
+      "wild": null,
+      "down": false,
+      "x": 1258,
+      "y": 624
+     }
+    ]
+   }
+  },
+  {
+   "t": 32,
+   "host": {
+    "t": 30.925700000047062,
+    "foes": 26,
+    "level": 5,
+    "kills": 122,
+    "event": null,
+    "events": 0,
+    "posts": 5,
+    "zones": 0,
+    "tip": null,
+    "over": false,
+    "me": {
+     "id": 1,
+     "hp": 18,
+     "max": 121,
+     "x": 1262,
+     "y": 997,
+     "spells": [
+      "seeking-arrow",
+      "poison-trap",
+      "wolf-pack"
+     ],
+     "rerolls": 3,
+     "boons": {
+      "hearth": 2
+     },
+     "wild": "chain-spark"
+    },
+    "heroes": [
+     {
+      "id": 1,
+      "cls": "ranger",
+      "max": 121,
+      "boons": {
+       "hearth": 2
+      },
+      "wild": "chain-spark",
+      "down": false,
+      "x": 1262,
+      "y": 997
+     },
+     {
+      "id": 2,
+      "cls": "priest",
+      "max": 140,
+      "boons": {
+       "hearth": 3,
+       "rethink": 1
+      },
+      "wild": null,
+      "down": false,
+      "x": 1346,
+      "y": 563
+     }
+    ]
+   },
+   "friend": {
+    "t": 30.966599999999996,
+    "foes": 25,
+    "level": 5,
+    "kills": 122,
+    "event": null,
+    "events": 0,
+    "posts": 5,
+    "zones": 0,
+    "tip": null,
+    "over": false,
+    "me": {
+     "id": 2,
+     "hp": 124,
+     "max": 140,
+     "x": 1352,
+     "y": 563,
+     "spells": [
+      "lance-of-dawn",
+      "mending-light",
+      "halo-ring"
+     ],
+     "rerolls": 4,
+     "boons": {
+      "hearth": 3,
+      "rethink": 1
+     },
+     "wild": null
+    },
+    "heroes": [
+     {
+      "id": 1,
+      "cls": "ranger",
+      "max": 121,
+      "boons": {
+       "hearth": 2
+      },
+      "wild": "chain-spark",
+      "down": false,
+      "x": 1273,
+      "y": 1000
+     },
+     {
+      "id": 2,
+      "cls": "priest",
+      "max": 140,
+      "boons": {
+       "hearth": 3,
+       "rethink": 1
+      },
+      "wild": null,
+      "down": false,
+      "x": 1352,
+      "y": 563
+     }
+    ]
+   }
+  },
+  {
+   "t": 44,
+   "host": {
+    "t": 42.691900000047724,
+    "foes": 32,
+    "level": 7,
+    "kills": 188,
+    "event": null,
+    "events": 0,
+    "posts": 4,
+    "zones": 0,
+    "tip": null,
+    "over": false,
+    "me": {
+     "id": 1,
+     "hp": 1,
+     "max": 121,
+     "x": 1257,
+     "y": 1177,
+     "spells": [
+      "seeking-arrow",
+      "poison-trap",
+      "wolf-pack"
+     ],
+     "rerolls": 3,
+     "boons": {
+      "hearth": 2
+     },
+     "wild": "chain-spark"
+    },
+    "heroes": [
+     {
+      "id": 1,
+      "cls": "ranger",
+      "max": 121,
+      "boons": {
+       "hearth": 2
+      },
+      "wild": "chain-spark",
+      "down": false,
+      "x": 1257,
+      "y": 1177
+     },
+     {
+      "id": 2,
+      "cls": "priest",
+      "max": 140,
+      "boons": {
+       "hearth": 3,
+       "rethink": 1
+      },
+      "wild": null,
+      "down": false,
+      "x": 1343,
+      "y": 419
+     }
+    ]
+   },
+   "friend": {
+    "t": 42.68330000000001,
+    "foes": 31,
+    "level": 7,
+    "kills": 188,
+    "event": null,
+    "events": 0,
+    "posts": 4,
+    "zones": 0,
+    "tip": null,
+    "over": false,
+    "me": {
+     "id": 2,
+     "hp": 122,
+     "max": 140,
+     "x": 1344,
+     "y": 417,
+     "spells": [
+      "lance-of-dawn",
+      "mending-light",
+      "halo-ring"
+     ],
+     "rerolls": 4,
+     "boons": {
+      "hearth": 3,
+      "rethink": 1
+     },
+     "wild": null
+    },
+    "heroes": [
+     {
+      "id": 1,
+      "cls": "ranger",
+      "max": 121,
+      "boons": {
+       "hearth": 2
+      },
+      "wild": "chain-spark",
+      "down": false,
+      "x": 1261,
+      "y": 1186
+     },
+     {
+      "id": 2,
+      "cls": "priest",
+      "max": 140,
+      "boons": {
+       "hearth": 3,
+       "rethink": 1
+      },
+      "wild": null,
+      "down": false,
+      "x": 1344,
+      "y": 417
+     }
+    ]
+   }
+  },
+  {
+   "t": 56,
+   "host": {
+    "t": 54.54150000004847,
+    "foes": 51,
+    "level": 8,
+    "kills": 258,
+    "event": null,
+    "events": 0,
+    "posts": 2,
+    "zones": 1,
+    "tip": "A glade opens: stand in its light",
+    "over": false,
+    "me": {
+     "id": 1,
+     "hp": 0,
+     "max": 121,
+     "x": 1232,
+     "y": 1067,
+     "spells": [
+      "seeking-arrow",
+      "poison-trap",
+      "wolf-pack"
+     ],
+     "rerolls": 3,
+     "boons": {
+      "hearth": 2
+     },
+     "wild": "chain-spark"
+    },
+    "heroes": [
+     {
+      "id": 1,
+      "cls": "ranger",
+      "max": 121,
+      "boons": {
+       "hearth": 2
+      },
+      "wild": "chain-spark",
+      "down": true,
+      "x": 1232,
+      "y": 1067
+     },
+     {
+      "id": 2,
+      "cls": "priest",
+      "max": 140,
+      "boons": {
+       "hearth": 3,
+       "rethink": 1
+      },
+      "wild": null,
+      "down": false,
+      "x": 1327,
+      "y": 453
+     }
+    ]
+   },
+   "friend": {
+    "t": 54.516700000000014,
+    "foes": 51,
+    "level": 8,
+    "kills": 257,
+    "event": null,
+    "events": 0,
+    "posts": 2,
+    "zones": 1,
+    "tip": "A glade opens: stand in its light",
+    "over": false,
+    "me": {
+     "id": 2,
+     "hp": 140,
+     "max": 140,
+     "x": 1327,
+     "y": 454,
+     "spells": [
+      "lance-of-dawn",
+      "mending-light",
+      "halo-ring"
+     ],
+     "rerolls": 4,
+     "boons": {
+      "hearth": 3,
+      "rethink": 1
+     },
+     "wild": null
+    },
+    "heroes": [
+     {
+      "id": 1,
+      "cls": "ranger",
+      "max": 121,
+      "boons": {
+       "hearth": 2
+      },
+      "wild": "chain-spark",
+      "down": true,
+      "x": 1232,
+      "y": 1067
+     },
+     {
+      "id": 2,
+      "cls": "priest",
+      "max": 140,
+      "boons": {
+       "hearth": 3,
+       "rethink": 1
+      },
+      "wild": null,
+      "down": false,
+      "x": 1327,
+      "y": 454
+     }
+    ]
+   }
+  },
+  {
+   "t": 68,
+   "host": {
+    "t": 66.10780000004958,
+    "foes": 49,
+    "level": 10,
+    "kills": 380,
+    "event": null,
+    "events": 1,
+    "posts": 0,
+    "zones": 0,
+    "tip": null,
+    "over": false,
+    "me": {
+     "id": 1,
+     "hp": 0,
+     "max": 121,
+     "x": 1232,
+     "y": 1067,
+     "spells": [
+      "seeking-arrow",
+      "poison-trap",
+      "wolf-pack"
+     ],
+     "rerolls": 3,
+     "boons": {
+      "hearth": 2
+     },
+     "wild": "chain-spark"
+    },
+    "heroes": [
+     {
+      "id": 1,
+      "cls": "ranger",
+      "max": 121,
+      "boons": {
+       "hearth": 2
+      },
+      "wild": "chain-spark",
+      "down": true,
+      "x": 1232,
+      "y": 1067
+     },
+     {
+      "id": 2,
+      "cls": "priest",
+      "max": 140,
+      "boons": {
+       "hearth": 3,
+       "rethink": 1
+      },
+      "wild": null,
+      "down": false,
+      "x": 1355,
+      "y": 518
+     }
+    ]
+   },
+   "friend": {
+    "t": 66.1,
+    "foes": 49,
+    "level": 10,
+    "kills": 380,
+    "event": null,
+    "events": 0,
+    "posts": 0,
+    "zones": 0,
+    "tip": null,
+    "over": false,
+    "me": {
+     "id": 2,
+     "hp": 107,
+     "max": 140,
+     "x": 1356,
+     "y": 519,
+     "spells": [
+      "lance-of-dawn",
+      "mending-light",
+      "halo-ring"
+     ],
+     "rerolls": 4,
+     "boons": {
+      "hearth": 3,
+      "rethink": 1
+     },
+     "wild": null
+    },
+    "heroes": [
+     {
+      "id": 1,
+      "cls": "ranger",
+      "max": 121,
+      "boons": {
+       "hearth": 2
+      },
+      "wild": "chain-spark",
+      "down": true,
+      "x": 1232,
+      "y": 1067
+     },
+     {
+      "id": 2,
+      "cls": "priest",
+      "max": 140,
+      "boons": {
+       "hearth": 3,
+       "rethink": 1
+      },
+      "wild": null,
+      "down": false,
+      "x": 1356,
+      "y": 519
+     }
+    ]
+   }
+  },
+  {
+   "t": 80,
+   "host": {
+    "t": 77.37400000005209,
+    "foes": 66,
+    "level": 12,
+    "kills": 484,
+    "event": null,
+    "events": 1,
+    "posts": 0,
+    "zones": 0,
+    "tip": null,
+    "over": false,
+    "me": {
+     "id": 1,
+     "hp": 0,
+     "max": 121,
+     "x": 1232,
+     "y": 1067,
+     "spells": [
+      "seeking-arrow",
+      "poison-trap",
+      "wolf-pack"
+     ],
+     "rerolls": 3,
+     "boons": {
+      "hearth": 2
+     },
+     "wild": "chain-spark"
+    },
+    "heroes": [
+     {
+      "id": 1,
+      "cls": "ranger",
+      "max": 121,
+      "boons": {
+       "hearth": 2
+      },
+      "wild": "chain-spark",
+      "down": true,
+      "x": 1232,
+      "y": 1067
+     },
+     {
+      "id": 2,
+      "cls": "priest",
+      "max": 140,
+      "boons": {
+       "hearth": 3,
+       "rethink": 1
+      },
+      "wild": null,
+      "down": false,
+      "x": 1505,
+      "y": 400
+     }
+    ]
+   },
+   "friend": {
+    "t": 77.35000000000004,
+    "foes": 64,
+    "level": 12,
+    "kills": 484,
+    "event": null,
+    "events": 0,
+    "posts": 0,
+    "zones": 0,
+    "tip": null,
+    "over": false,
+    "me": {
+     "id": 2,
+     "hp": 107,
+     "max": 140,
+     "x": 1507,
+     "y": 406,
+     "spells": [
+      "lance-of-dawn",
+      "mending-light",
+      "halo-ring"
+     ],
+     "rerolls": 4,
+     "boons": {
+      "hearth": 3,
+      "rethink": 1
+     },
+     "wild": null
+    },
+    "heroes": [
+     {
+      "id": 1,
+      "cls": "ranger",
+      "max": 121,
+      "boons": {
+       "hearth": 2
+      },
+      "wild": "chain-spark",
+      "down": true,
+      "x": 1232,
+      "y": 1067
+     },
+     {
+      "id": 2,
+      "cls": "priest",
+      "max": 140,
+      "boons": {
+       "hearth": 3,
+       "rethink": 1
+      },
+      "wild": null,
+      "down": false,
+      "x": 1507,
+      "y": 406
+     }
+    ]
+   }
+  }
+ ],
+ "rooms": "butes)). Example:\n    curl -X POST http://127.0.0.1:8796/cdn-cgi/local/explorer/api/local/observability/query -H 'Content-Type: application/json' -d '{\"sql\":\"SELECT service, name, outcome, duration_ms FROM spans WHERE parent_id IS NULL LIMIT 20\"}'\n  POST http://127.0.0.1:8796/cdn-cgi/local/explorer/api/local/observability/clear - clear all captured traces and logs\nIf the routes above don't cover what you need, fetch the full OpenAPI schema (large - use only as a last resort):\n  GET http://127.0.0.1:8796/cdn-cgi/local/explorer/api - OpenAPI schema\n[wrangler:info] Ready on http://127.0.0.1:8796\n",
+ "pages": "/WebGames-1/glitchbound/node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts:22:10)\n    at async drainBody (file:///Users/savahristov/Desktop/WebGames-1/glitchbound/node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts:5:10)\n[wrangler:info] GET /api/leaderboard 500 Internal Server Error (146ms)\n[wrangler:info] GET /api/pins 500 Internal Server Error (151ms)\n[wrangler:info] POST /api/rooms 200 OK (40ms)\n[wrangler:info] GET /api/rooms/HEBUV/ws 101 Switching Protocols (23ms)\n[wrangler:info] GET /api/rooms/HEBUV/ws 101 Switching Protocols (6ms)\n"
+}

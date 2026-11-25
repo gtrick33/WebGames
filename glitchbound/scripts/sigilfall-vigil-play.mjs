@@ -100,7 +100,7 @@ function overlaps() {
   const PIECES = ['.rb-vigil-stat', '.rb-vigil-buttons', '.rb-vigil-event', '.rb-vigil-boss', '.rb-vigil-banner', '.rb-vigil-wait', '.rb-vigil-tip', '.rb-vigil-gale', '.rb-vigil-loadout', '.rb-vigil-dash'];
   const boxes = [];
   for (const sel of PIECES) {
-    const el = document.querySelector(sel);
+    const el = globalThis.document.querySelector(sel);
     if (!el || !el.offsetParent || !(el.textContent || el.querySelector('img'))) continue;
     const r = el.getBoundingClientRect();
     if (r.width < 2 || r.height < 2) continue;
@@ -271,7 +271,7 @@ async function run() {
     return true;
   };
   const button = (text) =>
-    `(() => { const b = [...document.querySelectorAll('button, [role=radio]')].filter((x) => x.offsetParent !== null && !x.disabled).find((x) => ((x.getAttribute('aria-label') || '') + ' ' + (x.textContent || '')).replace(/\\s+/g, ' ').toLowerCase().includes(${JSON.stringify(text.toLowerCase())})); if (!b) return null; b.scrollIntoView({ block: 'center' }); const r = b.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`;
+    `(() => { const b = [...globalThis.document.querySelectorAll('button, [role=radio]')].filter((x) => x.offsetParent !== null && !x.disabled).find((x) => ((x.getAttribute('aria-label') || '') + ' ' + (x.textContent || '')).replace(/\\s+/g, ' ').toLowerCase().includes(${JSON.stringify(text.toLowerCase())})); if (!b) return null; b.scrollIntoView({ block: 'center' }); const r = b.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`;
 
   const log = { name: NAME, class: CLS, land: WEEK ? 'the week’s watch' : LAND, seed: SEED, samples: [], picks: [], errors };
   mkdirSync(OUT, { recursive: true });
@@ -286,13 +286,13 @@ async function run() {
     await tap(62, 190);
     if (!(await page.waitForSelector('.rb-vlobby-land', { timeout: 6000 }).catch(() => null))) {
       log.note = 'the Vigil’s banner on the title did not answer a tap at (62, 190): its screen-reader button was pressed instead';
-      await page.evaluate(() => [...document.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') || '').startsWith('The Vigil:'))?.click());
+      await page.evaluate(() => [...globalThis.document.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') || '').startsWith('The Vigil:'))?.click());
     }
     await page.waitForSelector('.rb-vlobby-land', { timeout: 60_000 });
     await page.waitForTimeout(1200);
-    if (!(await tapOn(`(() => { const b = [...document.querySelectorAll('.rb-vlobby-class')].find((x) => x.textContent.trim() === ${JSON.stringify(CLASS_NAMES[CLS])}); if (!b) return null; const r = b.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`))) throw new Error(`no class ${CLS}`);
+    if (!(await tapOn(`(() => { const b = [...globalThis.document.querySelectorAll('.rb-vlobby-class')].find((x) => x.textContent.trim() === ${JSON.stringify(CLASS_NAMES[CLS])}); if (!b) return null; const r = b.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`))) throw new Error(`no class ${CLS}`);
     await page.waitForTimeout(500);
-    const land = WEEK ? `document.querySelector('.rb-vlobby-land.is-week')` : `[...document.querySelectorAll('.rb-vlobby-land:not(.is-week)')].find((x) => x.querySelector('strong')?.textContent === ${JSON.stringify(LAND)})`;
+    const land = WEEK ? `globalThis.document.querySelector('.rb-vlobby-land.is-week')` : `[...globalThis.document.querySelectorAll('.rb-vlobby-land:not(.is-week)')].find((x) => x.querySelector('strong')?.textContent === ${JSON.stringify(LAND)})`;
     if (!(await tapOn(`(() => { const b = ${land}; if (!b) return null; b.scrollIntoView({ block: 'center' }); const r = b.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`))) throw new Error(`no land ${LAND}`);
     await page.waitForTimeout(500);
     await page.screenshot({ path: join(OUT, `${NAME}-00-lobby.jpg`), type: 'jpeg', quality: 66 });
@@ -312,7 +312,7 @@ async function run() {
       await touch('touchMove', [at]);
       if (dash) {
         const d = await page.evaluate(() => {
-          const r = document.querySelector('.rb-vigil-dash')?.getBoundingClientRect();
+          const r = globalThis.document.querySelector('.rb-vigil-dash')?.getBoundingClientRect();
           return r ? [r.x + r.width / 2, r.y + r.height / 2] : null;
         });
         if (d) {
@@ -346,7 +346,7 @@ async function run() {
         const i = choose(s.cards);
         log.picks.push({ t: Math.round(s.t), level: s.level, offered: s.cards.map((c) => `${c.kind}:${c.up ?? c.id}${c.evolve ? '*' : ''}`), took: i });
         if (shots < 3) await page.screenshot({ path: join(OUT, `${NAME}-cards-${++shots}.jpg`), type: 'jpeg', quality: 66 });
-        await tapOn(`(() => { const b = document.querySelectorAll('.rb-vigil-card')[${i}]; if (!b) return null; const r = b.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`);
+        await tapOn(`(() => { const b = globalThis.document.querySelectorAll('.rb-vigil-card')[${i}]; if (!b) return null; const r = b.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`);
         await page.waitForTimeout(250);
         continue;
       }
@@ -370,7 +370,7 @@ async function run() {
     await page.screenshot({ path: join(OUT, `${NAME}-end.jpg`), type: 'jpeg', quality: 70 });
     if (last) {
       Object.assign(log, { held: Math.round(last.t), ended: last.over ? 'the line broke' : `stopped at ${MINUTES} minutes`, real: Math.round((Date.now() - began) / 1000), level: last.level, kills: last.kills, spells: last.spells, relics: last.relics, events: last.events, won: last.won, felled: last.felled, frenzies: last.frenzies, dashes, overlaps: covered, harm: Object.fromEntries(Object.entries(last.harm).map(([k, n]) => [k, Math.round(n)]).sort((a, b) => b[1] - a[1])) });
-      log.endText = await page.evaluate(() => document.querySelector('.rb-vend-body')?.innerText ?? '');
+      log.endText = await page.evaluate(() => globalThis.document.querySelector('.rb-vend-body')?.innerText ?? '');
       log.kept = await page.evaluate(() => globalThis.localStorage.getItem('sigilfall.vigil.return'));
     }
   } catch (e) {

@@ -93,7 +93,7 @@ try {
     await page.waitForFunction(() => !!globalThis.__rb?.ui, null, { timeout: 180_000 });
     await page.waitForTimeout(1500);
     await page.touchscreen.tap(62, 190);
-    if (!(await page.waitForSelector('.rb-vlobby-land', { timeout: 6000 }).catch(() => null))) await page.evaluate(() => [...document.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') || '').startsWith('The Vigil:'))?.click());
+    if (!(await page.waitForSelector('.rb-vlobby-land', { timeout: 6000 }).catch(() => null))) await page.evaluate(() => [...globalThis.document.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') || '').startsWith('The Vigil:'))?.click());
     await page.waitForSelector('.rb-vlobby-land', { timeout: 60_000 });
     await page.waitForTimeout(800);
     await tapText(page, '.rb-vlobby-class', cls, true);
@@ -102,7 +102,7 @@ try {
   async function tapText(page, selector, text, exact = false) {
     const at = await page.evaluate(
       ([sel, t, ex]) => {
-        const b = [...document.querySelectorAll(sel)].filter((x) => x.offsetParent !== null && !x.disabled).find((x) => (ex ? x.textContent.trim() === t : ((x.getAttribute('aria-label') || '') + ' ' + x.textContent).includes(t)));
+        const b = [...globalThis.document.querySelectorAll(sel)].filter((x) => x.offsetParent !== null && !x.disabled).find((x) => (ex ? x.textContent.trim() === t : ((x.getAttribute('aria-label') || '') + ' ' + x.textContent).includes(t)));
         if (!b) return null;
         b.scrollIntoView({ block: 'center' });
         const r = b.getBoundingClientRect();
@@ -121,12 +121,12 @@ try {
   await tapText(host.page, 'button', 'With friends');
   await tapText(host.page, 'button', 'Open a party');
   await host.page.waitForSelector('.rb-rp-code strong', { timeout: 30_000 });
-  const room = await host.page.evaluate(() => document.querySelector('.rb-rp-code strong').textContent.trim());
+  const room = await host.page.evaluate(() => globalThis.document.querySelector('.rb-rp-code strong').textContent.trim());
   said(`the host opened a party: ${room}`);
   await tapText(friend.page, 'button', 'With friends');
   await friend.page.fill('.rb-rp-join input', room);
   await tapText(friend.page, '.rb-rp-join button', 'Join');
-  await host.page.waitForFunction(() => document.querySelectorAll('.rb-vparty-seat:not(.is-open)').length === 2, null, { timeout: 30_000 });
+  await host.page.waitForFunction(() => globalThis.document.querySelectorAll('.rb-vparty-seat:not(.is-open)').length === 2, null, { timeout: 30_000 });
   said('the friend joined by the code: two seats taken');
   await host.page.waitForTimeout(1200);
   await host.page.screenshot({ path: join(OUT, 'party-1-lobby-host.jpg'), type: 'jpeg', quality: 66 });
@@ -140,7 +140,7 @@ try {
       const g = globalThis.__vigil;
       const me = g.me;
       if (!me.cards) return null;
-      const r = document.querySelector('.rb-vigil-card')?.getBoundingClientRect();
+      const r = globalThis.document.querySelector('.rb-vigil-card')?.getBoundingClientRect();
       return r ? [r.x + r.width / 2, r.y + r.height / 2] : null;
     });
     const touch = (type, points) => s.cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map(([x, y, id]) => ({ x, y, id })) });
@@ -157,7 +157,7 @@ try {
     await touch('touchMove', [at]);
     if (Math.floor(t) % 7 === 0 && !s.dashed) {
       const d = await s.page.evaluate(() => {
-        const r = document.querySelector('.rb-vigil-dash')?.getBoundingClientRect();
+        const r = globalThis.document.querySelector('.rb-vigil-dash')?.getBoundingClientRect();
         return r ? [r.x + r.width / 2, r.y + r.height / 2] : null;
       });
       if (d) {

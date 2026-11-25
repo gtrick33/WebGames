@@ -195,6 +195,14 @@ async function run() {
       await press(page, 'Call Wolf');
       await page.waitForTimeout(400);
       await shot(page, 'lobby-05-bought', 'After two ranks of Hearthblood, one of Second Thoughts and Call Wolf learned (and carried).');
+      await page.evaluate(() => globalThis.document.querySelectorAll('.rb-vfire-tabs button')[1]?.click());
+      await page.waitForTimeout(400);
+      await shot(page, 'lobby-08-deeds', 'The Watchfire’s deeds: what there is to have done, how far along each is, and what it pays.');
+      await page.evaluate(() => globalThis.document.querySelectorAll('.rb-vfire-tabs button')[2]?.click());
+      await page.waitForTimeout(400);
+      await shot(page, 'lobby-09-codex', 'The codex: every evolution there is, the ones found lit.');
+      await page.evaluate(() => globalThis.document.querySelectorAll('.rb-vfire-tabs button')[0]?.click());
+      await page.waitForTimeout(300);
       const before = await page.evaluate(() => globalThis.localStorage.getItem('sigilfall.vigil.return'));
       await page.evaluate(() => globalThis.document.querySelector('.rb-vfire')?.scrollTo(0, 9999));
       await page.waitForTimeout(300);

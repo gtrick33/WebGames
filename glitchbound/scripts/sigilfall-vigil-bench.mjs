@@ -1,6 +1,7 @@
 /**
  * What a late, crowded night of the Vigil costs to draw, at a phone's size: the clock is put at nine minutes with a
- * hero who can't fall and holds five spells at their top, and the frames of the next half minute are timed.
+ * hero who can't fall and holds two weak spells, so the Host fills the field to its most (320), and after twenty
+ * seconds for it to do so the frames of the next half minute are timed.
  *
  *   node scripts/sigilfall-vigil-bench.mjs [--root <a checkout's glitchbound folder>] [--class mage] [--land Whisperwood] [--seconds 30] [--gpu]
  *
@@ -45,13 +46,13 @@ try {
   await page.goto(`${url}/sigilfall?play=1`, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!globalThis.__rb?.ui, null, { timeout: 180_000 });
   await page.waitForTimeout(1500);
-  await page.evaluate(() => [...document.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') || '').startsWith('The Vigil:'))?.click());
+  await page.evaluate(() => [...globalThis.document.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') || '').startsWith('The Vigil:'))?.click());
   await page.waitForSelector('.rb-vlobby-land', { timeout: 60_000 });
   await page.waitForTimeout(1000);
-  await page.evaluate((name) => [...document.querySelectorAll('.rb-vlobby-class')].find((x) => x.textContent.trim() === name)?.click(), CLASS_NAMES[CLS]);
-  await page.evaluate((name) => [...document.querySelectorAll('.rb-vlobby-land')].find((x) => x.querySelector('strong')?.textContent === name)?.click(), LAND);
+  await page.evaluate((name) => [...globalThis.document.querySelectorAll('.rb-vlobby-class')].find((x) => x.textContent.trim() === name)?.click(), CLASS_NAMES[CLS]);
+  await page.evaluate((name) => [...globalThis.document.querySelectorAll('.rb-vlobby-land')].find((x) => x.querySelector('strong')?.textContent === name)?.click(), LAND);
   await page.waitForTimeout(400);
-  await page.evaluate(() => [...document.querySelectorAll('button')].find((b) => (b.textContent || '').includes('Keep the watch in'))?.click());
+  await page.evaluate(() => [...globalThis.document.querySelectorAll('button')].find((b) => (b.textContent || '').includes('Keep the watch in'))?.click());
   await page.waitForFunction(() => !!globalThis.__vigil?.renderer.landReady && globalThis.__vigil.renderer.objects.length > 0, null, { timeout: 240_000 });
   // late in the night, five spells at their top, and a hero who stays standing; cards are taken as they come
   await page.evaluate(() => {
@@ -60,36 +61,52 @@ try {
     globalThis.setInterval(() => {
       g.me.hp = 1e9;
       if (g.me.cards) g.pick(0);
+      g.me.spells = Object.fromEntries(Object.entries(g.me.spells).slice(0, 2).map(([id]) => [id, 1]));
     }, 100);
   });
   await page.evaluate(async () => {
     const mod = await import('/src/games/sigilfall/vigil/kit.ts');
     const g = globalThis.__vigil;
-    g.me.spells = Object.fromEntries(mod.spellsOf(g.me.cls).slice(0, 5).map((s) => [s.id, 6]));
+    // (two spells, weak ones: enough going off to count, and the Host left to fill the field to its most in any checkout)
+    g.me.spells = Object.fromEntries(mod.spellsOf(g.me.cls).slice(0, 2).map((s) => [s.id, 1]));
     g.me.rev++;
   });
   // (the crowd comes in)
-  await page.waitForTimeout(12_000);
+  await page.waitForTimeout(20_000);
   const out = await page.evaluate(
     (seconds) =>
       new Promise((done) => {
         const g = globalThis.__vigil;
+        // where the time goes: the night's own step, and each part of its drawing
+        const cost = {};
+        const timed = (o, name, label) => {
+          const was = o[name].bind(o);
+          o[name] = (...xs) => {
+            const t0 = globalThis.performance.now();
+            const r = was(...xs);
+            cost[label] = (cost[label] ?? 0) + globalThis.performance.now() - t0;
+            return r;
+          };
+        };
+        timed(g.v, 'step', 'step');
+        for (const part of ['frame', 'cast', 'fx', 'over']) if (typeof g.painter[part] === 'function') timed(g.painter, part, `paint.${part}`);
+        timed(g.renderer, 'draw', 'draw (all)');
         const gaps = [];
         const foes = [];
-        let last = performance.now();
+        let last = globalThis.performance.now();
         const end = last + seconds * 1000;
         const tick = (now) => {
           gaps.push(now - last);
           last = now;
           if (gaps.length % 30 === 0) foes.push(g.v.foes.length);
-          if (now < end) requestAnimationFrame(tick);
+          if (now < end) globalThis.requestAnimationFrame(tick);
           else {
             gaps.sort((a, b) => a - b);
             const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
-            done({ frames: gaps.length, mean: Math.round(mean * 10) / 10, p95: Math.round(gaps[Math.floor(gaps.length * 0.95)] * 10) / 10, worst: Math.round(gaps[gaps.length - 1] * 10) / 10, fps: Math.round(10000 / mean) / 10, foes: Math.round(foes.reduce((a, b) => a + b, 0) / Math.max(1, foes.length)), fx: g.v.fx.length, clock: Math.round(g.v.t) });
+            done({ frames: gaps.length, mean: Math.round(mean * 10) / 10, p95: Math.round(gaps[Math.floor(gaps.length * 0.95)] * 10) / 10, worst: Math.round(gaps[gaps.length - 1] * 10) / 10, fps: Math.round(10000 / mean) / 10, foes: Math.round(foes.reduce((a, b) => a + b, 0) / Math.max(1, foes.length)), fx: g.v.fx.length, clock: Math.round(g.v.t), msPerFrame: Object.fromEntries(Object.entries(cost).map(([k, n]) => [k, Math.round((n / gaps.length) * 100) / 100])) });
           }
         };
-        requestAnimationFrame(tick);
+        globalThis.requestAnimationFrame(tick);
       }),
     SECONDS,
   );
