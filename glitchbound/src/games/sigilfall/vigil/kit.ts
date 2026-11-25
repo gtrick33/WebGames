@@ -336,8 +336,29 @@ export const FIELD_ICONS = { dash: 'haste_status_winged_boot_on_teal', meat: 'he
 /** Every icon The Vigil shows, for the icon build. */
 export const vigilIcons = (): string[] => [REST_ICON, ...Object.values(FIELD_ICONS), ...Object.values(STRENGTHS).map((s) => s.icon), ...ALL_SPELLS.flatMap((s) => (s.evolve ? [s.icon, s.evolve.icon] : [s.icon]))];
 
-/** How a wave's foes behave. */
-export type FoeAi = 'walk' | 'rush' | 'shoot' | 'charge';
+/**
+ * How a wave's foes behave. The first four are the plain Host; each of the others asks for a different answer:
+ * `split` breaks into two small quick ones when it falls, `burst` blows up where it dies (and dies on reaching you),
+ * `guard` shrugs off most of what comes at its front, and `rally` hangs back making those near it faster and tougher.
+ */
+export type FoeAi = 'walk' | 'rush' | 'shoot' | 'charge' | 'split' | 'burst' | 'guard' | 'rally';
+export const PLAIN_AI: readonly FoeAi[] = ['walk', 'rush', 'shoot', 'charge'];
+/** What each of the others is called, and what to do about it (the first one a keeper meets says so). */
+export const FOE_KINDS: Partial<Record<FoeAi, { name: string; text: string; color: string }>> = {
+  split: { name: 'Twinhusks', text: 'They break in two when they fall.', color: '#9ae85a' },
+  burst: { name: 'Cinderbloats', text: 'They burst where they die. Fell them at arm’s length.', color: '#ff7a3d' },
+  guard: { name: 'Wallbearers', text: 'Their fronts turn most blows. Strike from the side or from above.', color: '#b8c8e8' },
+  rally: { name: 'Hostcallers', text: 'They make those near them faster and tougher. Fell them first.', color: '#ffd257' },
+};
+
+/** The rule a land plays by (vigil/night.ts has what each one says and does). */
+export type RuleId = 'glade' | 'bramble' | 'rockfall' | 'mire' | 'tide' | 'gale' | 'graves' | 'storm' | 'cold' | 'venom' | 'vents' | 'fade';
+/**
+ * A champion's own attack, beside its slam, each shown before it lands: `volley` a ring of slow shots, `charge` a
+ * marked line it then runs down, `ring` a blast that is safe close in, `rake` three marked lines, `call` more of the
+ * Host called to its side.
+ */
+export type ChampMove = 'volley' | 'charge' | 'ring' | 'rake' | 'call';
 
 /**
  * The Host through the night: how tough each wave is and when it comes. A land gives the waves their faces.
@@ -354,9 +375,11 @@ export interface FoeDef {
   to: number;
   weight: number;
   ai: FoeAi;
+  /** A small one of this kind (what a Twinhusk leaves, what gets up from a grave): the kind it came from. */
+  base?: FoeDef;
 }
 
-const WAVES: Omit<FoeDef, 'sprite'>[] = [
+const WAVES: (Omit<FoeDef, 'sprite'> & { face?: number })[] = [
   { hp: 12, dmg: 6, speed: 46, r: 6, xp: 1, from: 0, to: 150, weight: 5, ai: 'walk' },
   { hp: 22, dmg: 7, speed: 40, r: 7, xp: 1, from: 30, to: 240, weight: 3, ai: 'walk' },
   { hp: 18, dmg: 8, speed: 82, r: 6, xp: 1, from: 60, to: 360, weight: 3, ai: 'rush' },
@@ -365,6 +388,14 @@ const WAVES: Omit<FoeDef, 'sprite'>[] = [
   { hp: 130, dmg: 16, speed: 66, r: 7, xp: 4, from: 300, to: 900, weight: 4, ai: 'walk' },
   { hp: 320, dmg: 22, speed: 52, r: 9, xp: 8, from: 460, to: 99999, weight: 3, ai: 'shoot' },
   { hp: 620, dmg: 30, speed: 56, r: 10, xp: 14, from: 640, to: 99999, weight: 3, ai: 'charge' },
+  // the ones that ask for a different answer, each wearing the face of one of the waves above (`face`)
+  { hp: 30, dmg: 7, speed: 42, r: 8, xp: 2, from: 45, to: 400, weight: 2, ai: 'split', face: 1 },
+  { hp: 20, dmg: 12, speed: 60, r: 6, xp: 2, from: 110, to: 560, weight: 2, ai: 'burst', face: 0 },
+  { hp: 70, dmg: 12, speed: 42, r: 8, xp: 4, from: 200, to: 760, weight: 2, ai: 'guard', face: 4 },
+  { hp: 60, dmg: 8, speed: 50, r: 7, xp: 5, from: 250, to: 99999, weight: 1, ai: 'rally', face: 3 },
+  { hp: 240, dmg: 18, speed: 48, r: 9, xp: 8, from: 420, to: 99999, weight: 2, ai: 'split', face: 5 },
+  { hp: 150, dmg: 24, speed: 66, r: 7, xp: 6, from: 560, to: 99999, weight: 2, ai: 'burst', face: 2 },
+  { hp: 420, dmg: 24, speed: 46, r: 9, xp: 10, from: 700, to: 99999, weight: 2, ai: 'guard', face: 5 },
 ];
 
 export interface VigilMap {
@@ -376,23 +407,25 @@ export interface VigilMap {
   color: string;
   /** The faces of the waves, in the order they come (the last repeats). */
   foes: string[];
-  /** Its champions, in turn. */
-  champions: { sprite: string; name: string }[];
+  /** Its champions, in turn, and the attack each has beside its slam. */
+  champions: { sprite: string; name: string; move: ChampMove }[];
+  /** The rule this land plays by. */
+  rule: RuleId;
 }
 
 export const VIGIL_MAPS: VigilMap[] = [
-  { id: 'whisperwood', region: 'whisperwood', name: 'Whisperwood', blurb: 'Where every watch begins.', color: '#3f8f5a', foes: ['slime', 'beetle', 'goblin', 'sprite', 'boar', 'enforcer', 'guardian'], champions: [{ sprite: 'guardian', name: 'The Gravewarden' }, { sprite: 'boar', name: 'The Bone Tusk' }, { sprite: 'enforcer', name: 'The Ash Captain' }] },
-  { id: 'thornvale', region: 'thornvale', name: 'Thornvale', blurb: 'Bandits and wolves, and worse behind them.', color: '#a8863a', foes: ['wolf', 'cutthroat', 'bandit-archer', 'spider', 'hedge-witch', 'enforcer'], champions: [{ sprite: 'enforcer', name: 'The Gallows Boss' }, { sprite: 'wolf', name: 'Old Greymane' }] },
-  { id: 'brackenridge', region: 'brackenridge', name: 'Brackenridge', blurb: 'Kobolds in the hills, and shades under them.', color: '#c86a2a', foes: ['ridge-kobold', 'kobold-candler', 'russet-boar', 'restless-shade', 'barrow-skeleton', 'wolf'], champions: [{ sprite: 'king-snagtooth', name: 'King Snagtooth' }, { sprite: 'the-grey-lady', name: 'The Grey Lady' }] },
-  { id: 'greyfen', region: 'greyfen', name: 'Greyfen Marsh', blurb: 'The drowned don’t stay down here.', color: '#5a7a5a', foes: ['marsh-wisp', 'drowned-villager', 'bog-ghoul', 'marsh-strider', 'bloated-drowned', 'bog-hag'], champions: [{ sprite: 'mother-mire', name: 'Mother Mire' }, { sprite: 'bog-hag', name: 'The Bog Hag' }] },
-  { id: 'saltmarsh', region: 'saltmarsh', name: 'Saltmarsh Coast', blurb: 'The tide brings them in, and keeps on bringing them.', color: '#3a8fb0', foes: ['crab', 'mirefin', 'harpy', 'smuggler', 'mirefin-oracle', 'spider'], champions: [{ sprite: 'crab', name: 'Old Snapjaw' }, { sprite: 'smuggler', name: 'The Wrecker' }] },
-  { id: 'ironpeak', region: 'ironpeak', name: 'Ironpeak', blurb: 'Thin air, and bone-steel in the mines.', color: '#7a8a9a', foes: ['frost-ram', 'griffon', 'legion-miner', 'legion-slagthrower', 'legion-bonecaller', 'bone-golem'], champions: [{ sprite: 'bone-golem', name: 'The Slag King' }, { sprite: 'griffon', name: 'The Peak Tyrant' }] },
-  { id: 'ashen-barrows', region: 'ashen-barrows', name: 'Ashen Barrows', blurb: 'Grey kings under grey hills.', color: '#6a6a7a', foes: ['corpse-candle', 'barrow-hound', 'barrow-wight', 'wight-archer', 'wight-knight', 'banshee'], champions: [{ sprite: 'the-headless-lord', name: 'The Headless Lord' }, { sprite: 'banshee', name: 'The Keening' }] },
-  { id: 'sunscorch', region: 'sunscorch', name: 'Sunscorch', blurb: 'Nothing lives out here. A lot still walks.', color: '#d8a860', foes: ['tomb-scarab', 'sand-scorpion', 'dune-raider', 'sun-mummy', 'dune-javelineer', 'bone-golem'], champions: [{ sprite: 'sand-wurm', name: 'The Sand Wurm' }, { sprite: 'khamsin', name: 'Khamsin' }] },
-  { id: 'rimeheld', region: 'rimeheld', name: 'Rimeheld', blurb: 'Keep moving. The cold is also trying to kill you.', color: '#9fd0ee', foes: ['ice-wolf', 'legion-spearman', 'rime-wraith', 'legion-huscarl', 'yeti', 'frost-giant'], champions: [{ sprite: 'frost-giant', name: 'The Frost Jarl' }, { sprite: 'yeti', name: 'Old Whiteback' }] },
-  { id: 'vinecoil', region: 'vinecoil', name: 'Vinecoil Jungle', blurb: 'Everything here bites.', color: '#3a8a4a', foes: ['blood-mosquito', 'temple-viper', 'jungle-panther', 'serpent-cultist', 'vine-strangler', 'naga-warrior'], champions: [{ sprite: 'the-coiled-queen', name: 'The Coiled Queen' }, { sprite: 'naga-warrior', name: 'The Naga Warlord' }] },
-  { id: 'emberdeep', region: 'emberdeep', name: 'Emberdeep Caldera', blurb: 'Hot enough to melt a sword. Hold anyway.', color: '#c8481e', foes: ['cinder-imp', 'magma-hound', 'legion-forgeslave', 'legion-flamecaller', 'fire-elemental', 'ash-drake'], champions: [{ sprite: 'pyrebrand', name: 'Pyrebrand' }, { sprite: 'ash-drake', name: 'The Ash Drake' }] },
-  { id: 'pale-reach', region: 'pale-reach', name: 'The Pale Reach', blurb: 'The last line. Nobody has held it long.', color: '#a8a0c8', foes: ['pale-hound', 'frost-wraith', 'hollow-legionnaire', 'soul-reaver', 'pale-knight', 'bone-drake'], champions: [{ sprite: 'bone-drake', name: 'The Bone Drake' }, { sprite: 'pale-knight', name: 'The Pale Knight' }] },
+  { id: 'whisperwood', rule: 'glade', region: 'whisperwood', name: 'Whisperwood', blurb: 'Where every watch begins.', color: '#3f8f5a', foes: ['slime', 'beetle', 'goblin', 'sprite', 'boar', 'enforcer', 'guardian'], champions: [{ sprite: 'guardian', name: 'The Gravewarden', move: 'rake' }, { sprite: 'boar', name: 'The Bone Tusk', move: 'charge' }, { sprite: 'enforcer', name: 'The Ash Captain', move: 'call' }] },
+  { id: 'thornvale', rule: 'bramble', region: 'thornvale', name: 'Thornvale', blurb: 'Bandits and wolves, and worse behind them.', color: '#a8863a', foes: ['wolf', 'cutthroat', 'bandit-archer', 'spider', 'hedge-witch', 'enforcer'], champions: [{ sprite: 'enforcer', name: 'The Gallows Boss', move: 'volley' }, { sprite: 'wolf', name: 'Old Greymane', move: 'charge' }] },
+  { id: 'brackenridge', rule: 'rockfall', region: 'brackenridge', name: 'Brackenridge', blurb: 'Kobolds in the hills, and shades under them.', color: '#c86a2a', foes: ['ridge-kobold', 'kobold-candler', 'russet-boar', 'restless-shade', 'barrow-skeleton', 'wolf'], champions: [{ sprite: 'king-snagtooth', name: 'King Snagtooth', move: 'call' }, { sprite: 'the-grey-lady', name: 'The Grey Lady', move: 'ring' }] },
+  { id: 'greyfen', rule: 'mire', region: 'greyfen', name: 'Greyfen Marsh', blurb: 'The drowned don’t stay down here.', color: '#5a7a5a', foes: ['marsh-wisp', 'drowned-villager', 'bog-ghoul', 'marsh-strider', 'bloated-drowned', 'bog-hag'], champions: [{ sprite: 'mother-mire', name: 'Mother Mire', move: 'ring' }, { sprite: 'bog-hag', name: 'The Bog Hag', move: 'volley' }] },
+  { id: 'saltmarsh', rule: 'tide', region: 'saltmarsh', name: 'Saltmarsh Coast', blurb: 'The tide brings them in, and keeps on bringing them.', color: '#3a8fb0', foes: ['crab', 'mirefin', 'harpy', 'smuggler', 'mirefin-oracle', 'spider'], champions: [{ sprite: 'crab', name: 'Old Snapjaw', move: 'rake' }, { sprite: 'smuggler', name: 'The Wrecker', move: 'volley' }] },
+  { id: 'ironpeak', rule: 'gale', region: 'ironpeak', name: 'Ironpeak', blurb: 'Thin air, and bone-steel in the mines.', color: '#7a8a9a', foes: ['frost-ram', 'griffon', 'legion-miner', 'legion-slagthrower', 'legion-bonecaller', 'bone-golem'], champions: [{ sprite: 'bone-golem', name: 'The Slag King', move: 'rake' }, { sprite: 'griffon', name: 'The Peak Tyrant', move: 'charge' }] },
+  { id: 'ashen-barrows', rule: 'graves', region: 'ashen-barrows', name: 'Ashen Barrows', blurb: 'Grey kings under grey hills.', color: '#6a6a7a', foes: ['corpse-candle', 'barrow-hound', 'barrow-wight', 'wight-archer', 'wight-knight', 'banshee'], champions: [{ sprite: 'the-headless-lord', name: 'The Headless Lord', move: 'charge' }, { sprite: 'banshee', name: 'The Keening', move: 'ring' }] },
+  { id: 'sunscorch', rule: 'storm', region: 'sunscorch', name: 'Sunscorch', blurb: 'Nothing lives out here. A lot still walks.', color: '#d8a860', foes: ['tomb-scarab', 'sand-scorpion', 'dune-raider', 'sun-mummy', 'dune-javelineer', 'bone-golem'], champions: [{ sprite: 'sand-wurm', name: 'The Sand Wurm', move: 'rake' }, { sprite: 'khamsin', name: 'Khamsin', move: 'volley' }] },
+  { id: 'rimeheld', rule: 'cold', region: 'rimeheld', name: 'Rimeheld', blurb: 'Keep moving. The cold is also trying to kill you.', color: '#9fd0ee', foes: ['ice-wolf', 'legion-spearman', 'rime-wraith', 'legion-huscarl', 'yeti', 'frost-giant'], champions: [{ sprite: 'frost-giant', name: 'The Frost Jarl', move: 'ring' }, { sprite: 'yeti', name: 'Old Whiteback', move: 'charge' }] },
+  { id: 'vinecoil', rule: 'venom', region: 'vinecoil', name: 'Vinecoil Jungle', blurb: 'Everything here bites.', color: '#3a8a4a', foes: ['blood-mosquito', 'temple-viper', 'jungle-panther', 'serpent-cultist', 'vine-strangler', 'naga-warrior'], champions: [{ sprite: 'the-coiled-queen', name: 'The Coiled Queen', move: 'volley' }, { sprite: 'naga-warrior', name: 'The Naga Warlord', move: 'rake' }] },
+  { id: 'emberdeep', rule: 'vents', region: 'emberdeep', name: 'Emberdeep Caldera', blurb: 'Hot enough to melt a sword. Hold anyway.', color: '#c8481e', foes: ['cinder-imp', 'magma-hound', 'legion-forgeslave', 'legion-flamecaller', 'fire-elemental', 'ash-drake'], champions: [{ sprite: 'pyrebrand', name: 'Pyrebrand', move: 'volley' }, { sprite: 'ash-drake', name: 'The Ash Drake', move: 'rake' }] },
+  { id: 'pale-reach', rule: 'fade', region: 'pale-reach', name: 'The Pale Reach', blurb: 'The last line. Nobody has held it long.', color: '#a8a0c8', foes: ['pale-hound', 'frost-wraith', 'hollow-legionnaire', 'soul-reaver', 'pale-knight', 'bone-drake'], champions: [{ sprite: 'bone-drake', name: 'The Bone Drake', move: 'rake' }, { sprite: 'pale-knight', name: 'The Pale Knight', move: 'charge' }] },
 ];
 
 /** The next land opens when you've held this long on the one before it. */
@@ -400,7 +433,19 @@ export const UNLOCK_HOLD = 300;
 export const mapOpen = (i: number, best: Record<string, number>): boolean => i === 0 || (best[VIGIL_MAPS[i - 1]!.id] ?? 0) >= UNLOCK_HOLD;
 
 export const mapIndex = (m: VigilMap): number => VIGIL_MAPS.indexOf(m);
-export const foesOf = (m: VigilMap): FoeDef[] => WAVES.map((w, i) => ({ ...w, sprite: m.foes[Math.min(i, m.foes.length - 1)]! }));
+export const foesOf = (m: VigilMap): FoeDef[] => WAVES.map(({ face, ...w }, i) => ({ ...w, sprite: m.foes[Math.min(face ?? i, m.foes.length - 1)]! }));
+
+const smalls = new Map<FoeDef, FoeDef>();
+/** The small one of a kind: quick, frail, and worth a single spark. */
+export function smallOf(def: FoeDef): FoeDef {
+  const of = def.base ?? def;
+  let s = smalls.get(of);
+  if (!s) {
+    s = { ...of, hp: of.hp * 0.3, dmg: of.dmg * 0.7, speed: Math.min(96, of.speed * 1.6), r: of.r * 0.62, xp: 1, ai: 'walk', base: of };
+    smalls.set(of, s);
+  }
+  return s;
+}
 /** Each land further on is a little tougher from the first wave. */
 export const landTough = (m: VigilMap): number => 1 + mapIndex(m) * 0.07;
 

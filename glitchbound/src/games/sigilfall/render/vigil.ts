@@ -1,8 +1,9 @@
 import { CLASSES } from '../data/classes';
 import type { ClassId } from '../data/types';
 import { newCharacter, type Face } from '../progress/character';
-import { FIELD_ICONS, SPELLS, type Element } from '../vigil/kit';
-import type { Fx, Hero, Obstacle, Vigil } from '../vigil/sim';
+import { FIELD_ICONS, FOE_KINDS, SPELLS, type Element } from '../vigil/kit';
+import { GALE, galeAngle, inPhase, LANE_LEN, LANE_RUN, LANE_W, LANE_WARN, LANTERN_R, RALLY_R, spotsNear, TRAIT, TRAITS, VENT_EVERY, VENT_QUIET, VENT_WARN, ventClock } from '../vigil/night';
+import type { Fx, Hero, Obstacle, Slam, Vigil } from '../vigil/sim';
 import { K, TILE, type TileMap } from '../sim/map';
 import { iconPicture } from './art/gameIcons';
 import { dangerColor, screenAngle, shortened, shot, spell, TONES, type Tone } from './effects';
@@ -24,6 +25,11 @@ const TAU = Math.PI * 2;
 const FROZEN = [0.62, 0.86, 1.25] as const;
 const CHILLED = [0.82, 0.93, 1.12] as const;
 const INK = '#1c0e08';
+/** What marks out the kinds of foe that ask for a different answer, as a wash over them. */
+const KIND_TINT: Partial<Record<string, readonly [number, number, number]>> = { split: [0.78, 1.12, 0.7], burst: [1.3, 0.78, 0.55], guard: [0.72, 0.88, 1.3], rally: [1.25, 1.1, 0.6] };
+const HEARTENED = [1.18, 1.0, 0.8] as const;
+/** What a blow on its way is: a champion's, a falling rock, fire. */
+const SLAM_TONE = ['#ff3a2a', '#e0a850', '#ff7a1e'] as const;
 
 /* ---------------------------------------------------------------- what the land keeps */
 
@@ -225,7 +231,7 @@ export class VigilPainter implements LandLayer {
         clip = 'chop';
         t = 0.14;
       } else if (f.mode === 2) clip = 'run';
-      const cold = f.frozen > 0 ? FROZEN : f.slow > 0 ? CHILLED : undefined;
+      const cold = f.frozen > 0 ? FROZEN : f.slow > 0 ? CHILLED : f.boss ? undefined : (KIND_TINT[f.def.ai] ?? (f.rally > 0 ? HEARTENED : undefined));
       cast.shadow(f.x, f.y, f.r * size + 1);
       // (turning as a body turns, and fading from one clip to the next)
       const was = this.foeTurn.get(f.id) ?? turnOf(f.face);
@@ -237,6 +243,25 @@ export class VigilPainter implements LandLayer {
     for (const p of v.pets) {
       cast.shadow(p.x, p.y, 7);
       cast.creature(p.sprite, p.x, p.y, turnOf(p.face), PERSON_H * 0.8, 'walk', p.walk, true);
+    }
+    // the Wild Run: a herd of the land's own beasts down each marked path
+    const herd = v.waves[4]?.sprite;
+    if (herd) {
+      for (const l of v.lanes) {
+        const u = (l.t - LANE_WARN) / LANE_RUN;
+        if (u < 0 || u > 1) continue;
+        const c = Math.cos(l.a);
+        const n = Math.sin(l.a);
+        for (let i = 0; i < 6; i++) {
+          const along = (u * 1.3 - 0.15 - i * 0.05) * LANE_LEN - LANE_LEN / 2;
+          if (Math.abs(along) > LANE_LEN / 2) continue;
+          const side = ((i % 3) - 1) * LANE_W * 0.6;
+          const x = l.x + c * along - n * side;
+          const y = l.y + n * along + c * side;
+          cast.shadow(x, y, 10);
+          cast.creature(herd, x, y, turnOf(l.a), heightFromRadius(9) * 1.25, 'run', time * 1.6 + i * 0.2, true);
+        }
+      }
     }
     for (const h of v.heroes) {
       if (h.id === this.meId) continue;
@@ -269,21 +294,34 @@ export class VigilPainter implements LandLayer {
       }
       this.auras(fx, cast, h, time);
     }
+    this.land(fx, time);
     // where the blows are about to land
-    for (const s of v.slams) fx.put({ kind: FX.warn, x: s.x, y: s.y, flat: true, w: s.r * 2, a: '#ff3a2a', t: s.t / s.dur, p1: WARN.circle });
+    for (const s of v.slams) this.slam(fx, s);
     for (const f of v.foes) {
       if (f.mode === 1) {
-        const u = 1 - f.modeT / 0.7;
+        const u = Math.max(0, 1 - f.modeT / (f.boss ? 0.9 : 0.7));
         const len = 150 * Math.min(1, u * 1.6);
         const a = Math.atan2(f.aimY, f.aimX);
         fx.put({ kind: FX.warn, x: f.x + (Math.cos(a) * len) / 2, y: f.y + (Math.sin(a) * len) / 2, flat: true, w: len, h: f.r * 1.6, rot: a, a: '#ff3a2a', t: 0.999, p1: WARN.line });
       }
-      if (f.elite || f.boss) fx.put({ kind: FX.mark, x: f.x, y: f.y, flat: true, w: (f.r + (f.boss ? 9 : 5)) * 2, a: f.boss ? '#ff5a4a' : '#ffb02e', alpha: 0.75 + Math.sin(time * 6) * 0.2 });
+      if (f.elite || f.boss) fx.put({ kind: FX.mark, x: f.x, y: f.y, flat: true, w: (f.r + (f.boss ? 9 : 5)) * 2, a: f.boss ? '#ff5a4a' : (TRAITS[f.trait]?.color ?? '#ffb02e'), alpha: 0.75 + Math.sin(time * 6) * 0.2 });
+      // the Spark Thief: a column of gold over it, so it can be found in a crowd
+      if (f.trait === TRAIT.thief) fx.put({ kind: FX.shaft, x: f.x, y: f.y, base: true, w: 16, h: 60, a: '#ffd257', alpha: 0.8, seed: f.id });
+      if (!f.boss) {
+        const ai = f.def.ai;
+        // a Wallbearer's guard: an arc before it, gone while it is stopped
+        if (ai === 'guard' && f.frozen <= 0 && f.stun <= 0) fx.put({ kind: FX.slash, x: f.x + Math.cos(f.face) * 4, y: f.y + Math.sin(f.face) * 4, up: 7, flat: true, w: ((f.r + 8) * 2) / 0.82, rot: f.face, a: FOE_KINDS.guard!.color, t: 0.45, p1: 1.7, p2: 1, alpha: 0.85 });
+        // a Hostcaller's voice: how far it carries
+        else if (ai === 'rally') fx.put({ kind: FX.mark, x: f.x, y: f.y, flat: true, w: RALLY_R * 2, a: FOE_KINDS.rally!.color, alpha: 0.28 + Math.sin(time * 4 + f.id) * 0.1 });
+        // a Cinderbloat glows hotter and hotter
+        else if (ai === 'burst') fx.put({ kind: FX.glow, x: f.x, y: f.y, up: 8, w: f.r * 5, a: FOE_KINDS.burst!.color, alpha: 0.55 + Math.sin(time * 10 + f.id) * 0.3 });
+      }
       if (f.frozen > 0) fx.put({ kind: FX.field, x: f.x, y: f.y, flat: true, w: (f.r + 5) * 2, a: '#7fd4ff', b: '#ffffff', t: 1, seed: f.id * 0.3, p1: FIELD.frost });
     }
     for (const s of v.sparks) {
       const tier = SPARK_TIERS.find(([min]) => s.xp >= min)!;
-      fx.put({ kind: FX.spark, x: s.x, y: s.y, up: 6 + Math.sin(time * 5 + s.x) * 1.2, w: tier[2] * 3.2, a: tier[1], t: 0.1 });
+      // (one that is fading under the Hollow Light flickers before it goes)
+      fx.put({ kind: FX.spark, x: s.x, y: s.y, up: 6 + Math.sin(time * 5 + s.x) * 1.2, w: tier[2] * 3.2, a: tier[1], t: 0.1, alpha: (s.age ?? 0) > 6 ? 0.45 + Math.sin(time * 16 + s.x) * 0.35 : 1 });
     }
     for (const p of v.pickups) {
       const r = p.kind === 'chest' ? 9 : 6.5;
@@ -322,6 +360,80 @@ export class VigilPainter implements LandLayer {
       fx.put({ kind: FX.spark, x: b.x, y: b.y, up: 9, w: b.s * 5, a: b.c, t: b.t / b.dur });
     }
     for (let i = this.bits.length - 1; i >= 0; i--) if (this.bits[i]!.t >= this.bits[i]!.dur) this.bits.splice(i, 1);
+  }
+
+  /** A blow on its way: a ring, a ring that is safe close in, or a line. */
+  private slam(fx: Fx3D, s: Slam): void {
+    const t = Math.max(0, Math.min(0.999, s.t / s.dur));
+    const a = SLAM_TONE[s.tone ?? 0];
+    if (s.len) {
+      const rot = s.a ?? 0;
+      fx.put({ kind: FX.warn, x: s.x + (Math.cos(rot) * s.len) / 2, y: s.y + (Math.sin(rot) * s.len) / 2, flat: true, w: s.len, h: (s.w ?? 12) * 2, rot, a, t, p1: WARN.line });
+    } else if (s.inner) fx.put({ kind: FX.warn, x: s.x, y: s.y, flat: true, w: s.r * 2, a, t, p1: WARN.donut, p2: s.inner / s.r });
+    else fx.put({ kind: FX.warn, x: s.x, y: s.y, flat: true, w: s.r * 2, a, t, p1: WARN.circle });
+  }
+
+  /** What the land's rule and the night's event put on the ground. */
+  private land(fx: Fx3D, time: number): void {
+    const v = this.v;
+    const me = v.heroOf(this.meId) ?? v.me;
+    for (const z of v.zones) {
+      const seed = (z.x * 0.13 + z.y * 0.07) % 11;
+      if (z.t < 0) {
+        // a bramble about to sprout: where it will be
+        fx.put({ kind: FX.warn, x: z.x, y: z.y, flat: true, w: z.r * 2, a: '#5a9a3a', t: Math.max(0, 1 + z.t / 1.4), p1: WARN.circle });
+        continue;
+      }
+      const alpha = Math.min(1, (z.dur - z.t) / 1.2, z.t / 0.4 + 0.2);
+      if (z.kind === 'glade') {
+        fx.put({ kind: FX.field, x: z.x, y: z.y, flat: true, w: z.r * 2, a: '#8fe86a', b: '#fff2a0', t: 1, seed, p1: FIELD.holy, alpha });
+        fx.put({ kind: FX.rune, x: z.x, y: z.y, flat: true, w: z.r * 2.05, a: '#c8ff9a', b: '#ffffff', t: 0.5, seed, alpha: alpha * 0.8 });
+        fx.put({ kind: FX.shaft, x: z.x, y: z.y, base: true, w: z.r * 1.3, h: 120, a: '#d8ffb0', alpha: alpha * 0.45, seed });
+        fx.put({ kind: FX.rain, x: z.x, y: z.y, base: true, w: z.r * 1.8, h: 44, a: '#d8ffb0', t: -1, seed, alpha });
+      } else {
+        fx.put({ kind: FX.field, x: z.x, y: z.y, flat: true, w: z.r * 2, a: '#2e5a1e', b: '#7a9a3a', t: 1, seed, p1: FIELD.nature, alpha });
+        fx.put({ kind: FX.mark, x: z.x, y: z.y, flat: true, w: z.r * 2, a: '#b0481e', alpha: alpha * 0.7 });
+      }
+    }
+    if (v.rules.includes('mire')) {
+      for (const s of spotsNear(v.seed, 'mire', me.x, me.y, 420)) {
+        fx.put({ kind: FX.field, x: s.x, y: s.y, flat: true, w: s.r * 2, a: '#2a4a3a', b: '#6a8a5a', t: 1, seed: s.off, p1: FIELD.water, alpha: 0.9 });
+        fx.put({ kind: FX.mark, x: s.x, y: s.y, flat: true, w: s.r * 2, a: '#8ab07a', alpha: 0.45 });
+      }
+    }
+    if (v.rules.includes('vents')) {
+      for (const s of spotsNear(v.seed, 'vents', me.x, me.y, 420)) {
+        const clock = ventClock(s, v.t);
+        const warn = v.t > VENT_QUIET - VENT_WARN ? (clock - (VENT_EVERY - VENT_WARN)) / VENT_WARN : -1;
+        fx.put({ kind: FX.mark, x: s.x, y: s.y, flat: true, w: s.r * 2, a: '#ff7a1e', alpha: 0.5 });
+        fx.put({ kind: FX.field, x: s.x, y: s.y, flat: true, w: s.r * 1.1, a: '#5a1e0a', b: '#ff9a3d', t: 1, seed: s.off, p1: FIELD.fire, alpha: 0.75 });
+        fx.put({ kind: FX.smoke, x: s.x, y: s.y, up: 10 + ((time * 14 + s.off * 9) % 26), w: 16, a: '#6a5a50', alpha: 0.35, t: ((time * 0.5 + s.off) % 1), seed: s.off });
+        if (warn > 0) fx.put({ kind: FX.warn, x: s.x, y: s.y, flat: true, w: s.r * 2, a: SLAM_TONE[2], t: Math.min(0.999, warn), p1: WARN.circle });
+      }
+    }
+    for (const l of v.lanes) {
+      if (l.t < 0) continue;
+      fx.put({ kind: FX.warn, x: l.x, y: l.y, flat: true, w: LANE_LEN, h: LANE_W * 2, rot: l.a, a: SLAM_TONE[1], t: Math.min(0.999, l.t / LANE_WARN), p1: WARN.line });
+    }
+    const e = v.event;
+    if (e?.kind === 'lantern') {
+      const seed = (e.x * 0.11) % 7;
+      fx.put({ kind: FX.rune, x: e.x, y: e.y, flat: true, w: LANTERN_R * 2.05, a: '#ffe39a', b: '#ffffff', t: 0.5, seed });
+      fx.put({ kind: FX.mark, x: e.x, y: e.y, flat: true, w: LANTERN_R * 2, a: '#ffd257', alpha: 0.7 + Math.sin(time * 5) * 0.2 });
+      // the light fills as it is held
+      if (e.prog > 0) fx.put({ kind: FX.field, x: e.x, y: e.y, flat: true, w: LANTERN_R * 2 * Math.sqrt(e.prog), a: '#ffd84d', b: '#fff2a0', t: 1, seed, p1: FIELD.holy, alpha: 0.8 });
+      fx.put({ kind: FX.shaft, x: e.x, y: e.y, base: true, w: 12 + e.prog * 22, h: 150, a: '#ffe39a', alpha: 0.6 + e.prog * 0.4, seed });
+      fx.put({ kind: FX.flame, x: e.x, y: e.y, base: true, w: 14, h: 22, a: '#ffb02e', b: '#fff2a0', seed });
+    }
+    // the gale: streaks of it going by, the way it blows
+    if (v.rules.includes('gale') && inPhase(v.t, GALE)) {
+      const a = galeAngle(v.seed, v.t);
+      for (let i = 0; i < 9; i++) {
+        const along = ((time * 260 + i * 83) % 420) - 210;
+        const side = spot(i, 3.1) * 440 - 220;
+        fx.put({ kind: FX.trail, x: me.x + Math.cos(a) * along - Math.sin(a) * side, y: me.y + Math.sin(a) * along + Math.cos(a) * side, up: 12, flat: true, w: 70, h: 7, rot: a, a: '#e8f2ff', b: '#ffffff', seed: i, alpha: 0.4 });
+      }
+    }
   }
 
   private field(fx: Fx3D, cast: Cast, f: Vigil['fields'][number]): void {
@@ -507,6 +619,17 @@ export class VigilPainter implements LandLayer {
       case 'bomb':
         spell(fx, 'blast', tone, f.x, f.y, u, r, seed);
         break;
+      case 'grave':
+        // something is getting up here
+        fx.put({ kind: FX.mark, x: f.x, y: f.y, flat: true, w: r * 2 * (0.5 + u * 0.5), a: f.color, alpha: 0.5 + u * 0.5 });
+        fx.put({ kind: FX.smoke, x: f.x, y: f.y, up: 4 + u * 14, w: r * 1.6, a: '#8a80a8', alpha: 0.5, t: u, seed });
+        break;
+      case 'rake': {
+        const a = f.a ?? 0;
+        const len = f.len ?? 200;
+        fx.put({ kind: FX.beam, x: f.x + (Math.cos(a) * len) / 2, y: f.y + (Math.sin(a) * len) / 2, up: 8, flat: true, w: len, h: (f.w ?? 12) * 2.6 * (1 - u * 0.6), rot: a, a: '#b81c28', b: '#ff9a8a', seed, alpha: 1 - u });
+        break;
+      }
     }
   }
 
@@ -555,6 +678,13 @@ export class VigilPainter implements LandLayer {
     }
     g.globalAlpha = 1;
     this.drawPeople(g, view);
+    // the lantern or the thief, when it is out of sight: an arrow at the edge of the view
+    const e = v.event;
+    if (e && (e.kind === 'lantern' || e.kind === 'thief')) {
+      const k = g.getTransform();
+      this.edgeArrow(g, view.project(e.x, e.y, 10), '#ffd257');
+      g.setTransform(k);
+    }
     // numbers: the game's only smooth letters, so they can be read at a glance
     g.textAlign = 'center';
     g.lineJoin = 'round';
@@ -603,30 +733,33 @@ export class VigilPainter implements LandLayer {
       if (mine) continue;
       view.label(h.name, head.x, head.y - 12, 11, color);
       // out of sight: an arrow at the edge of the view
-      const m = 22;
-      const W = (view.w / view.h) * 1000;
-      void W;
-      const host = g.canvas;
-      const sw = host.clientWidth || 1;
-      const sh = host.clientHeight || 1;
-      if (head.x > m && head.x < sw - m && head.y > m && head.y < sh - m) continue;
-      const a = Math.atan2(head.y - sh / 2, head.x - sw / 2);
-      const t = Math.min((sw / 2 - m) / Math.max(0.001, Math.abs(Math.cos(a))), (sh / 2 - m) / Math.max(0.001, Math.abs(Math.sin(a))));
-      const k = g.canvas.width / sw;
-      g.setTransform(k, 0, 0, k, 0, 0);
-      g.translate(sw / 2 + Math.cos(a) * t, sh / 2 + Math.sin(a) * t);
-      g.rotate(a);
-      g.beginPath();
-      g.moveTo(12, 0);
-      g.lineTo(-8, -9);
-      g.lineTo(-8, 9);
-      g.closePath();
-      g.fillStyle = h.down ? '#ff4f6a' : color;
-      g.fill();
-      g.lineWidth = 2;
-      g.strokeStyle = INK;
-      g.stroke();
+      this.edgeArrow(g, head, h.down ? '#ff4f6a' : color);
     }
+  }
+
+  /** An arrow at the edge of the view toward something out of sight (nothing, when it is in sight). Leaves the canvas in screen points. */
+  private edgeArrow(g: CanvasRenderingContext2D, at: { x: number; y: number }, color: string): void {
+    const m = 22;
+    const host = g.canvas;
+    const sw = host.clientWidth || 1;
+    const sh = host.clientHeight || 1;
+    if (at.x > m && at.x < sw - m && at.y > m && at.y < sh - m) return;
+    const a = Math.atan2(at.y - sh / 2, at.x - sw / 2);
+    const t = Math.min((sw / 2 - m) / Math.max(0.001, Math.abs(Math.cos(a))), (sh / 2 - m) / Math.max(0.001, Math.abs(Math.sin(a))));
+    const k = g.canvas.width / sw;
+    g.setTransform(k, 0, 0, k, 0, 0);
+    g.translate(sw / 2 + Math.cos(a) * t, sh / 2 + Math.sin(a) * t);
+    g.rotate(a);
+    g.beginPath();
+    g.moveTo(12, 0);
+    g.lineTo(-8, -9);
+    g.lineTo(-8, 9);
+    g.closePath();
+    g.fillStyle = color;
+    g.fill();
+    g.lineWidth = 2;
+    g.strokeStyle = INK;
+    g.stroke();
   }
 }
 

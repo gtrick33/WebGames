@@ -3,6 +3,31 @@
 First pass 2026-10-27, fixes the same day. A working record of licenses, names and borrowed material, for the
 owner (and a lawyer, if one is asked). It is **not legal advice** and not a trademark clearance.
 
+## The Vigil's return (2026-11-25)
+
+The owner asked for the Vigil to be "as fun as vampire survivors" and less repetitive. What is taken from that genre
+is **rules only**, and rules many games share: things that interrupt the waves on a timer (a marked elite pack that
+drops a chest, a herd crossing along a warned line, an encirclement, a place to stand in for a reward, a fleeing
+treasure carrier, a spell of double spawns and double experience), foes that split, burst, guard their front or
+strengthen their neighbors, a rule per map, a currency earned each run and spent on small permanent upgrades, and a
+weekly seeded run. No other game's names, art, characters, stage layouts, item or upgrade lists, card text or numbers
+are used: every name and every line of text below was written for Sigilfall, and the pictures are the game's own
+models and the effects it already had (the bought Magic Spells VFX pack through the 3D effects layer; no new pack, no
+new icon, no new sound).
+
+- **Events** (`vigil/night.ts`): Ashsworn Pack (with the traits Swift, Stoneskin, Venomous), The Wild Run, The Closing
+  Ring, Night Swarm, Dawn Lantern, Spark Thief, The Ember Hour.
+- **Kinds of foe** (`vigil/kit.ts`): Twinhusks, Cinderbloats, Wallbearers, Hostcallers. They wear the faces the lands
+  already had.
+- **Land rules**: Whispering Glade, Creeping Bramble, Loose Stone, Sucking Mire, The Tide, Mountain Gale, Restless
+  Graves, Scouring Wind, Biting Cold, Jungle Venom, Fire Vents, Hollow Light.
+- **What lasts**: motes, the Watchfire, the boons Hearthblood, Whetted Edge, Sure Stride, Sparkcall and Second
+  Thoughts, wild spells (seven of the game's own spells, one from each free class; none from the Gloamknight, which is
+  sold), the week's watch and its omen.
+
+These are ordinary words and compounds; none was searched against trademark registers. A web search before release is
+still worth doing, as for the other names in this file.
+
 ## Act I's keepsakes and the bosses' new moves (2026-11-25)
 
 Three keepsakes written for Act I's side stories (NINE_PLAN.md, piece 4): **A Bone Whistle on a Red Cord**,

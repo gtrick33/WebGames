@@ -18,6 +18,9 @@ import { newCharacter, type Face } from '../progress/character';
 import { iconPicture, iconsReady } from '../render/art/gameIcons';
 import { heldWeapon, heroDollUrl, heroLook, portraitUrl } from '../render/sprites';
 import { readBests, readClassBests, readCodex } from '../vigil/bests';
+import { RULES, weekEnds, weeklyOf, weekOf, WEEKLY_BOUNTY, WEEKLY_HOLD, type Weekly } from '../vigil/night';
+import { readReturns } from '../vigil/returns';
+import { Watchfire } from './VigilWatchfire';
 import { EVOLVE_AT } from '../vigil/sim';
 import { CLASS_BODY, mapOpen, partyScale, spellsOf, STRENGTHS, UNLOCK_HOLD, VIGIL_MAPS, type VigilMap } from '../vigil/kit';
 import { ScreenGate } from './ScreenGate';
@@ -196,13 +199,24 @@ function PartyPanel({ room, pick, body, face, land, lands, onLand }: { room: Vig
 }
 
 /** Choosing who keeps the watch, and where: alone, or with friends. */
-export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin }: { engine?: SigilEngine; face?: Face; body?: 'm' | 'f'; cls: ClassId; map?: VigilMap; room: VigilRoomControls; onBack: () => void; onBegin: (cls: ClassId, map: VigilMap) => void }) {
+export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin }: { engine?: SigilEngine; face?: Face; body?: 'm' | 'f'; cls: ClassId; map?: VigilMap; room: VigilRoomControls; onBack: () => void; onBegin: (cls: ClassId, map: VigilMap, weekly?: Weekly) => void }) {
   const { me } = useAccount();
   // a class from the shop can be played here once it's bought (progress/paidClasses.ts)
   const [pick, setPick] = useState<ClassId>(classOpen(cls, me) ? cls : 'warrior');
   const bests = useMemo(() => readBests(), []);
   const classBests = useMemo(() => readClassBests(), []);
   const codex = useMemo(() => readCodex(), []);
+  // what has been earned across nights (vigil/returns.ts), and the week's watch: one night for everyone
+  const [ret, setRet] = useState(() => readReturns());
+  const [fire, setFire] = useState(false);
+  const [weekOn, setWeekOn] = useState(false);
+  // (the clock is read once, as the lobby opens)
+  const [{ weekly, daysLeft }] = useState(() => {
+    const now = Date.now();
+    const w = weeklyOf(weekOf(now));
+    return { weekly: w, daysLeft: Math.max(1, Math.ceil((weekEnds(w.week) - now) / 86_400_000)) };
+  });
+  const weekBest = ret.weekly[weekly.week];
   const [land, setLand] = useState<VigilMap>(() => {
     if (map) return map;
     // the furthest land open
@@ -244,7 +258,8 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
   const inRoom = room.view;
   const hosting = !!inRoom && inRoom.host === inRoom.you;
   const hostName = inRoom?.seats.find((s) => s.n === inRoom.host)?.name ?? 'the host';
-  const shownLand = inRoom ? (VIGIL_MAPS.find((m) => m.id === inRoom.map) ?? land) : land;
+  const weekPicked = weekOn && !friends;
+  const shownLand = inRoom ? (VIGIL_MAPS.find((m) => m.id === inRoom.map) ?? land) : weekPicked ? weekly.map : land;
   const closeFriends = (): void => {
     if (inRoom) room.leave();
     setFriends(false);
@@ -265,6 +280,9 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
               {inRoom ? 'Leave party' : 'Back to the lands'}
             </button>
           )}
+          <button className="rb-btn is-small rb-vlobby-fire" onClick={() => setFire(true)} aria-label={`The Watchfire: ${ret.motes} motes`}>
+            <b>{ret.motes}</b> motes · Watchfire
+          </button>
           <GameMenuButton className="rb-iconbtn" />
         </header>
 
@@ -342,17 +360,52 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
         {friends ? (
           <PartyPanel room={room} pick={pick} body={body} face={face} land={land} lands={openLands} onLand={setLand} />
         ) : (
-          <section className="rb-vlobby-lands" aria-label="Land">
+          <section className="rb-vlobby-lands is-ruled" aria-label="Land">
+            <button className={`rb-vlobby-land is-week${weekPicked ? ' is-on' : ''}`} style={{ ['--c' as string]: weekly.map.color }} onClick={() => setWeekOn(true)}>
+              <img src={championUrl(weekly.map.champions[0]!.sprite)} alt="" draggable={false} />
+              <span className="rb-vlobby-land-text">
+                <strong>The week’s watch · {weekly.map.name}</strong>
+                <small>
+                  The same night for everyone, {daysLeft === 1 ? 'until tomorrow' : `for ${daysLeft} more days`}. {RULES[weekly.map.rule].name}, under an omen: {RULES[weekly.omen].name}.
+                </small>
+                {weekPicked && (
+                  <small className="rb-vlobby-rule-text">
+                    {RULES[weekly.map.rule].text} {RULES[weekly.omen].text}
+                    {weekBest?.paid ? '' : ` Hold ${clock(WEEKLY_HOLD)} for ${WEEKLY_BOUNTY} motes.`}
+                  </small>
+                )}
+              </span>
+              {weekBest && weekBest.best > 0 && (
+                <b className="rb-vlobby-best" title={`Your best this week: ${clock(weekBest.best)}`}>
+                  {clock(weekBest.best)}
+                  <small>this week</small>
+                </b>
+              )}
+            </button>
             {VIGIL_MAPS.map((m, i) => {
               const open = mapOpen(i, bests);
               const best = bests[m.id] ?? 0;
+              const on = m === land && !weekPicked;
               return (
-                <button key={m.id} className={`rb-vlobby-land${m === land ? ' is-on' : ''}${open ? '' : ' is-locked'}`} style={{ ['--c' as string]: m.color }} disabled={!open} onClick={() => setLand(m)}>
+                <button
+                  key={m.id}
+                  className={`rb-vlobby-land${on ? ' is-on' : ''}${open ? '' : ' is-locked'}`}
+                  style={{ ['--c' as string]: m.color }}
+                  disabled={!open}
+                  onClick={() => {
+                    setLand(m);
+                    setWeekOn(false);
+                  }}
+                >
                   <img src={championUrl(m.champions[0]!.sprite)} alt="" draggable={false} />
                   <span className="rb-vlobby-land-text">
                     <strong>{m.name}</strong>
                     {open ? (
-                      <small>{m.blurb}</small>
+                      <>
+                        <small className="rb-vlobby-blurb">{m.blurb}</small>
+                        <em className="rb-vlobby-rule">{RULES[m.rule].name}</em>
+                        {on && <small className="rb-vlobby-rule-text">{RULES[m.rule].text}</small>}
+                      </>
                     ) : (
                       <small>
                         Hold {clock(UNLOCK_HOLD)} in {VIGIL_MAPS[i - 1]!.name} to open
@@ -381,8 +434,8 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
         <footer className="rb-vlobby-foot">
           {!friends && (
             <>
-              <button className="rb-btn is-gold is-big" onClick={() => onBegin(pick, land)} autoFocus>
-                Keep the watch in {land.name}
+              <button className="rb-btn is-gold is-big" onClick={() => (weekPicked ? onBegin(pick, weekly.map, weekly) : onBegin(pick, land))} autoFocus>
+                {weekPicked ? `Keep the week’s watch in ${weekly.map.name}` : `Keep the watch in ${land.name}`}
               </button>
               <button className="rb-btn is-big" onClick={() => setFriends(true)}>
                 With friends
@@ -396,6 +449,7 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
           )}
           {friends && inRoom && !hosting && <p className="rb-vparty-waiting">Waiting for {hostName} to begin the night…</p>}
         </footer>
+        {fire && <Watchfire cls={pick} ret={ret} onChange={setRet} onClose={() => setFire(false)} />}
         {looksOpen && engine && (
           <LooksDialog
             engine={engine}
