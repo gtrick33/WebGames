@@ -5,6 +5,12 @@ import { visitorKey } from '../../server/visitor';
 
 const NAMES = new Set(['page_view', 'game_view', 'game_start', 'game_end', 'replay_click', 'game_close', 'share_click', 'daily_complete', 'search', 'category_select', 'mood_select', 'surprise_me', 'game_error', 'favorite', 'sign_in', 'subscribe', 'feedback_prompt', 'feedback_sent', 'bug_report', 'daily_share', 'room_open', 'room_join', 'room_match', 'web_vitals', 'game_fall', 'game_stop']);
 
+/**
+ * A game's playtest numbers say where, never who: a signed-in member's id is left off them (docs/ANALYTICS.md). The
+ * visitor key, which changes every day, still counts how many players a number is about.
+ */
+const NOBODYS = new Set(['game_fall', 'game_stop']);
+
 /** POST /api/events { events: [{ name, props }] }: first-party, cookieless product analytics. */
 export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   if (!sameOrigin(request)) return json({ ok: false }, 403);
@@ -32,7 +38,7 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
     }
     const game = typeof props.game === 'string' && getGame(props.game) ? props.game : '';
     stmts.push(
-      env.DB.prepare('INSERT INTO events (ts, day, name, game, visitor, user_id, props) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(now, day, e.name, game, visitor, user?.id ?? null, JSON.stringify(props)),
+      env.DB.prepare('INSERT INTO events (ts, day, name, game, visitor, user_id, props) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(now, day, e.name, game, visitor, NOBODYS.has(e.name) ? null : (user?.id ?? null), JSON.stringify(props)),
     );
   }
   // Keep 180 days of events (cheap housekeeping on ~1% of requests).

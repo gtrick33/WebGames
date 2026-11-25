@@ -2269,6 +2269,7 @@ const es: string[] = [
   '¡Ninguna ayuda aparte de las pistas! {name} está adivinando.',
   'en línea ahora',
   'en {game}',
+  'Adjuntaremos dónde estabas en el juego:',
 ];
 
 export default es;

@@ -2269,6 +2269,7 @@ const ro: string[] = [
   'Niciun ajutor în afară de indicii! {name} ghicește.',
   'online acum',
   'în {game}',
+  'Vom atașa unde erai în joc:',
 ];
 
 export default ro;

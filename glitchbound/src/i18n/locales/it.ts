@@ -2269,6 +2269,7 @@ const it: string[] = [
   'Nessun aiuto oltre agli indizi! {name} sta indovinando.',
   'online adesso',
   'in {game}',
+  'Allegheremo dove ti trovavi nel gioco:',
 ];
 
 export default it;

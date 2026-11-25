@@ -41,7 +41,7 @@ requests open.**
 | 6 | One standard, act by act | `claude/sf9-standard-act1` … `-act6` | | not started | 2, 4 (the same act's) |
 | 7 | Phone and network readiness | `claude/sf9-phone` | | not started | 1 |
 | 8 | The rough edges | `claude/sf9-rough-edges` | | not started | 1 |
-| 9 | Ready for players | `claude/sf9-playtest` | | not started | 1 |
+| 9 | Ready for players | `claude/sf9-playtest` | #360 | open | 1 |
 | 10 | The release bar | `claude/sf9-release` | | not started | all of them, merged |
 | 11 | What would make it more fun (added by the owner: see its own section) | 11a and 11e in pieces 8 and 9; `claude/sf9-open-world`, `-vigil-return`, `-fewer-legends` | | not started | the playtest (11b); the owner's go-ahead (11c, 11d) |
 
@@ -407,6 +407,27 @@ Playtest numbers checked end to end (`progress/telemetry.ts`, `docs/ANALYTICS.md
 land, nothing personal. "Report a bug" carries the build, land, quest, level and class, never the player's name or
 save. `PLAYTEST_GUIDE.md`: what testers should play and how to report, what the owner should watch for, where to read
 the numbers.
+
+**Done in #360 (2026-11-24).** What following the numbers end to end found, and what was done about each:
+
+- **A phone's player was not counted as a stop.** A stop was sent when the page was left; a phone's browser is swiped
+  away and its page only hidden. And an event sent as the page hid waited four seconds in the arcade's queue, which
+  a hidden page may never get. Now a stop is sent when the page hides (and again if they come back and leave again:
+  the queries read each player's last of the day), and the sender delivers at once when the page is already hidden.
+- **A member's account id was stored on falls and stops**, against "nothing that says who". The endpoint leaves it
+  off these two events; the daily visitor key still counts players.
+- **Nothing said which mode.** Falls and stops now carry `mode` (`story`, `rift` and its stone), and the Ring and the
+  Vigil, which draw themselves and sent nothing, send a stop with the minutes spent in them (11e: whether testers
+  find the Ring can now be read).
+- **A bug report said only which game.** The game leaves one line (build, mode, land, quest, level, class) and the
+  site's Report a bug page shows it to the player and sends it. Never the hero's name or the save.
+- These touch shared code with the owner's go-ahead (2026-11-24): `functions/api/events.ts`,
+  `src/platform/analytics.ts`, `src/pages/BugReportPage.tsx`, the new `src/platform/bugContext.ts`, and one new
+  translated line in the twelve languages.
+- `PLAYTEST_GUIDE.md` has the testers' half (what to play: the Prologue, then the Ring, then on; how to report; eight
+  questions, the first of them 11a's on how fighting feels) and the owner's half (what to watch, the two numbers of
+  the basic attack's pace, where to read everything, what the numbers can't say).
+- 11e, the title: "The Ring" is one of the four banners on the title screen, beside "New hero". Left as it is.
 
 ### 10. The release bar (`claude/sf9-release`)
 

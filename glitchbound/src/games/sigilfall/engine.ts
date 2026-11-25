@@ -64,7 +64,8 @@ import { wornLooks } from './progress/wardrobe';
 import { giveTips, tipDue, tipShown, tipSteps, type TipId, type TipStep } from './progress/tips';
 import { SPEC_LEVEL } from './data/talents';
 import { track } from '../../platform/analytics';
-import { counted, fallProps, stopProps } from './progress/telemetry';
+import { setBugContext } from '../../platform/bugContext';
+import { bugLine, counted, fallProps, stopProps } from './progress/telemetry';
 
 /**
  * The game around the simulation: heroes and the save, travelling between regions, expeditions
@@ -545,11 +546,14 @@ export class SigilEngine {
   private onVisibility = (): void => {
     this.hidden = document.hidden;
     if (document.hidden) {
+      this.reportStop();
       this.persist();
       this.kbm?.release();
       this.touch.release();
       if (this.ui.screen === 'game' && !this.isPaused()) this.setUi({ pause: true });
     }
+    // back again: the next time they go is a stop of its own
+    else this.stopSent = false;
     this.sound.suspend(document.hidden || this.ui.pause);
   };
 
@@ -557,11 +561,30 @@ export class SigilEngine {
   private sittingFrom = performance.now();
   private stopSent = false;
 
-  /** Where a player stopped playing, sent once a sitting (the page left, or the game closed). */
+  /**
+   * Where a player stopped playing: sent when the page is hidden or left, or the game closed. A phone's player who
+   * swipes the browser away never leaves the page, they only hide it, so that counts; one who comes back and plays on
+   * stops again later, and the later stop is the one to read (docs/ANALYTICS.md: each player's last of the day).
+   */
   private reportStop(): void {
+    this.leaveBugLine();
     if (this.stopSent || !counted(this.hero, !!this.trial) || this.ui.screen !== 'game') return;
     this.stopSent = true;
-    track('game_stop', stopProps(this.hero, this.world?.region.id ?? null, (performance.now() - this.sittingFrom) / 60_000));
+    track('game_stop', stopProps(this.hero, this.world?.region.id ?? null, (performance.now() - this.sittingFrom) / 60_000, this.world?.keyRun?.key ?? 0));
+  }
+
+  /** Where the player is, left for a bug report they may go and write (progress/telemetry.ts bugLine): no name, no save. */
+  private leaveBugLine(): void {
+    const playing = this.ui.screen === 'game';
+    const key = playing ? (this.world?.keyRun?.key ?? 0) : 0;
+    setBugContext('sigilfall', bugLine(__BUILD__.sha, playing ? this.hero : null, playing ? (this.world?.region.id ?? null) : null, key, this.playing ?? (key ? 'rift' : 'story')));
+  }
+
+  /** A mode that draws itself is up (ui/playedMode.ts): a bug report written from it says which. */
+  playing: 'ring' | 'vigil' | null = null;
+
+  setPlaying(mode: 'ring' | 'vigil' | null): void {
+    this.playing = mode;
   }
 
   private onPageHide = (): void => {
@@ -902,7 +925,7 @@ export class SigilEngine {
           // where heroes fall, counted without anything personal (progress/telemetry.ts; POLISH_PLAN.md piece 28)
           if (counted(this.hero, !!this.trial)) {
             const b = w.boss();
-            track('game_fall', fallProps(this.hero, w.region.id, b && !b.dead ? b.def.id : null));
+            track('game_fall', fallProps(this.hero, w.region.id, b && !b.dead ? b.def.id : null, w.keyRun?.key ?? 0));
           }
           this.endBossBar();
           break;
@@ -1129,6 +1152,7 @@ export class SigilEngine {
   }
 
   persist(): void {
+    this.leaveBugLine();
     if (!this.canSave) return;
     // what any hero's runs have opened, dungeon by dungeon, is its calling's on this account (progress/trial.ts stoneIn)
     if (this.hero && Object.keys(this.hero.stones).length) {

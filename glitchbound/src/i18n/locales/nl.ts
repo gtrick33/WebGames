@@ -2269,6 +2269,7 @@ const nl: string[] = [
   'Geen tips behalve de hints! {name} raadt.',
   'nu online',
   'in {game}',
+  'We voegen toe waar je in het spel was:',
 ];
 
 export default nl;
