@@ -84,6 +84,11 @@ on-hit healing is limited to 10 % of health per second, and split or chained hit
 nothing loops. Every modifier has a sentence (`describe.ts`) shown on the item, in the comparison and under the
 skill it changes ("Fireball splits into 3 smaller projectiles (40 % damage each) where it lands.").
 
+The first boss most heroes meet, the Coffin Matron, gives every hero her keepsake the first time she falls
+(`FIRST_KEEPSAKE` in `data/items.ts`, the Sexton's Handbell): the first piece that changes a skill. It is one piece
+for every class and changes the basic attack, which no specialization drops. Picking it up brings a page that shows
+the piece, its gold line and the hero's own basic attack, once (`ui/StoryPages.tsx` GearView).
+
 Items: 31 hand-made ones (uncommon to legendary, most of them changing a skill) and generated gear (common to
 rare: rolled stats, and rare pieces roll a small skill modifier). Epic and legendary drops are always hand-made.
 

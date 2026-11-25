@@ -3,6 +3,13 @@
 First pass 2026-10-27, fixes the same day. A working record of licenses, names and borrowed material, for the
 owner (and a lawyer, if one is asked). It is **not legal advice** and not a trademark clearance.
 
+## The Coffin Matron's keepsake (2026-11-24)
+
+One hand-made epic, the **Sexton's Handbell**, given to every hero the first time the first boss falls (NINE_PLAN.md,
+piece 3). Its name, its one-line story and what it does (the basic attack leaps to a second enemy) were written for this
+game from the Matron's own story; they are plain words of burial, not another game's item. Not searched on the web:
+worth doing with the other item names before release.
+
 ## Bosses of their own (2026-11-24)
 
 The pass to 9/10 (NINE_PLAN.md, piece 2) gives each boss a figure of its own in place of a soldier's model scaled up.

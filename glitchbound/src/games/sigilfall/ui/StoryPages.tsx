@@ -1,11 +1,16 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { ordinalOfSeven, SIGIL_LORE, SIGIL_ORDER, TALES } from '../data/chronicle';
+import { CLASSES } from '../data/classes';
 import { QUEST_DEFS } from '../data/quests';
-import type { Keepsake, SigilId } from '../data/types';
+import { SKILLS } from '../data/skills';
+import type { Item, Keepsake, SigilId } from '../data/types';
 import type { SigilEngine, StoryPage } from '../engine';
-import { currentObjective, SIGIL_BONUS, sigilCount, trackedQuest, type Character } from '../progress/character';
+import { allItems, currentObjective, SIGIL_BONUS, sigilCount, trackedQuest, type Character } from '../progress/character';
+import { modLines } from '../progress/describe';
 import { isMainQuest } from '../progress/handin';
+import { itemMods, itemName } from '../progress/items';
 import { questRewards } from '../progress/rewards';
+import { ItemIcon, SkillIcon } from './common';
 import { rarityColor } from '../render/renderer';
 
 /**
@@ -30,7 +35,80 @@ export function StoryPages({ engine }: { engine: SigilEngine }) {
       return <SigilRite hero={h} sigil={page.sigil} onClose={close} again={again} />;
     case 'deed':
       return <DeedView engine={engine} hero={h} page={page} onClose={close} />;
+    case 'gear': {
+      const item = allItems(h).find((i) => i.uid === page.uid);
+      // (sold or melted down before the page came up: nothing to show)
+      return item ? <GearView engine={engine} item={item} onClose={close} /> : null;
+    }
   }
+}
+
+/**
+ * The first piece of gear that changes a skill (the Coffin Matron's keepsake: data/items.ts FIRST_KEEPSAKE). What
+ * makes Sigilfall's gear its own is shown the moment it first happens: the piece, the gold line that says what it does,
+ * and under it the skill of the hero's that it changes.
+ */
+function GearView({ engine, item, onClose }: { engine: SigilEngine; item: Item; onClose: () => void }) {
+  const mods = itemMods(item);
+  const lines = modLines(mods);
+  const named = mods.flatMap((m) => (m.t === 'skill' ? [m.skill] : []))[0];
+  // (a line on the basic attack is on this hero's own: a warrior's swing, a mage's bolt)
+  const skill = named === 'basic' && engine.hero ? CLASSES[engine.hero.cls].basic : named;
+  const def = skill ? SKILLS[skill] : undefined;
+  const worn = Object.values(engine.hero?.equip ?? {}).some((i) => i?.uid === item.uid);
+  return (
+    <div className="rb-story is-find is-gear" role="dialog" aria-modal="true" aria-label={`A piece that changes a skill: ${itemName(item)}`}>
+      <div className="rb-find">
+        <div className="rb-find-head">
+          <ItemIcon item={item} size={56} />
+          <div>
+            <span className="rb-find-kind">A piece that changes a skill</span>
+            <h2 style={{ color: rarityColor(item.r) }}>{itemName(item)}</h2>
+            <span className="rb-find-quest">From the Coffin Matron’s hoard</span>
+          </div>
+        </div>
+        <p className="rb-find-about">A piece with a gold line changes how one of your skills works. Look for gold lines on gear.</p>
+        <div className="rb-gear-line">
+          {lines.map((l) => (
+            <p key={l}>{l}</p>
+          ))}
+        </div>
+        {def && skill && (
+          <div className="rb-gear-skill">
+            <SkillIcon id={skill} size={44} />
+            <div>
+              <strong>{def.name}</strong>
+              <span>{def.blurb}</span>
+              <span className="rb-gear-now">Changed while you wear this piece.</span>
+            </div>
+          </div>
+        )}
+        <div className="rb-find-foot">
+          <span className="rb-small rb-dim">{worn ? 'You are wearing it.' : 'It is in your bag.'}</span>
+          {!worn && (
+            <button
+              className="rb-btn"
+              onClick={() => {
+                onClose();
+              }}
+            >
+              Later
+            </button>
+          )}
+          <button
+            className="rb-btn is-gold"
+            autoFocus
+            onClick={() => {
+              if (!worn) engine.equipItem(item.uid);
+              onClose();
+            }}
+          >
+            {worn ? 'Continue' : 'Wear it'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /** The narrator, between the acts: the tale so far, and what the hero sets out to do. */
