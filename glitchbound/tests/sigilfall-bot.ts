@@ -8,7 +8,7 @@ import { BOSSES } from '../src/games/sigilfall/data/bosses';
 import { xpToNext } from '../src/games/sigilfall/data/classes';
 import { QUEST_DEFS } from '../src/games/sigilfall/data/quests';
 import { SKILL_SLOTS, SLOTS, type ClassId, type RegionId, type SlotKey } from '../src/games/sigilfall/data/types';
-import { chooseSpec, learnTalent, newCharacter, addXp, freePoints, type Character } from '../src/games/sigilfall/progress/character';
+import { chooseSpec, currentObjective, learnTalent, newCharacter, addXp, freePoints, type Character } from '../src/games/sigilfall/progress/character';
 import { rollGear } from '../src/games/sigilfall/progress/items';
 import { questSteps } from '../src/games/sigilfall/progress/handin';
 import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
@@ -17,6 +17,7 @@ import { rng } from '../src/games/sigilfall/core/math';
 import { flowField, flowStep, lineOfSight, TILE } from '../src/games/sigilfall/sim/map';
 import { empowerFull, empowerOf } from '../src/games/sigilfall/sim/combat';
 import { bossHidden } from '../src/games/sigilfall/sim/boss';
+import { stepGoal } from '../src/games/sigilfall/sim/tasks';
 import type { Enemy, WorldEvent } from '../src/games/sigilfall/sim/types';
 import { emptyInput, inside, World } from '../src/games/sigilfall/sim/world';
 
@@ -419,4 +420,20 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
   }
   res.kills = w.run.kills;
   return res;
+}
+
+/**
+ * Does a quest's steps that are things in the world to do (sim/tasks.ts: burning, carrying, holding, tracking, taking
+ * alive), from the one it is on until it is over or comes to a step of another kind (a fight to play, someone to talk
+ * to). Their own test plays them by hand (tests/sigilfall-quest-tasks.test.ts); a test about a story's fight or its
+ * aftermath uses this to get past them.
+ */
+export function doSteps(w: World, id: string): void {
+  const q = QUEST_DEFS[id];
+  for (let i = 0; q && i < 12 && w.hero.quests[id]?.state === 'active'; i++) {
+    const o = currentObjective(w.hero, q);
+    const goal = stepGoal(o);
+    if (goal === null) return;
+    w.questProgress((x) => x === o, goal);
+  }
 }

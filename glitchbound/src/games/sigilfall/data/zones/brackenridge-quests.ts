@@ -148,11 +148,11 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     name: 'Rangers for Briarhollow',
     giver: 'warden-hollis',
     auto: true,
-    text: 'The barrows are quiet, and Hollis keeps her promise. Six of Fernstead’s rangers are on the road to Briarhollow to keep watch at the camp’s gate. Meet them in Briarhollow’s square, and show them where to stand watch.',
-    objective: { kind: 'event', event: 'camp-scouts', label: 'Meet Fernstead’s rangers in Briarhollow' },
+    text: 'The barrows are quiet, and Hollis keeps her promise. Six of Fernstead’s rangers are on the road to Briarhollow to keep watch at the camp’s gate. Mark where they are to stand watch round the camp, and meet them in Briarhollow’s square.',
     // (they came, and that was all. The rangers are strangers to the camp: the hero, who knows it, walks its edge and
-    // marks where they are to stand)
-    then: [{ kind: 'use', region: 'briarhollow', at: 'briar-square', count: 3, thing: 'banner', verb: 'Set a watch-post', label: 'Mark the rangers’ three watch-posts round the camp', secs: 1, spread: 12 }],
+    // marks where they are to stand, and they come in to posts that are waiting for them)
+    objective: { kind: 'use', region: 'briarhollow', at: 'briar-square', count: 3, thing: 'banner', verb: 'Set a watch-post', label: 'Mark three watch-posts round the camp for Fernstead’s rangers', secs: 1, spread: 12 },
+    then: [{ kind: 'event', event: 'camp-scouts', label: 'Meet Fernstead’s rangers in Briarhollow' }],
     after: ['the-harvest-stones'],
     zone: 'briarhollow',
     reward: { xp: 180, gold: 60, text: 'A watchfire burns by Briarhollow’s gate. Now the camp will see the Host coming.' },

@@ -300,7 +300,8 @@ describe('sigilfall: questing together', () => {
     step(20);
     hw.coop!.out.push({ t: 'event', id: 'hearth-riders' });
     step(10);
-    expect(gw.hero.quests['hearth-the-riders-come']?.state).toBe('done');
+    // (the fight counts for the friend too: their quest goes on to its next step, the streets to block, which is each hero's own)
+    expect(gw.hero.quests['hearth-the-riders-come']).toMatchObject({ state: 'active', step: 1 });
   });
 
   it('in an open land a frame holds only the enemies near a hero', () => {

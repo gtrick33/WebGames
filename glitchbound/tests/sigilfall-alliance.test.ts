@@ -7,7 +7,7 @@ import { migrate } from '../src/games/sigilfall/progress/save';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { holds } from '../src/games/sigilfall/sim/story';
 import type { World } from '../src/games/sigilfall/sim/world';
-import { newWorld, readyHero } from './sigilfall-bot';
+import { doSteps, newWorld, readyHero } from './sigilfall-bot';
 
 /**
  * Act III on the simulation (STORY_BIBLE.md §3, "The Broken Alliance"): choices that close the other path,
@@ -162,6 +162,8 @@ describe('Sigilfall: the broken alliance (Act III)', () => {
     for (let i = 0; i < 40 && questState(w.hero, 'fern-retaken') === 'active'; i++) {
       run(w, 2.5);
       smite(w);
+      // (the square won, the people the Host kept are cut loose: the quest's last step, its own test plays it)
+      doSteps(w, 'fern-retaken');
     }
     expect(questState(w.hero, 'fern-retaken')).toBe('done');
     run(w, 0.6);

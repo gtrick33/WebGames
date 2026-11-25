@@ -218,10 +218,11 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     name: 'Riders for Briarhollow',
     giver: 'marshal-dunmore',
     auto: true,
-    text: 'Hearthstead held, and Dunmore keeps his promises. Twenty of his riders are on their way to Briarhollow to serve as the camp’s cavalry. Meet them in Briarhollow’s square.',
-    objective: { kind: 'event', event: 'camp-riders', label: 'Meet Dunmore’s riders in Briarhollow' },
-    // (they rode in, and that was all. Twenty horses have come a long road: the camp's troughs are filled for them)
-    then: [{ kind: 'use', region: 'briarhollow', at: 'briar-square', count: 3, thing: 'barrel', verb: 'Fill the trough', label: 'Fill the troughs for Dunmore’s horses', secs: 1, spread: 12 }],
+    text: 'Hearthstead held, and Dunmore keeps his promises. Twenty of his riders are on their way to Briarhollow to serve as the camp’s cavalry. Fill the camp’s troughs for their horses, and meet them in Briarhollow’s square.',
+    // (they rode in, and that was all. Twenty horses are coming off a long road: the camp's troughs are filled for them
+    // before they are in)
+    objective: { kind: 'use', region: 'briarhollow', at: 'briar-riders', count: 3, thing: 'barrel', verb: 'Fill the trough', label: 'Fill the troughs for Dunmore’s horses', secs: 1, spread: 6 },
+    then: [{ kind: 'event', event: 'camp-riders', label: 'Meet Dunmore’s riders in Briarhollow' }],
     after: ['orders-from-the-north'],
     zone: 'briarhollow',
     level: 20,

@@ -37,10 +37,10 @@ export const STORY_QUESTS: QuestDef[] = [
     name: 'Grain for Briarhollow',
     giver: 'reeve-aldous',
     auto: true,
-    text: 'The mill is free, and Reeve Aldous keeps his promise. Millbrook’s grain carts are coming up the south road to Briarhollow. Meet them in the square.',
-    objective: { kind: 'event', event: 'camp-grain', label: 'Meet Millbrook’s grain carts in Briarhollow' },
-    // (the carts came in and that was all: the first sack goes into the granary on the hero's shoulder)
-    then: [{ kind: 'carry', region: 'briarhollow', from: 'briar-square', to: 'briar-granary', thing: 'sack', verb: 'Shoulder a sack', label: 'Carry the first sack of grain into the granary' }],
+    text: 'The mill is free, and Reeve Aldous keeps his promise. Millbrook’s grain carts are coming up the south road to Briarhollow. Clear the burnt granary to take what they bring, and meet them in the square.',
+    // (the carts came in and that was all: the granary that burned on the first night is cleared to take them)
+    objective: { kind: 'use', region: 'briarhollow', at: 'briar-granary', count: 3, thing: 'crate', verb: 'Clear it out', label: 'Clear the burnt granary to take Millbrook’s grain', secs: 1, spread: 5 },
+    then: [{ kind: 'event', event: 'camp-grain', label: 'Meet Millbrook’s grain carts in Briarhollow' }],
     after: ['hollow-gold'],
     zone: 'briarhollow',
     reward: { xp: 300, gold: 80, text: 'Twelve carts of grain reach the camp, and Tobin’s hens with them. For the first time since the raid, nobody in Briarhollow goes to bed hungry. The camp has scouts and bread now, and two villages stand with it.' },
@@ -98,10 +98,10 @@ export const STORY_QUESTS: QuestDef[] = [
     name: 'A Forge for Briarhollow',
     giver: 'harbormaster-quill',
     auto: true,
-    text: 'Gullport sends what it has: a smith, her apprentices, her forge on a cart, and a second cart of powder kegs that everyone walks around. Meet them in Briarhollow.',
-    objective: { kind: 'event', event: 'camp-smiths', label: 'Meet Gullport’s smiths in Briarhollow' },
-    // (the powder cart everyone walks around is dealt with: its kegs are rolled clear of the forge before it is lit)
-    then: [{ kind: 'use', region: 'briarhollow', at: 'briar-forge', count: 3, thing: 'barrel', verb: 'Roll it clear', label: 'Roll the powder kegs clear of the forge', secs: 1, spread: 5 }],
+    text: 'Gullport sends what it has: a smith, her apprentices, her forge on a cart, and a second cart of powder kegs that everyone walks around. Clear a place for the forge, and meet them in Briarhollow.',
+    // (they came, and that was all: a forge needs level ground and no thatch near it, and the hero clears a place)
+    objective: { kind: 'use', region: 'briarhollow', at: 'briar-forge', count: 3, thing: 'log', verb: 'Clear the ground', label: 'Clear a place for Gullport’s forge', secs: 1, spread: 5 },
+    then: [{ kind: 'event', event: 'camp-smiths', label: 'Meet Gullport’s smiths in Briarhollow' }],
     after: ['the-drowned-fleet'],
     zone: 'briarhollow',
     reward: { xp: 400, gold: 100, text: 'Two forges ring in Briarhollow now. The camp is starting to sound like an army.' },
