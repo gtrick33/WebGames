@@ -1,0 +1,1837 @@
+{
+ "music": {
+  "barrows": {
+   "lufs": -23.5,
+   "range": 13.1,
+   "peak": -7.6
+  },
+  "boss": {
+   "lufs": -21.4,
+   "range": 10.9,
+   "peak": -9.4
+  },
+  "cave": {
+   "lufs": -23.4,
+   "range": 1.9,
+   "peak": -10.8
+  },
+  "chapel": {
+   "lufs": -23.5,
+   "range": 11.2,
+   "peak": -9.3
+  },
+  "coast": {
+   "lufs": -23.4,
+   "range": 4,
+   "peak": -4.3
+  },
+  "court": {
+   "lufs": -23.5,
+   "range": 3.8,
+   "peak": -1.7
+  },
+  "crypt": {
+   "lufs": -23.4,
+   "range": 9.2,
+   "peak": -7.9
+  },
+  "darkwood": {
+   "lufs": -23.4,
+   "range": 13.6,
+   "peak": -6.7
+  },
+  "desert": {
+   "lufs": -23.4,
+   "range": 4.7,
+   "peak": -11.7
+  },
+  "forest": {
+   "lufs": -23.5,
+   "range": 6.9,
+   "peak": -6.4
+  },
+  "forge": {
+   "lufs": -23.4,
+   "range": 9.9,
+   "peak": -5.9
+  },
+  "highland": {
+   "lufs": -23.5,
+   "range": 2.6,
+   "peak": -11.2
+  },
+  "highwall": {
+   "lufs": -23.5,
+   "range": 10.2,
+   "peak": -5.8
+  },
+  "jungle": {
+   "lufs": -23.4,
+   "range": 4.3,
+   "peak": -8.1
+  },
+  "rift": {
+   "lufs": -23.4,
+   "range": 8.3,
+   "peak": -8.7
+  },
+  "ring-forge": {
+   "lufs": -21.4,
+   "range": 7.9,
+   "peak": -11.2
+  },
+  "ring-frost": {
+   "lufs": -21.4,
+   "range": 3.6,
+   "peak": -8.7
+  },
+  "ring-sands": {
+   "lufs": -21.5,
+   "range": 2,
+   "peak": -8.5
+  },
+  "road": {
+   "lufs": -23.5,
+   "range": 5.9,
+   "peak": -3.6
+  },
+  "siege": {
+   "lufs": -21.6,
+   "range": 9.6,
+   "peak": -8.7
+  },
+  "snow": {
+   "lufs": -23.4,
+   "range": 5,
+   "peak": -6.4
+  },
+  "tavern": {
+   "lufs": -23.4,
+   "range": 3.7,
+   "peak": -11.6
+  },
+  "title": {
+   "lufs": -23.4,
+   "range": 5.5,
+   "peak": -8.8
+  },
+  "tomb": {
+   "lufs": -23.4,
+   "range": 8,
+   "peak": -7.8
+  },
+  "village": {
+   "lufs": -23.4,
+   "range": 5.5,
+   "peak": -3.5
+  }
+ },
+ "files": {
+  "amb-cave": {
+   "mean": -30.4,
+   "peak": -17.3
+  },
+  "amb-day": {
+   "mean": -30.4,
+   "peak": -7.7
+  },
+  "amb-forest": {
+   "mean": -30.5,
+   "peak": -11.4
+  },
+  "amb-water": {
+   "mean": -30.4,
+   "peak": -13.8
+  },
+  "amb-wind": {
+   "mean": -30.5,
+   "peak": -17.3
+  },
+  "arc1": {
+   "mean": -20.2,
+   "peak": -1.2
+  },
+  "arc2": {
+   "mean": -20.2,
+   "peak": -0.6
+  },
+  "armor": {
+   "mean": -21.2,
+   "peak": -0.8
+  },
+  "arrow1": {
+   "mean": -25.5,
+   "peak": -0.2
+  },
+  "arrow2": {
+   "mean": -34.7,
+   "peak": -1
+  },
+  "arrow3": {
+   "mean": -28.5,
+   "peak": -1.3
+  },
+  "bag": {
+   "mean": -24.7,
+   "peak": -1.7
+  },
+  "beads": {
+   "mean": -25.2,
+   "peak": -1
+  },
+  "beast1": {
+   "mean": -20.4,
+   "peak": -2.1
+  },
+  "beast2": {
+   "mean": -20.4,
+   "peak": -1.2
+  },
+  "beast3": {
+   "mean": -20.4,
+   "peak": -1.1
+  },
+  "beast4": {
+   "mean": -21.7,
+   "peak": -3.6
+  },
+  "beast5": {
+   "mean": -20.5,
+   "peak": -2
+  },
+  "beast6": {
+   "mean": -20.4,
+   "peak": -2.6
+  },
+  "beast7": {
+   "mean": -20.5,
+   "peak": -3.7
+  },
+  "bell": {
+   "mean": -20.4,
+   "peak": -2
+  },
+  "bite1": {
+   "mean": -24.5,
+   "peak": -3.9
+  },
+  "bite2": {
+   "mean": -28.2,
+   "peak": -2.8
+  },
+  "bite3": {
+   "mean": -27.4,
+   "peak": -3
+  },
+  "block1": {
+   "mean": -20.1,
+   "peak": 0
+  },
+  "block2": {
+   "mean": -19.3,
+   "peak": 0
+  },
+  "block3": {
+   "mean": -17.2,
+   "peak": 0
+  },
+  "boom": {
+   "mean": -24.3,
+   "peak": 0
+  },
+  "bottle": {
+   "mean": -20.4,
+   "peak": -3.4
+  },
+  "breath": {
+   "mean": -33.7,
+   "peak": -20.4
+  },
+  "bubble1": {
+   "mean": -20.4,
+   "peak": -2.3
+  },
+  "bubble2": {
+   "mean": -20.4,
+   "peak": -1.3
+  },
+  "chain1": {
+   "mean": -23.7,
+   "peak": -2.5
+  },
+  "chain2": {
+   "mean": -21.8,
+   "peak": -2.1
+  },
+  "chime1": {
+   "mean": -21.9,
+   "peak": -6.2
+  },
+  "chime2": {
+   "mean": -22.7,
+   "peak": -2.8
+  },
+  "clash1": {
+   "mean": -20.3,
+   "peak": -5.6
+  },
+  "clash2": {
+   "mean": -20.1,
+   "peak": 0
+  },
+  "clash3": {
+   "mean": -20.1,
+   "peak": -4.1
+  },
+  "clash4": {
+   "mean": -20.4,
+   "peak": -3.1
+  },
+  "clash5": {
+   "mean": -20,
+   "peak": -4.5
+  },
+  "cloth-heavy": {
+   "mean": -20.5,
+   "peak": -2.8
+  },
+  "cloth": {
+   "mean": -21.1,
+   "peak": -1
+  },
+  "coin1": {
+   "mean": -20.5,
+   "peak": -5.2
+  },
+  "coin2": {
+   "mean": -21.3,
+   "peak": -0.2
+  },
+  "coin3": {
+   "mean": -22.6,
+   "peak": -2.9
+  },
+  "conjure": {
+   "mean": -20.4,
+   "peak": -12.6
+  },
+  "cure1": {
+   "mean": -27,
+   "peak": -9.8
+  },
+  "cure2": {
+   "mean": -23.4,
+   "peak": -6
+  },
+  "cure3": {
+   "mean": -25.3,
+   "peak": -8.8
+  },
+  "dark": {
+   "mean": -20.4,
+   "peak": -12.3
+  },
+  "door": {
+   "mean": -20.4,
+   "peak": -1.8
+  },
+  "fire1": {
+   "mean": -37.5,
+   "peak": -15.6
+  },
+  "fire2": {
+   "mean": -39.9,
+   "peak": -21.9
+  },
+  "fire3": {
+   "mean": -34.2,
+   "peak": -16.4
+  },
+  "fire4": {
+   "mean": -30.1,
+   "peak": -9.2
+  },
+  "fire5": {
+   "mean": -29.1,
+   "peak": -14.4
+  },
+  "firebig1": {
+   "mean": -35.7,
+   "peak": -12.4
+  },
+  "firebig2": {
+   "mean": -36.8,
+   "peak": -12.2
+  },
+  "frost": {
+   "mean": -20.3,
+   "peak": -1.5
+  },
+  "gem1": {
+   "mean": -20.6,
+   "peak": 0
+  },
+  "gem2": {
+   "mean": -25.4,
+   "peak": 0
+  },
+  "gem3": {
+   "mean": -25.3,
+   "peak": 0
+  },
+  "giant1": {
+   "mean": -20.5,
+   "peak": -4.2
+  },
+  "giant2": {
+   "mean": -20.4,
+   "peak": -5.2
+  },
+  "giant3": {
+   "mean": -20.5,
+   "peak": -1.9
+  },
+  "giant4": {
+   "mean": -20.5,
+   "peak": -6.4
+  },
+  "giant5": {
+   "mean": -20.5,
+   "peak": -6.2
+  },
+  "gong": {
+   "mean": -20.4,
+   "peak": 0
+  },
+  "growl1": {
+   "mean": -20.4,
+   "peak": -6.3
+  },
+  "growl2": {
+   "mean": -20.4,
+   "peak": -7.8
+  },
+  "hit1": {
+   "mean": -30.6,
+   "peak": -0.7
+  },
+  "hit2": {
+   "mean": -25.4,
+   "peak": 0
+  },
+  "hit3": {
+   "mean": -21.2,
+   "peak": -0.3
+  },
+  "hit4": {
+   "mean": -22.6,
+   "peak": 0
+  },
+  "hit5": {
+   "mean": -23.2,
+   "peak": -1.6
+  },
+  "hit6": {
+   "mean": -23.1,
+   "peak": 0
+  },
+  "jingle": {
+   "mean": -20.8,
+   "peak": -1.4
+  },
+  "lose": {
+   "mean": -20.4,
+   "peak": -6.5
+  },
+  "metal2": {
+   "mean": -25.6,
+   "peak": 0
+  },
+  "metal3": {
+   "mean": -26.2,
+   "peak": -3.6
+  },
+  "metalhit1": {
+   "mean": -24.9,
+   "peak": 0
+  },
+  "metalhit2": {
+   "mean": -23.3,
+   "peak": -0.1
+  },
+  "metalhit3": {
+   "mean": -21.1,
+   "peak": -2.2
+  },
+  "metalhit4": {
+   "mean": -23,
+   "peak": -0.5
+  },
+  "ogre1": {
+   "mean": -20.5,
+   "peak": -4.7
+  },
+  "ogre2": {
+   "mean": -20.5,
+   "peak": -3.8
+  },
+  "ogre3": {
+   "mean": -20.4,
+   "peak": -6.2
+  },
+  "ogre4": {
+   "mean": -20.5,
+   "peak": -5.5
+  },
+  "ogre5": {
+   "mean": -20.6,
+   "peak": -2.9
+  },
+  "riftcall": {
+   "mean": -29,
+   "peak": -16.6
+  },
+  "ring-arrow": {
+   "mean": -22.3,
+   "peak": -7.9
+  },
+  "ring-blink": {
+   "mean": -20.4,
+   "peak": -2.2
+  },
+  "ring-bolt": {
+   "mean": -19.5,
+   "peak": -1.1
+  },
+  "ring-bow": {
+   "mean": -21.8,
+   "peak": -5.7
+  },
+  "ring-buff": {
+   "mean": -18.5,
+   "peak": -1.5
+  },
+  "ring-checkpoint": {
+   "mean": -16.8,
+   "peak": -4.2
+  },
+  "ring-clash": {
+   "mean": -20.5,
+   "peak": -1.8
+  },
+  "ring-critBlade": {
+   "mean": -19.1,
+   "peak": -5.6
+  },
+  "ring-die": {
+   "mean": -19,
+   "peak": -5.5
+  },
+  "ring-epic": {
+   "mean": -18.4,
+   "peak": -0.7
+  },
+  "ring-explode": {
+   "mean": -19.2,
+   "peak": -4.9
+  },
+  "ring-fireball": {
+   "mean": -19.5,
+   "peak": -2.3
+  },
+  "ring-freeze": {
+   "mean": -17.5,
+   "peak": 0
+  },
+  "ring-heal": {
+   "mean": -18.5,
+   "peak": -2.9
+  },
+  "ring-hit": {
+   "mean": -20.5,
+   "peak": -6.6
+  },
+  "ring-holy": {
+   "mean": -18.5,
+   "peak": -2.6
+  },
+  "ring-hurt": {
+   "mean": -18.8,
+   "peak": -6.5
+  },
+  "ring-levelup": {
+   "mean": -19.2,
+   "peak": -4.8
+  },
+  "ring-meteor": {
+   "mean": -20.5,
+   "peak": -4.6
+  },
+  "ring-nature": {
+   "mean": -18.7,
+   "peak": -1.7
+  },
+  "ring-nova": {
+   "mean": -21.5,
+   "peak": -5.5
+  },
+  "ring-orb": {
+   "mean": -19.8,
+   "peak": -2.4
+  },
+  "ring-pickupBig": {
+   "mean": -18,
+   "peak": -0.1
+  },
+  "ring-playerDie": {
+   "mean": -20.1,
+   "peak": -5.5
+  },
+  "ring-quake": {
+   "mean": -19.6,
+   "peak": -4.3
+  },
+  "ring-rift": {
+   "mean": -19.6,
+   "peak": -3.2
+  },
+  "ring-roar": {
+   "mean": -18.8,
+   "peak": -3
+  },
+  "ring-shadow": {
+   "mean": -19.5,
+   "peak": -3.5
+  },
+  "ring-shard": {
+   "mean": -18.4,
+   "peak": 0
+  },
+  "ring-shatter": {
+   "mean": -19.4,
+   "peak": -3.2
+  },
+  "ring-shield": {
+   "mean": -18.5,
+   "peak": -2.7
+  },
+  "ring-shieldBreak": {
+   "mean": -19.3,
+   "peak": -2
+  },
+  "ring-slam": {
+   "mean": -19.6,
+   "peak": -6.7
+  },
+  "ring-spear": {
+   "mean": -20.3,
+   "peak": -1.9
+  },
+  "ring-swing": {
+   "mean": -20.4,
+   "peak": -1.5
+  },
+  "ring-swingBig": {
+   "mean": -19,
+   "peak": 0
+  },
+  "ring-talent": {
+   "mean": -23.6,
+   "peak": -0.1
+  },
+  "ring-thunder": {
+   "mean": -19.4,
+   "peak": -5.9
+  },
+  "ring-victory": {
+   "mean": -19.4,
+   "peak": -5
+  },
+  "ring-zap": {
+   "mean": -18.9,
+   "peak": 0
+  },
+  "ring": {
+   "mean": -20.4,
+   "peak": -5.5
+  },
+  "rock1": {
+   "mean": -32,
+   "peak": -1.1
+  },
+  "rock2": {
+   "mean": -27.8,
+   "peak": 0
+  },
+  "rock3": {
+   "mean": -27.9,
+   "peak": 0
+  },
+  "shade1": {
+   "mean": -20.4,
+   "peak": -3.7
+  },
+  "shade2": {
+   "mean": -20.5,
+   "peak": -4.1
+  },
+  "shade3": {
+   "mean": -20.5,
+   "peak": -2.6
+  },
+  "shade4": {
+   "mean": -20.5,
+   "peak": -2.8
+  },
+  "shade5": {
+   "mean": -20.2,
+   "peak": -2
+  },
+  "shatter1": {
+   "mean": -24.4,
+   "peak": -1.4
+  },
+  "shatter2": {
+   "mean": -21.8,
+   "peak": -0.3
+  },
+  "sigil-won": {
+   "mean": -19.7,
+   "peak": -4.8
+  },
+  "slam1": {
+   "mean": -20.3,
+   "peak": 0
+  },
+  "slam2": {
+   "mean": -20.4,
+   "peak": -1
+  },
+  "slam3": {
+   "mean": -24.1,
+   "peak": -0.1
+  },
+  "slime1": {
+   "mean": -25.6,
+   "peak": -2.8
+  },
+  "slime2": {
+   "mean": -28.1,
+   "peak": -1.3
+  },
+  "slime3": {
+   "mean": -22.6,
+   "peak": -1.9
+  },
+  "slime4": {
+   "mean": -25.8,
+   "peak": -1.7
+  },
+  "slime5": {
+   "mean": -24.3,
+   "peak": -2.2
+  },
+  "steel1": {
+   "mean": -28.7,
+   "peak": -1.1
+  },
+  "steel2": {
+   "mean": -25,
+   "peak": 0
+  },
+  "steel3": {
+   "mean": -20.5,
+   "peak": -2.3
+  },
+  "steel4": {
+   "mean": -20.3,
+   "peak": 0
+  },
+  "step-grass1": {
+   "mean": -28,
+   "peak": 0
+  },
+  "step-grass2": {
+   "mean": -26.7,
+   "peak": 0
+  },
+  "step-grass3": {
+   "mean": -27.6,
+   "peak": 0
+  },
+  "step-grass4": {
+   "mean": -27.7,
+   "peak": 0
+  },
+  "step-snow1": {
+   "mean": -20.3,
+   "peak": 0
+  },
+  "step-snow2": {
+   "mean": -20.3,
+   "peak": -2.5
+  },
+  "step-snow3": {
+   "mean": -20.3,
+   "peak": -2.5
+  },
+  "step-snow4": {
+   "mean": -21,
+   "peak": 0
+  },
+  "step-stone1": {
+   "mean": -19.7,
+   "peak": 0
+  },
+  "step-stone2": {
+   "mean": -20.4,
+   "peak": 0
+  },
+  "step-stone3": {
+   "mean": -20.8,
+   "peak": 0
+  },
+  "step-stone4": {
+   "mean": -20,
+   "peak": 0
+  },
+  "step-wood1": {
+   "mean": -19.9,
+   "peak": 0
+  },
+  "step-wood2": {
+   "mean": -19.9,
+   "peak": -0.8
+  },
+  "step-wood3": {
+   "mean": -19.9,
+   "peak": -1.4
+  },
+  "step-wood4": {
+   "mean": -19.9,
+   "peak": 0
+  },
+  "stones1": {
+   "mean": -26.9,
+   "peak": 0
+  },
+  "stones2": {
+   "mean": -26.3,
+   "peak": 0
+  },
+  "stones3": {
+   "mean": -25.9,
+   "peak": 0
+  },
+  "swing1": {
+   "mean": -20.4,
+   "peak": -1.4
+  },
+  "swing2": {
+   "mean": -20.4,
+   "peak": -3.2
+  },
+  "swing3": {
+   "mean": -20.5,
+   "peak": -5.4
+  },
+  "teleport": {
+   "mean": -20.4,
+   "peak": -6.1
+  },
+  "thud1": {
+   "mean": -29.5,
+   "peak": -1.8
+  },
+  "thud2": {
+   "mean": -29.8,
+   "peak": -0.4
+  },
+  "thud3": {
+   "mean": -20.4,
+   "peak": -4.4
+  },
+  "thunder": {
+   "mean": -20.5,
+   "peak": -1.5
+  },
+  "trap1": {
+   "mean": -20.3,
+   "peak": -2.3
+  },
+  "ui-bong": {
+   "mean": -20.4,
+   "peak": -5.1
+  },
+  "ui-click": {
+   "mean": -26.9,
+   "peak": -1.9
+  },
+  "ui-close": {
+   "mean": -21.8,
+   "peak": -7.8
+  },
+  "ui-confirm": {
+   "mean": -20.5,
+   "peak": -10
+  },
+  "ui-error": {
+   "mean": -20.3,
+   "peak": -5.5
+  },
+  "ui-open": {
+   "mean": -21.7,
+   "peak": -9.6
+  },
+  "ui-pluck": {
+   "mean": -20.7,
+   "peak": -0.5
+  },
+  "ui-select": {
+   "mean": -20.4,
+   "peak": -4.3
+  },
+  "ui-tick": {
+   "mean": -23.7,
+   "peak": -2.4
+  },
+  "vo-f1-attack1": {
+   "mean": -25.7,
+   "peak": -9.9
+  },
+  "vo-f1-attack2": {
+   "mean": -23.5,
+   "peak": -8.9
+  },
+  "vo-f1-attack3": {
+   "mean": -23.3,
+   "peak": -9.5
+  },
+  "vo-f1-hurt1": {
+   "mean": -22.1,
+   "peak": -8.6
+  },
+  "vo-f1-hurt2": {
+   "mean": -25.7,
+   "peak": -9.6
+  },
+  "vo-f1-hurt3": {
+   "mean": -24.7,
+   "peak": -9.4
+  },
+  "vo-f1-jump1": {
+   "mean": -21.5,
+   "peak": -8.8
+  },
+  "vo-f1-jump2": {
+   "mean": -24.2,
+   "peak": -9.4
+  },
+  "vo-f1-jump3": {
+   "mean": -24.7,
+   "peak": -8.9
+  },
+  "vo-f2-attack1": {
+   "mean": -23.5,
+   "peak": -8.8
+  },
+  "vo-f2-attack2": {
+   "mean": -24.1,
+   "peak": -9.4
+  },
+  "vo-f2-attack3": {
+   "mean": -25.8,
+   "peak": -8.5
+  },
+  "vo-f3-attack1": {
+   "mean": -26.1,
+   "peak": -9.8
+  },
+  "vo-f3-attack2": {
+   "mean": -25,
+   "peak": -9.6
+  },
+  "vo-f3-attack3": {
+   "mean": -25.9,
+   "peak": -10.5
+  },
+  "vo-m-attack0": {
+   "mean": -20.5,
+   "peak": -5.4
+  },
+  "vo-m-attack1": {
+   "mean": -20.3,
+   "peak": -2.3
+  },
+  "vo-m-attack2": {
+   "mean": -20.4,
+   "peak": -5.5
+  },
+  "vo-m-attack3": {
+   "mean": -20.3,
+   "peak": -3
+  },
+  "vo-m-attack4": {
+   "mean": -20.3,
+   "peak": -5.4
+  },
+  "vo-m-attack5": {
+   "mean": -20.3,
+   "peak": -1.9
+  },
+  "vo-m-big0": {
+   "mean": -21.7,
+   "peak": -2.7
+  },
+  "vo-m-big1": {
+   "mean": -20.4,
+   "peak": -2.6
+  },
+  "vo-m-big2": {
+   "mean": -20.4,
+   "peak": -3.4
+  },
+  "vo-m-big3": {
+   "mean": -20.2,
+   "peak": -4.2
+  },
+  "vo-m-death0": {
+   "mean": -20.4,
+   "peak": -0.9
+  },
+  "vo-m-death1": {
+   "mean": -20.3,
+   "peak": -3.4
+  },
+  "vo-m-hurt0": {
+   "mean": -20.3,
+   "peak": -3.9
+  },
+  "vo-m-hurt1": {
+   "mean": -20.3,
+   "peak": -1.1
+  },
+  "vo-m-hurt2": {
+   "mean": -20.5,
+   "peak": -2.2
+  },
+  "vo-m-hurt3": {
+   "mean": -20.6,
+   "peak": -4.9
+  },
+  "vo-m-hurt4": {
+   "mean": -20.5,
+   "peak": -1.5
+  },
+  "vo-m-jump0": {
+   "mean": -20.4,
+   "peak": -2.1
+  },
+  "vo-m-jump1": {
+   "mean": -20.5,
+   "peak": -6
+  },
+  "vo-m-victory0": {
+   "mean": -20.4,
+   "peak": -3.3
+  },
+  "vo-m-victory1": {
+   "mean": -20.4,
+   "peak": -5.2
+  },
+  "whoosh1": {
+   "mean": -20.5,
+   "peak": -5.4
+  },
+  "whoosh2": {
+   "mean": -20.4,
+   "peak": -3.5
+  },
+  "whoosh3": {
+   "mean": -20.4,
+   "peak": -3
+  },
+  "win-short": {
+   "mean": -22.1,
+   "peak": -6.2
+  },
+  "win": {
+   "mean": -20.4,
+   "peak": -5.9
+  },
+  "wolf": {
+   "mean": -20.3,
+   "peak": -4
+  },
+  "wood": {
+   "mean": -22.1,
+   "peak": 0
+  },
+  "zap1": {
+   "mean": -28.5,
+   "peak": -3.3
+  },
+  "zap2": {
+   "mean": -21.2,
+   "peak": 0
+  }
+ },
+ "played": {
+  "swing": {
+   "gain": 0.4,
+   "files": 3,
+   "peak": -9.4,
+   "mean": -28.4
+  },
+  "swingBig": {
+   "gain": 0.5,
+   "files": 1,
+   "peak": -7.4,
+   "mean": -26.4
+  },
+  "heavy": {
+   "gain": 0.55,
+   "files": 1,
+   "peak": -6.6,
+   "mean": -25.6
+  },
+  "whirl": {
+   "gain": 0.4,
+   "files": 2,
+   "peak": -9.4,
+   "mean": -28.4
+  },
+  "spear": {
+   "gain": 0.38,
+   "files": 1,
+   "peak": -13.8,
+   "mean": -28.9
+  },
+  "windup": {
+   "gain": 0.22,
+   "files": 1,
+   "peak": -16.2,
+   "mean": -33.6
+  },
+  "hit": {
+   "gain": 0.34,
+   "files": 6,
+   "peak": -9.4,
+   "mean": -33.7
+  },
+  "hitBone": {
+   "gain": 0.2,
+   "files": 2,
+   "peak": -14,
+   "mean": -37.6
+  },
+  "hitFlesh": {
+   "gain": 0.2,
+   "files": 3,
+   "peak": -14.4,
+   "mean": -40.5
+  },
+  "hitShell": {
+   "gain": 0.16,
+   "files": 3,
+   "peak": -18.7,
+   "mean": -42.6
+  },
+  "hitHeavy": {
+   "gain": 0.22,
+   "files": 3,
+   "peak": -13.2,
+   "mean": -42.4
+  },
+  "hitSlime": {
+   "gain": 0.16,
+   "files": 5,
+   "peak": -17.2,
+   "mean": -41.2
+  },
+  "hitGhost": {
+   "gain": 0.16,
+   "files": 5,
+   "peak": -17.9,
+   "mean": -36.3
+  },
+  "crit": {
+   "gain": 0.4,
+   "files": 4,
+   "peak": -8,
+   "mean": -31
+  },
+  "clash": {
+   "gain": 0.3,
+   "files": 5,
+   "peak": -10.5,
+   "mean": -30.6
+  },
+  "critBlade": {
+   "gain": 0.42,
+   "files": 4,
+   "peak": -7.5,
+   "mean": -31.2
+  },
+  "hurt": {
+   "gain": 0.5,
+   "files": 3,
+   "peak": -6.4,
+   "mean": -32.6
+  },
+  "shield": {
+   "gain": 0.45,
+   "files": 3,
+   "peak": -6.9,
+   "mean": -25.8
+  },
+  "shieldBreak": {
+   "gain": 0.4,
+   "files": 2,
+   "peak": -9.4,
+   "mean": -30.4
+  },
+  "enemyWindup": {
+   "gain": 0.2,
+   "files": 3,
+   "peak": -17,
+   "mean": -34.4
+  },
+  "enemySwing": {
+   "gain": 0.25,
+   "files": 2,
+   "peak": -15.2,
+   "mean": -32.5
+  },
+  "enemyBow": {
+   "gain": 0.28,
+   "files": 3,
+   "peak": -11.3,
+   "mean": -40.6
+  },
+  "sling": {
+   "gain": 0.24,
+   "files": 1,
+   "peak": -17.8,
+   "mean": -32.9
+  },
+  "rush": {
+   "gain": 0.32,
+   "files": 2,
+   "peak": -13.4,
+   "mean": -30.3
+  },
+  "roar": {
+   "gain": 0.7,
+   "files": 5,
+   "peak": -5,
+   "mean": -23.6
+  },
+  "snort": {
+   "gain": 0.45,
+   "files": 3,
+   "peak": -8.9,
+   "mean": -27.4
+  },
+  "squish": {
+   "gain": 0.5,
+   "files": 5,
+   "peak": -7.3,
+   "mean": -31.3
+  },
+  "soul": {
+   "gain": 0.4,
+   "files": 5,
+   "peak": -10,
+   "mean": -28.4
+  },
+  "slam": {
+   "gain": 0.55,
+   "files": 3,
+   "peak": -5.2,
+   "mean": -26.8
+  },
+  "bow": {
+   "gain": 0.34,
+   "files": 3,
+   "peak": -9.6,
+   "mean": -38.9
+  },
+  "arrow": {
+   "gain": 0.4,
+   "files": 1,
+   "peak": -15.9,
+   "mean": -30.3
+  },
+  "volley": {
+   "gain": 0.3,
+   "files": 3,
+   "peak": -10.7,
+   "mean": -40
+  },
+  "arrowRain": {
+   "gain": 0.3,
+   "files": 3,
+   "peak": -10.7,
+   "mean": -40
+  },
+  "dash": {
+   "gain": 0.32,
+   "files": 1,
+   "peak": -12.7,
+   "mean": -30.4
+  },
+  "dodge": {
+   "gain": 0.32,
+   "files": 1,
+   "peak": -10.9,
+   "mean": -31
+  },
+  "voMAttack": {
+   "gain": 0.42,
+   "files": 6,
+   "peak": -9.4,
+   "mean": -27.9
+  },
+  "voMBig": {
+   "gain": 0.5,
+   "files": 4,
+   "peak": -8.6,
+   "mean": -26.7
+  },
+  "voMHurt": {
+   "gain": 0.45,
+   "files": 5,
+   "peak": -8,
+   "mean": -27.4
+  },
+  "voMDeath": {
+   "gain": 0.5,
+   "files": 2,
+   "peak": -6.9,
+   "mean": -26.4
+  },
+  "voMJump": {
+   "gain": 0.34,
+   "files": 2,
+   "peak": -11.5,
+   "mean": -29.8
+  },
+  "voMVictory": {
+   "gain": 0.5,
+   "files": 2,
+   "peak": -9.3,
+   "mean": -26.4
+  },
+  "voMShout": {
+   "gain": 0.36,
+   "files": 6,
+   "peak": -10.8,
+   "mean": -29.2
+  },
+  "voF1Attack": {
+   "gain": 0.65,
+   "files": 3,
+   "peak": -12.6,
+   "mean": -27.9
+  },
+  "voF1Big": {
+   "gain": 0.69,
+   "files": 2,
+   "peak": -12.1,
+   "mean": -26.6
+  },
+  "voF1Hurt": {
+   "gain": 0.69,
+   "files": 3,
+   "peak": -11.8,
+   "mean": -27.4
+  },
+  "voF1Death": {
+   "gain": 0.8,
+   "files": 1,
+   "peak": -11.3,
+   "mean": -26.6
+  },
+  "voF1Jump": {
+   "gain": 0.48,
+   "files": 3,
+   "peak": -15.2,
+   "mean": -29.8
+  },
+  "voF2Attack": {
+   "gain": 0.64,
+   "files": 3,
+   "peak": -12.4,
+   "mean": -28.3
+  },
+  "voF3Attack": {
+   "gain": 0.64,
+   "files": 3,
+   "peak": -13.5,
+   "mean": -29.5
+  },
+  "voF3Shout": {
+   "gain": 0.6,
+   "files": 3,
+   "peak": -14,
+   "mean": -30.1
+  },
+  "stepGrass": {
+   "gain": 0.16,
+   "files": 4,
+   "peak": -15.9,
+   "mean": -43.4
+  },
+  "stepStone": {
+   "gain": 0.18,
+   "files": 4,
+   "peak": -14.9,
+   "mean": -35.1
+  },
+  "stepWood": {
+   "gain": 0.18,
+   "files": 4,
+   "peak": -14.9,
+   "mean": -34.8
+  },
+  "stepSnow": {
+   "gain": 0.17,
+   "files": 4,
+   "peak": -15.4,
+   "mean": -35.9
+  },
+  "stepSand": {
+   "gain": 0.16,
+   "files": 4,
+   "peak": -15.9,
+   "mean": -36.4
+  },
+  "dismount": {
+   "gain": 0.3,
+   "files": 1,
+   "peak": -13.3,
+   "mean": -31
+  },
+  "mount": {
+   "gain": 0.3,
+   "files": 1,
+   "peak": -13.3,
+   "mean": -31
+  },
+  "whistle": {
+   "gain": 0.25,
+   "files": 1,
+   "peak": -15,
+   "mean": -32.4
+  },
+  "puff": {
+   "gain": 0.28,
+   "files": 1,
+   "peak": -13.9,
+   "mean": -31.6
+  },
+  "bolt": {
+   "gain": 0.28,
+   "files": 2,
+   "peak": -11.7,
+   "mean": -31.3
+  },
+  "fireball": {
+   "gain": 0.7,
+   "files": 4,
+   "peak": -12.3,
+   "mean": -37.2
+  },
+  "explode": {
+   "gain": 0.5,
+   "files": 2,
+   "peak": -6,
+   "mean": -36
+  },
+  "meteorCall": {
+   "gain": 0.55,
+   "files": 1,
+   "peak": -21.6,
+   "mean": -39.4
+  },
+  "meteor": {
+   "gain": 0.6,
+   "files": 2,
+   "peak": -4.4,
+   "mean": -35
+  },
+  "nova": {
+   "gain": 0.36,
+   "files": 1,
+   "peak": -15.1,
+   "mean": -30.8
+  },
+  "freeze": {
+   "gain": 0.36,
+   "files": 2,
+   "peak": -9.2,
+   "mean": -29.9
+  },
+  "shatter": {
+   "gain": 0.6,
+   "files": 2,
+   "peak": -4.7,
+   "mean": -27.5
+  },
+  "zap": {
+   "gain": 0.3,
+   "files": 2,
+   "peak": -10.5,
+   "mean": -35.3
+  },
+  "thunder": {
+   "gain": 0.5,
+   "files": 1,
+   "peak": -7.5,
+   "mean": -26.5
+  },
+  "holy": {
+   "gain": 0.34,
+   "files": 1,
+   "peak": -12.2,
+   "mean": -32.1
+  },
+  "shadow": {
+   "gain": 0.34,
+   "files": 1,
+   "peak": -21.7,
+   "mean": -29.8
+  },
+  "nature": {
+   "gain": 0.3,
+   "files": 1,
+   "peak": -13.3,
+   "mean": -33.2
+  },
+  "fieldCast": {
+   "gain": 0.3,
+   "files": 1,
+   "peak": -16.7,
+   "mean": -32.4
+  },
+  "heal": {
+   "gain": 0.34,
+   "files": 3,
+   "peak": -15.4,
+   "mean": -34.6
+  },
+  "buff": {
+   "gain": 0.26,
+   "files": 1,
+   "peak": -14.5,
+   "mean": -34.4
+  },
+  "drain": {
+   "gain": 0.6,
+   "files": 1,
+   "peak": -24.8,
+   "mean": -38.1
+  },
+  "blink": {
+   "gain": 0.3,
+   "files": 1,
+   "peak": -16.6,
+   "mean": -30.9
+  },
+  "summon": {
+   "gain": 0.38,
+   "files": 1,
+   "peak": -21,
+   "mean": -28.8
+  },
+  "shapeshift": {
+   "gain": 0.34,
+   "files": 1,
+   "peak": -22,
+   "mean": -29.8
+  },
+  "rift": {
+   "gain": 0.7,
+   "files": 1,
+   "peak": -19.7,
+   "mean": -32.1
+  },
+  "riftShot": {
+   "gain": 0.28,
+   "files": 1,
+   "peak": -23.4,
+   "mean": -31.5
+  },
+  "beamCharge": {
+   "gain": 0.55,
+   "files": 1,
+   "peak": -21.8,
+   "mean": -34.2
+  },
+  "beam": {
+   "gain": 0.3,
+   "files": 1,
+   "peak": -10.5,
+   "mean": -31.7
+  },
+  "quake": {
+   "gain": 0.55,
+   "files": 2,
+   "peak": -5.2,
+   "mean": -31.8
+  },
+  "crumble": {
+   "gain": 0.5,
+   "files": 4,
+   "peak": -6,
+   "mean": -34.4
+  },
+  "die": {
+   "gain": 0.3,
+   "files": 2,
+   "peak": -11.3,
+   "mean": -31.3
+  },
+  "dieBone": {
+   "gain": 0.5,
+   "files": 2,
+   "peak": -6,
+   "mean": -29.7
+  },
+  "dieGhost": {
+   "gain": 0.4,
+   "files": 5,
+   "peak": -10,
+   "mean": -28.4
+  },
+  "dieSlime": {
+   "gain": 0.5,
+   "files": 5,
+   "peak": -7.3,
+   "mean": -31.3
+  },
+  "dieBug": {
+   "gain": 0.5,
+   "files": 3,
+   "peak": -8.8,
+   "mean": -32.7
+  },
+  "dieOgre": {
+   "gain": 0.55,
+   "files": 5,
+   "peak": -8.1,
+   "mean": -25.7
+  },
+  "dieBeast": {
+   "gain": 0.45,
+   "files": 1,
+   "peak": -10.9,
+   "mean": -27.2
+  },
+  "bossDie": {
+   "gain": 0.8,
+   "files": 2,
+   "peak": -8.2,
+   "mean": -22.3
+  },
+  "coin": {
+   "gain": 0.36,
+   "files": 2,
+   "peak": -11.8,
+   "mean": -30.4
+  },
+  "buy": {
+   "gain": 0.45,
+   "files": 1,
+   "peak": -7.1,
+   "mean": -28.2
+  },
+  "potion": {
+   "gain": 0.45,
+   "files": 2,
+   "peak": -9.2,
+   "mean": -27.3
+  },
+  "orb": {
+   "gain": 0.28,
+   "files": 1,
+   "peak": -12.4,
+   "mean": -31.5
+  },
+  "pickup": {
+   "gain": 0.32,
+   "files": 2,
+   "peak": -9.9,
+   "mean": -31.5
+  },
+  "pickupBig": {
+   "gain": 0.4,
+   "files": 1,
+   "peak": -8,
+   "mean": -33.4
+  },
+  "shard": {
+   "gain": 0.4,
+   "files": 2,
+   "peak": -8,
+   "mean": -31
+  },
+  "rare": {
+   "gain": 0.3,
+   "files": 1,
+   "peak": -10.5,
+   "mean": -35.9
+  },
+  "epic": {
+   "gain": 0.5,
+   "files": 1,
+   "peak": -6,
+   "mean": -31.3
+  },
+  "legendary": {
+   "gain": 0.6,
+   "files": 1,
+   "peak": -4.4,
+   "mean": -29.7
+  },
+  "chest": {
+   "gain": 0.5,
+   "files": 2,
+   "peak": -6,
+   "mean": -29.4
+  },
+  "equip": {
+   "gain": 0.45,
+   "files": 3,
+   "peak": -7.7,
+   "mean": -29.2
+  },
+  "trapSet": {
+   "gain": 0.38,
+   "files": 1,
+   "peak": -8.4,
+   "mean": -34
+  },
+  "trapSpring": {
+   "gain": 0.42,
+   "files": 2,
+   "peak": -9.8,
+   "mean": -30.8
+  },
+  "levelup": {
+   "gain": 0.5,
+   "files": 1,
+   "peak": -7.4,
+   "mean": -26.8
+  },
+  "questDone": {
+   "gain": 0.42,
+   "files": 1,
+   "peak": -13.7,
+   "mean": -29.6
+  },
+  "victory": {
+   "gain": 0.5,
+   "files": 1,
+   "peak": -11.9,
+   "mean": -26.4
+  },
+  "playerDie": {
+   "gain": 0.45,
+   "files": 1,
+   "peak": -13.4,
+   "mean": -27.3
+  },
+  "quest": {
+   "gain": 0.38,
+   "files": 1,
+   "peak": -18.4,
+   "mean": -28.9
+  },
+  "discover": {
+   "gain": 0.38,
+   "files": 1,
+   "peak": -13.5,
+   "mean": -28.8
+  },
+  "checkpoint": {
+   "gain": 0.26,
+   "files": 1,
+   "peak": -11.7,
+   "mean": -32.1
+  },
+  "bell": {
+   "gain": 0.6,
+   "files": 1,
+   "peak": -6.4,
+   "mean": -24.8
+  },
+  "bell-toll": {
+   "gain": 0.8,
+   "files": 1,
+   "peak": -3.9,
+   "mean": -22.3
+  },
+  "sigil": {
+   "gain": 0.6,
+   "files": 1,
+   "peak": -9.2,
+   "mean": -24.1
+  },
+  "reset": {
+   "gain": 0.4,
+   "files": 1,
+   "peak": -8.5,
+   "mean": -28.7
+  },
+  "talent": {
+   "gain": 0.34,
+   "files": 1,
+   "peak": -13.7,
+   "mean": -29.8
+  },
+  "mark": {
+   "gain": 0.3,
+   "files": 1,
+   "peak": -12.9,
+   "mean": -34.2
+  },
+  "nomana": {
+   "gain": 0.22,
+   "files": 1,
+   "peak": -18.7,
+   "mean": -33.5
+  },
+  "doorOpen": {
+   "gain": 0.45,
+   "files": 1,
+   "peak": -8.7,
+   "mean": -27.3
+  },
+  "doorSlam": {
+   "gain": 0.6,
+   "files": 1,
+   "peak": -6.2,
+   "mean": -24.8
+  },
+  "click": {
+   "gain": 0.28,
+   "files": 1,
+   "peak": -13,
+   "mean": -38
+  },
+  "open": {
+   "gain": 0.28,
+   "files": 1,
+   "peak": -20.7,
+   "mean": -32.8
+  },
+  "close": {
+   "gain": 0.26,
+   "files": 1,
+   "peak": -19.5,
+   "mean": -33.5
+  }
+ }
+}
