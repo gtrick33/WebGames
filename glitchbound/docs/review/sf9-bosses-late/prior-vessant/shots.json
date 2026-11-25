@@ -1,0 +1,194 @@
+{
+ "boss": "prior-vessant",
+ "shots": [
+  {
+   "state": "entrance",
+   "close": "01-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "02-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "03-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "04-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "05-entrance-close.jpg"
+  },
+  {
+   "state": "line-up",
+   "file": "06-line-up.jpg",
+   "close": "06-line-up-close.jpg"
+  },
+  {
+   "state": "portrait",
+   "file": "07-portrait.jpg"
+  },
+  {
+   "state": "phase-1-spell-drain-windup",
+   "file": "08-phase-1-spell-drain-windup.jpg",
+   "close": "08-phase-1-spell-drain-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-spell-drain-strike",
+   "file": "09-phase-1-spell-drain-strike.jpg",
+   "close": "09-phase-1-spell-drain-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-spell-mines-windup",
+   "file": "10-phase-1-spell-mines-windup.jpg",
+   "close": "10-phase-1-spell-mines-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-spell-mines-strike",
+   "file": "11-phase-1-spell-mines-strike.jpg",
+   "close": "11-phase-1-spell-mines-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-cleave-windup",
+   "file": "12-phase-1-cleave-windup.jpg",
+   "close": "12-phase-1-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-cleave-strike",
+   "file": "13-phase-1-cleave-strike.jpg",
+   "close": "13-phase-1-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-summon-windup",
+   "file": "14-phase-1-summon-windup.jpg",
+   "close": "14-phase-1-summon-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-summon-strike",
+   "file": "15-phase-1-summon-strike.jpg",
+   "close": "15-phase-1-summon-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-siege-dirge-windup",
+   "file": "16-phase-1-siege-dirge-windup.jpg",
+   "close": "16-phase-1-siege-dirge-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-siege-dirge-strike",
+   "file": "17-phase-1-siege-dirge-strike.jpg",
+   "close": "17-phase-1-siege-dirge-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-change",
+   "file": "18-phase-2-change.jpg",
+   "close": "18-phase-2-change-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-drain-windup",
+   "file": "19-phase-2-spell-drain-windup.jpg",
+   "close": "19-phase-2-spell-drain-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-drain-strike",
+   "file": "20-phase-2-spell-drain-strike.jpg",
+   "close": "20-phase-2-spell-drain-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-mines-windup",
+   "file": "21-phase-2-spell-mines-windup.jpg",
+   "close": "21-phase-2-spell-mines-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-mines-strike",
+   "file": "22-phase-2-spell-mines-strike.jpg",
+   "close": "22-phase-2-spell-mines-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-cleave-windup",
+   "file": "23-phase-2-cleave-windup.jpg",
+   "close": "23-phase-2-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-cleave-strike",
+   "file": "24-phase-2-cleave-strike.jpg",
+   "close": "24-phase-2-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-summon-windup",
+   "file": "25-phase-2-summon-windup.jpg",
+   "close": "25-phase-2-summon-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-summon-strike",
+   "file": "26-phase-2-summon-strike.jpg",
+   "close": "26-phase-2-summon-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-siege-dirge-windup",
+   "file": "27-phase-2-siege-dirge-windup.jpg",
+   "close": "27-phase-2-siege-dirge-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-siege-dirge-strike",
+   "file": "28-phase-2-siege-dirge-strike.jpg",
+   "close": "28-phase-2-siege-dirge-strike-close.jpg"
+  },
+  {
+   "state": "dazed",
+   "close": "29-dazed-close.jpg"
+  },
+  {
+   "state": "struck",
+   "file": "30-struck.jpg",
+   "close": "30-struck-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "31-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "32-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "33-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "34-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "35-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "36-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "37-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "38-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "39-death-close.jpg"
+  }
+ ],
+ "errors": [],
+ "cost": {
+  "file": "boss_vessant",
+  "tris": 9157,
+  "frame": {
+   "calls": 39,
+   "tris": 138753,
+   "quality": 1
+  }
+ }
+}

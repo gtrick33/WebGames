@@ -1,0 +1,354 @@
+{
+  "boss": "ashkar-the-bound",
+  "file": "boss_ashkar",
+  "form": "ashkar",
+  "float": 0,
+  "walked": {
+    "samples": 183,
+    "moving": 79,
+    "walking": 73,
+    "clips": {
+      "walk": 73,
+      "bash": 3,
+      "slice": 2,
+      "punch": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "run",
+        "slice",
+        "idle",
+        "walk",
+        "bash"
+      ],
+      "readings": 38
+    },
+    {
+      "phase": 1,
+      "id": "throne:taut",
+      "clips": [],
+      "note": "never began"
+    },
+    {
+      "phase": 1,
+      "id": "volley",
+      "clips": [
+        "punch",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 74
+    },
+    {
+      "phase": 1,
+      "id": "barrage",
+      "clips": [
+        "punch",
+        "walk",
+        "slice",
+        "idle",
+        "bash"
+      ],
+      "readings": 42
+    },
+    {
+      "phase": 1,
+      "id": "throne:forge",
+      "clips": [
+        "run",
+        "chop2",
+        "idle",
+        "walk",
+        "bash",
+        "slice"
+      ],
+      "readings": 60
+    },
+    {
+      "phase": 1,
+      "id": "throne:shackles",
+      "clips": [],
+      "note": "never began"
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "walk",
+        "idle",
+        "kick",
+        "smash",
+        "stab",
+        "run",
+        "slice",
+        "punch"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle",
+        "walk",
+        "spin"
+      ],
+      "readings": 61
+    },
+    {
+      "phase": 2,
+      "id": "throne:flail",
+      "clips": [
+        "spin",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 30
+    },
+    {
+      "phase": 2,
+      "id": "hook",
+      "clips": [
+        "stab",
+        "idle",
+        "walk",
+        "spin",
+        "slice"
+      ],
+      "readings": 40
+    },
+    {
+      "phase": 2,
+      "id": "throne:eruption",
+      "clips": [
+        "walk",
+        "smash",
+        "idle",
+        "slice"
+      ],
+      "readings": 28
+    },
+    {
+      "phase": 2,
+      "id": "throne:forge",
+      "clips": [
+        "run",
+        "chop2",
+        "idle",
+        "walk"
+      ],
+      "readings": 46
+    },
+    {
+      "phase": 2,
+      "id": "barrage",
+      "clips": [
+        "punch",
+        "walk",
+        "idle",
+        "spin"
+      ],
+      "readings": 36
+    },
+    {
+      "phase": 2,
+      "id": "roar",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 39
+    },
+    {
+      "phase": 2,
+      "id": "throne:tear",
+      "clips": [],
+      "note": "never began"
+    },
+    {
+      "phase": 3,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "cast",
+        "smash",
+        "spin",
+        "slice"
+      ]
+    },
+    {
+      "phase": 3,
+      "id": "cleave",
+      "clips": [
+        "run",
+        "slice",
+        "idle",
+        "walk",
+        "spin"
+      ],
+      "readings": 43
+    },
+    {
+      "phase": 3,
+      "id": "throne:flail",
+      "clips": [
+        "spin",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 50
+    },
+    {
+      "phase": 3,
+      "id": "hook",
+      "clips": [
+        "stab",
+        "idle",
+        "walk",
+        "spin"
+      ],
+      "readings": 49
+    },
+    {
+      "phase": 3,
+      "id": "throne:eruption",
+      "clips": [
+        "smash",
+        "walk",
+        "idle",
+        "spin"
+      ],
+      "readings": 31
+    },
+    {
+      "phase": 3,
+      "id": "volley",
+      "clips": [
+        "punch",
+        "idle",
+        "walk",
+        "slice",
+        "spin"
+      ],
+      "readings": 48
+    },
+    {
+      "phase": 3,
+      "id": "throne:crown",
+      "clips": [],
+      "note": "never began"
+    },
+    {
+      "phase": 4,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "cast",
+        "smash",
+        "slice",
+        "spin"
+      ]
+    },
+    {
+      "phase": 4,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle",
+        "walk",
+        "taunt"
+      ],
+      "readings": 49
+    },
+    {
+      "phase": 4,
+      "id": "throne:flail",
+      "clips": [
+        "spin",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 44
+    },
+    {
+      "phase": 4,
+      "id": "hook",
+      "clips": [
+        "stab",
+        "idle",
+        "walk",
+        "spin"
+      ],
+      "readings": 27
+    },
+    {
+      "phase": 4,
+      "id": "throne:eruption",
+      "clips": [
+        "smash",
+        "idle",
+        "walk",
+        "spin",
+        "taunt"
+      ],
+      "readings": 32
+    },
+    {
+      "phase": 4,
+      "id": "throne:inferno",
+      "clips": [
+        "taunt",
+        "idle",
+        "spin"
+      ],
+      "readings": 27
+    },
+    {
+      "phase": 4,
+      "id": "barrage",
+      "clips": [
+        "punch",
+        "idle"
+      ],
+      "readings": 35
+    },
+    {
+      "phase": 4,
+      "id": "roar",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "spin"
+      ],
+      "readings": 23
+    },
+    {
+      "phase": 4,
+      "id": "throne:lake",
+      "clips": [
+        "cast",
+        "idle",
+        "taunt",
+        "spin"
+      ],
+      "readings": 28
+    }
+  ],
+  "found": [],
+  "errors": []
+}

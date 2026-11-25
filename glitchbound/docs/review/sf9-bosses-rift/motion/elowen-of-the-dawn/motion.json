@@ -1,0 +1,90 @@
+{
+  "boss": "elowen-of-the-dawn",
+  "file": "boss_elowen",
+  "form": "elowen",
+  "float": 0,
+  "walked": {
+    "samples": 184,
+    "moving": 62,
+    "walking": 59,
+    "clips": {
+      "walk": 58,
+      "run": 1,
+      "slice": 1,
+      "channel": 2
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "spell:tether",
+      "clips": [
+        "channel",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 77
+    },
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "idle",
+        "slice"
+      ],
+      "readings": 75
+    },
+    {
+      "phase": 1,
+      "id": "blight:twins",
+      "clips": [],
+      "note": "never began"
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "cheer",
+        "walk",
+        "channel",
+        "slice"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "spell:tether",
+      "clips": [
+        "channel",
+        "idle"
+      ],
+      "readings": 63
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "run",
+        "slice",
+        "idle",
+        "channel"
+      ],
+      "readings": 79
+    },
+    {
+      "phase": 2,
+      "id": "roar",
+      "clips": [
+        "cheer",
+        "idle",
+        "walk",
+        "channel"
+      ],
+      "readings": 34
+    }
+  ],
+  "found": [],
+  "errors": []
+}

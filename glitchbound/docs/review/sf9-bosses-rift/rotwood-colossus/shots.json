@@ -1,0 +1,44 @@
+{
+ "boss": "rotwood-colossus",
+ "shots": [
+  {
+   "state": "entrance",
+   "close": "01-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "02-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "03-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "04-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "05-entrance-close.jpg"
+  },
+  {
+   "state": "line-up",
+   "file": "06-line-up.jpg",
+   "close": "06-line-up-close.jpg"
+  },
+  {
+   "state": "portrait",
+   "file": "07-portrait.jpg"
+  }
+ ],
+ "errors": [],
+ "cost": {
+  "file": "boss_rotwood",
+  "tris": 10302,
+  "frame": {
+   "calls": 32,
+   "tris": 118106,
+   "quality": 0.7
+  }
+ }
+}

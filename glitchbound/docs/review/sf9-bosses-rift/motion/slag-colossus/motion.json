@@ -1,0 +1,115 @@
+{
+  "boss": "slag-colossus",
+  "file": "boss_slag",
+  "form": "slag",
+  "float": 0,
+  "walked": {
+    "samples": 183,
+    "moving": 81,
+    "walking": 77,
+    "clips": {
+      "walk": 77,
+      "chop2": 1,
+      "smash": 2,
+      "kick": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle",
+        "walk",
+        "kick"
+      ],
+      "readings": 71
+    },
+    {
+      "phase": 1,
+      "id": "forge:slag",
+      "clips": [
+        "smash",
+        "idle",
+        "walk",
+        "kick"
+      ],
+      "readings": 51
+    },
+    {
+      "phase": 1,
+      "id": "stomp",
+      "clips": [
+        "kick",
+        "idle",
+        "walk"
+      ],
+      "readings": 65
+    },
+    {
+      "phase": 1,
+      "id": "forge:shed",
+      "clips": [],
+      "note": "never began"
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "block"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "forge:harden",
+      "clips": [
+        "block",
+        "walk",
+        "idle"
+      ],
+      "readings": 89
+    },
+    {
+      "phase": 2,
+      "id": "forge:slag",
+      "clips": [
+        "idle",
+        "smash",
+        "walk",
+        "spin"
+      ],
+      "readings": 24
+    },
+    {
+      "phase": 2,
+      "id": "slamRings",
+      "clips": [
+        "idle",
+        "punch",
+        "walk"
+      ],
+      "readings": 33
+    },
+    {
+      "phase": 2,
+      "id": "chop",
+      "clips": [
+        "idle",
+        "chop2",
+        "walk"
+      ],
+      "readings": 60
+    },
+    {
+      "phase": 2,
+      "id": "forge:shed",
+      "clips": [],
+      "note": "never began"
+    }
+  ],
+  "found": [],
+  "errors": []
+}
