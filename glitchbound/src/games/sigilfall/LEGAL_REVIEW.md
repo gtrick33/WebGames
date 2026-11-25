@@ -66,7 +66,7 @@ Mage's skull, a staff from the Fantasy Weapons Bits and a round shield as the su
 halo are built in code. **Vizier Khepset** is the Mage's robes and cape with the hooded Skeleton Rogue's head and a
 staff; his sand-glass is built in code. **The Sand Warden** is the Skeleton Golem with the large Barbarian's
 shoulder plates, the skeletons' great mace and the same round shield on its back. **Jarl Hrimfang** is the large
-Barbarian whole in his bear's head and pelt, with a great hammer and a coin stack from the Dungeon Pack. **Hallvor**
+Barbarian whole in his bear's head and pelt, with a great hammer from the Platformer Pack (newly named in the credits) and a coin stack from the Dungeon Pack. **Hallvor**
 is the helmed Paladin with a halberd and the skeletons' great shield. All of the same KayKit collection (CC0), each
 pack already credited. Their names and titles are unchanged. A sun-crowned dead king, his vizier with an hourglass,
 a stone tomb guardian, a frost-giant jarl and a frozen shield-bearer are stock figures of the genre; none copies a
