@@ -815,7 +815,7 @@ TABLE['general-morvain'] = {
   k: 'boss_morvain',
   form: 'morvain',
   // (his banner stands over him: sized so that the man keeps his size)
-  size: 1.72,
+  size: 1.85,
   atk: 'chop2',
   paint: [
     { joint: 'handslot.r', lum: [0.4, 1], sat: [0, 0.4], to: '#ff8a4a', glow: true, keep: 0.3 },

@@ -2135,7 +2135,7 @@ BOSS_KITS.boss_morvain = {
   grow: [['chest', 1.16], ['upperarm.l', 1.1], ['upperarm.r', 1.1]],
   ties: [
     { bit: 'BlackKnight_Sword_Large', joint: 'handslot.r', at: [0, 0, 0], size: 1.2 },
-    { bit: 'banner_thin_red', joint: 'chest', at: [0, 0.1, -0.55], size: 1.7, turn: [-38, 0, 0] },
+    { bit: 'banner_thin_red', joint: 'chest', at: [0, 0.1, -0.55], size: 1.3, turn: [-38, 0, 0] },
   ],
 };
 // The Magma Warden, Keeper of the Host's Forges: "a guardian of bone-steel with molten rock for a heart", built by
@@ -2144,7 +2144,7 @@ BOSS_KITS.boss_magmawarden = {
   rig: 'large',
   from: [['FrostGolem', /Body|Arm|Leg/], [`${SK}Golem`, /Head|Jaw|Eyes/]],
   grow: [['chest', 1.1]],
-  ties: [{ bit: 'hammer_large_red', joint: 'handslot.r', at: [0, 0, 0], size: 0.36 }],
+  ties: [{ bit: 'hammer_large_red', joint: 'handslot.r', at: [0, 0, 0], size: 0.3 }],
 };
 // Ossa the Founder, Mistress of the Bone-Steel Foundry: she pours the bone-steel for every blade and chain the Host
 // makes. The bone golem's frame with a founder's goggles and pack, and a hammer in her hand.
@@ -2152,7 +2152,7 @@ BOSS_KITS.boss_ossa = {
   rig: 'large',
   from: [[`${SK}Golem`, /Body|Arm|Leg|Head|Jaw|Eyes/], ['Engineer', /Goggles|Backpack/]],
   grow: [['hand.l', 1.2], ['hand.r', 1.2]],
-  ties: [{ bit: 'hammer_large_yellow', joint: 'handslot.r', at: [0, 0, 0], size: 0.45 }],
+  ties: [{ bit: 'hammer_large_yellow', joint: 'handslot.r', at: [0, 0, 0], size: 0.32 }],
 };
 // Ashkar the Bound, Fire Lord of Emberdeep: chained to his own throne and made to forge the Pale Crown. The rock
 // golem whole, broad in the shoulder, a shackle on each wrist and a link of the Host's chain still hanging from it.
@@ -2161,10 +2161,10 @@ BOSS_KITS.boss_ashkar = {
   from: [['FrostGolem', /Body|Arm|Leg|Head/]],
   grow: [['chest', 1.12], ['upperarm.l', 1.1], ['upperarm.r', 1.1]],
   ties: [
-    { bit: 'chain_shackle', joint: 'lowerarm.l', at: [0, -0.3, 0], size: 1.6 },
-    { bit: 'chain_shackle', joint: 'lowerarm.r', at: [0, -0.3, 0], size: 1.6 },
-    { bit: 'chain_link', joint: 'lowerarm.l', at: [0, -0.6, 0], size: 1.6 },
-    { bit: 'chain_link', joint: 'lowerarm.r', at: [0, -0.6, 0], size: 1.6 },
+    { bit: 'chain_shackle', joint: 'lowerarm.l', at: [0, -0.3, 0], size: 1.6, tint: [0.3, 0.27, 0.27] },
+    { bit: 'chain_shackle', joint: 'lowerarm.r', at: [0, -0.3, 0], size: 1.6, tint: [0.3, 0.27, 0.27] },
+    { bit: 'chain_link', joint: 'lowerarm.l', at: [0, -0.6, 0], size: 1.6, tint: [0.3, 0.27, 0.27] },
+    { bit: 'chain_link', joint: 'lowerarm.r', at: [0, -0.6, 0], size: 1.6, tint: [0.3, 0.27, 0.27] },
   ],
 };
 // Lady Cendre, the Last Mourner: a lady of Vaelor's court who has kept vigil over the King's dead for three hundred
