@@ -29,7 +29,7 @@ function placesOf(region: string): Set<string> {
 }
 
 /** The lands whose quests have been gone through (it grows as the pass does). */
-const DONE = ['thornvale', 'brackenridge', 'amberfield', 'ashen-barrows', 'sunscorch', 'glimmerwood', 'rimeheld', 'shattered-vale', 'highwall', 'gloamhollow', 'weeping-woods', 'emberdeep', 'hollowmere', 'pale-reach'];
+const DONE = ['thornvale', 'brackenridge', 'amberfield', 'ashen-barrows', 'sunscorch', 'glimmerwood', 'rimeheld', 'shattered-vale', 'highwall', 'gloamhollow', 'weeping-woods', 'emberdeep', 'hollowmere', 'pale-reach', 'emberwick'];
 /**
  * The story's ending, which is told and chosen, not worked at: the last fight, the memory of Vaelmoor, the choice, and
  * the Crown unmade. They are left as they were.
