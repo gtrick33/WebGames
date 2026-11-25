@@ -1,0 +1,269 @@
+{
+ "boss": "sir-corvane",
+ "shots": [
+  {
+   "state": "entrance",
+   "close": "01-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "02-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "03-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "04-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "05-entrance-close.jpg"
+  },
+  {
+   "state": "line-up",
+   "file": "06-line-up.jpg",
+   "close": "06-line-up-close.jpg"
+  },
+  {
+   "state": "portrait",
+   "file": "07-portrait.jpg"
+  },
+  {
+   "state": "phase-1-barrow-steed-charge-windup",
+   "file": "08-phase-1-barrow-steed-charge-windup.jpg",
+   "close": "08-phase-1-barrow-steed-charge-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-barrow-steed-charge-strike",
+   "file": "09-phase-1-barrow-steed-charge-strike.jpg",
+   "close": "09-phase-1-barrow-steed-charge-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-cleave-windup",
+   "file": "10-phase-1-cleave-windup.jpg",
+   "close": "10-phase-1-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-cleave-strike",
+   "file": "11-phase-1-cleave-strike.jpg",
+   "close": "11-phase-1-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-spell-lances-windup",
+   "file": "12-phase-1-spell-lances-windup.jpg",
+   "close": "12-phase-1-spell-lances-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-spell-lances-strike",
+   "file": "13-phase-1-spell-lances-strike.jpg",
+   "close": "13-phase-1-spell-lances-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-spell-halves-windup",
+   "file": "14-phase-1-spell-halves-windup.jpg",
+   "close": "14-phase-1-spell-halves-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-spell-halves-strike",
+   "file": "15-phase-1-spell-halves-strike.jpg",
+   "close": "15-phase-1-spell-halves-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-summon-windup",
+   "file": "16-phase-1-summon-windup.jpg",
+   "close": "16-phase-1-summon-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-summon-strike",
+   "file": "17-phase-1-summon-strike.jpg",
+   "close": "17-phase-1-summon-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-change",
+   "file": "18-phase-2-change.jpg",
+   "close": "18-phase-2-change-close.jpg"
+  },
+  {
+   "state": "phase-2-cleave-windup",
+   "file": "19-phase-2-cleave-windup.jpg",
+   "close": "19-phase-2-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-cleave-strike",
+   "file": "20-phase-2-cleave-strike.jpg",
+   "close": "20-phase-2-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-barrow-doom-windup",
+   "file": "21-phase-2-barrow-doom-windup.jpg",
+   "close": "21-phase-2-barrow-doom-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-barrow-doom-strike",
+   "file": "22-phase-2-barrow-doom-strike.jpg",
+   "close": "22-phase-2-barrow-doom-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-barrow-rime-windup",
+   "file": "23-phase-2-barrow-rime-windup.jpg",
+   "close": "23-phase-2-barrow-rime-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-barrow-rime-strike",
+   "file": "24-phase-2-barrow-rime-strike.jpg",
+   "close": "24-phase-2-barrow-rime-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-chop-windup",
+   "file": "25-phase-2-chop-windup.jpg",
+   "close": "25-phase-2-chop-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-chop-strike",
+   "file": "26-phase-2-chop-strike.jpg",
+   "close": "26-phase-2-chop-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-lances-windup",
+   "file": "27-phase-2-spell-lances-windup.jpg",
+   "close": "27-phase-2-spell-lances-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-lances-strike",
+   "file": "28-phase-2-spell-lances-strike.jpg",
+   "close": "28-phase-2-spell-lances-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-summon-windup",
+   "file": "29-phase-2-summon-windup.jpg",
+   "close": "29-phase-2-summon-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-summon-strike",
+   "file": "30-phase-2-summon-strike.jpg",
+   "close": "30-phase-2-summon-strike-close.jpg"
+  },
+  {
+   "state": "phase-3-change",
+   "file": "31-phase-3-change.jpg",
+   "close": "31-phase-3-change-close.jpg"
+  },
+  {
+   "state": "phase-3-cleave-windup",
+   "file": "32-phase-3-cleave-windup.jpg",
+   "close": "32-phase-3-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-3-cleave-strike",
+   "file": "33-phase-3-cleave-strike.jpg",
+   "close": "33-phase-3-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-3-vanish-windup",
+   "file": "34-phase-3-vanish-windup.jpg",
+   "close": "34-phase-3-vanish-windup-close.jpg"
+  },
+  {
+   "state": "phase-3-vanish-strike",
+   "file": "35-phase-3-vanish-strike.jpg",
+   "close": "35-phase-3-vanish-strike-close.jpg"
+  },
+  {
+   "state": "phase-3-barrow-doom-windup",
+   "file": "36-phase-3-barrow-doom-windup.jpg",
+   "close": "36-phase-3-barrow-doom-windup-close.jpg"
+  },
+  {
+   "state": "phase-3-barrow-doom-strike",
+   "file": "37-phase-3-barrow-doom-strike.jpg",
+   "close": "37-phase-3-barrow-doom-strike-close.jpg"
+  },
+  {
+   "state": "phase-3-barrow-rime-windup",
+   "file": "38-phase-3-barrow-rime-windup.jpg",
+   "close": "38-phase-3-barrow-rime-windup-close.jpg"
+  },
+  {
+   "state": "phase-3-barrow-rime-strike",
+   "file": "39-phase-3-barrow-rime-strike.jpg",
+   "close": "39-phase-3-barrow-rime-strike-close.jpg"
+  },
+  {
+   "state": "phase-3-tripleCharge-windup",
+   "file": "40-phase-3-tripleCharge-windup.jpg",
+   "close": "40-phase-3-tripleCharge-windup-close.jpg"
+  },
+  {
+   "state": "phase-3-tripleCharge-strike",
+   "file": "41-phase-3-tripleCharge-strike.jpg",
+   "close": "41-phase-3-tripleCharge-strike-close.jpg"
+  },
+  {
+   "state": "phase-3-chop-windup",
+   "file": "42-phase-3-chop-windup.jpg",
+   "close": "42-phase-3-chop-windup-close.jpg"
+  },
+  {
+   "state": "phase-3-chop-strike",
+   "file": "43-phase-3-chop-strike.jpg",
+   "close": "43-phase-3-chop-strike-close.jpg"
+  },
+  {
+   "state": "dazed",
+   "close": "44-dazed-close.jpg"
+  },
+  {
+   "state": "struck",
+   "file": "45-struck.jpg",
+   "close": "45-struck-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "46-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "47-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "48-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "49-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "50-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "51-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "52-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "53-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "54-death-close.jpg"
+  }
+ ],
+ "errors": [],
+ "cost": {
+  "file": "boss_corvane",
+  "tris": 11467,
+  "frame": {
+   "calls": 35,
+   "tris": 474214,
+   "quality": 1
+  }
+ }
+}

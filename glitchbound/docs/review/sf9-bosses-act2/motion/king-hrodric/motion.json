@@ -1,0 +1,130 @@
+{
+  "boss": "king-hrodric",
+  "file": "boss_hrodric",
+  "form": "hrodric",
+  "float": 0,
+  "walked": {
+    "samples": 183,
+    "moving": 61,
+    "walking": 59,
+    "clips": {
+      "walk": 58,
+      "run": 1,
+      "slice": 1,
+      "chop2": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "walk",
+        "slice",
+        "idle"
+      ],
+      "readings": 54
+    },
+    {
+      "phase": 1,
+      "id": "chop",
+      "clips": [
+        "idle",
+        "chop2",
+        "walk"
+      ],
+      "readings": 59
+    },
+    {
+      "phase": 1,
+      "id": "barrow:frost-pulse",
+      "clips": [
+        "smash",
+        "idle",
+        "walk"
+      ],
+      "readings": 70
+    },
+    {
+      "phase": 1,
+      "id": "summon",
+      "clips": [
+        "cast",
+        "idle",
+        "walk"
+      ],
+      "readings": 44
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "cast",
+        "smash",
+        "chop2",
+        "slice"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "barrow:whirl",
+      "clips": [
+        "spin",
+        "walk",
+        "idle"
+      ],
+      "readings": 48
+    },
+    {
+      "phase": 2,
+      "id": "barrow:frost-pulse",
+      "clips": [
+        "idle",
+        "smash"
+      ],
+      "readings": 59
+    },
+    {
+      "phase": 2,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle",
+        "walk"
+      ],
+      "readings": 29
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle"
+      ],
+      "readings": 63
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "cast",
+        "idle"
+      ],
+      "readings": 35
+    },
+    {
+      "phase": 2,
+      "id": "roar",
+      "clips": [
+        "taunt",
+        "idle"
+      ],
+      "readings": 28
+    }
+  ],
+  "found": [],
+  "errors": []
+}
