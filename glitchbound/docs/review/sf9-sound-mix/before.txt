@@ -1,0 +1,155 @@
+Music (whole piece): LUFS, range, true peak
+  barrows        -23.5   13.1   -7.6
+  boss           -21.4   10.9   -9.4
+  cave           -23.4   1.9    -10.8
+  chapel         -23.5   11.2   -9.3
+  coast          -23.4   4      -4.3
+  court          -23.5   3.8    -1.7
+  crypt          -23.4   9.2    -7.9
+  darkwood       -23.4   13.6   -6.7
+  desert         -23.4   4.7    -11.7
+  forest         -23.5   6.9    -6.4
+  forge          -23.4   9.9    -5.9
+  highland       -23.5   2.6    -11.2
+  highwall       -23.5   10.2   -5.8
+  jungle         -23.4   4.3    -8.1
+  rift           -23.4   8.3    -8.7
+  ring-forge     -21.4   7.9    -11.2
+  ring-frost     -21.4   3.6    -8.7
+  ring-sands     -21.5   2      -8.5
+  road           -23.5   5.9    -3.6
+  siege          -21.6   9.6    -8.7
+  snow           -23.4   5      -6.4
+  tavern         -23.4   3.7    -11.6
+  title          -23.4   5.5    -8.8
+  tomb           -23.4   8      -7.8
+  village        -23.4   5.5    -3.5
+  quietest -23.5, loudest -21.4, middle -23.4
+
+Sounds as played (gain laid over): peak dB, mean dB
+  bell-toll          gain 0.8   peak -3.9    mean -22.3
+  meteor             gain 0.6   peak -4.4    mean -35
+  legendary          gain 0.6   peak -4.4    mean -29.7
+  shatter            gain 0.6   peak -4.7    mean -27.5
+  roar               gain 0.7   peak -5      mean -23.6
+  slam               gain 0.55  peak -5.2    mean -26.8
+  quake              gain 0.55  peak -5.2    mean -31.8
+  explode            gain 0.5   peak -6      mean -36
+  crumble            gain 0.5   peak -6      mean -34.4
+  dieBone            gain 0.5   peak -6      mean -29.7
+  epic               gain 0.5   peak -6      mean -31.3
+  chest              gain 0.5   peak -6      mean -29.4
+  doorSlam           gain 0.6   peak -6.2    mean -24.8
+  hurt               gain 0.5   peak -6.4    mean -32.6
+  bell               gain 0.6   peak -6.4    mean -24.8
+  heavy              gain 0.55  peak -6.6    mean -25.6
+  shield             gain 0.45  peak -6.9    mean -25.8
+  voMDeath           gain 0.5   peak -6.9    mean -26.4
+  buy                gain 0.45  peak -7.1    mean -28.2
+  squish             gain 0.5   peak -7.3    mean -31.3
+  dieSlime           gain 0.5   peak -7.3    mean -31.3
+  swingBig           gain 0.5   peak -7.4    mean -26.4
+  levelup            gain 0.5   peak -7.4    mean -26.8
+  critBlade          gain 0.42  peak -7.5    mean -31.2
+  thunder            gain 0.5   peak -7.5    mean -26.5
+  equip              gain 0.45  peak -7.7    mean -29.2
+  crit               gain 0.4   peak -8      mean -31
+  voMHurt            gain 0.45  peak -8      mean -27.4
+  pickupBig          gain 0.4   peak -8      mean -33.4
+  shard              gain 0.4   peak -8      mean -31
+  dieOgre            gain 0.55  peak -8.1    mean -25.7
+  bossDie            gain 0.8   peak -8.2    mean -22.3
+  trapSet            gain 0.38  peak -8.4    mean -34
+  reset              gain 0.4   peak -8.5    mean -28.7
+  voMBig             gain 0.5   peak -8.6    mean -26.7
+  doorOpen           gain 0.45  peak -8.7    mean -27.3
+  dieBug             gain 0.5   peak -8.8    mean -32.7
+  snort              gain 0.45  peak -8.9    mean -27.4
+  freeze             gain 0.36  peak -9.2    mean -29.9
+  potion             gain 0.45  peak -9.2    mean -27.3
+  sigil              gain 0.6   peak -9.2    mean -24.1
+  voMVictory         gain 0.5   peak -9.3    mean -26.4
+  swing              gain 0.4   peak -9.4    mean -28.4
+  whirl              gain 0.4   peak -9.4    mean -28.4
+  hit                gain 0.34  peak -9.4    mean -33.7
+  shieldBreak        gain 0.4   peak -9.4    mean -30.4
+  voMAttack          gain 0.42  peak -9.4    mean -27.9
+  bow                gain 0.34  peak -9.6    mean -38.9
+  trapSpring         gain 0.42  peak -9.8    mean -30.8
+  pickup             gain 0.32  peak -9.9    mean -31.5
+  soul               gain 0.4   peak -10     mean -28.4
+  dieGhost           gain 0.4   peak -10     mean -28.4
+  clash              gain 0.3   peak -10.5   mean -30.6
+  zap                gain 0.3   peak -10.5   mean -35.3
+  beam               gain 0.3   peak -10.5   mean -31.7
+  rare               gain 0.3   peak -10.5   mean -35.9
+  volley             gain 0.3   peak -10.7   mean -40
+  arrowRain          gain 0.3   peak -10.7   mean -40
+  voMShout           gain 0.36  peak -10.8   mean -29.2
+  dodge              gain 0.32  peak -10.9   mean -31
+  dieBeast           gain 0.45  peak -10.9   mean -27.2
+  enemyBow           gain 0.28  peak -11.3   mean -40.6
+  die                gain 0.3   peak -11.3   mean -31.3
+  voMJump            gain 0.34  peak -11.5   mean -29.8
+  bolt               gain 0.28  peak -11.7   mean -31.3
+  checkpoint         gain 0.26  peak -11.7   mean -32.1
+  coin               gain 0.36  peak -11.8   mean -30.4
+  victory            gain 0.5   peak -11.9   mean -26.4
+  holy               gain 0.34  peak -12.2   mean -32.1
+  orb                gain 0.28  peak -12.4   mean -31.5
+  dash               gain 0.32  peak -12.7   mean -30.4
+  mark               gain 0.3   peak -12.9   mean -34.2
+  click              gain 0.28  peak -13     mean -38
+  hitHeavy           gain 0.22  peak -13.2   mean -42.4
+  dismount           gain 0.3   peak -13.3   mean -31
+  mount              gain 0.3   peak -13.3   mean -31
+  nature             gain 0.3   peak -13.3   mean -33.2
+  rush               gain 0.32  peak -13.4   mean -30.3
+  playerDie          gain 0.45  peak -13.4   mean -27.3
+  discover           gain 0.38  peak -13.5   mean -28.8
+  questDone          gain 0.42  peak -13.7   mean -29.6
+  talent             gain 0.34  peak -13.7   mean -29.8
+  spear              gain 0.38  peak -13.8   mean -28.9
+  puff               gain 0.28  peak -13.9   mean -31.6
+  hitBone            gain 0.2   peak -14     mean -37.6
+  hitFlesh           gain 0.2   peak -14.4   mean -40.5
+  buff               gain 0.26  peak -14.5   mean -34.4
+  voF1Big            gain 0.52  peak -14.6   mean -29.1
+  stepStone          gain 0.18  peak -14.9   mean -35.1
+  stepWood           gain 0.18  peak -14.9   mean -34.8
+  whistle            gain 0.25  peak -15     mean -32.4
+  nova               gain 0.36  peak -15.1   mean -30.8
+  enemySwing         gain 0.25  peak -15.2   mean -32.5
+  voF1Death          gain 0.5   peak -15.4   mean -30.7
+  stepSnow           gain 0.17  peak -15.4   mean -35.9
+  heal               gain 0.34  peak -15.4   mean -34.6
+  voF1Hurt           gain 0.45  peak -15.5   mean -31.1
+  stepGrass          gain 0.16  peak -15.9   mean -43.4
+  stepSand           gain 0.16  peak -15.9   mean -36.4
+  windup             gain 0.22  peak -16.2   mean -33.6
+  voF1Attack         gain 0.42  peak -16.4   mean -31.7
+  blink              gain 0.3   peak -16.6   mean -30.9
+  fieldCast          gain 0.3   peak -16.7   mean -32.4
+  enemyWindup        gain 0.2   peak -17     mean -34.4
+  hitSlime           gain 0.16  peak -17.2   mean -41.2
+  fireball           gain 0.4   peak -17.2   mean -42.1
+  voF2Attack         gain 0.36  peak -17.4   mean -33.3
+  sling              gain 0.24  peak -17.8   mean -32.9
+  hitGhost           gain 0.16  peak -17.9   mean -36.3
+  voF1Jump           gain 0.34  peak -18.2   mean -32.8
+  quest              gain 0.38  peak -18.4   mean -28.9
+  voF3Attack         gain 0.36  peak -18.5   mean -34.5
+  hitShell           gain 0.16  peak -18.7   mean -42.6
+  nomana             gain 0.22  peak -18.7   mean -33.5
+  voF3Shout          gain 0.34  peak -19     mean -35
+  close              gain 0.26  peak -19.5   mean -33.5
+  open               gain 0.28  peak -20.7   mean -32.8
+  summon             gain 0.38  peak -21     mean -28.8
+  arrow              gain 0.22  peak -21.1   mean -35.5
+  shadow             gain 0.34  peak -21.7   mean -29.8
+  shapeshift         gain 0.34  peak -22     mean -29.8
+  riftShot           gain 0.28  peak -23.4   mean -31.5
+  rift               gain 0.4   peak -24.6   mean -37
+  meteorCall         gain 0.3   peak -26.9   mean -44.7
+  beamCharge         gain 0.3   peak -27.1   mean -39.5
+  drain              gain 0.34  peak -29.8   mean -43.1
