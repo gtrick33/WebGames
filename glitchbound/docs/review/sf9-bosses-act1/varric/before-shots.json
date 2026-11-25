@@ -1,0 +1,44 @@
+{
+ "boss": "varric",
+ "shots": [
+  {
+   "state": "entrance",
+   "close": "before-01-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "before-02-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "before-03-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "before-04-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "before-05-entrance-close.jpg"
+  },
+  {
+   "state": "line-up",
+   "file": "before-06-line-up.jpg",
+   "close": "before-06-line-up-close.jpg"
+  },
+  {
+   "state": "portrait",
+   "file": "before-07-portrait.jpg"
+  }
+ ],
+ "errors": [],
+ "cost": {
+  "file": "survivalist",
+  "tris": null,
+  "frame": {
+   "calls": 33,
+   "tris": 111593,
+   "quality": 0.85
+  }
+ }
+}

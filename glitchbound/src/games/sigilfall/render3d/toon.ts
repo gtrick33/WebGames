@@ -25,6 +25,13 @@ export interface ExtraJoint {
   pose(clip: string | null, phase: number, out: THREE.Matrix4): void;
 }
 
+/**
+ * How a figure carries itself, laid over every clip of its skeleton: a turn added to a joint (about its own x, y and z,
+ * in radians) at a point of a clip (0 to 1 along it; `clip` null at rest), or null to leave the joint as the clip has
+ * it. A stoop, a breath, a sway: what makes one figure on a shared skeleton move as itself (render3d/bossKit.ts).
+ */
+export type Bend = (joint: string, clip: string | null, phase: number) => readonly [number, number, number] | null;
+
 export class RigAnim {
   readonly tex: THREE.DataTexture;
   readonly clips: Record<string, ClipRange> = {};
@@ -35,7 +42,7 @@ export class RigAnim {
   private readonly data: Float32Array;
   private readonly rowLength: number;
 
-  constructor(rig: RigData, bin: ArrayBuffer, extras: readonly ExtraJoint[] = []) {
+  constructor(rig: RigData, bin: ArrayBuffer, extras: readonly ExtraJoint[] = [], bend?: Bend) {
     const J = rig.joints.length;
     const K = extras.length;
     this.joints = K ? [...rig.joints, ...extras.map((e) => e.name)] : rig.joints;
@@ -77,6 +84,33 @@ export class RigAnim {
       }
     };
     const rest = rig.rest;
+    // a joint's turn with the figure's own carriage laid over it (the clip's turn first, then the bend, in the joint's own space)
+    const bent = { x: 0, y: 0, z: 0, w: 1 };
+    const turnOf = (j: number, clip: string | null, phase: number, x: number, y: number, z: number, w: number): void => {
+      const by = bend?.(rig.joints[j]!, clip, phase);
+      if (!by) {
+        bent.x = x;
+        bent.y = y;
+        bent.z = z;
+        bent.w = w;
+        return;
+      }
+      const cx = Math.cos(by[0] / 2);
+      const sx = Math.sin(by[0] / 2);
+      const cy = Math.cos(by[1] / 2);
+      const sy = Math.sin(by[1] / 2);
+      const cz = Math.cos(by[2] / 2);
+      const sz = Math.sin(by[2] / 2);
+      // (about x, then y, then z)
+      const bx = sx * cy * cz + cx * sy * sz;
+      const byy = cx * sy * cz - sx * cy * sz;
+      const bz = cx * cy * sz + sx * sy * cz;
+      const bw = cx * cy * cz - sx * sy * sz;
+      bent.x = w * bx + x * bw + y * bz - z * byy;
+      bent.y = w * byy - x * bz + y * bw + z * bx;
+      bent.z = w * bz + x * byy - y * bx + z * bw;
+      bent.w = w * bw - x * bx - y * byy - z * bz;
+    };
     const pose = (get: (j: number) => void): void => {
       for (let j = 0; j < J; j++) {
         get(j);
@@ -86,7 +120,10 @@ export class RigAnim {
       }
     };
     // row 0: at rest
-    pose((j) => compose(local, rest[j * 10]!, rest[j * 10 + 1]!, rest[j * 10 + 2]!, rest[j * 10 + 3]!, rest[j * 10 + 4]!, rest[j * 10 + 5]!, rest[j * 10 + 6]!, rest[j * 10 + 7]!, rest[j * 10 + 8]!, rest[j * 10 + 9]!));
+    pose((j) => {
+      turnOf(j, null, 0, rest[j * 10 + 3]!, rest[j * 10 + 4]!, rest[j * 10 + 5]!, rest[j * 10 + 6]!);
+      compose(local, rest[j * 10]!, rest[j * 10 + 1]!, rest[j * 10 + 2]!, bent.x, bent.y, bent.z, bent.w, rest[j * 10 + 7]!, rest[j * 10 + 8]!, rest[j * 10 + 9]!);
+    });
     row(0);
     let next = 1;
     for (const [id, c] of Object.entries(rig.clips)) {
@@ -106,7 +143,8 @@ export class RigAnim {
           const sx = s && si >= 0 ? s[(f * c.sj.length + si) * 3]! : rest[j * 10 + 7]!;
           const sy = s && si >= 0 ? s[(f * c.sj.length + si) * 3 + 1]! : rest[j * 10 + 8]!;
           const sz = s && si >= 0 ? s[(f * c.sj.length + si) * 3 + 2]! : rest[j * 10 + 9]!;
-          compose(local, tx, ty, tz, q[qa]! * k, q[qa + 1]! * k, q[qa + 2]! * k, q[qa + 3]! * k, sx, sy, sz);
+          turnOf(j, id, f / c.n, q[qa]! * k, q[qa + 1]! * k, q[qa + 2]! * k, q[qa + 3]! * k);
+          compose(local, tx, ty, tz, bent.x, bent.y, bent.z, bent.w, sx, sy, sz);
         });
         row(next + at, id, f / c.n);
       }

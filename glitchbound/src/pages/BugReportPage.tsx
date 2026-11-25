@@ -6,6 +6,7 @@ import { openSignIn } from '../components/openSignIn';
 import { api, ApiError, useAccount } from '../platform/account';
 import { track } from '../platform/analytics';
 import type { BugReportView } from '../platform/apiTypes';
+import { bugContext } from '../platform/bugContext';
 import { usePageMeta } from '../platform/meta';
 import { Link, useLocation } from '../router/router';
 import './InfoPages.css';
@@ -86,6 +87,8 @@ export function BugReportPage() {
   const [sentId, setSentId] = useState(0);
   const [mine, setMine] = useState<BugReportView[] | null>(null);
   const [device] = useState(deviceSummary);
+  // where the player was in the game they are reporting, if that game said (src/platform/bugContext.ts)
+  const where = game ? bugContext(game) : '';
 
   useEffect(() => {
     if (!me) return;
@@ -108,7 +111,7 @@ export function BugReportPage() {
       const res = await api<{ id: number }>('/api/bugs', {
         body: {
           title: String(data.get('title') ?? ''),
-          description: [String(data.get('description') ?? ''), String(data.get('steps') ?? '').trim() ? `\n\nSteps:\n${String(data.get('steps'))}` : ''].join(''),
+          description: [String(data.get('description') ?? ''), String(data.get('steps') ?? '').trim() ? `\n\nSteps:\n${String(data.get('steps'))}` : '', where ? `\n\nIn the game: ${where}` : ''].join(''),
           game,
           category,
           severity,
@@ -215,6 +218,11 @@ export function BugReportPage() {
           <p className="info-small bug-device">
             <Icon name="keyboard" size={16} /> {t('We’ll attach your browser and screen size:')} <span className="mono">{device}</span>
           </p>
+          {where && (
+            <p className="info-small bug-device">
+              <Icon name="bug" size={16} /> {t('We’ll attach where you were in the game:')} <span className="mono">{where}</span>
+            </p>
+          )}
           {error && (
             <p className="bug-error" role="alert">
               {error}

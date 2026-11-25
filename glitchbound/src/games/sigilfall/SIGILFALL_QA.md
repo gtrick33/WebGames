@@ -27,6 +27,8 @@ node scripts/sigilfall-overlap-check.mjs --hints                  the same throu
 node scripts/sigilfall-panel-audit.mjs                            every panel and shop at three sizes: nothing cut off or covered
 node scripts/sigilfall-bench.mjs --size desktop | phone           draw calls and triangles in the heaviest fights
 node scripts/sigilfall-load-check.mjs --size desktop | phone      what a new player loads before the first fight (after a build)
+node scripts/sigilfall-load-check.mjs --size phone --net slow4g   the same on a slow phone line (fast4g too)
+node scripts/sigilfall-soak.mjs                                   nothing held on to over rounds through every land
 ```
 
 They need Playwright (`npm i --no-save playwright`, or `NODE_PATH` set to a folder that has it) and are run one at a

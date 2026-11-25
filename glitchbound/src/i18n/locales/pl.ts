@@ -2269,6 +2269,7 @@ const pl: string[] = [
   'Żadnych wskazówek poza podpowiedziami! {name} zgaduje.',
   'teraz online',
   'w {game}',
+  'Dołączymy informację, gdzie byłeś w grze:',
 ];
 
 export default pl;

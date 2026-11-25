@@ -183,15 +183,18 @@ function boarParts(base: MeshData, def: MountDef, shape: MountShape, joint: numb
     // a brow plate with a spike (a shop boar's helm has its own)
     if (!hasExtra(def, 'helm')) parts.push(rod([0, 3.5, 2.75], [0, 4.25, 2.55], 0.22, 0, 5, steel, mix(steel, [1, 1, 1], 0.5), head, base.rig));
   }
-  // the blanket
-  parts.push(shell(base, [above(hemY), ...between(sz - 0.7, sz + 0.62)], def.barding ? 0.08 : 0.05, blanket, hide));
-  parts.push(shell(base, [above(hemY), below(hemY + 0.13), ...between(sz - 0.7, sz + 0.62)], def.barding ? 0.1 : 0.075, hemC, hide));
-  parts.push(tied(buildSaddle(def.tack, shape.backW / u, 0.22), joint, u, [0, sy + 0.04, sz], base.rig));
+  // the blanket and the saddle (a beast nobody rides has neither)
+  if (!def.bare) {
+    parts.push(shell(base, [above(hemY), ...between(sz - 0.7, sz + 0.62)], def.barding ? 0.08 : 0.05, blanket, hide));
+    parts.push(shell(base, [above(hemY), below(hemY + 0.13), ...between(sz - 0.7, sz + 0.62)], def.barding ? 0.1 : 0.075, hemC, hide));
+    parts.push(tied(buildSaddle(def.tack, shape.backW / u, 0.22), joint, u, [0, sy + 0.04, sz], base.rig));
+  }
 
-  // tusks out of the jaw, curving up
+  // tusks out of the jaw, curving up (an old wild one's sweep out wide, half as long again and thicker)
+  const tk = def.bare ? 1.6 : 1;
   for (const side of [1, -1]) {
-    parts.push(rod([side * 0.52, 2.5, 3.15], [side * 0.72, 3.0, 3.42], 0.17, 0.13, 6, root, ivory, head, base.rig));
-    parts.push(rod([side * 0.72, 3.0, 3.42], [side * 0.8, 3.56, 3.34], 0.13, 0, 6, ivory, mix(ivory, [1, 1, 1], 0.5), head, base.rig));
+    parts.push(rod([side * 0.52, 2.5, 3.15], [side * (0.52 + 0.2 * tk * 1.3), 2.5 + 0.5 * tk, 3.15 + 0.27 * tk], 0.17 * tk, 0.13 * tk, 6, root, ivory, head, base.rig));
+    parts.push(rod([side * (0.52 + 0.2 * tk * 1.3), 2.5 + 0.5 * tk, 3.15 + 0.27 * tk], [side * (0.52 + 0.28 * tk * 1.5), 2.5 + 1.06 * tk, 3.15 + 0.19 * tk], 0.13 * tk, 0, 6, ivory, mix(ivory, [1, 1, 1], 0.5), head, base.rig));
   }
   // a snout, flat at the end
   const nose = mul(rgb(def.coat), 0.5);
@@ -201,7 +204,7 @@ function boarParts(base: MeshData, def: MountDef, shape: MountShape, joint: numb
   const tip = mix(mane, rgb('#a89878'), 0.35);
   const spiked = hasExtra(def, 'plates');
   for (let z = 2.3; z > -2.05; z -= 0.27) {
-    if (z < sz + 0.75 && z > sz - 0.82) continue;
+    if (!def.bare && z < sz + 0.75 && z > sz - 0.82) continue;
     if (spiked && ((z > 0.5 && z < 1.65) || (z > -2.0 && z < -0.85))) continue;
     if (hasExtra(def, 'helm') && z > 1.95) continue;
     const top = topAt(base, z, 0.2, 0.6);

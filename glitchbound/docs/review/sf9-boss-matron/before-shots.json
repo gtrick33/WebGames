@@ -1,0 +1,115 @@
+{
+ "boss": "coffin-matron",
+ "shots": [
+  {
+   "state": "entrance",
+   "file": "before-01-entrance.jpg",
+   "close": "before-01-entrance-close.jpg"
+  },
+  {
+   "state": "entrance-2",
+   "file": "before-02-entrance-2.jpg",
+   "close": "before-02-entrance-2-close.jpg"
+  },
+  {
+   "state": "line-up",
+   "file": "before-03-line-up.jpg",
+   "close": "before-03-line-up-close.jpg"
+  },
+  {
+   "state": "phase-1-crypt-coffins-windup",
+   "file": "before-04-phase-1-crypt-coffins-windup.jpg",
+   "close": "before-04-phase-1-crypt-coffins-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-crypt-coffins-strike",
+   "file": "before-05-phase-1-crypt-coffins-strike.jpg",
+   "close": "before-05-phase-1-crypt-coffins-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-spell-seekers-windup",
+   "file": "before-06-phase-1-spell-seekers-windup.jpg",
+   "close": "before-06-phase-1-spell-seekers-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-spell-seekers-strike",
+   "file": "before-07-phase-1-spell-seekers-strike.jpg",
+   "close": "before-07-phase-1-spell-seekers-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-spell-cage-windup",
+   "file": "before-08-phase-1-spell-cage-windup.jpg",
+   "close": "before-08-phase-1-spell-cage-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-spell-cage-strike",
+   "file": "before-09-phase-1-spell-cage-strike.jpg",
+   "close": "before-09-phase-1-spell-cage-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-change",
+   "file": "before-10-phase-2-change.jpg",
+   "close": "before-10-phase-2-change-close.jpg"
+  },
+  {
+   "state": "phase-2-crypt-coffins-windup",
+   "file": "before-11-phase-2-crypt-coffins-windup.jpg",
+   "close": "before-11-phase-2-crypt-coffins-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-crypt-coffins-strike",
+   "file": "before-12-phase-2-crypt-coffins-strike.jpg",
+   "close": "before-12-phase-2-crypt-coffins-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-seekers-windup",
+   "file": "before-13-phase-2-spell-seekers-windup.jpg",
+   "close": "before-13-phase-2-spell-seekers-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-seekers-strike",
+   "file": "before-14-phase-2-spell-seekers-strike.jpg",
+   "close": "before-14-phase-2-spell-seekers-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-cage-windup",
+   "file": "before-15-phase-2-spell-cage-windup.jpg",
+   "close": "before-15-phase-2-spell-cage-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-cage-strike",
+   "file": "before-16-phase-2-spell-cage-strike.jpg",
+   "close": "before-16-phase-2-spell-cage-strike-close.jpg"
+  },
+  {
+   "state": "struck",
+   "file": "before-17-struck.jpg",
+   "close": "before-17-struck-close.jpg"
+  },
+  {
+   "state": "death-1",
+   "file": "before-18-death-1.jpg",
+   "close": "before-18-death-1-close.jpg"
+  },
+  {
+   "state": "death-2",
+   "file": "before-19-death-2.jpg",
+   "close": "before-19-death-2-close.jpg"
+  },
+  {
+   "state": "death-3",
+   "file": "before-20-death-3.jpg",
+   "close": "before-20-death-3-close.jpg"
+  }
+ ],
+ "errors": [],
+ "cost": {
+  "file": "witch",
+  "tris": null,
+  "frame": {
+   "calls": 36,
+   "tris": 135933,
+   "quality": 1
+  }
+ }
+}

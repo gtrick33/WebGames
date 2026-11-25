@@ -26,22 +26,22 @@ requests open.**
 | # | Piece | Branch | Pull request | State | Needs first |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Baseline and plan | `claude/sf9-baseline` | #355 | open | nothing |
-| 2a | Boss pipeline and the Coffin Matron | `claude/sf9-boss-matron` | | not started | 1 |
-| 2b | Bosses: the Prologue (Ossric, Morgrave, Grimtusk) | `claude/sf9-bosses-prologue` | | not started | 2a |
-| 2c | Bosses: Act I (Gallows Keep) | `claude/sf9-bosses-act1` | | not started | 2a |
+| 2a | Boss pipeline and the Coffin Matron | `claude/sf9-boss-matron` | #356 | open | 1 (#355) |
+| 2b | Bosses: the Prologue (Ossric, Morgrave, Grimtusk) | `claude/sf9-bosses-prologue` | #357 | open | 2a (#356) |
+| 2c | Bosses: Act I (Gallows Keep): the Hangman and Harlan Blackglove; Gnasher's moves; a move for every attack of all 43 bosses | `claude/sf9-bosses-act1` | #363 | open | 2b (#357) |
 | 2d | Bosses: Act II (the Barrow of Kings, the Crown Catacombs) | `claude/sf9-bosses-act2` | | not started | 2a |
 | 2e | Bosses: Act III (the Tomb of the Sun King, the Vault of Rime) | `claude/sf9-bosses-act3` | | not started | 2a |
 | 2f | Bosses: Act IV (the Siege of Highwall) | `claude/sf9-bosses-act4` | | not started | 2a |
 | 2g | Bosses: Act V (the Molten Throne) | `claude/sf9-bosses-act5` | | not started | 2a |
 | 2h | Bosses: the finale (Duskspire) | `claude/sf9-bosses-finale` | | not started | 2a |
 | 2i | Bosses: the rest (the Rift's five other dungeons, the lands' named foes) | `claude/sf9-bosses-rest` | | not started | 2a |
-| 3 | The signature system in the first twenty minutes | `claude/sf9-first-epic` | | not started | 1 |
+| 3 | The signature system in the first twenty minutes | `claude/sf9-first-epic` | #358 | open | 1 (#355) |
 | 4 | Quests up to the Prologue's standard, one pull request per act | `claude/sf9-quests-act1` … `-act6` | | not started | 1 |
 | 5 | Sound with its own character | `claude/sf9-sound-mix`, `-music`, `-voices` | | not started | 1 |
 | 6 | One standard, act by act | `claude/sf9-standard-act1` … `-act6` | | not started | 2, 4 (the same act's) |
-| 7 | Phone and network readiness | `claude/sf9-phone` | | not started | 1 |
+| 7 | Phone and network readiness | `claude/sf9-phone` | #361 | open | 1 |
 | 8 | The rough edges | `claude/sf9-rough-edges` | #359 | open | 1 |
-| 9 | Ready for players | `claude/sf9-playtest` | | not started | 1 |
+| 9 | Ready for players | `claude/sf9-playtest` | #360 | open | 1 |
 | 10 | The release bar | `claude/sf9-release` | | not started | all of them, merged |
 | 11 | What would make it more fun (added by the owner: see its own section) | 11a and 11e in pieces 8 and 9; `claude/sf9-open-world`, `-vigil-return`, `-fewer-legends` | | not started | the playtest (11b); the owner's go-ahead (11c, 11d) |
 
@@ -284,24 +284,51 @@ attacks (`sim/patterns/<dungeon>.ts`) and its arena are read when its turn comes
 
 The lands' named foes (70 in `data/zones/*`, the story's own among them: the Grey Lady, Prince Thistlemourn, the
 Tearborn, the Gatewarden, the Weeping Lord, the Lich of Hollowmere, Vosk) come last, the story's first. A Riftstone
-run is the dungeon itself, so its bosses are the same ones. The Vigil's bosses carry a creature's sprite
-(`vigil/sim.ts`, `bossSprite`); where it and the Ring draw one of these is looked up in 2a, and each pull request
-looks at them.
+run is the dungeon itself, so its bosses are the same ones. The Vigil's champions are the lands' named foes and
+creatures (`vigil/kit.ts`: the Grey Lady, the Headless Lord and others), none of them a dungeon's boss, so they change
+with piece 2i; the Ring shows no boss.
 
 **Order.** 2a: the Coffin Matron, the first boss a player meets, as the showcase and to prove the pipeline. Then each
 act's bosses and the finale's (2b to 2h, rows 2 to 28). Then the rest (2i, rows 29 to 43 and the named foes).
 
+**2c, Gallows Keep (#363, 2026-11-24).** Two of its three:
+
+- **The Hangman**: a giant bare to the waist under a headsman's black hood, a great axe in his hand and the second
+  he takes up at half health slung on his back, the rope coiled at his hip. On the large skeleton, 11,135 triangles.
+  His wide cut is a full turn of his body, his chop comes down two-handed, the gallows floor drops when he smashes
+  down on it, the noose and the thrown axes go out with a flung arm.
+- **Harlan Blackglove**: a bandit who crowned himself. The gang's red, a black plate gauntlet on his left arm with a
+  hand too big for a man, a knife in each hand, the cage keys at his belt, and a crown of stolen gold with a shard of
+  rift-glass in its brow (his first drop is that shard). 7,690 triangles and what the crown adds. Two cuts, a
+  flick for the thrown knives, a thrust for each dash, a sidestep into his smoke, a wave of the glove for his
+  cutthroats.
+- **Gnasher** keeps his look and the shared wolf's file (the owner, 2026-11-24: "gnasher is fine"), and now leaps
+  into his charges, digs for his burrow and lowers himself to call the pack: the wolf's file gained those clips.
+- **Every boss moves** (the owner, same day: check that none floats and each has real animations, "and keep that in
+  mind for any future boss"). `render3d/bossMoves.ts` gives every attack of every boss a clip of its kind from the
+  boss's own skeleton, so no boss makes one swing for everything; four bosses on foot were lifted off the ground and
+  are not now (four that fly still drift); a struck pose that stuck after a daze is fixed.
+  `tests/sigilfall-bosses-move.test.ts` holds all 43 to it, and a new boss fails it until it moves. Twelve were run
+  in motion in the browser: `docs/review/sf9-bosses-act1/README.md`.
+- Learned: a part made for the large skeleton does not come across to the medium one at its own size (the Black
+  Knight's arm arrived as tall as the man). Parts go from medium to large, or between figures of the same skeleton.
+
+
 ### 3. The signature system in the first twenty minutes (`claude/sf9-first-epic`)
 
-The Coffin Matron's first-clear drop (`first` in `data/bosses.ts`) becomes, for each class, a hand-made item that
-visibly changes a skill the hero has by then: the skill looks and behaves differently, and the item's gold line says
-how. When it drops it is a moment: a short hint about gold lines, and the changed skill shown under the item. Its
-numbers are checked against the skill by the rules of `progress/build.ts`. A test holds that every class gets one and
-that it changes that class's skill. Static Band stays in the game (her later drops, the quartermaster).
+The Coffin Matron's first-clear drop (`first` in `data/bosses.ts`) becomes a hand-made piece that visibly changes a
+skill, with a moment made of it when it drops: a page with the piece, its gold line and the skill it changes.
 
-**Touches:** `data/items.ts`, `data/bosses.ts`, `progress/describe.ts`, `ui/` (the reward and the hint),
-`render/effects.ts` where a changed skill needs a look, `progress/tips.ts`, a new test, `LEGAL_REVIEW.md` (eight new
-item names). Saves: new item ids only; nothing renamed.
+**One piece for every class, on the basic attack** (the owner, 2026-11-24). The brief asked for a piece per class on a
+skill the hero has by then, and eight were built that way, each on its class's first skill. The owner's objection: a
+mage who becomes a Cryomancer at level 10 no longer casts Fireball (only the Pyromancer keeps it on its bar), so the
+first thing the game taught about gold lines would stop applying; a piece per specialization would be 24. The basic
+attack is the one skill no specialization drops. So: the Sexton's Handbell, for anyone, whose gold line makes the
+basic attack leap to a second enemy on every blow (Static Band does it only on a critical hit). Static Band stays
+in the game, among what she may drop every time.
+
+**Touches:** `data/items.ts`, `data/bosses.ts`, `engine.ts` (a `gear` story page, shown once), `ui/StoryPages.tsx`,
+`Game.css`, a new test, `LEGAL_REVIEW.md` (one new item name). Saves: one new item id; nothing renamed.
 
 ### 4. Quests up to the Prologue's standard (one pull request per act)
 
@@ -367,6 +394,51 @@ the first fight; frame times in the heaviest battles (the chapel door, the crowd
 boss, a full Vigil night); memory over 30 minutes; touch play. What falls short is fixed (quality tiers chosen by the
 device, lazy loading). A short checklist for the owner to run on a real phone.
 
+**Done in #361 (2026-11-24).** Measured with Chromium as a phone on its side (844 × 390, touch), the production
+build, a first visit with nothing cached:
+
+| Line | The title is up | The first fight begins | Sent by then |
+| --- | --- | --- | --- |
+| No limit | 10.1 s | 23.4 s | 6.8 MB at the title, 12.0 MB at the fight |
+| Fast 4G (9 Mbit/s, 60 ms) | 12.6 s | 26.1 s | 6.7 MB, 11.8 MB |
+| Slow 4G (1.6 Mbit/s, 150 ms) | 41.1 s | 54.5 s | 6.7 MB, 7.8 MB (the music is still coming) |
+| Slow 4G, and the processor slowed four times | 40.4 s | 55.5 s | 6.7 MB, 7.7 MB |
+
+(The seconds include the script's own reading pace and this machine's software graphics card; the difference between
+the rows is the line.)
+
+- **Where a slow line's 41 seconds go.** Scripts by 10 s; then the title's models (4.6 MB: the wardrobe's
+  `hero.pack` alone is 2.4 MB) and the icon sheet (0.7 MB) until about 36 s. The line is full the whole time, so
+  nothing is gained by asking earlier: only sending less before the title would shorten it. The model files are
+  already quantized and gzipped (Brotli gains nothing on them).
+- **What that wait looked like: an empty black box**, for half a minute. Fixed: the wait before the title is the
+  intro's own veil with a bar that fills as the files come (`ui/Warming.tsx`, `packLoad` in `render3d/pack.ts`);
+  the title's veil carries the bar on from there. Where the server says how big the files are, the bar goes by
+  bytes and the line says how many MB have come; the test's server doesn't, so only the bar by files was seen, and
+  whether the live host says was not checked.
+- The icon sheet is asked for at low priority, so a browser that orders downloads sends the models first. The test's
+  throttle doesn't order them, so this is not measured.
+- **Not done, and the owner's call:** splitting the wardrobe so the title waits only for what it shows (a new
+  player's title shows no hero at all) would take about 2.4 MB, a third, off a slow line's wait. It changes the
+  model builder and every menu that draws a hero; it is a piece of its own, after real phones have said how long
+  the wait is.
+- **Found, in shared code, fixed in a pull request of its own:** `src/main.tsx` reloads the page on any `vite:preloadError`, taking it for a
+  deploy. One of the site's first calls to its API failing (the call follows a lazily loaded part, so its failure
+  arrives as that event) reloads the page once, in the middle of the game's files on a slow line, and the reload
+  drops `?play=1`. Seen here because the test serves the site without its API; a real player meets it when that
+  call fails on a bad line. The fix is one line (reload only when the error is a missing file:
+  `isStaleBuildError`), in the site's own start-up. The owner said yes (2026-11-24): it is #362, built on
+  `pre-release` alone.
+- **Frames.** The picture already steps down by itself on a machine that can't keep up (`render3d/pace.ts`), with a
+  Light setting and a battery saver, so no new quality tier was added. Frames a second can't be measured here (a
+  software graphics card under a slowed processor says nothing about a phone); draw calls and triangles are the
+  baseline's, unchanged by this piece. The real numbers are the first thing `PHONE_CHECKLIST.md` asks for.
+- **Memory over a long sitting** (`scripts/sigilfall-soak.mjs`, new): a hero jumped through a beat of each of the
+  26 lands, three rounds, garbage collected at every stop. Round 2 to round 3: geometries 4,401 to 4,359, textures
+  520 to 520, heap 56 MB a stop both rounds (58 MB at most). Nothing is held on to. This is the game's own
+  bookkeeping, not a phone's memory limit, and it is not 30 minutes of play.
+- `PHONE_CHECKLIST.md`: twenty minutes on a real phone, with blanks for the numbers only it can give.
+
 ### 8. The rough edges (`claude/sf9-rough-edges`)
 
 The three from the review: the hint card over Mara's speech, and anything else the screen manager lets overlap; the
@@ -402,6 +474,27 @@ Playtest numbers checked end to end (`progress/telemetry.ts`, `docs/ANALYTICS.md
 land, nothing personal. "Report a bug" carries the build, land, quest, level and class, never the player's name or
 save. `PLAYTEST_GUIDE.md`: what testers should play and how to report, what the owner should watch for, where to read
 the numbers.
+
+**Done in #360 (2026-11-24).** What following the numbers end to end found, and what was done about each:
+
+- **A phone's player was not counted as a stop.** A stop was sent when the page was left; a phone's browser is swiped
+  away and its page only hidden. And an event sent as the page hid waited four seconds in the arcade's queue, which
+  a hidden page may never get. Now a stop is sent when the page hides (and again if they come back and leave again:
+  the queries read each player's last of the day), and the sender delivers at once when the page is already hidden.
+- **A member's account id was stored on falls and stops**, against "nothing that says who". The endpoint leaves it
+  off these two events; the daily visitor key still counts players.
+- **Nothing said which mode.** Falls and stops now carry `mode` (`story`, `rift` and its stone), and the Ring and the
+  Vigil, which draw themselves and sent nothing, send a stop with the minutes spent in them (11e: whether testers
+  find the Ring can now be read).
+- **A bug report said only which game.** The game leaves one line (build, mode, land, quest, level, class) and the
+  site's Report a bug page shows it to the player and sends it. Never the hero's name or the save.
+- These touch shared code with the owner's go-ahead (2026-11-24): `functions/api/events.ts`,
+  `src/platform/analytics.ts`, `src/pages/BugReportPage.tsx`, the new `src/platform/bugContext.ts`, and one new
+  translated line in the twelve languages.
+- `PLAYTEST_GUIDE.md` has the testers' half (what to play: the Prologue, then the Ring, then on; how to report; eight
+  questions, the first of them 11a's on how fighting feels) and the owner's half (what to watch, the two numbers of
+  the basic attack's pace, where to read everything, what the numbers can't say).
+- 11e, the title: "The Ring" is one of the four banners on the title screen, beside "New hero". Left as it is.
 
 ### 10. The release bar (`claude/sf9-release`)
 

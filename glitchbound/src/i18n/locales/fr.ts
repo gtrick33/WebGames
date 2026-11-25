@@ -2269,6 +2269,7 @@ const fr: string[] = [
   'Aucune aide en dehors des indices ! {name} devine.',
   'en ligne maintenant',
   'dans {game}',
+  'Nous joindrons l’endroit où tu étais dans le jeu :',
 ];
 
 export default fr;

@@ -14,11 +14,13 @@ import type { ClassId } from '../data/types';
 import type { Enemy, Ghost, NpcActor, Pet } from '../sim/types';
 import type { FolkJob } from '../sim/folk';
 import type { CritterKind } from '../sim/critters';
+import { bossForm } from './bossKit';
 import { heightFromRadius, Motion, PERSON_H, type Cast, type ClipFade, type Colossus } from './cast';
 import type { Held } from './dress';
 import { kitOf } from './kits';
 import { inView } from './land';
 import { shapeOf } from './mountLook';
+import { defaultMove } from './bossMoves';
 import { chained, moveOf, type Move } from './moves';
 import { strikeOf, type Strike } from './strike';
 import { LIGHT, type RigAnim } from './toon';
@@ -124,9 +126,14 @@ interface FoeAnim {
   pattern: object | null;
   step: number;
   blowAt: number;
+  /** The pattern its last blow was for, and the pattern-begun mark last seen (sim/types.ts BossState.began). */
+  blowOf?: string;
+  began?: object;
   /** When it last flinched from a hit. */
   flinchAt: number;
   hurt: boolean;
+  /** When it was first seen: a boss of its own makes its entrance from then (render3d/bossKit.ts). */
+  born: number;
 }
 
 /** How fast a figure of a person's height covers the ground at one times its clip's own rate. */
@@ -160,6 +167,9 @@ const BLOW_EVERY = 0.5;
 /** How long a fallen foe is drawn after it fell (seconds): the longest fall, a great one's, is over by then. */
 const FALL_KEPT = 1.8;
 const bossDazed = (e: Enemy): boolean => !!e.boss && (e.boss.dazed > 0 || e.boss.dying > 0 || e.boss.shift > 0);
+/** How long the rules give a boss's dying, and a phase's change (sim/world.ts, sim/boss.ts). */
+const BOSS_DYING = 1.8;
+const BOSS_SHIFT = 1.4;
 /** A druid's beast makes every blow with its one attack. */
 const BEAST_BLOW: Move = { clip: 'chop', rate: 1.2, lunge: 0.2 };
 
@@ -256,7 +266,8 @@ export class WorldCast {
     for (const [id, f] of this.fallen) {
       if (here.has(id)) continue;
       f.e.deathT = f.from + (time - f.at);
-      if (f.e.deathT > FALL_KEPT || !shown(f.e.x, f.e.y)) {
+      const kept = f.e.boss ? (bossForm(kitOf(f.e.boss.def.sprite, f.e.def.id).form)?.fall.kept ?? FALL_KEPT) : FALL_KEPT;
+      if (f.e.deathT > kept || !shown(f.e.x, f.e.y)) {
         this.fallen.delete(id);
         this.foes.delete(id);
         continue;
@@ -496,10 +507,13 @@ export class WorldCast {
     }
     const sprite = e.boss?.def.sprite ?? e.def.sprite;
     const kit = kitOf(sprite, e.def.id);
+    // a boss of its own: its moves for what the rules have it do, and the moments of its fight (render3d/bossKit.ts)
+    const form = e.boss ? bossForm(kit.form) : undefined;
+    // (a boss drawn with a shared beast has its moves on its kit: kits.ts `moves`)
     const h = heightFromRadius(e.r);
     let anim = this.foes.get(e.id);
     if (!anim) {
-      anim = { state: e.state, since: time, x: e.x, y: e.y, turn: turnOf(e.face), speed: 0, walk: e.id * 0.37, clip: 'idle', t: 0, loop: true, from: null, struck: false, pattern: null, step: 0, blowAt: -9, flinchAt: -9, hurt: false };
+      anim = { state: e.state, since: time, x: e.x, y: e.y, turn: turnOf(e.face), speed: 0, walk: e.id * 0.37, clip: 'idle', t: 0, loop: true, from: null, struck: false, pattern: null, step: 0, blowAt: -9, flinchAt: -9, hurt: false, born: time };
       this.foes.set(e.id, anim);
     } else if (anim.state !== e.state) {
       // (out of a wind-up into its blow: a melee blow lands and they recover, a rush begins)
@@ -518,9 +532,21 @@ export class WorldCast {
       anim.step = pattern?.step ?? 0;
     } else if (pattern && pattern.step !== anim.step) {
       anim.step = pattern.step;
-      // (a pattern that steps quickly: the blow under way is finished first)
-      if (time - anim.blowAt > BLOW_EVERY) anim.blowAt = time;
+      // (a pattern that steps quickly: the blow under way is finished first; a blow left over from the pattern
+      // before never holds up this one's)
+      if (time - anim.blowAt > BLOW_EVERY || anim.blowOf !== pattern.use.id) anim.blowAt = time;
     }
+    // a pattern that does its one thing the instant it opens (a roar, a call for hostages) is past its first step, or
+    // over, before it is ever seen here: that was its blow, and the boss stood idle through its own move
+    const began = e.boss?.began;
+    if (began && began !== anim.began) {
+      anim.began = began;
+      if (!pattern || pattern.step > 0) {
+        anim.blowAt = time;
+        anim.blowOf = began.id;
+      }
+    }
+    if (pattern) anim.blowOf = pattern.use.id;
     const since = time - anim.since;
     // where it's drawn eases after where it is, and from that, how it's really moving
     const gapX = e.x - anim.x;
@@ -560,7 +586,15 @@ export class WorldCast {
       // each kind goes down its own way (data/voices.ts fallOf; what it leaves is sim/combat.ts fallFx): a shade rises
       // and thins away, a slime bursts flat, bones come apart quickly, a great one lies a while where it fell
       const fall = e.boss || e.def.prop ? 'person' : fallOf(e.def);
-      if (fall === 'ghost') {
+      if (form) {
+        // its own death: it lies as it fell, and the floor takes it
+        const f = form.fall;
+        clip = f.end;
+        t = e.deathT;
+        const u = Math.min(1, Math.max(0, (e.deathT - 0.45) / Math.max(0.1, f.kept - 0.8)));
+        rise = f.sink * u * u * (3 - 2 * u);
+        alpha = Math.max(0, 1 - Math.max(0, e.deathT - (f.kept - 0.35)) / 0.35);
+      } else if (fall === 'ghost') {
         clip = 'idle';
         t = time;
         loop = true;
@@ -575,7 +609,12 @@ export class WorldCast {
       else if (fall === 'heavy') alpha = Math.max(0, 1 - Math.max(0, e.deathT - 1.1) / 0.6);
       if (alpha <= 0) return;
     } else {
-      const atk = kit.atk ?? 'chop';
+      // (its move for the pattern it is in, or for the one that was over as it began)
+      const moveOf = e.boss?.pattern?.use.id ?? (time - anim.blowAt < 1.6 ? anim.blowOf : undefined);
+      // (a boss nobody has chosen moves for makes the move of its attack's kind: render3d/bossMoves.ts)
+      const move = moveOf ? ((form?.moves ?? kit.moves)?.[moveOf] ?? (form ? undefined : defaultMove(moveOf, (c) => cast.hasClip(sprite, c, e.def.id), kit.atk))) : undefined;
+      const atk = move?.clip ?? kit.atk ?? 'chop';
+      const blowRate = BLOW_RATE * (move?.rate ?? 1);
       // where the blow is in its attack: the lift is shown over the wind-up, so the weapon comes down as the hit lands
       const blow = cast.strike(sprite, atk, e.def.id);
       const walking = (): void => {
@@ -618,14 +657,14 @@ export class WorldCast {
         default:
           break;
       }
-      if (pattern && !bossDazed(e)) {
+      if (e.boss && (pattern || moveOf) && !bossDazed(e)) {
         // a boss: the lift held while its pattern gathers, and a blow each time the pattern moves on
         const since2 = time - anim.blowAt;
-        if (blow.from + since2 * BLOW_RATE < blow.to) {
+        if (blow.from + since2 * blowRate < blow.to) {
           clip = atk;
-          t = blow.from + since2 * BLOW_RATE;
+          t = blow.from + since2 * blowRate;
           loop = false;
-        } else if (pattern.step === 0 && anim.speed <= 5) {
+        } else if (pattern && pattern.step === 0 && anim.speed <= 5) {
           clip = atk;
           t = blow.lift + (blow.from - blow.lift) * Math.min(1, pattern.t / BOSS_LIFT);
           loop = false;
@@ -641,9 +680,35 @@ export class WorldCast {
         sx = 1 + (e.state === 'windup' ? 0.15 : -0.1 * k);
         sy = 1 + (e.state === 'windup' ? -0.15 : 0.12 * k);
       }
-      if (hasStatus(e, 'stun') || e.boss?.dazed) {
-        clip = 'hit';
-        t = time * 0.4;
+      // (its daze counts down past nothing: only one still running is a daze, or it stood struck through every attack after)
+      if (hasStatus(e, 'stun') || (e.boss?.dazed ?? 0) > 0) {
+        clip = form?.dazed ?? 'hit';
+        t = form ? time - anim.since : time * 0.4;
+      }
+      if (form && e.boss) {
+        const rig = cast.rigOf(sprite);
+        const enter = rig?.length(form.enter.clip) ?? 0;
+        if (e.boss.dying > 0) {
+          // dying: its fall, over the time the rules give it
+          clip = form.fall.clip;
+          t = ((BOSS_DYING - e.boss.dying) / BOSS_DYING) * (rig?.length(clip) ?? 1);
+          loop = false;
+        } else if (e.boss.shift > 0) {
+          // a phase changing
+          clip = form.shift.clip;
+          t = (BOSS_SHIFT - e.boss.shift) * (form.shift.rate ?? 1);
+          loop = false;
+        } else if (!e.boss.pattern && time - anim.born < enter) {
+          // shown for the first time: it comes (an attack already begun is not held up for it)
+          clip = form.enter.clip;
+          t = time - anim.born;
+          loop = false;
+        } else if (e.held) {
+          // and, while it is being shown (sim/scene.ts revealBoss), what it does once it is there
+          clip = form.enter.then;
+          t = time - anim.born - enter;
+          loop = false;
+        }
       }
       if (hasStatus(e, 'freeze')) t = anim.since;
     }

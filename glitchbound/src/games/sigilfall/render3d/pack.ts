@@ -68,10 +68,27 @@ interface RawMesh {
 
 const packs = new Map<string, Promise<Pack>>();
 
+/**
+ * How much of the model files asked for so far has come, in bytes as sent: what the wait before the title shows
+ * (ui/Warming.tsx). On a slow line the title's models are most of a first visit's wait (NINE_PLAN.md piece 7).
+ * `total` counts only files whose size the server said; `files` and `done` count them all.
+ */
+export const packLoad = { got: 0, total: 0, files: 0, done: 0 };
+
 async function fetchPack(name: string): Promise<Pack> {
+  packLoad.files++;
   const res = await fetch(`${BASE}${name}.pack?v=${VERSION}`);
   if (!res.ok || !res.body) throw new Error(`${name}: ${res.status}`);
-  const bytes = await new Response(res.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+  const size = Number(res.headers.get('content-length') ?? 0);
+  if (size > 0) packLoad.total += size;
+  const counted = new TransformStream<Uint8Array, Uint8Array>({
+    transform(chunk, to) {
+      if (size > 0) packLoad.got += chunk.byteLength;
+      to.enqueue(chunk);
+    },
+  });
+  const bytes = await new Response(res.body.pipeThrough(counted).pipeThrough(new DecompressionStream('gzip') as unknown as TransformStream<Uint8Array, Uint8Array>)).arrayBuffer();
+  packLoad.done++;
   const jsonLen = new DataView(bytes).getUint32(0, true);
   const head = JSON.parse(new TextDecoder().decode(new Uint8Array(bytes, 4, jsonLen))) as { meshes: Record<string, RawMesh>; rigs: Record<string, RigData> };
   const start = (4 + jsonLen + 3) & ~3;
