@@ -1,3 +1,4 @@
+import { bindYielded, workOn } from '../src/games/sigilfall/sim/tasks';
 import { REGION_IDS, REGIONS } from '../src/games/sigilfall/data/regions';
 import { QUESTS } from '../src/games/sigilfall/data/quests';
 import type { RegionId } from '../src/games/sigilfall/data/types';
@@ -211,6 +212,10 @@ export function beat(walk: Walk): boolean {
     // at the person the arrow points to: the hero talks
     const by = w.npcs.find((n) => Math.hypot(n.x - w.player.x, n.y - w.player.y) < 26 && (handInsFor(h, n.id).length > 0 || activeQuests(h).some((q) => { const o = currentObjective(h, q); return o.kind === 'talk' && o.npc === n.id; })));
     if (by) talk(walk, by.id);
+    // at a quest's thing, or a foe that has yielded: the hero sets to it (the interact key)
+    const it = w.interactable;
+    if (it?.kind === 'thing') workOn(w, it.id);
+    else if (it?.kind === 'yield') bindYielded(w, it.id);
   }
   // followers keep up (their own walking is the rescue tests')
   for (const f of w.pets) if (f.story && !f.dead && f.goal === undefined && Math.hypot(f.x - w.player.x, f.y - w.player.y) > 40) Object.assign(f, { x: w.player.x + 6, y: w.player.y + 4 });
