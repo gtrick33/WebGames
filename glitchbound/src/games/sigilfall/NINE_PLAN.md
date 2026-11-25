@@ -31,9 +31,9 @@ requests open.**
 | 2c | Bosses: Act I (Gallows Keep): the Hangman and Harlan Blackglove; Gnasher's moves; a move for every attack of all 43 bosses | `claude/sf9-bosses-act1` | #363 | merged 2026-11-25 | 2b (#357) |
 | 2d | Bosses: Act II (the Barrow of Kings, the Crown Catacombs): Hrodric, Corvane, Silas Vey, the Royal Auditor | `claude/sf9-bosses-act2` | #371 | open | 2c (#363, merged) |
 | 2e | Bosses: Act III (the Tomb of the Sun King, the Vault of Rime): the Sun King, Khepset, the Sand Warden, Hrimfang, Hallvor | `claude/sf9-bosses-act3` | (this PR) | open | 2d (#371) |
-| 2f | Bosses: Act IV (the Siege of Highwall) | `claude/sf9-bosses-act4` | | not started | 2a |
-| 2g | Bosses: Act V (the Molten Throne) | `claude/sf9-bosses-act5` | | not started | 2a |
-| 2h | Bosses: the finale (Duskspire) | `claude/sf9-bosses-finale` | | not started | 2a |
+| 2f | Bosses: Act IV (the Siege of Highwall): Prior Vessant, General Morvain | `claude/sf9-bosses-late` | (this PR) | open | 2e |
+| 2g | Bosses: Act V (the Molten Throne): the Magma Warden, Ossa, Ashkar | `claude/sf9-bosses-late` | (this PR) | open | 2e |
+| 2h | Bosses: the finale (Duskspire): Lady Cendre, Ser Maltheus | `claude/sf9-bosses-late` | (this PR) | open | 2e |
 | 2i | Bosses: the rest (the Rift's five other dungeons, the lands' named foes) | `claude/sf9-bosses-rest` | | not started | 2a |
 | 3 | The signature system in the first twenty minutes | `claude/sf9-first-epic` | #358 | merged 2026-11-25 | 1 (#355) |
 | 4 | Quests up to the Prologue's standard, one pull request per act | `claude/sf9-quests-act1` (Act I); `-act2` … `-act6` not started | #364 | Act I merged 2026-11-25; Act II read and left as it is; Acts III to VI not started | 1 |

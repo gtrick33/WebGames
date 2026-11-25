@@ -72,6 +72,16 @@ pack already credited. Their names and titles are unchanged. A sun-crowned dead 
 a stone tomb guardian, a frost-giant jarl and a frozen shield-bearer are stock figures of the genre; none copies a
 named character of another game.
 
+The seven of Acts IV, V and the finale (pieces 2f to 2h, 2026-11-25) take nothing new. **Prior Vessant** is the
+Druid's robes with the Cleric's head, a book and the skeletons' staff. **General Morvain** is the Black Knight with
+his sword and a red banner from the Dungeon Pack. **The Magma Warden** is the Frost Golem's body with the Skeleton
+Golem's head and a great hammer. **Ossa the Founder** is the Skeleton Golem with the Engineer's goggles and pack and
+a great hammer. **Ashkar the Bound** is the Frost Golem with shackles and chain links from the Dungeon Pack. **Lady
+Cendre** is the Witch's dress with the Vampire's head, the Mage's cape, a triple candle and a staff. **Captain Ser
+Maltheus** is the Black Knight without his cape, with a spear and his shield. All of the same KayKit collection
+(CC0), each pack already credited. Their names and titles are unchanged, and none copies a named character of
+another game.
+
 ## A Rift legendary on every place (2026-11-24)
 
 The owner asked for "a legendary for each spec and 3 legendaries common for the class" on every item slot. What is taken
