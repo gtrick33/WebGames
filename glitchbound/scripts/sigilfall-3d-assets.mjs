@@ -2262,7 +2262,7 @@ BOSS_KITS.boss_runewarden = {
   from: [['FrostGolem', /Body|Arm|Leg/], ['BlackKnight', /Head|Shoulder/]],
   grow: [['chest', 1.1]],
   ties: [
-    { bit: 'hammer_large_spikes_yellow', joint: 'handslot.r', at: [0, 0, 0], size: 0.4 },
+    { bit: 'hammer_large_spikes_yellow', joint: 'handslot.r', at: [0, 0, 0], size: 0.27 },
     { bit: 'anvil', joint: 'chest', at: [0, 0.25, -0.8], size: 0.6 },
   ],
 };
@@ -2304,7 +2304,7 @@ BOSS_KITS.boss_elowen = {
   from: [['Paladin', /Body|Arm|Leg|Cape/], ['Witch', /Head/]],
   grow: [['head', 1.05]],
   ties: [
-    { bit: 'staff_C', joint: 'handslot.r', at: [0, 0, 0], size: 1.15 },
+    { bit: 'staff_C', joint: 'handslot.r', at: [0, 0, 0], size: 0.8 },
     { bit: 'lantern_decorated', joint: 'handslot.l', at: [0, -0.12, 0.02], size: 0.6 },
   ],
 };
