@@ -1,0 +1,20 @@
+{
+  "foe": "vosk-the-hollowed",
+  "errors": [],
+  "found": [],
+  "kit": {
+    "k": "a_horse_white",
+    "top": "boss_vosk",
+    "float": 0
+  },
+  "readings": 113,
+  "moving": 46,
+  "walking": 33,
+  "clips": {
+    "chop": 27,
+    "hit": 20,
+    "idle": 22,
+    "run": 23,
+    "walk": 21
+  }
+}

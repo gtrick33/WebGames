@@ -1,0 +1,18 @@
+{
+  "foe": "prince-thistlemourn",
+  "errors": [],
+  "found": [],
+  "kit": {
+    "k": "boss_thistlemourn",
+    "top": null,
+    "float": 0
+  },
+  "readings": 119,
+  "moving": 51,
+  "walking": 50,
+  "clips": {
+    "cast": 49,
+    "idle": 7,
+    "walk": 63
+  }
+}

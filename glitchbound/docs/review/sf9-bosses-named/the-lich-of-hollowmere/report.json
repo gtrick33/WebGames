@@ -1,0 +1,18 @@
+{
+  "foe": "the-lich-of-hollowmere",
+  "errors": [],
+  "found": [],
+  "kit": {
+    "k": "boss_lich",
+    "top": null,
+    "float": 0
+  },
+  "readings": 122,
+  "moving": 57,
+  "walking": 54,
+  "clips": {
+    "cast": 57,
+    "idle": 4,
+    "walk": 61
+  }
+}
