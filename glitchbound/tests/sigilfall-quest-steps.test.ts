@@ -114,3 +114,51 @@ describe('Sigilfall: a step with something in the world to do can be done', () =
     }
   });
 });
+
+describe('Sigilfall: a quest’s things stand where the hero can get at them', () => {
+  it('every thing to use and every mark of a trail, in every land, is on open ground the land’s routes reach: not in a tree, a house or a wall', { timeout: 240_000 }, async () => {
+    const { newWorld, readyHero } = await import('./sigilfall-bot');
+    const { anchorOf, standsOpen, thingSpots, trailSpots } = await import('../src/games/sigilfall/sim/tasks');
+    const { TILE } = await import('../src/games/sigilfall/sim/map');
+    const byLand = new Map<string, { q: QuestDef; o: Objective; i: number }[]>();
+    for (const q of QUESTS) stepsOf(q).forEach((o, i) => {
+      if (o.kind !== 'use' && o.kind !== 'trail') return;
+      byLand.set(o.region, [...(byLand.get(o.region) ?? []), { q, o, i }]);
+    });
+    let things = 0;
+    const off: string[] = [];
+    for (const [land, list] of byLand) {
+      const c = readyHero('warrior', 60);
+      if (!c.unlocked.includes(land as never)) c.unlocked.push(land as never);
+      const w = newWorld(land as never, c);
+      for (const { q, o, i } of list) {
+        const key = `${q.id}#${i}`;
+        if (o.kind === 'use') {
+          const at = anchorOf(w, o.at);
+          expect(at, `${q.id}: ${o.at} in ${land}`).toBeTruthy();
+          for (const s of thingSpots(w, key, at!, o.count, o.spread ?? 6)) {
+            things++;
+            expect(Math.hypot(s.x - at!.x, s.y - at!.y), `${q.id}: within its spread`).toBeLessThanOrEqual((o.spread ?? 6) * TILE + 1);
+            if (!standsOpen(w, at!, s.x, s.y)) off.push(`${q.id} (${o.thing} at ${o.at})`);
+          }
+        } else if (o.kind === 'trail') {
+          const from = anchorOf(w, o.from);
+          const to = anchorOf(w, o.to);
+          expect(from && to, `${q.id}: ${o.from} → ${o.to} in ${land}`).toBeTruthy();
+          const marks = trailSpots(w, key, from!, to!, o.marks);
+          things += marks.length;
+          // (a trail goes toward its end: each mark nearer than the one before)
+          let last = Infinity;
+          for (const m of marks) {
+            const left = Math.hypot(m.x - to!.x, m.y - to!.y);
+            expect(left, `${q.id}: its marks lead on`).toBeLessThan(last + 3 * TILE);
+            last = left;
+          }
+        }
+      }
+    }
+    expect(things).toBeGreaterThan(400);
+    // (a place hemmed in by its own props may leave a thing on merely clear ground: few, and named here if it grows)
+    expect(off, off.join('; ')).toHaveLength(0);
+  });
+});
