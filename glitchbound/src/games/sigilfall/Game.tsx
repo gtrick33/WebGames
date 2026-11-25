@@ -8,6 +8,7 @@ import { GameScreen } from './ui/GameScreen';
 import { isTurned, setTurned } from './ui/turn';
 import { CreateScreen, TitleScreen } from './ui/Title';
 import { warmPortraits } from './render3d/portrait';
+import { Warming } from './ui/Warming';
 import './Game.css';
 
 /**
@@ -228,7 +229,7 @@ function Screens({ engine }: { engine: SigilEngine }) {
       on = false;
     };
   }, []);
-  if (!warm) return <div className="rb-warm" aria-label="Loading" />;
+  if (!warm) return <Warming />;
   if (ui.screen === 'title') return <TitleScreen engine={engine} />;
   if (ui.screen === 'create') return <CreateScreen engine={engine} />;
   return <GameScreen engine={engine} />;

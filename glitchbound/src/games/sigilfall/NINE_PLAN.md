@@ -39,7 +39,7 @@ requests open.**
 | 4 | Quests up to the Prologue's standard, one pull request per act | `claude/sf9-quests-act1` … `-act6` | | not started | 1 |
 | 5 | Sound with its own character | `claude/sf9-sound-mix`, `-music`, `-voices` | | not started | 1 |
 | 6 | One standard, act by act | `claude/sf9-standard-act1` … `-act6` | | not started | 2, 4 (the same act's) |
-| 7 | Phone and network readiness | `claude/sf9-phone` | | not started | 1 |
+| 7 | Phone and network readiness | `claude/sf9-phone` | #361 | open | 1 |
 | 8 | The rough edges | `claude/sf9-rough-edges` | | not started | 1 |
 | 9 | Ready for players | `claude/sf9-playtest` | #360 | open | 1 |
 | 10 | The release bar | `claude/sf9-release` | | not started | all of them, merged |
@@ -393,6 +393,51 @@ profile (`sigilfall-load-check.mjs --net slow4g --cpu 4`, and the bench under th
 the first fight; frame times in the heaviest battles (the chapel door, the crowded dungeon rooms, each act's final
 boss, a full Vigil night); memory over 30 minutes; touch play. What falls short is fixed (quality tiers chosen by the
 device, lazy loading). A short checklist for the owner to run on a real phone.
+
+**Done in #361 (2026-11-24).** Measured with Chromium as a phone on its side (844 × 390, touch), the production
+build, a first visit with nothing cached:
+
+| Line | The title is up | The first fight begins | Sent by then |
+| --- | --- | --- | --- |
+| No limit | 10.1 s | 23.4 s | 6.8 MB at the title, 12.0 MB at the fight |
+| Fast 4G (9 Mbit/s, 60 ms) | 12.6 s | 26.1 s | 6.7 MB, 11.8 MB |
+| Slow 4G (1.6 Mbit/s, 150 ms) | 41.1 s | 54.5 s | 6.7 MB, 7.8 MB (the music is still coming) |
+| Slow 4G, and the processor slowed four times | 40.4 s | 55.5 s | 6.7 MB, 7.7 MB |
+
+(The seconds include the script's own reading pace and this machine's software graphics card; the difference between
+the rows is the line.)
+
+- **Where a slow line's 41 seconds go.** Scripts by 10 s; then the title's models (4.6 MB: the wardrobe's
+  `hero.pack` alone is 2.4 MB) and the icon sheet (0.7 MB) until about 36 s. The line is full the whole time, so
+  nothing is gained by asking earlier: only sending less before the title would shorten it. The model files are
+  already quantized and gzipped (Brotli gains nothing on them).
+- **What that wait looked like: an empty black box**, for half a minute. Fixed: the wait before the title is the
+  intro's own veil with a bar that fills as the files come (`ui/Warming.tsx`, `packLoad` in `render3d/pack.ts`);
+  the title's veil carries the bar on from there. Where the server says how big the files are, the bar goes by
+  bytes and the line says how many MB have come; the test's server doesn't, so only the bar by files was seen, and
+  whether the live host says was not checked.
+- The icon sheet is asked for at low priority, so a browser that orders downloads sends the models first. The test's
+  throttle doesn't order them, so this is not measured.
+- **Not done, and the owner's call:** splitting the wardrobe so the title waits only for what it shows (a new
+  player's title shows no hero at all) would take about 2.4 MB, a third, off a slow line's wait. It changes the
+  model builder and every menu that draws a hero; it is a piece of its own, after real phones have said how long
+  the wait is.
+- **Found, in shared code, fixed in a pull request of its own:** `src/main.tsx` reloads the page on any `vite:preloadError`, taking it for a
+  deploy. One of the site's first calls to its API failing (the call follows a lazily loaded part, so its failure
+  arrives as that event) reloads the page once, in the middle of the game's files on a slow line, and the reload
+  drops `?play=1`. Seen here because the test serves the site without its API; a real player meets it when that
+  call fails on a bad line. The fix is one line (reload only when the error is a missing file:
+  `isStaleBuildError`), in the site's own start-up. The owner said yes (2026-11-24): it is #362, built on
+  `pre-release` alone.
+- **Frames.** The picture already steps down by itself on a machine that can't keep up (`render3d/pace.ts`), with a
+  Light setting and a battery saver, so no new quality tier was added. Frames a second can't be measured here (a
+  software graphics card under a slowed processor says nothing about a phone); draw calls and triangles are the
+  baseline's, unchanged by this piece. The real numbers are the first thing `PHONE_CHECKLIST.md` asks for.
+- **Memory over a long sitting** (`scripts/sigilfall-soak.mjs`, new): a hero jumped through a beat of each of the
+  26 lands, three rounds, garbage collected at every stop. Round 2 to round 3: geometries 4,401 to 4,359, textures
+  520 to 520, heap 56 MB a stop both rounds (58 MB at most). Nothing is held on to. This is the game's own
+  bookkeeping, not a phone's memory limit, and it is not 30 minutes of play.
+- `PHONE_CHECKLIST.md`: twenty minutes on a real phone, with blanks for the numbers only it can give.
 
 ### 8. The rough edges (`claude/sf9-rough-edges`)
 

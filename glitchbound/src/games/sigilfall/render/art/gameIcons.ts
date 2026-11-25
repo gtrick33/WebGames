@@ -38,6 +38,9 @@ async function load(): Promise<boolean> {
       new Promise<Cnv>((resolve, reject) => {
         const im = new Image();
         im.decoding = 'async';
+        // (it gives way to the models on a slow line: no screen can show before they come, and they are asked for
+        // in the same moment; NINE_PLAN.md piece 7)
+        (im as HTMLImageElement & { fetchPriority?: string }).fetchPriority = 'low';
         im.onload = () => {
           const c = canvas(im.naturalWidth, im.naturalHeight);
           ctx2d(c).drawImage(im, 0, 0);

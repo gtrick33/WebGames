@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { iconsReady } from '../render/art/gameIcons';
 import { warmPortraits } from '../render3d/portrait';
+import { WARM_BAR, warmed } from './Warming';
 
 /** Never kept behind the veil longer than this, whatever hasn't come. */
 const MAX_WAIT = 3000;
@@ -42,7 +43,8 @@ const INTRO_LINES = ['Lighting the sanctum', 'Waking the wardens', 'Sharpening o
 export function ScreenGate({ children, intro = false, hold = false, tasks, label = 'Loading' }: { children: ReactNode; intro?: boolean; hold?: boolean; tasks?: () => Promise<unknown>[]; label?: string }) {
   const box = useRef<HTMLDivElement>(null);
   const [full] = useState(() => intro && !introSeen);
-  const [progress, setProgress] = useState(0);
+  // (the wait before the title has filled most of the bar already: ui/Warming.tsx)
+  const [progress, setProgress] = useState(() => (intro && warmed.shown ? WARM_BAR : 0));
   const [loaded, setLoaded] = useState(false);
   const [gone, setGone] = useState(false);
   const [line] = useState(() => INTRO_LINES[Math.floor(Math.random() * INTRO_LINES.length)]!);
@@ -56,7 +58,7 @@ export function ScreenGate({ children, intro = false, hold = false, tasks, label
     const counted = list.map((p) =>
       settle(p).then(() => {
         done += 1;
-        if (on) setProgress(done / (list.length + 1));
+        if (on) setProgress((was) => Math.max(was, done / (list.length + 1)));
       }),
     );
     const everything = Promise.all(counted)
