@@ -2192,6 +2192,165 @@ BOSS_KITS.boss_maltheus = {
   ],
 };
 
+/* The Rift's bosses (the Smugglers' Grotto, the Rotmother's Cistern, the Deepforge Halls, the Blightheart, the Spire
+   of the Rift). */
+
+// The Drowned Priestess, Voice of the Deep Tide: a priestess the sea took and gave back. The Cleric's robes on the
+// Witch's bare head, the shrine's bell in her hand (she calls her children from the deep with it), a staff, and the
+// anchor that drowned her still chained to her back.
+BOSS_KITS.boss_drowned = {
+  rig: 'medium',
+  from: [['Cleric', /Body|Arm|Leg/], ['Witch', /Head/]],
+  grow: [['head', 1.05]],
+  ties: [
+    { bit: 'druid_staff', joint: 'handslot.r', at: [0, 0, 0], size: 1.15 },
+    { bit: 'bell', joint: 'handslot.l', at: [0, -0.05, 0.02], size: 0.5 },
+    { bit: 'anchor', joint: 'chest', at: [0, 0.1, -0.45], size: 0.9, turn: [-30, 0, 0] },
+  ],
+};
+// Captain Saltbeard, Master of the Smugglers' Grotto: the Survivalist he has always been, with a smuggler's purses,
+// a curved sword, a lantern to signal the boats, and a keg of his own powder on his back.
+BOSS_KITS.boss_saltbeard = {
+  rig: 'medium',
+  from: [['Survivalist', /Body|Arm|Leg|Head/], ['Hoarder', /HipPouch/]],
+  grow: [['chest', 1.08]],
+  ties: [
+    { bit: 'Tiefling_Sword', joint: 'handslot.r', at: [0, 0, 0], size: 1.1 },
+    { bit: 'lantern', joint: 'handslot.l', at: [0, -0.1, 0.02], size: 0.55 },
+    { bit: 'keg', joint: 'chest', at: [0, 0.2, -0.5], size: 0.6, turn: [0, 0, 90] },
+  ],
+};
+// Brother Pustule, Keeper of the Vats: "He tends her vats and blesses every barrel that goes out with the water."
+// The Cleric whole, a plague mask on him (the Hoarder's), a bottle of the brew in one hand, his staff in the other,
+// and a small barrel of it on his back.
+BOSS_KITS.boss_pustule = {
+  rig: 'medium',
+  from: [['Cleric', /Body|Arm|Leg|Head/], ['Hoarder', /FaceMask/]],
+  grow: [['chest', 1.12], ['hips', 1.12]],
+  ties: [
+    { bit: 'Skeleton_Staff', joint: 'handslot.r', at: [0, 0, 0], size: 1.1 },
+    { bit: 'bottle_A_green', joint: 'handslot.l', at: [0, 0, 0.02], size: 1.3 },
+    { bit: 'barrel_small', joint: 'chest', at: [0, 0.15, -0.5], size: 0.6 },
+  ],
+};
+// Old Sluicegut, Warden of the Charnel Drain: "The city carved him from the cistern's own stone to keep the drains
+// running." The rock golem, a length of the drain's pipe on his back and a drain-rake the size of a man.
+BOSS_KITS.boss_sluicegut = {
+  rig: 'large',
+  from: [['FrostGolem', /Body|Arm|Leg|Head/]],
+  grow: [['hips', 1.15], ['chest', 1.05]],
+  ties: [
+    { bit: 'Monstrosity_Pitchfork_Large', joint: 'handslot.r', at: [0, 0, 0], size: 1 },
+    { bit: 'barrel_large', joint: 'chest', at: [0, 0.2, -0.75], size: 0.55, turn: [0, 0, 90] },
+    { bit: 'Mushroom', joint: 'upperarm.l', at: [0, 0.25, 0], size: 1.2 },
+  ],
+};
+// The Rot-Mother, Brewer of the Plague: "Half sunk in her own brew, she has not left the pit in years." The
+// Monstrosity whole, grown in the belly, and the ladle she stirs with.
+BOSS_KITS.boss_rotmother = {
+  rig: 'large',
+  from: [['Monstrosity', /Body|Arm|Leg|Head/]],
+  grow: [['hips', 1.12]],
+  ties: [
+    { bit: 'Skeleton_Staff', joint: 'handslot.r', at: [0, 0, 0], size: 1.6 },
+  ],
+};
+// The Runewarden, Bound Guardian of the Deepforge: a thing the forge-masters cut and set to stand. The rock golem's
+// frame under a closed helm (the Black Knight's), an anvil on its back, and a hammer.
+BOSS_KITS.boss_runewarden = {
+  rig: 'large',
+  from: [['FrostGolem', /Body|Arm|Leg/], ['BlackKnight', /Head|Shoulder/]],
+  grow: [['chest', 1.1]],
+  ties: [
+    { bit: 'hammer_large_spikes_yellow', joint: 'handslot.r', at: [0, 0, 0], size: 0.4 },
+    { bit: 'anvil', joint: 'chest', at: [0, 0.25, -0.8], size: 0.6 },
+  ],
+};
+// The Slag Colossus, Poured in the Rendering Pit: not built, poured. The bone golem's frame under the rock golem's
+// head, no weapon but its hands (grown), and the crucible it was poured from hung on its back.
+BOSS_KITS.boss_slag = {
+  rig: 'large',
+  from: [[`${SK}Golem`, /Body|Arm|Leg/], ['FrostGolem', /Head/]],
+  grow: [['hand.l', 1.4], ['hand.r', 1.4], ['chest', 1.1]],
+  ties: [{ bit: 'Cauldron', joint: 'chest', at: [0, 0.3, -0.8], size: 0.5, turn: [-100, 0, 0] }],
+};
+// Forgemaster Grold, Master of the Deepforge: a smith. The Barbarian's bare arms with a founder's goggles and pack,
+// his hammer, and a pair of the forge's blades not yet hafted on his back.
+BOSS_KITS.boss_grold = {
+  rig: 'medium',
+  from: [['Barbarian', /Body|Arm|Leg|Head/], ['Engineer', /Goggles|Backpack/]],
+  grow: [['chest', 1.15], ['upperarm.l', 1.15], ['upperarm.r', 1.15]],
+  ties: [
+    { bit: 'hammer_D', joint: 'handslot.r', at: [0, 0, 0], size: 1.3 },
+    { bit: 'pickaxe', joint: 'handslot.l', at: [0, 0, 0], size: 1 },
+  ],
+};
+// The Rotwood Colossus, Warden of the Hollow Bole: a tree that walks. The rock golem's frame in bark (its paint), a
+// bare tree growing out of its back, and the blight's mushrooms on its shoulders.
+BOSS_KITS.boss_rotwood = {
+  rig: 'large',
+  from: [['FrostGolem', /Body|Arm|Leg|Head/]],
+  grow: [['chest', 1.12], ['lowerarm.l', 1.15], ['lowerarm.r', 1.15]],
+  ties: [
+    { bit: 'Tree_Bare_1_A_Color1', joint: 'chest', at: [0, 0.1, -0.2], size: 1.3 },
+    { bit: 'Mushroom', joint: 'upperarm.l', at: [0, 0.3, 0], size: 1.5 },
+    { bit: 'Mushroom', joint: 'upperarm.r', at: [0, 0.3, 0], size: 1.2 },
+  ],
+};
+// Elowen of the Dawn, Lamp-Warden of the Faded Lights: she kept the wood's lamps lit. A warden's coat and cape (the
+// Paladin's) on the Witch's bare head, her lamp held up in one hand, a staff in the other.
+BOSS_KITS.boss_elowen = {
+  rig: 'medium',
+  from: [['Paladin', /Body|Arm|Leg|Cape/], ['Witch', /Head/]],
+  grow: [['head', 1.05]],
+  ties: [
+    { bit: 'staff_C', joint: 'handslot.r', at: [0, 0, 0], size: 1.15 },
+    { bit: 'lantern_decorated', joint: 'handslot.l', at: [0, -0.12, 0.02], size: 0.6 },
+  ],
+};
+// The Withered Queen, Lieutenant of the Hallow King: a queen of the wood, dried on her feet. The Vampire's court
+// dress and pale head under a crown (the Necromancer's), a mage's cape, and a scythe: her garden is a harvest.
+BOSS_KITS.boss_witheredqueen = {
+  rig: 'medium',
+  from: [['Vampire', /Body|Arm|Leg|Head/], ['Necromancer', /Crown/], ['Mage', /Cape/]],
+  grow: [['head', 1.05]],
+  ties: [{ bit: 'Skeleton_Scythe', joint: 'handslot.r', at: [0, 0, 0], size: 1.15 }],
+};
+// The Veil Sentinel, Warden of the Stair: the Spire's door-keeper. The Black Knight's plate without its cape on the
+// bone golem's great skull, an axe, and the great shield.
+BOSS_KITS.boss_veilsentinel = {
+  rig: 'large',
+  from: [['BlackKnight', /Body|Arm|Leg|Shoulder/], [`${SK}Golem`, /Head|Jaw|Eyes/]],
+  grow: [['chest', 1.12]],
+  ties: [
+    { bit: 'Skeleton_Golem_Axe_Large', joint: 'handslot.r', at: [0, 0, 0], size: 1 },
+    { bit: 'BlackKnight_Shield_Large', joint: 'handslot.l', at: [0, 0, 0], size: 1.1 },
+  ],
+};
+// Ilvane the Unmoored, Keeper of the Weightless Gallery: a keeper of the Spire's books who let go of the floor. A
+// mage's robes and cape, the Witch's head and glasses, an open book in one hand and a staff in the other.
+BOSS_KITS.boss_ilvane = {
+  rig: 'medium',
+  from: [['Mage', /Body|Arm|Leg|Cape/], ['Witch', /Head|Glasses/]],
+  grow: [['head', 1.05]],
+  ties: [
+    { bit: 'Lorekeeper_Staff', joint: 'handslot.r', at: [0, 0, 0], size: 1.1 },
+    { bit: 'spellbook_open', joint: 'handslot.l', at: [0, 0.02, 0.04], size: 0.8 },
+  ],
+};
+// The Pale Herald, Voice of the Hallow King: he comes before his king and says what is to happen. The Vampire's court
+// coat and pale head, a herald's cape, the King's white banner on his back, and the bell he rings before he speaks.
+BOSS_KITS.boss_herald = {
+  rig: 'medium',
+  from: [['Vampire', /Body|Arm|Leg|Head/], ['Mage', /Cape/]],
+  grow: [['head', 1.04]],
+  ties: [
+    { bit: 'staff_B', joint: 'handslot.r', at: [0, 0, 0], size: 1.2 },
+    { bit: 'bell_decorated', joint: 'handslot.l', at: [0, -0.05, 0.02], size: 0.5 },
+    { bit: 'banner_thin_white', joint: 'chest', at: [0, 0.1, -0.3], size: 0.62, turn: [-38, 0, 0] },
+  ],
+};
+
 const quatOf = (rx, ry, rz) => new THREE.Quaternion().setFromEuler(new THREE.Euler((rx * Math.PI) / 180, (ry * Math.PI) / 180, (rz * Math.PI) / 180, 'YXZ')).toArray();
 
 /** The model with what hangs from one joint, and from every joint under it, made `k` times its size about that joint. */
