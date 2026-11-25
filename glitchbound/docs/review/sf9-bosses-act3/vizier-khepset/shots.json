@@ -1,0 +1,124 @@
+{
+ "boss": "vizier-khepset",
+ "shots": [
+  {
+   "state": "entrance",
+   "close": "01-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "02-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "03-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "04-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "05-entrance-close.jpg"
+  },
+  {
+   "state": "line-up",
+   "file": "06-line-up.jpg",
+   "close": "06-line-up-close.jpg"
+  },
+  {
+   "state": "portrait",
+   "file": "07-portrait.jpg"
+  },
+  {
+   "state": "phase-1-spell-sinkhole-windup",
+   "file": "08-phase-1-spell-sinkhole-windup.jpg",
+   "close": "08-phase-1-spell-sinkhole-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-spell-sinkhole-strike",
+   "file": "09-phase-1-spell-sinkhole-strike.jpg",
+   "close": "09-phase-1-spell-sinkhole-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-change",
+   "file": "10-phase-2-change.jpg",
+   "close": "10-phase-2-change-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-sinkhole-windup",
+   "file": "11-phase-2-spell-sinkhole-windup.jpg",
+   "close": "11-phase-2-spell-sinkhole-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-sinkhole-strike",
+   "file": "12-phase-2-spell-sinkhole-strike.jpg",
+   "close": "12-phase-2-spell-sinkhole-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-tomb-hourglass-windup",
+   "file": "13-phase-2-tomb-hourglass-windup.jpg",
+   "close": "13-phase-2-tomb-hourglass-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-tomb-hourglass-strike",
+   "file": "14-phase-2-tomb-hourglass-strike.jpg",
+   "close": "14-phase-2-tomb-hourglass-strike-close.jpg"
+  },
+  {
+   "state": "dazed",
+   "close": "15-dazed-close.jpg"
+  },
+  {
+   "state": "struck",
+   "file": "16-struck.jpg",
+   "close": "16-struck-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "17-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "18-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "19-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "20-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "21-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "22-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "23-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "24-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "25-death-close.jpg"
+  }
+ ],
+ "errors": [],
+ "cost": {
+  "file": "boss_khepset",
+  "tris": 5834,
+  "frame": {
+   "calls": 36,
+   "tris": 284131,
+   "quality": 0.7
+  }
+ }
+}
