@@ -284,14 +284,15 @@ FORMS.morgrave = {
 // count: its head goes down for every charge, gore and stomp; struck from its rush or roused to its second wind it
 // rears as a beast does when hurt; and it dies on its side where it stood, a carcass the size of a cart that stays.
 FORMS.grimtusk = {
-  clips: ['idle', 'walk', 'run', 'chop', 'hit', 'die'],
+  clips: ['idle', 'walk', 'run', 'chop', 'hit', 'die', 'kick', 'low'],
   moves: {
     charge: { clip: 'chop' },
     tripleCharge: { clip: 'chop', rate: 1.3 },
-    stomp: { clip: 'chop', rate: 0.8 },
+    // (the bull's own kick and its head-low pawing: a stomp is not a headbutt, and a roar is not a flinch)
+    stomp: { clip: 'kick', rate: 0.9 },
     gore: { clip: 'chop', rate: 1.4 },
-    roar: { clip: 'hit', rate: 0.6 },
-    summon: { clip: 'hit', rate: 0.6 },
+    roar: { clip: 'low', rate: 1.6 },
+    summon: { clip: 'low', rate: 1.6 },
   },
   enter: { clip: 'hit', then: 'idle' },
   shift: { clip: 'hit', rate: 0.5 },

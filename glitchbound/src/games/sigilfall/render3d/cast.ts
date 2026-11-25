@@ -508,6 +508,13 @@ export class Cast {
     return this.entry(kit.k, kit).rig;
   }
 
+  /** Whether this creature's skeleton has a clip (a person in a look has the wardrobe's). False until it has loaded. */
+  hasClip(sprite: string, clip: string, enemy?: string): boolean {
+    const kit = kitOf(sprite, enemy);
+    if (kit.look && npcLookOf(kit.look)) return !!this.wardrobe?.medium?.has(clip);
+    return !!this.entry(kit.k, kit).rig?.has(clip);
+  }
+
   /** Where the blow is in the clip this creature plays for `clip` (a person plays their own kind of attack). */
   strike(sprite: string, clip: string, enemy?: string): Strike {
     const kit = kitOf(sprite, enemy);

@@ -1,0 +1,131 @@
+{
+  "boss": "hangman",
+  "file": "boss_hangman",
+  "form": "hangman",
+  "float": 0,
+  "walked": {
+    "samples": 184,
+    "moving": 95,
+    "walking": 91,
+    "clips": {
+      "walk": 91,
+      "cast": 2,
+      "spin": 1,
+      "smash": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "spin",
+        "idle",
+        "walk"
+      ],
+      "readings": 63
+    },
+    {
+      "phase": 1,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle",
+        "walk"
+      ],
+      "readings": 65
+    },
+    {
+      "phase": 1,
+      "id": "hook",
+      "clips": [
+        "cast",
+        "idle",
+        "walk",
+        "spin"
+      ],
+      "readings": 58
+    },
+    {
+      "phase": 1,
+      "id": "gallows:trapdoors",
+      "clips": [
+        "smash",
+        "idle",
+        "walk"
+      ],
+      "readings": 68
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "punch",
+        "idle",
+        "walk",
+        "smash",
+        "spin"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle",
+        "walk"
+      ],
+      "readings": 32
+    },
+    {
+      "phase": 2,
+      "id": "volley",
+      "clips": [
+        "cast",
+        "idle"
+      ],
+      "readings": 40
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "spin",
+        "idle"
+      ],
+      "readings": 40
+    },
+    {
+      "phase": 2,
+      "id": "gallows:hook-drop",
+      "clips": [
+        "cast",
+        "idle"
+      ],
+      "readings": 44
+    },
+    {
+      "phase": 2,
+      "id": "gallows:trapdoors",
+      "clips": [
+        "smash",
+        "idle",
+        "cast"
+      ],
+      "readings": 68
+    },
+    {
+      "phase": 2,
+      "id": "roar",
+      "clips": [
+        "punch",
+        "idle",
+        "walk",
+        "chop2"
+      ],
+      "readings": 43
+    }
+  ],
+  "found": [],
+  "errors": []
+}

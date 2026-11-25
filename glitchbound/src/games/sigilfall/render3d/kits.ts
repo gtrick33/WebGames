@@ -16,7 +16,14 @@ export interface Kit {
   /** Its size next to what its body radius would give it. */
   size?: number;
   /** Floats this far off the ground, in old-grid tiles (16 world pixels). */
-  float?: number;
+/**
+   * A boss drawn with a shared creature (no file or form of its own: render3d/bossKit.ts): the clip of that creature's
+   * skeleton it makes for each of its attack patterns, so that a charge is not a bite and a howl is not a bite either.
+   * Every boss has a move for every pattern, one way or the other (the owner, 2026-11-24: bosses are animated, never
+   * gliding in one pose; tests/sigilfall-bosses-move.test.ts).
+   */
+  moves?: Readonly<Record<string, { clip: string; rate?: number }>>;
+    float?: number;
   /** Its attack clip. */
   atk?: 'chop' | 'chop2' | 'stab' | 'cast' | 'bow' | 'spin' | 'punch' | 'smash';
   /** Brightens its colors (some models are painted dark). */
@@ -186,12 +193,12 @@ put('prior-vessant', { k: 'sk_necro', look: 'foe-prior-vessant', held: { kind: '
 // Highwall's own dead, sung up again: grey-green, in what is left of their mail
 put('risen-defender', { k: 'sk_guard', tint: '#a8c0a0' });
 // the Faded Lights' lamp-wardens: Elowen in the morning's gold with her lamp-staff, her sister Merrin in the evening's violet
-put('elowen-of-the-dawn', { k: 'witch', look: 'foe-elowen', held: { kind: 'staff', tint: '#ffe08a' }, size: 1.3, float: 0.2, ...CASTER });
+put('elowen-of-the-dawn', { k: 'witch', look: 'foe-elowen', held: { kind: 'staff', tint: '#ffe08a' }, size: 1.3, ...CASTER });
 put('merrin-of-the-dusk', { k: 'witch', look: 'foe-merrin', held: { kind: 'wand', tint: '#b48aff' }, size: 1.22, float: 0.2, ...CASTER });
 // the Weightless Gallery's astronomer: a robe of night and starlight, a star-crowned hat, floating well off her floor
 put('ilvane-the-unmoored', { k: 'witch', look: 'foe-ilvane', held: { kind: 'staff', tint: '#c8b8ff' }, size: 1.3, float: 0.7, ...CASTER });
 // Duskspire's Last Mourner in black, veiled, her staff's light violet; and the dead she bids keep vigil, ash-grey
-put('lady-cendre', { k: 'witch', look: 'foe-cendre', held: { kind: 'staff', tint: '#c08aff' }, size: 1.3, float: 0.12, ...CASTER });
+put('lady-cendre', { k: 'witch', look: 'foe-cendre', held: { kind: 'staff', tint: '#c08aff' }, size: 1.3, ...CASTER });
 put('mourning-dead', { k: 'sk_minion', tint: '#c8c4d0' });
 // The Coffin Matron, Mother of the Ossuary: an old woman of the dead, pale as her charges, white-haired under a
 // mourner's veil, in grave linen and black; the dead's own arms; the coffin she hides in strapped to her back, a
@@ -201,7 +208,7 @@ put('coffin-matron', {
   k: 'boss_matron',
   form: 'matron',
   size: 1.5,
-  float: 0.1,
+  // (she walks the crypt's floor: she was lifted a hand's breadth off it, and her feet went through their walk in the air)
   ...CASTER,
   paint: [
     // her eyes: the same light
@@ -262,6 +269,15 @@ put('magma-hound', { k: 'a_wolf', beast: BEASTS.magmaHound });
 put('gnasher', {
   k: 'a_wolf',
   beast: BEASTS.warHound,
+  // his bites are the wolf's bite; he leaps into his charges, digs to go under the floor, and stands low and
+  // bristling to call the pack (the wolf's own clips: scripts/sigilfall-3d-assets.mjs MORE_CLIPS)
+  moves: {
+    cleave: { clip: 'chop', rate: 1.2 },
+    charge: { clip: 'leap' },
+    tripleCharge: { clip: 'leap', rate: 1.3 },
+    'gallows:burrow': { clip: 'dig' },
+    summon: { clip: 'low', rate: 1.4 },
+  },
   // (he was 2.3 of a wolf: eight tiles of hound, too long to see his own attacks past, and too big to stride)
   size: 1.3,
   gear: [
@@ -365,7 +381,7 @@ put('old-sluicegut', {
 put('brother-pustule', { k: 'cleric', tint: ROT, look: 'foe-brother-pustule', held: { kind: 'staff' }, ...CASTER });
 // the catacombs: the Herald's spymaster in a dark hood and oiled leathers, daggers in hand; the old kings' Auditor, a clerk's ghost in ink-black and gold
 put('silas-vey', { k: 'rogue_hooded', look: 'foe-silas-vey', held: { kind: 'dagger', tint: '#d8d4e0' }, size: 1.2 });
-put('the-royal-auditor', { k: 'cleric', look: 'foe-royal-auditor', held: { kind: 'wand', tint: '#f0e0a0' }, size: 1.3, float: 0.3, ...CASTER });
+put('the-royal-auditor', { k: 'cleric', look: 'foe-royal-auditor', held: { kind: 'wand', tint: '#f0e0a0' }, size: 1.3, ...CASTER });
 put('maelis-crane', { k: 'cleric', look: 'chancellor-crane', ...CASTER });
 put('goblin', { k: 'ranger', tint: '#9aa878', look: 'foe-briar-poacher', held: { kind: 'bow' }, ...BOWMAN });
 put('ridge-kobold kobold-candler', { k: 'caveman', tint: '#d0a070', size: 0.72 });
@@ -440,7 +456,7 @@ put('scarab-swarm tomb-scarab', { k: 'scarab', size: 0.72 });
 put('marsh-strider', { k: 'strider' });
 put('blood-mosquito glimmer-moth rotwood-pod', { k: 'moth', size: 0.8, float: 0.4 });
 // the Tomb's Vizier Khepset: the dead king's vizier in the sun's gold, his crown of office on his brow, a gold staff
-put('vizier-khepset', { k: 'witch', look: 'foe-vizier-khepset', held: { kind: 'staff', tint: '#ffd27a' }, size: 1.35, float: 0.25, ...CASTER });
+put('vizier-khepset', { k: 'witch', look: 'foe-vizier-khepset', held: { kind: 'staff', tint: '#ffd27a' }, size: 1.35, ...CASTER });
 // the Barrow's Lamp-Eater: a drake built as the great drake mounts are, blacked out by a thousand years of devoured
 // lamplight: black plate, a crown of horns, wings veined with the pale fire of the lamps it has eaten
 put('gloomwing', {

@@ -28,7 +28,7 @@ requests open.**
 | 1 | Baseline and plan | `claude/sf9-baseline` | #355 | open | nothing |
 | 2a | Boss pipeline and the Coffin Matron | `claude/sf9-boss-matron` | #356 | open | 1 (#355) |
 | 2b | Bosses: the Prologue (Ossric, Morgrave, Grimtusk) | `claude/sf9-bosses-prologue` | #357 | open | 2a (#356) |
-| 2c | Bosses: Act I (Gallows Keep): the Hangman and Harlan Blackglove; **Gnasher not done** (see piece 2) | `claude/sf9-bosses-act1` | #363 | open | 2b (#357) |
+| 2c | Bosses: Act I (Gallows Keep): the Hangman and Harlan Blackglove; Gnasher's moves; a move for every attack of all 43 bosses | `claude/sf9-bosses-act1` | #363 | open | 2b (#357) |
 | 2d | Bosses: Act II (the Barrow of Kings, the Crown Catacombs) | `claude/sf9-bosses-act2` | | not started | 2a |
 | 2e | Bosses: Act III (the Tomb of the Sun King, the Vault of Rime) | `claude/sf9-bosses-act3` | | not started | 2a |
 | 2f | Bosses: Act IV (the Siege of Highwall) | `claude/sf9-bosses-act4` | | not started | 2a |
@@ -301,11 +301,14 @@ act's bosses and the finale's (2b to 2h, rows 2 to 28). Then the rest (2i, rows 
   rift-glass in its brow (his first drop is that shard). 7,690 triangles and what the crown adds. Two cuts, a
   flick for the thrown knives, a thrust for each dash, a sidestep into his smoke, a wave of the glove for his
   cutthroats.
-- **Gnasher is not done.** His look was set piece by piece with the owner (the gang's iron, skulls at his haunches,
-  no banner) and is carried as gear fitted onto the shared wolf when it loads. A file of his own means building
-  that gear into the file exactly as it sits now, and a wolf's file with more of the pack's clips (it has a dig, a
-  leap, a low stalk and a landing that his burrow and charges could use). That is a piece of work of its own, and
-  the owner should see him before and after: it goes in 2i with the other beasts unless asked for sooner.
+- **Gnasher** keeps his look and the shared wolf's file (the owner, 2026-11-24: "gnasher is fine"), and now leaps
+  into his charges, digs for his burrow and lowers himself to call the pack: the wolf's file gained those clips.
+- **Every boss moves** (the owner, same day: check that none floats and each has real animations, "and keep that in
+  mind for any future boss"). `render3d/bossMoves.ts` gives every attack of every boss a clip of its kind from the
+  boss's own skeleton, so no boss makes one swing for everything; four bosses on foot were lifted off the ground and
+  are not now (four that fly still drift); a struck pose that stuck after a daze is fixed.
+  `tests/sigilfall-bosses-move.test.ts` holds all 43 to it, and a new boss fails it until it moves. Twelve were run
+  in motion in the browser: `docs/review/sf9-bosses-act1/README.md`.
 - Learned: a part made for the large skeleton does not come across to the medium one at its own size (the Black
   Knight's arm arrived as tall as the man). Parts go from medium to large, or between figures of the same skeleton.
 
