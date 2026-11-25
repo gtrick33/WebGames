@@ -97,6 +97,15 @@ staff and an open book. The Pale Herald: the Vampire, the Mage's cape, a staff, 
 same KayKit collection (CC0), each pack already credited. No name or title changed, and none copies a named
 character of another game.
 
+The story's seven named foes of the lands (the rest of piece 2i that was done, 2026-11-25) take nothing new either,
+and no new name: each keeps the name it had. The Grey Lady: the Druid's robes, the Witch's head, the Mage's cape and a
+decorated lantern. Prince Thistlemourn: the Rogue's coat and cape, the Vampire's head, the Necromancer's crown, a
+druid's staff and a bare tree from the Forest Nature Pack. The Tearborn: the Monstrosity with lengths of chain. The
+Gatewarden: the Black Knight, his great shield, and the Dungeon Pack's key. The Weeping Lord: the helmed Paladin, a
+two-handed sword and a white banner. The Lich of Hollowmere: the Necromancer's robes and crown, the Skeleton Mage's
+head, a staff, a shackle and an anchor. Vosk the Hollowed: the Knight's plate and cape, the Skeleton Warrior's head
+and a spear, on the horse he already rode.
+
 ## A Rift legendary on every place (2026-11-24)
 
 The owner asked for "a legendary for each spec and 3 legendaries common for the class" on every item slot. What is taken
