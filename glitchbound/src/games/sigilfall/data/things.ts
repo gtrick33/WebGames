@@ -48,4 +48,6 @@ export const THINGS: Record<ThingLook, ThingDef> = {
   log: { model: 'log', h: 7, after: 'gone', glow: '#ffe08a' },
   anvil: { model: 'anvil', h: 10, after: 'same', glow: '#ffb04d' },
   chest: { model: 'chest', h: 13, after: 'opened', glow: '#ffe08a' },
+  notice: { model: 'sign', h: 15, after: 'gone', glow: '#ff6a4d' },
+  gibbet: { model: 'post_skull', h: 24, after: 'opened', glow: '#c8b0ff' },
 };

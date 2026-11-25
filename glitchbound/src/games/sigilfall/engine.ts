@@ -1680,13 +1680,16 @@ export class SigilEngine {
     const entry = npc.talk.find((t) => !t.when || holds(h, { quest: t.when.quest, is: t.when.state })) ?? npc.talk[npc.talk.length - 1]!;
     // a message delivered, a question asked: talking is the objective (and its hand-in)
     const wasDone = new Set(Object.keys(h.quests).filter((id) => h.quests[id]!.state === 'done'));
+    // (a step that is a talk may have its own words: what this person says at this point of the quest, not what they
+    // say all through it)
+    const said = activeQuests(h).flatMap((q) => { const o = currentObjective(h, q); return o.kind === 'talk' && o.npc === npcId && o.lines ? [o.lines] : []; })[0];
     const spoke = activeQuests(h).some((q) => { const o = currentObjective(h, q); return o.kind === 'talk' && o.npc === npcId; });
     this.world?.questProgress((o) => o.kind === 'talk' && o.npc === npcId);
     const paid = Object.keys(h.quests).filter((id) => h.quests[id]!.state === 'done' && !wasDone.has(id) && QUEST_DEFS[id]!.objective.kind !== 'tutorial');
     // then what they take back, and what they ask (each a page of its own: Complete, Accept)
     const pages: DialoguePage[] = [...paid.map((quest) => ({ kind: 'paid' as const, quest })), ...handInsFor(h, npcId).map((q) => ({ kind: 'handin' as const, quest: q.id })), ...offeredBy(h, npcId).map((q) => ({ kind: 'offer' as const, quest: q.id }))];
     // what they say first: always when the talk was the point; otherwise only when there is nothing to hand over
-    const lines = spoke || !pages.length ? [...entry.lines] : [];
+    const lines = spoke || !pages.length ? [...(said ?? entry.lines)] : [];
     this.kbm?.release();
     this.touch.release();
     this.sound.play(pages.length ? 'quest' : 'open');

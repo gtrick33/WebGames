@@ -1373,7 +1373,12 @@ export class Effects {
       fx.put({ kind: FX.glow, x: t.x, y: t.y, flat: true, w: 34, a: color, alpha: 0.55 * beat });
     }
     const held = w.tasks.hold;
-    if (held && sc.near(held.x, held.y)) fx.put({ kind: FX.glow, x: held.x, y: held.y, flat: true, w: held.r * 2.2, a: held.inside ? '#9cffd0' : '#ffe08a', alpha: 0.22 + Math.sin(sc.time * 3) * 0.05 });
+    if (held && sc.near(held.x, held.y)) {
+      // the ground to stand on: a pool of light with a ring going out to its edge; green while the hero is in it
+      const color = held.inside ? '#9cffd0' : '#ffe08a';
+      fx.put({ kind: FX.glow, x: held.x, y: held.y, flat: true, w: held.r * 2.4, a: color, alpha: 0.34 + Math.sin(sc.time * 3) * 0.06 });
+      fx.put({ kind: FX.ring, x: held.x, y: held.y, flat: true, w: held.r * 2, a: color, t: (sc.time * 0.35) % 1, seed: 1 });
+    }
     // a piece of gear on the ground stands in a beam of its rarity's color, taller and wider the rarer it is, and an epic or
     // a legendary one breathes, so it is seen across a field and known before it is reached (POLISH_PLAN.md piece 22)
     for (const d of w.drops) {

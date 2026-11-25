@@ -1063,7 +1063,8 @@ export type Objective =
   | { kind: 'kill'; region: RegionId; count: number; label: string; enemies?: string[]; lair?: Lair }
   /** Things carried by some enemies: each kill of one of `from` has `chance` to give one. */
   | { kind: 'loot'; region: RegionId; item: string; from: string[]; chance: number; count: number; label: string }
-  | { kind: 'talk'; npc: string; label: string }
+  /** `lines`: what they say at this step, where that is not what they say all through the quest. */
+  | { kind: 'talk'; npc: string; label: string; lines?: string[] }
   | { kind: 'boss'; boss: string; label: string }
   | { kind: 'collect'; item: 'shard'; count: number; label: string }
   | { kind: 'explore'; spot: string; label: string }
@@ -1095,7 +1096,7 @@ export interface Lair {
 /** What a quest's thing in the world is (data/things.ts has each one's model). */
 export type ThingLook =
   | 'nest' | 'crate' | 'barrel' | 'sack' | 'cart' | 'brazier' | 'campfire' | 'banner' | 'grave' | 'runestone' | 'altar' | 'shrine' | 'tent' | 'boat'
-  | 'weapons' | 'bones' | 'tracks' | 'herb' | 'mushroom' | 'ore' | 'coffin' | 'books' | 'well' | 'lantern' | 'totem' | 'captive' | 'statue' | 'log' | 'anvil' | 'chest';
+  | 'weapons' | 'bones' | 'tracks' | 'herb' | 'mushroom' | 'ore' | 'coffin' | 'books' | 'well' | 'lantern' | 'totem' | 'captive' | 'statue' | 'log' | 'anvil' | 'chest' | 'notice' | 'gibbet';
 
 /** Lasting gifts from the ends of quest chains; the seven sigils are the main story's. */
 export type PerkId = 'mount' | 'satchel' | 'flask' | 'hearth' | SigilId;
