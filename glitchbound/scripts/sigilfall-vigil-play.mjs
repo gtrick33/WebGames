@@ -91,6 +91,34 @@ function look() {
   };
 }
 
+/**
+ * The pieces of the night's HUD that are showing, and any two that cover each other (the screen check the campaign has,
+ * scripts/sigilfall-overlap-check.mjs, for the Vigil's own HUD). The stick's zone is left out: it is the whole left of
+ * the screen by design.
+ */
+function overlaps() {
+  const PIECES = ['.rb-vigil-stat', '.rb-vigil-buttons', '.rb-vigil-event', '.rb-vigil-boss', '.rb-vigil-banner', '.rb-vigil-wait', '.rb-vigil-tip', '.rb-vigil-gale', '.rb-vigil-loadout', '.rb-vigil-dash'];
+  const boxes = [];
+  for (const sel of PIECES) {
+    const el = document.querySelector(sel);
+    if (!el || !el.offsetParent || !(el.textContent || el.querySelector('img'))) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2) continue;
+    boxes.push([sel, r.left, r.top, r.right, r.bottom]);
+  }
+  const out = [];
+  for (let i = 0; i < boxes.length; i++) {
+    for (let j = i + 1; j < boxes.length; j++) {
+      const [a, al, at, ar, ab] = boxes[i];
+      const [b, bl, bt, br, bb] = boxes[j];
+      const w = Math.min(ar, br) - Math.max(al, bl);
+      const h = Math.min(ab, bb) - Math.max(at, bt);
+      if (w > 2 && h > 2) out.push(`${a} over ${b} by ${Math.round(w)}x${Math.round(h)}`);
+    }
+  }
+  return out;
+}
+
 /** Where to push the stick: a sum of pulls and pushes. Returns [x, y, dash]. */
 function steer(s, wander) {
   let x = Math.cos(wander) * 0.25;
@@ -234,11 +262,8 @@ async function run() {
   });
   const cdp = await context.newCDPSession(page);
   const touch = (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map(([x, y, id]) => ({ x, y, id, radiusX: 8, radiusY: 8, force: 1 })) });
-  const tap = async (x, y) => {
-    await touch('touchStart', [[x, y, 5]]);
-    await page.waitForTimeout(40);
-    await touch('touchEnd', []);
-  };
+  // (a tap on a button or a card is Playwright's own touch tap; the stick and the dash are held and moved by hand, above)
+  const tap = (x, y) => page.touchscreen.tap(x, y);
   const tapOn = async (find) => {
     const at = await page.evaluate(find);
     if (!at) return false;
@@ -256,7 +281,13 @@ async function run() {
     const full = page.getByRole('button', { name: 'Fullscreen' });
     if (await full.count()) await full.first().click().catch(() => undefined);
     await page.waitForTimeout(1500);
-    if (!(await tapOn(button('The Vigil:')))) throw new Error('no Vigil on the title screen');
+    // (the title's banners are drawn in its hall: the Vigil's hangs at the left. If the tap on the picture doesn't take,
+    // its button for screen readers is pressed instead, and the log says so)
+    await tap(62, 190);
+    if (!(await page.waitForSelector('.rb-vlobby-land', { timeout: 6000 }).catch(() => null))) {
+      log.note = 'the Vigil’s banner on the title did not answer a tap at (62, 190): its screen-reader button was pressed instead';
+      await page.evaluate(() => [...document.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') || '').startsWith('The Vigil:'))?.click());
+    }
     await page.waitForSelector('.rb-vlobby-land', { timeout: 60_000 });
     await page.waitForTimeout(1200);
     if (!(await tapOn(`(() => { const b = [...document.querySelectorAll('.rb-vlobby-class')].find((x) => x.textContent.trim() === ${JSON.stringify(CLASS_NAMES[CLS])}); if (!b) return null; const r = b.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`))) throw new Error(`no class ${CLS}`);
@@ -301,6 +332,8 @@ async function run() {
     let last = null;
     let seenEvents = 0;
     let dashes = 0;
+    let looks = 0;
+    const covered = {};
     for (;;) {
       const s = await page.evaluate(look);
       if (!s) break;
@@ -317,6 +350,8 @@ async function run() {
         await page.waitForTimeout(250);
         continue;
       }
+      // the screen check, a few times a second: what covers what, and for how many looks
+      if (++looks % 6 === 0) for (const o of await page.evaluate(overlaps)) covered[o] = (covered[o] ?? 0) + 1;
       const [x, y, dash] = steer(s, s.t * 0.6);
       if (dash) dashes++;
       await push(x, y, dash);
@@ -334,12 +369,13 @@ async function run() {
     await page.waitForTimeout(1800);
     await page.screenshot({ path: join(OUT, `${NAME}-end.jpg`), type: 'jpeg', quality: 70 });
     if (last) {
-      Object.assign(log, { held: Math.round(last.t), ended: last.over ? 'the line broke' : `stopped at ${MINUTES} minutes`, real: Math.round((Date.now() - began) / 1000), level: last.level, kills: last.kills, spells: last.spells, relics: last.relics, events: last.events, won: last.won, felled: last.felled, frenzies: last.frenzies, dashes, harm: Object.fromEntries(Object.entries(last.harm).map(([k, n]) => [k, Math.round(n)]).sort((a, b) => b[1] - a[1])) });
+      Object.assign(log, { held: Math.round(last.t), ended: last.over ? 'the line broke' : `stopped at ${MINUTES} minutes`, real: Math.round((Date.now() - began) / 1000), level: last.level, kills: last.kills, spells: last.spells, relics: last.relics, events: last.events, won: last.won, felled: last.felled, frenzies: last.frenzies, dashes, overlaps: covered, harm: Object.fromEntries(Object.entries(last.harm).map(([k, n]) => [k, Math.round(n)]).sort((a, b) => b[1] - a[1])) });
       log.endText = await page.evaluate(() => document.querySelector('.rb-vend-body')?.innerText ?? '');
       log.kept = await page.evaluate(() => globalThis.localStorage.getItem('sigilfall.vigil.return'));
     }
   } catch (e) {
     errors.push(`stopped: ${e.message}`);
+    await page.screenshot({ path: join(OUT, `${NAME}-stopped.jpg`), type: 'jpeg', quality: 60 }).catch(() => undefined);
   } finally {
     writeFileSync(join(OUT, `${NAME}.json`), `${JSON.stringify(log, null, 1)}\n`);
     await browser.close();

@@ -391,7 +391,7 @@ describe('The Vigil’s return: foes that ask for different play', () => {
       return before - wall.hp;
     };
     // it faces the hero, at 2000: a blow from there is turned, one from behind it lands whole
-    expect(hit(2000)).toBeCloseTo(2.5, 5);
+    expect(hit(2000)).toBeCloseTo(4, 5);
     expect(hit(2200)).toBeCloseTo(10, 5);
     wall.stun = 1;
     expect(hit(2000)).toBeCloseTo(10, 5);

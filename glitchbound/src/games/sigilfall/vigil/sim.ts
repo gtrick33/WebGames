@@ -1100,6 +1100,12 @@ export class Vigil {
         [this.bag[i], this.bag[j]] = [this.bag[j]!, this.bag[i]!];
       }
     }
+    // (the night's first is never the hardest two: a pack or a ring in the first minute ended nights played by hand)
+    if (!this.eventLog.length && (this.bag[this.bag.length - 1] === 'pack' || this.bag[this.bag.length - 1] === 'ring')) {
+      const at = this.bag.findIndex((k) => k !== 'pack' && k !== 'ring');
+      const top = this.bag.length - 1;
+      if (at >= 0) [this.bag[at], this.bag[top]] = [this.bag[top]!, this.bag[at]!];
+    }
     const kind = this.bag.pop()!;
     const e: NightEvent = { kind, t: 0, dur: EVENTS[kind].secs, x: h.x, y: h.y, prog: 0, trait: 0, n: 0 };
     const cheap = plain.reduce((a, f) => (f.hp < a.hp ? f : a));
@@ -1893,8 +1899,14 @@ export class Vigil {
         });
       }
     }
+    // (a kill feeds a hero with the Fang only as fast as anything else does: when the Host fell by the hundred, a kill
+    // each gave back more than it could ever take, and a night past its fifth minute could not be lost)
     const fang = this.str(by, 'fang');
-    if (fang) this.heal(by, fang * 0.5);
+    if (fang) {
+      const take = Math.min(by.leechLeft, fang * 0.5);
+      by.leechLeft -= take;
+      this.heal(by, take);
+    }
     const keg = this.str(by, 'keg');
     if (keg && this.rand() < keg * 0.08) {
       const dmg = f.maxHp * 0.6 + 15;
@@ -2005,7 +2017,7 @@ export class Vigil {
       if (f.def.ai === 'guard' && f.frozen <= 0 && f.stun <= 0) {
         const sx = fromX - f.x;
         const sy = fromY - f.y;
-        if (sx * Math.cos(f.face) + sy * Math.sin(f.face) > 0.35 * (Math.hypot(sx, sy) || 1)) turned *= 0.25;
+        if (sx * Math.cos(f.face) + sy * Math.sin(f.face) > 0.35 * (Math.hypot(sx, sy) || 1)) turned *= 0.4;
       }
     }
     this.hurt(f, dmg * turned * (h.frenzyT > 0 ? 1.2 : 1) * (crit ? 2 : 1), h, crit, dt > 0);
@@ -2763,7 +2775,7 @@ export class Vigil {
     }
     // nothing left to take: it isn't worth stopping the night for
     h.owed = Math.max(0, h.owed - 1);
-    this.healBy(h, 0.3, 'nature', '#b8ffb8');
+    this.healBy(h, 0.15, 'nature', '#b8ffb8');
   }
 
   reroll(id = this.me.id): void {

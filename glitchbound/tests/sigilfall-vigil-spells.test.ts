@@ -225,7 +225,7 @@ describe('The Vigil: the new kinds of spell', () => {
     steps(v, 0.2);
     const max = v.me.wardMax;
     expect(v.me.ward).toBe(max);
-    expect(max).toBeCloseTo(v.maxHp * 0.165, 3);
+    expect(max).toBeCloseTo(v.maxHp * 0.136, 3);
     const hp = v.me.hp;
     inside(v).wound(v.me, max * 0.5);
     expect(v.me.hp).toBe(hp);
@@ -239,9 +239,9 @@ describe('The Vigil: the new kinds of spell', () => {
     v.step(DT, STILL);
     expect(took(f)).toBeGreaterThan(20);
     // not back at once: its clock began when it broke
-    steps(v, 5);
+    steps(v, 9);
     expect(v.me.ward).toBe(0);
-    steps(v, 6);
+    steps(v, 5);
     expect(v.me.ward).toBeGreaterThan(0);
   });
 

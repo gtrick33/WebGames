@@ -3,6 +3,29 @@
 First pass 2026-10-27, fixes the same day. A working record of licenses, names and borrowed material, for the
 owner (and a lawyer, if one is asked). It is **not legal advice** and not a trademark clearance.
 
+## The Vigil's spells and deeds (2026-11-25)
+
+Each class's Vigil kit went from six spells to ten. The 32 added are that class's own campaign skills, by name and by
+icon (Ice Javelin, Ball Lightning, Arcane Ward, Gravity Well; Charge, Shield Wall, Ground Breaker, Thousand Cuts;
+Poison Trap, Tumble, Viper Arrow, Blast Arrow; Thrown Aegis, Bulwark, Lance of Noon, Halting Word; Ward of Grace,
+Searing Hymn, Thought Lash, Seraph Lance; Drain Life, Hellbrand, Demonic Step, Rotting Curse; Moonburn, Briar Burst,
+Thornhide, Wild Dash; Hollow Ward, Shadow Lunge, Mourning Arc, Night Tether), names this file already covers. Their
+evolutions are named after other campaign skills of the same class, apart from three written new: Iron Legion, Vigil
+Candles and Night Mantle. What is taken from the genre is **rules only**: a trap that waits, a turret that stays, a
+blast on a dash, a beam that sweeps, a shield that bursts. No other game's weapon, upgrade or evolution list, text or
+numbers are used.
+
+Written new: the signature upgrades (Shatterpoint, Live Wire, Backlash, Crushing Depth, Unstoppable, Shield Slam,
+Fault Line, Bleed Out, Lingering Cloud, Caltrops, Neurotoxin, Scorched Earth, Ringing Blow, Martyr's Light, High Sun,
+Kneel, Grace Under Fire, Choir, Frayed Thought, Wings of Mercy, Deep Draught, Brimstone Spit, Left Behind, Feast of Rot,
+Cold Light, Taproot, Briar Coat, Overgrown Path, Debt Repaid, Afterimage, Wake, Dragged Down), the relics Fieldcraft
+and Stout Heart, and the deeds (each class's Watch, Bane of each land, Every Line Held, Nothing New Under the Moon,
+Apprentice of the Codex, Keeper of the Codex, The Whole Codex). One name first written was changed before it shipped
+because another game's priest has a spell of that name (it is Frayed Thought now). "Caltrops", "Backlash" and
+"Unstoppable" are ordinary words that other games have also used for abilities; here they are one-line upgrade names
+with their own text. If any is wanted gone, it is one string in `vigil/kit.ts`. No pack, icon or sound
+was added: every picture is already in the icon atlas the game ships (a test checks it).
+
 ## The Vigil's return (2026-11-25)
 
 The owner asked for the Vigil to be "as fun as vampire survivors" and less repetitive. What is taken from that genre

@@ -18004,3 +18004,43 @@ button.rb-scard:not(:disabled):hover {
 .rb-vigil-motes .rb-vigil-next {
   color: #e9dfc6;
 }
+
+/* the Vigil's ten spells a class: two rows of five, each big enough for a thumb (one row of ten was twenty points a
+   spell on a phone) */
+.rb-vlobby-spells.is-ten {
+  display: grid;
+  grid-template-columns: repeat(5, 40px);
+  justify-content: center;
+  gap: 4px;
+}
+.rb-vlobby-spells.is-ten .rb-vlobby-spell {
+  width: 40px;
+  max-width: none;
+  height: 40px;
+}
+@container (max-height: 430px) {
+  .rb-vlobby-spells.is-ten {
+    grid-template-columns: repeat(5, 32px);
+    gap: 3px;
+  }
+  .rb-vlobby-spells.is-ten .rb-vlobby-spell {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* what the screen check of a played night found (scripts/sigilfall-vigil-play.mjs): with five spells and six relics
+   the row at the foot ran under the dash button on a phone, and a banner sat under the event's card while a champion
+   was about. The row keeps clear of the corners (and wraps upward when it is long), and the banner sits lower on a
+   short screen. */
+.rb-vigil-loadout {
+  width: min(94%, calc(100% - 230px - var(--sa-r, 0px) - var(--sa-l, 0px)));
+}
+@container (max-height: 430px) {
+  .rb-vigil-banner {
+    top: 30%;
+  }
+  .rb-vigil-wait {
+    top: 40%;
+  }
+}

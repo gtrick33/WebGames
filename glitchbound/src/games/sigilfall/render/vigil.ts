@@ -314,6 +314,9 @@ export class VigilPainter implements LandLayer {
         fx.put({ kind: FX.orb, x: p.x, y: p.y, up: 30 + Math.sin(time * 4 + seed) * 1.5, w: 13, a: tone.a, b: tone.b, seed, alpha: fade });
       }
     }
+    // the watching player's own hero stands in a ring of light: late in a night the crowd would hide them
+    const mine = v.heroOf(this.meId);
+    if (mine && !mine.down) fx.put({ kind: FX.mark, x: mine.x, y: mine.y, flat: true, w: 24, a: '#fff6d8', alpha: 0.9 });
     for (const h of v.heroes) {
       if (h.down || h.ward <= 0) continue;
       const def = SPELLS[h.wardSpell];

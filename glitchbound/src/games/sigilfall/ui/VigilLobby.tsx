@@ -332,7 +332,7 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
                 </button>
               </div>
             )}
-            <div className="rb-vlobby-spells">
+            <div className="rb-vlobby-spells is-ten">
               {kit.map((s, i) => (
                 <button key={s.id} className={`rb-vlobby-spell${i === spell ? ' is-on' : ''}${codex.has(s.id) ? ' is-evolved' : ''}`} onClick={() => setSpell(i)} onMouseEnter={() => setSpell(i)} aria-label={codex.has(s.id) ? `${s.name} (evolved before)` : s.name}>
                   <img src={iconPicture(s.icon)} alt="" draggable={false} />
