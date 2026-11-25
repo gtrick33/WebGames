@@ -3,6 +3,18 @@
 First pass 2026-10-27, fixes the same day. A working record of licenses, names and borrowed material, for the
 owner (and a lawyer, if one is asked). It is **not legal advice** and not a trademark clearance.
 
+## Act I's keepsakes and the bosses' new moves (2026-11-25)
+
+Three keepsakes written for Act I's side stories (NINE_PLAN.md, piece 4): **A Bone Whistle on a Red Cord**,
+**Barrow-Bronze Arrowheads** and **A Gilt Collar**. Each is a plain description of a thing found on a beast in this
+game's own story, not a named item of another game. Not searched on the web: worth doing with the other item names
+before release.
+
+The moves the bosses gained (piece 2c: a taunt, kick, stab, bash, block, dodge and slice on the large skeleton; new
+clips for the crab, the wyrm, the drake, the wolf and the bull) come from the same pack files those creatures were
+already built from, each already credited in CREDITS_AND_LICENSES.md. No new pack, no new download. The sound pass
+(piece 5) changed loudness only: no recording was added or replaced.
+
 ## The Coffin Matron's keepsake (2026-11-24)
 
 One hand-made epic, the **Sexton's Handbell**, given to every hero the first time the first boss falls (NINE_PLAN.md,

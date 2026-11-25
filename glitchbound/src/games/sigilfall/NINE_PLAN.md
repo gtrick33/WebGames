@@ -25,24 +25,25 @@ requests open.**
 
 | # | Piece | Branch | Pull request | State | Needs first |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Baseline and plan | `claude/sf9-baseline` | #355 | open | nothing |
-| 2a | Boss pipeline and the Coffin Matron | `claude/sf9-boss-matron` | #356 | open | 1 (#355) |
-| 2b | Bosses: the Prologue (Ossric, Morgrave, Grimtusk) | `claude/sf9-bosses-prologue` | #357 | open | 2a (#356) |
-| 2c | Bosses: Act I (Gallows Keep): the Hangman and Harlan Blackglove; Gnasher's moves; a move for every attack of all 43 bosses | `claude/sf9-bosses-act1` | #363 | open | 2b (#357) |
+| 1 | Baseline and plan | `claude/sf9-baseline` | #355 | merged 2026-11-25 | nothing |
+| 2a | Boss pipeline and the Coffin Matron | `claude/sf9-boss-matron` | #356 | merged 2026-11-25 | 1 (#355) |
+| 2b | Bosses: the Prologue (Ossric, Morgrave, Grimtusk) | `claude/sf9-bosses-prologue` | #357 | merged 2026-11-25 | 2a (#356) |
+| 2c | Bosses: Act I (Gallows Keep): the Hangman and Harlan Blackglove; Gnasher's moves; a move for every attack of all 43 bosses | `claude/sf9-bosses-act1` | #363 | merged 2026-11-25 | 2b (#357) |
 | 2d | Bosses: Act II (the Barrow of Kings, the Crown Catacombs) | `claude/sf9-bosses-act2` | | not started | 2a |
 | 2e | Bosses: Act III (the Tomb of the Sun King, the Vault of Rime) | `claude/sf9-bosses-act3` | | not started | 2a |
 | 2f | Bosses: Act IV (the Siege of Highwall) | `claude/sf9-bosses-act4` | | not started | 2a |
 | 2g | Bosses: Act V (the Molten Throne) | `claude/sf9-bosses-act5` | | not started | 2a |
 | 2h | Bosses: the finale (Duskspire) | `claude/sf9-bosses-finale` | | not started | 2a |
 | 2i | Bosses: the rest (the Rift's five other dungeons, the lands' named foes) | `claude/sf9-bosses-rest` | | not started | 2a |
-| 3 | The signature system in the first twenty minutes | `claude/sf9-first-epic` | #358 | open | 1 (#355) |
-| 4 | Quests up to the Prologue's standard, one pull request per act | `claude/sf9-quests-act1` … `-act6` | | not started | 1 |
-| 5 | Sound with its own character | `claude/sf9-sound-mix`, `-music`, `-voices` | | not started | 1 |
-| 6 | One standard, act by act | `claude/sf9-standard-act1` … `-act6` | | not started | 2, 4 (the same act's) |
-| 7 | Phone and network readiness | `claude/sf9-phone` | #361 | open | 1 |
-| 8 | The rough edges | `claude/sf9-rough-edges` | #359 | open | 1 |
-| 9 | Ready for players | `claude/sf9-playtest` | #360 | open | 1 |
-| 10 | The release bar | `claude/sf9-release` | | not started | all of them, merged |
+| 3 | The signature system in the first twenty minutes | `claude/sf9-first-epic` | #358 | merged 2026-11-25 | 1 (#355) |
+| 4 | Quests up to the Prologue's standard, one pull request per act | `claude/sf9-quests-act1` (Act I); `-act2` … `-act6` not started | #364 | Act I merged 2026-11-25; Act II read and left as it is; Acts III to VI not started | 1 |
+| 5 | Sound with its own character | `claude/sf9-sound-mix`; `-music`, `-voices` wait for the owner | #365 | the mix merged 2026-11-25; music and voices not started (no source approved) | 1 |
+| 6 | One standard, act by act | `claude/sf9-standard-act1`; `-act2` … `-act6` not started | #366 | Act I merged 2026-11-25 (screen and light only: nothing needed changing); Acts II to VI not started | 2, 4 (the same act's) |
+| 7 | Phone and network readiness | `claude/sf9-phone` | #361 | merged 2026-11-25 | 1 |
+| 8 | The rough edges | `claude/sf9-rough-edges` | #359 | merged 2026-11-25 | 1 |
+| 9 | Ready for players | `claude/sf9-playtest` | #360 | merged 2026-11-25 | 1 |
+| 9b | The page no longer reloads itself when an API call fails during loading (found in piece 7; the site's, not only Sigilfall's) | `claude/sf9-reload-fix` | #362 | merged 2026-11-25 | nothing |
+| 10 | The release bar | `claude/sf9-release` | this one | measured 2026-11-25 on everything merged: see "The release bar, measured" | all of them, merged |
 | 11 | What would make it more fun (added by the owner: see its own section) | 11a and 11e in pieces 8 and 9; `claude/sf9-open-world`, `-vigil-return`, `-fewer-legends` | | not started | the playtest (11b); the owner's go-ahead (11c, 11d) |
 
 Every branch is cut from `origin/pre-release` in its own worktree. A piece that needs an earlier one that hasn't merged
@@ -501,6 +502,48 @@ the numbers.
 Everything in the regression bar, measured against the baseline with all the pieces merged. Brings POLISH_PLAN.md,
 SIGILFALL_QA.md, DESIGN.md, CREDITS_AND_LICENSES.md and LEGAL_REVIEW.md up to date and gives a short readiness
 report: what was verified, how, and what wasn't.
+
+## The release bar, measured (2026-11-25, `pre-release` at `2d8cba33`, every pull request of the pass merged)
+
+Twelve pull requests merged into `pre-release` on the night of 2026-11-25 on the owner's word ("merge all prs to
+pre-release and deploy the ci"), in this order: #355, #356, #357, #363, #358, #360, #361, #359, #362, #364, #365,
+#366. Three needed `pre-release` merged into them first for conflicts in this file, LEGAL_REVIEW.md and one place in
+Game.css where two pieces had each added rules at the end: both sides were kept each time. The deploy run on
+`2d8cba33` passed its type check, lint, tests and build on GitHub and deployed.
+
+| The bar | Result | Against the baseline |
+| --- | --- | --- |
+| The four checks | type check and lint pass; 368 test files, 4,457 tests: 4,451 passed, 5 skipped, 1 failed locally (the same Where's the Ball? timeout under load; GitHub's run passed all); build passes, initial JavaScript 120.8 of 121.0 KB | 152 more tests, none skipped, loosened or deleted; the same 120.8 KB |
+| Every class's bot clears every dungeon; a new hero finishes the campaign by the arrow; saves load | pass (in the test run above, the three old saves among them) | the same |
+| The browser tour | 135 stops, the page reported nothing | the same |
+| The screen check (its usual run, four sizes) | **one run found two overlaps at `lantern-vigil`** (Act II): with the check's three test lines and the scene's own line all up at once, a speaker standing off the top-left corner had his bubble held under the hero's plate (laptop), and two bubbles touched (phone). Two more runs of that beat at all four sizes found nothing. Picture: `docs/review/sf9-release/`. **Not fixed**: it needs four speakers at once with one in that corner, and I could not make it happen again to test a fix | the baseline's run found nothing |
+| Frame cost in the nine heaviest fights | draw calls the same, fewer, or one more in every row; triangles within the tenth that one run differs from the next, or fewer (`night-of-knives` on a desktop 279k against 356k); frames a second the same or better on this machine | no worse |
+| What a new player loads before the first fight | desktop 11,862 KB sent in 190 files (baseline 11,741); phone 11,886 KB in 217 files (baseline 12,021) | **desktop 121 KB more (1%)**, the phone 135 KB less. Models went from 4,809 to 4,847 KB (the great skeleton's seven new clips); the rest of the difference is which sounds had arrived by that moment, which moves from run to run |
+| Size budgets | within | the same |
+
+All files shipped: 63,441 KB gzipped against 62,801 at the baseline: the bosses' own files and the new clips.
+
+### What the pass did, and what it did not
+
+Done and merged: the baseline and this plan (1); bosses of their own for the Prologue's four and Gallows Keep's two,
+and a move for every attack of all 43 bosses, none floating that should stand (2a to 2c); the first epic in the
+first twenty minutes (3); Act I's quests (4, Act I); the sound mix (5, the mix); Act I against the Prologue on four
+screens (6, Act I); phone and network readiness and the reload fix (7); the rough edges (8); ready for players (9).
+
+Not done:
+
+- **Bosses 8 to 43 still wear shared creatures' models** (2d to 2i). They move properly now; they do not yet look
+  like nobody else.
+- **Quests of Acts III to VI** were not gone through. Act II was read and left as it is.
+- **Music and voices** (5): the music is still stock, and no voices were added. Nothing was downloaded, because no
+  source has the owner's approval. `docs/review/sf9-sound-mix/README.md` lists what is stock for a composer.
+- **Acts II to VI against the Prologue** (6). Act I's pass checked the screen and the light, not each place walked.
+- **Piece 11's larger items** (the open world, the Vigil's return, fewer legendaries) wait for the playtest and the
+  owner's go-ahead.
+
+Never verified by anyone: the game on a real phone; the sound mix by ear; whether each boss's new moves read well in
+play (which clip plays was checked, in the browser for twelve bosses and by test for all 43); a Riftstone run or
+co-op with the new bosses beyond what the tour and the tests cover.
 
 ## Added by the owner: what would make it more fun (2026-11-24)
 
