@@ -60,8 +60,12 @@ Warden's crumble in phase 2. Both have a move in the table; the browser did not 
 
 ## What was not checked
 
-- **The Sun King's whole fight stopped at its 33rd picture** (phase 3, the sunbeam): a screenshot timed out while the
-  machine was also running the full tests. His sheet has the entrance, the line-up and every attack of phases 1 and 2
-  and the first two of phase 3; it lacks the rest of phase 3, dazed, struck and his death, and he has no
-  `shots.json`. His motion check, run afterwards, read every phase 3 attack. The fight is queued to be pictured again.
+- **The Sun King's whole fight was pictured on the fifth try**, with the script's 30-second limit on a screenshot
+  raised to three minutes (his sheet and `shots.json` are from that run: 50 pictures, entrance to death, no page
+  errors). Three earlier runs stopped on that limit at his sunbeam or his orbit. The cause is the test browser, which
+  draws without a graphics card, on a machine doing other heavy work at the same time: frames in his room took 1.5 to
+  10 seconds each then, and a screenshot needs several. His new figure is not the cause: held still in the same room,
+  back to back and twice each, the old model drew a frame in 118 to 255 ms and the new one in 124 to 162 ms. His
+  phase 3 is the heaviest moment (about 420 effect sprites, 190 warning shapes and 170 ground fields at once), as it
+  was with the old model. How it runs on a real phone was not measured.
 - Nothing here was seen on a real phone.
