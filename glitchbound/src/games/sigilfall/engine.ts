@@ -49,7 +49,7 @@ import { Steps } from './audio/steps';
 import { voiceSound } from './audio/voice';
 import type { Interactable } from './sim/types';
 import { emptyInput, World, type InputFrame } from './sim/world';
-import { bindYielded, useThing } from './sim/tasks';
+import { bindYielded, workOn } from './sim/tasks';
 import { FIRST_KEEPSAKE } from './data/items';
 import { advanceScene, endScene, previewScene, sceneDue } from './sim/scene';
 import { SCENES } from './data/scenes';
@@ -1631,7 +1631,7 @@ export class SigilEngine {
     // (on the way out already: nothing more is taken up)
     if (this.leaving) return;
     if (it.kind === 'npc') this.talk(it.id);
-    else if (it.kind === 'thing') { if (this.world) useThing(this.world, it.id); }
+    else if (it.kind === 'thing') { if (this.world) workOn(this.world, it.id); }
     else if (it.kind === 'yield') { if (this.world) bindYielded(this.world, it.id); }
     else if (it.kind === 'waystone') this.openPanel('map');
     else if (it.kind === 'exit' && it.door && !it.locked && this.world) {

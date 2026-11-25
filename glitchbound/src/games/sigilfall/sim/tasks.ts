@@ -283,7 +283,7 @@ export function yieldedInReach(w: World): Enemy | null {
 }
 
 /** The hero sets to work on a thing (the interact button). */
-export function useThing(w: World, id: number): void {
+export function workOn(w: World, id: number): void {
   const T = w.tasks;
   const t = T.things.find((x) => x.id === id);
   if (!t || t.used || w.player.dead || T.channel?.id === id) return;

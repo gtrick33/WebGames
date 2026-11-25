@@ -6,7 +6,7 @@ import { questProgress } from '../src/games/sigilfall/progress/character';
 import { remoteHit } from '../src/games/sigilfall/sim/combat';
 import { circleHitsWall, TILE } from '../src/games/sigilfall/sim/map';
 import { questTarget } from '../src/games/sigilfall/sim/objective';
-import { anchorOf, bindYielded, channelOf, syncTasks, thingSpots, useThing, YIELD_AT } from '../src/games/sigilfall/sim/tasks';
+import { anchorOf, bindYielded, channelOf, syncTasks, thingSpots, workOn, YIELD_AT } from '../src/games/sigilfall/sim/tasks';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
 import { newWorld, readyHero } from './sigilfall-bot';
 
@@ -105,7 +105,7 @@ describe('Sigilfall: a quest’s things to act on (use)', () => {
     const { w, q } = onQuest(use);
     const t = w.tasks.things[0]!;
     goTo(w, t.x + 10, t.y);
-    useThing(w, t.id);
+    workOn(w, t.id);
     run(w, 0.5);
     expect(channelOf(w)?.k).toBeGreaterThan(0.3);
     expect(state(w, q).n).toBe(0);
@@ -120,12 +120,12 @@ describe('Sigilfall: a quest’s things to act on (use)', () => {
     const { w, q } = onQuest(use);
     const t = w.tasks.things[0]!;
     goTo(w, t.x + 10, t.y);
-    useThing(w, t.id);
+    workOn(w, t.id);
     run(w, 0.9, 0.4);
     expect(channelOf(w)).toBeNull();
     expect(state(w, q).n).toBe(0);
     w.player.hp = w.player.maxHp;
-    useThing(w, t.id);
+    workOn(w, t.id);
     run(w, 0.3);
     goTo(w, t.x + 200, t.y);
     run(w, 1);
@@ -137,7 +137,7 @@ describe('Sigilfall: a quest’s things to act on (use)', () => {
     for (let i = 0; i < 3; i++) {
       const t = w.tasks.things.find((x) => !x.used)!;
       goTo(w, t.x + 8, t.y);
-      useThing(w, t.id);
+      workOn(w, t.id);
       run(w, 1.2);
     }
     expect(state(w, q)).toMatchObject({ step: 1, n: 0 });
@@ -153,12 +153,12 @@ describe('Sigilfall: a quest’s things to act on (use)', () => {
     const before = w.enemies.length;
     const t = w.tasks.things[0]!;
     goTo(w, t.x + 8, t.y);
-    useThing(w, t.id);
+    workOn(w, t.id);
     run(w, 0.4);
     expect(w.enemies.length).toBe(before);
     const t2 = w.tasks.things.find((x) => !x.used)!;
     goTo(w, t2.x + 8, t2.y);
-    useThing(w, t2.id);
+    workOn(w, t2.id);
     run(w, 0.4);
     expect(w.enemies.length).toBe(before + 2);
   });
@@ -172,7 +172,7 @@ describe('Sigilfall: something carried from one place to another (carry)', () =>
     const t = w.tasks.things[0]!;
     expect(t.role).toBe('take');
     goTo(w, t.x + 8, t.y);
-    useThing(w, t.id);
+    workOn(w, t.id);
     run(w, 0.8);
     expect(w.tasks.carrying?.look).toBe('sack');
     const to = anchorOf(w, b)!;
@@ -191,7 +191,7 @@ describe('Sigilfall: something carried from one place to another (carry)', () =>
     const { w, q } = onQuest(carry);
     const t = w.tasks.things[0]!;
     goTo(w, t.x + 8, t.y);
-    useThing(w, t.id);
+    workOn(w, t.id);
     run(w, 0.8);
     w.player.dead = true;
     w.step(1 / 60);
