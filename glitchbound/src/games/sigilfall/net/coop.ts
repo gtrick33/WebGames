@@ -1,5 +1,6 @@
 import { applyStatus, hurtPlayer, remoteHit } from '../sim/combat';
 import { circleHitsWall } from '../sim/map';
+import { bringFor } from '../sim/tasks';
 import { QUEST_DEFS } from '../data/quests';
 import { SKILLS } from '../data/skills';
 import type { EliteAffix, StatusId } from '../data/types';
@@ -71,6 +72,8 @@ interface GuestMsg {
   h: [number, number, number, number][];
   st: [number, StatusId, number, number][];
   died: number;
+  /** Foes a quest step of theirs asks the host's game to put down: their ids, where, and whether they come at once. */
+  br?: [string[], number, number, 0 | 1][];
 }
 
 type EnemyRow = [id: number, def: string, x: number, y: number, hp: number, mh: number, flags: number, level: number, face: number, state: string, name: string, elite: string, room: number];
@@ -175,7 +178,7 @@ export class CoopSession {
     this.world = w;
     this.targets.clear();
     this.events = [];
-    this.hits = { t: 'g', h: [], st: [], died: 0 };
+    this.hits = { t: 'g', h: [], st: [], died: 0, br: [] };
     this.spread(w);
     this.setMembers([...this.members.values()]);
     this.storySent = '';
@@ -286,9 +289,9 @@ export class CoopSession {
     }
     if (this.role === 'guest' && this.hitT <= 0) {
       this.hitT = HIT_MS;
-      if (this.hits.h.length || this.hits.st.length || this.hits.died) {
+      if (this.hits.h.length || this.hits.st.length || this.hits.died || this.hits.br?.length) {
         this.send(this.hits);
-        this.hits = { t: 'g', h: [], st: [], died: 0 };
+        this.hits = { t: 'g', h: [], st: [], died: 0, br: [] };
       }
     }
   }
@@ -307,6 +310,7 @@ export class CoopSession {
       } else if (o.t === 'dmg') this.hits.h.push([o.id, o.dmg, o.kx, o.ky]);
       else if (o.t === 'st') this.hits.st.push([o.id, o.status, r1(o.dur), r1(o.power)]);
       else if (o.t === 'died') this.hits.died += 1;
+      else if (o.t === 'bring') (this.hits.br ??= []).push([o.ids, Math.round(o.x), Math.round(o.y), o.hunt ? 1 : 0]);
     }
     out.length = 0;
   }
@@ -423,6 +427,12 @@ export class CoopSession {
       const [id, status, dur, power] = row as unknown[];
       const e = typeof id === 'number' ? w.enemyById(id) : undefined;
       if (e && typeof status === 'string' && GUEST_STATUS.has(status)) applyStatus(w, e, { status: status as StatusId, dur: num(dur, 0, STATUS_DUR), power: num(power, 0, STATUS_POWER) }, 0);
+    }
+    // what a guest's quest step brings: a few askings a message, each a few foes of this land's own steps
+    for (const row of list(m.br, 2)) {
+      if (!Array.isArray(row)) continue;
+      const [ids, x, y, hunt] = row as unknown[];
+      bringFor(w, ids, num(x, 0, 1e6), num(y, 0, 1e6), hunt === 1);
     }
     const died = Math.floor(num(m.died, 0, DIED_MAX));
     for (let i = 0; i < died; i++) if (w.keyRun && !w.keyRun.end) w.keyRun.deaths += 1;

@@ -132,6 +132,21 @@ describe('Sigilfall: a quest’s things to act on (use)', () => {
     expect(state(w, q).n).toBe(0);
   });
 
+  it('work broken off is not undone: most of it is kept, and the next try is short', () => {
+    const { w, q } = onQuest(use);
+    const t = w.tasks.things[0]!;
+    goTo(w, t.x + 10, t.y);
+    workOn(w, t.id);
+    run(w, 0.9, 0.7);
+    expect(channelOf(w)).toBeNull();
+    expect(state(w, q).n).toBe(0);
+    expect(t.worked).toBeGreaterThan(0.5);
+    w.player.hp = w.player.maxHp;
+    workOn(w, t.id);
+    run(w, 0.5);
+    expect(state(w, q).n).toBe(1);
+  });
+
   it('all of them done, the quest goes on to its next step; a hero who comes back part-way finds only what is left', () => {
     const { w, q } = onQuest(use);
     for (let i = 0; i < 3; i++) {
@@ -185,6 +200,18 @@ describe('Sigilfall: something carried from one place to another (carry)', () =>
     run(w, 0.1);
     expect(state(w, q).state).toBe('done');
     expect(w.tasks.carrying).toBeNull();
+  });
+
+  it('is set down beside a person from a step off, where the game keeps the hero', () => {
+    const { w, q, b } = onQuest(carry);
+    const t = w.tasks.things[0]!;
+    goTo(w, t.x + 8, t.y);
+    workOn(w, t.id);
+    run(w, 0.8);
+    const to = anchorOf(w, b)!;
+    goTo(w, to.x + 38, to.y);
+    run(w, 0.1);
+    expect(state(w, q).state).toBe('done');
   });
 
   it('is back where it was if the hero falls with it', () => {

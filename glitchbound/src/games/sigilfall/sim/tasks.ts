@@ -1,4 +1,5 @@
 import { dist } from '../core/math';
+import { QUESTS } from '../data/quests';
 import { THINGS } from '../data/things';
 import type { Lair, Objective, QuestDef, ThingLook } from '../data/types';
 import { activeQuests, currentObjective } from '../progress/character';
@@ -38,6 +39,8 @@ export interface Thing {
   used: boolean;
   /** Seconds since it was used. */
   usedT: number;
+  /** Seconds of work already put into it: a blow breaks the work off, it does not undo it. */
+  worked: number;
 }
 
 export interface Tasks {
@@ -61,7 +64,11 @@ export const newTasks = (): Tasks => ({ things: [], channel: null, carrying: nul
 /** How close the hero stands to act on a thing, and how far they may drift while at it. */
 export const THING_REACH = 26;
 const MARK_REACH = 20;
+/** How close what is carried is brought: wider than a thing's reach, since the hero is kept a step off a person. */
+const CARRY_REACH = 44;
 const CHANNEL_DRIFT = 30;
+/** The most of a thing's work that is kept when it is broken off (of its whole time). */
+const KEPT = 0.8;
 /** Seconds the hero stands in a place before its hold begins. */
 const HOLD_BREATH = 1.5;
 /** A foe yields at this share of its health. */
@@ -110,17 +117,17 @@ const clearAt = (w: World, x: number, y: number, r = 7): boolean => x > TILE && 
 
 /** The tiles a walker can get to from a place, by the land's own routes (kept per land and place: a land's ground does not change). */
 const reaches = new WeakMap<TileMap, Map<number, Int16Array>>();
-function reachFrom(w: World, ax: number, ay: number): Int16Array | null {
+function reachFrom(w: World, ax: number, ay: number, far = 40): Int16Array | null {
   const m = w.map;
   const tx = Math.floor(ax / TILE);
   const ty = Math.floor(ay / TILE);
   if (tx < 0 || ty < 0 || tx >= m.w || ty >= m.h) return null;
   let by = reaches.get(m);
   if (!by) reaches.set(m, (by = new Map()));
-  const key = ty * m.w + tx;
+  const key = (ty * m.w + tx) * 2 + (far > 40 ? 1 : 0);
   let f = by.get(key);
   if (!f) {
-    f = flowField(m, tx, ty, 40);
+    f = flowField(m, tx, ty, far);
     // (the place itself may be a thing's own tile, a well, a stone: then nothing is known of what can be reached)
     let any = 0;
     for (let i = 0; i < f.length && any < 12; i++) if (f[i]! > 0) any++;
@@ -146,9 +153,13 @@ function openAt(w: World, x: number, y: number, reach: Int16Array | null): boole
 /** Whether a spot is open ground on the land's routes from a place (what the steps' test asks of every thing). */
 export const standsOpen = (w: World, at: { x: number; y: number }, x: number, y: number): boolean => openAt(w, x, y, reachFrom(w, at.x, at.y));
 
+/** Whether a spot can be walked to from somewhere far off (a trail's start). */
+export const standsOpenFrom = (w: World, from: { x: number; y: number }, x: number, y: number): boolean => openAt(w, x, y, reachFrom(w, from.x, from.y, 400));
+
 /** A clear spot within `spread` tiles of a place, away from what already stands there. */
-function placeNear(w: World, ax: number, ay: number, rnd: () => number, spread: number, apart: { x: number; y: number }[], least = 0.3): { x: number; y: number } {
-  const reach = reachFrom(w, ax, ay);
+function placeNear(w: World, ax: number, ay: number, rnd: () => number, spread: number, apart: { x: number; y: number }[], least = 0.3, from?: { x: number; y: number }): { x: number; y: number } {
+  // (`from`: the ground is to be reached from there, not from the place itself: a trail's mark from the trail's start)
+  const reach = from ? reachFrom(w, from.x, from.y, 400) : reachFrom(w, ax, ay);
   for (let k = 0; k < 60; k++) {
     const a = rnd() * Math.PI * 2;
     const d = (least + (1 - least) * rnd()) * spread * TILE * (k < 40 ? 1 : 0.5);
@@ -184,7 +195,14 @@ export function trailSpots(w: World, key: string, from: { x: number; y: number }
     const k = (i + 1) / marks;
     const x = from.x + (to.x - from.x) * k;
     const y = from.y + (to.y - from.y) * k;
-    out.push(i === marks - 1 ? placeNear(w, x, y, rnd, 1.2, out, 0) : placeNear(w, x, y, rnd, 2.2, out, 0));
+    // (wider and wider round the line until there is ground the trail's start can be walked from: a mark is never on
+    // the far side of a wall or a water from the one before)
+    let at = placeNear(w, x, y, rnd, i === marks - 1 ? 1.2 : 2.2, out, 0, from);
+    for (const wide of [4, 7, 11]) {
+      if (standsOpenFrom(w, from, at.x, at.y)) break;
+      at = placeNear(w, x, y, rnd, wide, out, 0, from);
+    }
+    out.push(at);
   }
   return out;
 }
@@ -195,7 +213,13 @@ export function trailSpots(w: World, key: string, from: { x: number; y: number }
  * and come for the hero at once (an ambush, a hold's wave).
  */
 function bring(w: World, ids: string[], x: number, y: number, key: string, ring = 34, waiting = false): Enemy[] {
-  if (w.puppet || !ids.length) return [];
+  if (!ids.length) return [];
+  // (a guest's game holds copies of the host's enemies: it asks the host's to put these down, and they come to the
+  // guest as every enemy does)
+  if (w.puppet) {
+    w.coop?.out.push({ t: 'bring', ids, x, y, hunt: !waiting });
+    return [];
+  }
   const rnd = seeded(`${key}:foes`);
   const out: Enemy[] = [];
   for (const id of ids) {
@@ -210,6 +234,41 @@ function lairOf(o: Objective): Lair | undefined {
   return o.kind === 'kill' || o.kind === 'subdue' ? o.lair : undefined;
 }
 
+/**
+ * The host's side of a guest's step: the foes it asked for, put down. Only foes some quest step of this land names,
+ * few at a time, and no more than a land's own pack in all from one message: a guest's game cannot fill the host's
+ * land with whatever it likes.
+ */
+export function bringFor(w: World, ids: unknown, x: number, y: number, hunt: boolean): number {
+  if (w.puppet || !Array.isArray(ids) || !Number.isFinite(x) || !Number.isFinite(y)) return 0;
+  const known = stepFoes(w.region.id);
+  const list = ids.filter((id): id is string => typeof id === 'string' && known.has(id)).slice(0, BRING_MOST);
+  const foes = bring(w, list, Math.max(TILE, Math.min((w.map.w - 1) * TILE, x)), Math.max(TILE, Math.min((w.map.h - 1) * TILE, y)), `guest:${Math.round(x)}:${Math.round(y)}:${w.enemies.length}`, 60, !hunt);
+  return foes.length;
+}
+/** The most foes one asking brings. */
+export const BRING_MOST = 4;
+
+const foesByLand = new Map<string, Set<string>>();
+/** Every foe a quest step of a land can bring. */
+function stepFoes(land: string): Set<string> {
+  let set = foesByLand.get(land);
+  if (set) return set;
+  set = new Set();
+  for (const q of QUESTS) for (const o of [q.objective, ...(q.then ?? [])]) {
+    if (!('region' in o) || o.region !== land) continue;
+    const ids = [
+      ...(o.kind === 'use' ? [...(o.guards ?? []), ...(o.ambush ?? [])] : []),
+      ...(o.kind === 'carry' ? (o.ambush ?? []).flat() : []),
+      ...(o.kind === 'hold' ? o.waves.flat() : []),
+      ...((o.kind === 'kill' || o.kind === 'subdue') && o.lair ? o.lair.enemies : []),
+    ];
+    for (const id of ids) set.add(id);
+  }
+  foesByLand.set(land, set);
+  return set;
+}
+
 /** The hero's steps of these kinds whose land is this one. */
 function stepsHere(w: World): { q: QuestDef; o: Objective; key: string; n: number }[] {
   const out: { q: QuestDef; o: Objective; key: string; n: number }[] = [];
@@ -222,8 +281,8 @@ function stepsHere(w: World): { q: QuestDef; o: Objective; key: string; n: numbe
   return out;
 }
 
-function addThing(w: World, t: Omit<Thing, 'id' | 'used' | 'usedT'>): Thing {
-  const thing: Thing = { ...t, id: w.tasks.nextId++, used: false, usedT: 0 };
+function addThing(w: World, t: Omit<Thing, 'id' | 'used' | 'usedT' | 'worked'>): Thing {
+  const thing: Thing = { ...t, id: w.tasks.nextId++, used: false, usedT: 0, worked: 0 };
   w.tasks.things.push(thing);
   return thing;
 }
@@ -343,7 +402,7 @@ export function workOn(w: World, id: number): void {
   if (!t || t.used || w.player.dead || T.channel?.id === id) return;
   if (t.secs <= 0) finish(w, t);
   else {
-    T.channel = { id, t: 0, hp: w.player.hp };
+    T.channel = { id, t: t.worked, hp: w.player.hp };
     w.sfx('click');
   }
 }
@@ -435,8 +494,13 @@ export function stepTasks(w: World, dt: number): void {
   if (T.channel) {
     const c = T.channel;
     const t = T.things.find((x) => x.id === c.id);
-    if (!t || p.dead || dist(p.x, p.y, t.x, t.y) > CHANNEL_DRIFT) T.channel = null;
-    else if (p.hp < c.hp - 0.5) {
+    if (!t || p.dead || dist(p.x, p.y, t.x, t.y) > CHANNEL_DRIFT) {
+      if (t) t.worked = Math.min(c.t, t.secs * KEPT);
+      T.channel = null;
+    } else if (p.hp < c.hp - 0.5) {
+      // (broken off, not undone: most of what was done is kept, so that a thing in the thick of a fight is a matter of
+      // a few tries and not of clearing the land first)
+      t.worked = Math.min(c.t, t.secs * KEPT);
       T.channel = null;
       w.text(p.x, p.y - 26, 'Interrupted', '#ff8a8a', false);
     } else {
@@ -481,7 +545,7 @@ export function stepTasks(w: World, dt: number): void {
         for (const e of foes) e.aggro = true;
         c.sprung++;
       }
-      if (left < THING_REACH) {
+      if (left < CARRY_REACH) {
         T.carrying = null;
         w.fxBurst(to.x, to.y - 6, THINGS[o.thing].glow, 18, 20);
         w.sfx('checkpoint');

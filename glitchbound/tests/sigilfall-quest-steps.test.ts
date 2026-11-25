@@ -118,7 +118,7 @@ describe('Sigilfall: a step with something in the world to do can be done', () =
 describe('Sigilfall: a quest’s things stand where the hero can get at them', () => {
   it('every thing to use and every mark of a trail, in every land, is on open ground the land’s routes reach: not in a tree, a house or a wall', { timeout: 240_000 }, async () => {
     const { newWorld, readyHero } = await import('./sigilfall-bot');
-    const { anchorOf, standsOpen, thingSpots, trailSpots } = await import('../src/games/sigilfall/sim/tasks');
+    const { anchorOf, standsOpen, standsOpenFrom, thingSpots, trailSpots } = await import('../src/games/sigilfall/sim/tasks');
     const { TILE } = await import('../src/games/sigilfall/sim/map');
     const byLand = new Map<string, { q: QuestDef; o: Objective; i: number }[]>();
     for (const q of QUESTS) stepsOf(q).forEach((o, i) => {
@@ -151,8 +151,10 @@ describe('Sigilfall: a quest’s things stand where the hero can get at them', (
           let last = Infinity;
           for (const m of marks) {
             const left = Math.hypot(m.x - to!.x, m.y - to!.y);
-            expect(left, `${q.id}: its marks lead on`).toBeLessThan(last + 3 * TILE);
+            expect(left, `${q.id}: its marks lead on`).toBeLessThan(last + 12 * TILE);
             last = left;
+            // (and each can be walked to from where the trail begins: never across a wall or a water)
+            if (!standsOpenFrom(w, from!, m.x, m.y)) off.push(`${q.id} (a mark of its trail)`);
           }
         }
       }

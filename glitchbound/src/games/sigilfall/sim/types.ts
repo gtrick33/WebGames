@@ -498,6 +498,8 @@ export type CoopOut =
   | { t: 'event'; id: string }
   /** Guest: a hit on one of the host's enemies (already worked out: crit, armor, resistances). */
   | { t: 'dmg'; id: number; dmg: number; kx: number; ky: number }
+  /** Guest: foes a quest step of theirs brings (a thing's guards, an ambush, a hold's wave: sim/tasks.ts), for the host's game to put down. */
+  | { t: 'bring'; ids: string[]; x: number; y: number; hunt: boolean }
   /** Guest: control on one of the host's enemies (stun, chill, a mark...). */
   | { t: 'st'; id: number; status: StatusId; dur: number; power: number }
   /** Guest: their hero fell (the clock takes its penalty). */
