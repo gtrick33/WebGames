@@ -34,7 +34,7 @@ requests open.**
 | 2f | Bosses: Act IV (the Siege of Highwall): Prior Vessant, General Morvain | `claude/sf9-bosses-late` | (this PR) | open | 2e |
 | 2g | Bosses: Act V (the Molten Throne): the Magma Warden, Ossa, Ashkar | `claude/sf9-bosses-late` | (this PR) | open | 2e |
 | 2h | Bosses: the finale (Duskspire): Lady Cendre, Ser Maltheus | `claude/sf9-bosses-late` | (this PR) | open | 2e |
-| 2i | Bosses: the rest (the Rift's five other dungeons, the lands' named foes) | `claude/sf9-bosses-rest` | | not started | 2a |
+| 2i | Bosses: the Rift's five other dungeons (fourteen bosses). The lands' named foes are not done | `claude/sf9-bosses-rift` | (this PR) | open | 2f-2h |
 | 3 | The signature system in the first twenty minutes | `claude/sf9-first-epic` | #358 | merged 2026-11-25 | 1 (#355) |
 | 4 | Quests up to the Prologue's standard, one pull request per act | `claude/sf9-quests-act1` (Act I); `-act2` … `-act6` not started | #364 | Act I merged 2026-11-25; Act II read and left as it is; Acts III to VI not started | 1 |
 | 5 | Sound with its own character | `claude/sf9-sound-mix`; `-music`, `-voices` wait for the owner | #365 | the mix merged 2026-11-25; music and voices not started (no source approved) | 1 |

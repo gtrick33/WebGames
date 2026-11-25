@@ -82,6 +82,21 @@ Maltheus** is the Black Knight without his cape, with a spear and his shield. Al
 (CC0), each pack already credited. Their names and titles are unchanged, and none copies a named character of
 another game.
 
+The Rift's fourteen (piece 2i, 2026-11-25) take nothing new. The Drowned Priestess: the Cleric's robes, the Witch's
+head, a druid's staff, a bell and an anchor. Captain Saltbeard: the Survivalist, the Hoarder's pouches, the
+Tiefling's sword, a lantern and a keg. Brother Pustule: the Cleric, the Hoarder's mask, the skeletons' staff, a
+bottle and a barrel. Old Sluicegut: the Frost Golem, the Monstrosity's pitchfork, a barrel and a mushroom. The
+Rot-Mother: the Monstrosity with the skeletons' staff. The Runewarden: the Frost Golem's body, the Black Knight's
+helm and shoulders, a great hammer and an anvil. The Slag Colossus: the Skeleton Golem's body, the Frost Golem's head
+and a cauldron. Forgemaster Grold: the Barbarian, the Engineer's goggles and pack, a hammer and a pickaxe. The
+Rotwood Colossus: the Frost Golem, a bare tree and mushrooms from the Forest Nature Pack. Elowen of the Dawn: the
+Paladin's coat and cape, the Witch's head, a staff and a lantern. The Withered Queen: the Vampire, the Necromancer's
+crown, the Mage's cape and the skeletons' scythe. The Veil Sentinel: the Black Knight's plate and shield, the
+Skeleton Golem's head and axe. Ilvane the Unmoored: the Mage's robes, the Witch's head and glasses, the Lorekeeper's
+staff and an open book. The Pale Herald: the Vampire, the Mage's cape, a staff, a bell and a white banner. All of the
+same KayKit collection (CC0), each pack already credited. No name or title changed, and none copies a named
+character of another game.
+
 ## A Rift legendary on every place (2026-11-24)
 
 The owner asked for "a legendary for each spec and 3 legendaries common for the class" on every item slot. What is taken
