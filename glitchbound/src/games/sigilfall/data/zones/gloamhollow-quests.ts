@@ -22,7 +22,12 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     giver: 'nyx-returned',
     auto: true,
     text: 'Elyra is a prisoner in the cells under the Gloam Gate, and her five sigils are in the Gate’s vault. Nyx’s map leads there, north out of the Shattered Vale and across the glass of the Riftscar Wastes. The last village on that road is Lastlight, whose lamp-keepers keep the way to the Gate lit. Take the north causeway out of the Shattered Vale and find their head keeper, Brin.',
-    objective: { kind: 'talk', npc: 'lamp-keeper-brin', label: 'Talk to Lamp-keeper Brin in Lastlight' },
+    // (it was a walk and a talk. Lastlight is found the way every traveler finds it: lamp by lamp across the glass)
+    objective: {
+      kind: 'trail', region: 'riftscar', from: 'glass-flats', to: 'lamp-keeper-brin', marks: 3, thing: 'lantern', label: 'Follow the lit lamps across the glass to Lastlight',
+      notes: ['A lamp, lit, alone on the glass. Then another.', 'This one is out. Something leaned on it.', 'Lastlight. There is a lamp in every window.'],
+    },
+    then: [{ kind: 'talk', npc: 'lamp-keeper-brin', label: 'Talk to Lamp-keeper Brin in Lastlight' }],
     after: ['the-long-night-ends'],
     // it is how the hero hears of Gloamhollow: it starts with the map in hand, not on arrival
     level: 44,
@@ -33,8 +38,10 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     name: 'The Unlit Mile',
     giver: 'lamp-keeper-brin',
     auto: true,
-    text: 'For three hundred years Lastlight has kept a lamp lit every fifty paces from the village to the Gloam Gate. This month, marsh-lights have been putting them out. They lean on a lamp until it dies, then lead travelers off the road and into the water. Snuff out six marsh-lights on the road north and in Wisp Glen.',
-    objective: { kind: 'kill', region: 'riftscar', count: 6, enemies: ['marsh-light'], label: 'Snuff out marsh-lights on the road and in Wisp Glen' },
+    text: 'For three hundred years Lastlight has kept a lamp lit every fifty paces from the village to the Gloam Gate. This month, marsh-lights have been putting them out. They lean on a lamp until it dies, then lead travelers off the road and into the water. Snuff out four marsh-lights on the road north and in Wisp Glen, and relight the lamps of the unlit mile.',
+    objective: { kind: 'kill', region: 'riftscar', count: 4, enemies: ['marsh-light'], label: 'Snuff out marsh-lights on the road and in Wisp Glen' },
+    // (it was six kills. The mile is unlit until its lamps are lit again, and the lights come back to lean on them)
+    then: [{ kind: 'use', region: 'riftscar', at: 'will-o-glen', count: 3, thing: 'lantern', verb: 'Relight', label: 'Relight the lamps of the unlit mile', secs: 1.1, spread: 7, ambush: ['marsh-light', 'marsh-light'] }],
     after: ['gloam-the-lamp-road'],
     zone: 'riftscar',
     level: 44,
@@ -46,7 +53,9 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     giver: 'lamp-keeper-brin',
     auto: true,
     text: 'You have until the second bell of night. Nyx is sitting alone at the end of Lastlight’s jetty with her lamp out, and she hasn’t eaten since Highwall. Talk to her before you go up to the Gate.',
-    objective: { kind: 'talk', npc: 'nyx-lastlight', label: 'Talk to Nyx on Lastlight’s jetty' },
+    // (it was a walk down the jetty. She sits with her lamp out: a lit one is carried out to her)
+    objective: { kind: 'carry', region: 'riftscar', from: 'lamp-keeper-brin', to: 'nyx-lastlight', thing: 'lantern', verb: 'Take a lit lamp', label: 'Carry a lit lamp out to Nyx on the jetty' },
+    then: [{ kind: 'talk', npc: 'nyx-lastlight', label: 'Talk to Nyx' }],
     after: ['gloam-the-unlit-mile'],
     zone: 'riftscar',
     level: 46,
@@ -71,10 +80,19 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     auto: true,
     text: 'It is the second bell of night, when the Gate’s guard changes. The Gloam Gate stands at the north end of the lamp road, and the Host has held it for thirty years. Cael and Orren have ridden in from Highwall to go in with you. Go up to the Gate with Nyx and find the way in under the gatehouse.',
     objective: { kind: 'explore', spot: 'the-gloam-gate', label: 'Go up to the Gloam Gate with Nyx' },
+    // (the way in was found in a line of talk. It is looked for under the gatehouse, grating by grating, with the
+    // guard changing overhead)
+    then: [
+      {
+        kind: 'use', region: 'riftscar', at: 'gate-causeway', count: 3, thing: 'runestone', verb: 'Search', label: 'Search under the gatehouse for the way in', secs: 1.1, spread: 6, guards: ['hollow-sentinel'],
+        notes: ['A grating, rusted shut. Not this one.', 'A cairn-stone, older than the Gate. A name is cut in it.', 'The drain. Wide enough for one, and it goes down.'],
+      },
+    ],
     after: ['gloam-nyx-confesses'],
     zone: 'riftscar',
     level: 46,
     find: {
+      step: 1,
       name: 'Ser Edric’s Cairn-Stone',
       kind: 'relic',
       about: 'A flat stone from the cairn beside the Gloam Gate, where Ser Edric fell three hundred years ago. His widow, the Grey Lady, came north to carry him home, and before she left she cut his words into it. The same words are engraved on her locket, which you found at Fernstead.',
@@ -112,7 +130,9 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     giver: 'lamp-keeper-brin',
     auto: true,
     text: 'Elyra and Wren are safe in Lastlight, but Elyra’s five sigils are still in the vault behind the Gatewarden, a giant in black armor who holds the gateway. While he stands in it, the Gate’s runes heal him. Go back up the road, draw him out of the gateway and defeat him.',
-    objective: { kind: 'kill', region: 'riftscar', count: 1, enemies: ['the-gatewarden'], label: 'Defeat the Gatewarden at the Gloam Gate' },
+    // (the Gate's runes heal him while he stands in it: the three round the gateway are put out before he is fought)
+    objective: { kind: 'use', region: 'riftscar', at: 'the-gloam-gate', count: 3, thing: 'rod', verb: 'Snuff the rune', label: 'Snuff the three runes that heal the Gatewarden', secs: 1.2, spread: 6, guards: ['border-reaver'] },
+    then: [{ kind: 'kill', region: 'riftscar', count: 1, enemies: ['the-gatewarden'], label: 'Defeat the Gatewarden at the Gloam Gate', lair: { at: 'the-gloam-gate', enemies: ['the-gatewarden'] } }],
     after: ['gloam-out-of-the-cells'],
     zone: 'riftscar',
     level: 48,
@@ -129,7 +149,10 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     giver: 'lamp-keeper-brin',
     auto: true,
     text: 'The Gloam Gate is taken, and the five sigils from its vault are in your pack. Only the one who bonded them can wake them again. Elyra is by Brin’s fire in Lastlight, with Nyx and Wren beside her. Take the sigils down to her.',
-    objective: { kind: 'talk', npc: 'elyra-lastlight', label: 'Bring the sigils to Elyra by Lastlight’s fire' },
+    // (the sigils were in the hero's pack at Lastlight's fire. They are carried there, down the lamp road, with what is
+    // left of the Gate's riders after them)
+    objective: { kind: 'carry', region: 'riftscar', from: 'the-gloam-gate', to: 'elyra-lastlight', thing: 'chest', verb: 'Take up the sigils', label: 'Carry the five sigils down the lamp road', ambush: [['border-reaver', 'border-reaver'], ['hollow-sentinel', 'marsh-light']] },
+    then: [{ kind: 'talk', npc: 'elyra-lastlight', label: 'Give the sigils to Elyra by Lastlight’s fire' }],
     after: ['the-gatewarden'],
     zone: 'riftscar',
     level: 48,
@@ -147,8 +170,14 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     id: 'thread-wren',
     name: 'Wren’s First Night',
     giver: 'wren',
-    text: 'Wren has become one of Lastlight’s lamp-keepers. Tonight is his first night as a keeper on the road to the Gate. Walk the road with him and snuff out twelve marsh-lights before they put out his lamps.',
-    objective: { kind: 'kill', region: 'riftscar', count: 12, enemies: ['marsh-light'], label: 'Snuff out marsh-lights on Wren’s road' },
+    text: 'Wren has become one of Lastlight’s lamp-keepers. Tonight is his first night as a keeper on the road to the Gate. Walk the road with him: light his first three lamps, snuff out the marsh-lights that come to lean on them, and stand by the last one until the road is his.',
+    // (it was twelve kills. A keeper's first night is lamps lit: the hero lights his first three with him, clears what
+    // comes to lean on them, and stands by the last until the road is his)
+    objective: { kind: 'use', region: 'riftscar', at: 'gate-causeway', count: 3, thing: 'lantern', verb: 'Light it with Wren', label: 'Light Wren’s first three lamps on the Gate road', secs: 1.1, spread: 7, ambush: ['marsh-light', 'marsh-light'] },
+    then: [
+      { kind: 'kill', region: 'riftscar', count: 6, enemies: ['marsh-light'], label: 'Snuff out the marsh-lights on Wren’s road' },
+      { kind: 'hold', region: 'riftscar', at: 'gate-causeway', secs: 20, waves: [['marsh-light', 'marsh-light'], ['marsh-light', 'gloam-lurker']], label: 'Stand by Wren’s last lamp until the lights give up' },
+    ],
     after: ['epilogue-the-bell'],
     zone: 'riftscar',
     level: 60,
@@ -160,7 +189,15 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     name: 'The Black Pool',
     giver: 'widow-marrow',
     text: 'Widow Marrow’s son Tam was a lamp-keeper. A year ago he walked off the road at dusk, singing, toward the Black Pool west of the village. He never came back. Marrow wants someone to go and see what happened to him.',
-    objective: { kind: 'explore', spot: 'the-black-pool', label: 'Search the Black Pool west of Lastlight' },
+    // (it was a walk to the pool. Tam's own way off the road is followed)
+    objective: {
+      kind: 'trail', region: 'riftscar', from: 'widow-marrow', to: 'the-black-pool', marks: 3, label: 'Follow where Tam left the lamp road',
+      notes: ['His boots left the road here. He was not running.', 'A keeper’s wick-trimmer, dropped in the reeds.', 'Singing, faint, from the water. A woman’s voice.'],
+    },
+    then: [
+      { kind: 'explore', spot: 'the-black-pool', label: 'Find the Black Pool' },
+      { kind: 'use', region: 'riftscar', at: 'the-black-pool', count: 1, thing: 'bones', verb: 'Search the reeds', label: 'Search the reeds at the water’s edge', secs: 1.3, spread: 3, notes: ['A lamp-tag on a cord: “Tam Marrow, Keeper.”'] },
+    ],
     after: ['gloam-the-lamp-road'],
     zone: 'riftscar',
     level: 45,
@@ -168,6 +205,7 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     // once, at the end, instead of walking the glass three times to tell her each step)
     turnIn: false,
     find: {
+      step: 2,
       name: 'Tam’s Lamp-Tag',
       kind: 'token',
       about: 'The brass tag every Lastlight keeper ties to their lamp. It was hanging with Tam’s lamp on a hook at the edge of the Black Pool. Someone scratched words into its back with a knife, in a hurry.',
@@ -179,8 +217,10 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     id: 'gloam-lurkers',
     name: 'Lurkers in the Reeds',
     giver: 'widow-marrow',
-    text: 'Gloam lurkers hide in the reeds around the Black Pool and drag down anyone the singing draws to the water. Defeat eight of them, so you can reach the water’s edge and see who is singing.',
-    objective: { kind: 'kill', region: 'riftscar', count: 8, enemies: ['gloam-lurker'], label: 'Defeat gloam lurkers around the Black Pool' },
+    text: 'Gloam lurkers hide in the reeds around the Black Pool and drag down anyone the singing draws to the water. Defeat five of them and cut a way through the reeds, so you can reach the water’s edge and see who is singing.',
+    objective: { kind: 'kill', region: 'riftscar', count: 5, enemies: ['gloam-lurker'], label: 'Defeat gloam lurkers around the Black Pool' },
+    // (it was eight kills, to reach the water. The way to it is cut)
+    then: [{ kind: 'use', region: 'riftscar', at: 'the-black-pool', count: 3, thing: 'herb', verb: 'Cut the reeds', label: 'Cut a way through the reeds to the water’s edge', secs: 1, spread: 5, ambush: ['gloam-lurker'] }],
     after: ['the-black-pool'],
     zone: 'riftscar',
     level: 45,
@@ -192,7 +232,9 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     name: 'The Drowned Mother',
     giver: 'widow-marrow',
     text: 'The singer is a drowned woman in a lamp-keeper’s coat three hundred years old. She sings people into the Black Pool, and she sang Tam in. Lay her to rest. Then take Tam’s lamp home to Widow Marrow in Lastlight.',
-    objective: { kind: 'kill', region: 'riftscar', count: 1, enemies: ['the-drowned-mother'], label: 'Lay the Drowned Mother to rest at the Black Pool' },
+    objective: { kind: 'kill', region: 'riftscar', count: 1, enemies: ['the-drowned-mother'], label: 'Lay the Drowned Mother to rest at the Black Pool', lair: { at: 'the-black-pool', enemies: ['the-drowned-mother'] } },
+    // (Tam's lamp went home in a line of talk. It goes home in the hero's hands, lit, through what is left in the reeds)
+    then: [{ kind: 'carry', region: 'riftscar', from: 'the-black-pool', to: 'widow-marrow', thing: 'lantern', verb: 'Take Tam’s lamp', label: 'Carry Tam’s lamp home to Widow Marrow', ambush: [['gloam-lurker'], ['marsh-light', 'marsh-light']] }],
     after: ['gloam-lurkers'],
     zone: 'riftscar',
     level: 46,
@@ -209,7 +251,7 @@ export const GLOAMHOLLOW_NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       { when: { quest: 'gloam-the-lamp-road', state: 'active' }, lines: ['I’m Brin, the head lamp-keeper. You came up the road in the dark. Never do that out here.', 'You’re going to the Gloam Gate? Then you’ll need our lamps lit, and something has been putting them out.'] },
-      { when: { quest: 'gloam-the-unlit-mile', state: 'active' }, lines: ['There’s a lamp every fifty paces from my door to the Gate. My grandmother lit them, and her grandmother before her.', 'The marsh-lights lean on them until they go out. Snuff out six, and I’ll relight the lamps behind you.'] },
+      { when: { quest: 'gloam-the-unlit-mile', state: 'active' }, lines: ['There’s a lamp every fifty paces from my door to the Gate. My grandmother lit them, and her grandmother before her.', 'The marsh-lights lean on them until they go out. Snuff out four, and relight the lamps of the unlit mile yourself, out by Wisp Glen. My keepers won’t go that far any more.'] },
       { when: { quest: 'gloam-nyx-confesses', state: 'active' }, lines: ['Nyx is sitting at the end of my jetty with her lamp out. A keeper only does that when someone has died.', 'Go and talk to her before you go up to the Gate.'] },
       { when: { quest: 'gloam-the-gate', state: 'active' }, lines: ['There’s a cairn beside the gateway, as old as our lamps. A warden of Aster fell there, holding the Gate alone.', 'My people kept a lamp lit on it for three hundred years, until the Host took the Gate.'] },
       { when: { quest: 'the-gatewarden', state: 'active' }, lines: ['Elyra is asleep by my fire. Wren is eating everything in the house.', 'The Gatewarden still holds the Gate, and Elyra’s sigils are in the vault behind him. Go and defeat him.'] },
@@ -228,7 +270,7 @@ export const GLOAMHOLLOW_NPCS: Record<string, NpcDef> = {
     talk: [
       { when: { quest: 'the-black-pool', state: 'active' }, lines: ['My son Tam walked off the road a year ago, singing, toward the Black Pool. That’s west of the village.', 'I think he’s dead. I need someone to go and see.'] },
       { when: { quest: 'gloam-lurkers', state: 'active' }, lines: ['You’ve been out to the pool? Don’t tell me yet. Finish it first.', 'Some nights I can hear singing from that way, when the wind is right.'] },
-      { when: { quest: 'the-drowned-mother', state: 'active' }, lines: ['A drowned keeper in an old coat? That’s Lastlight’s first lamp-keeper. She walked into that pool after her own lost child.', 'Lay her to rest, so she can’t take anyone else’s. Then bring me whatever you found of Tam.'] },
+      { when: { quest: 'the-drowned-mother', state: 'active' }, lines: ['A drowned keeper in an old coat? That’s Lastlight’s first lamp-keeper. She walked into that pool after her own lost child.', 'Lay her to rest, so she can’t take anyone else’s. Then bring me Tam’s lamp. Bring it lit, the way he carried it.'] },
       { when: { quest: 'the-drowned-mother', state: 'done' }, lines: ['I lit Tam’s lamp in my window last night. Now I’ve sent all my oil to light the road to the Gate.', 'The first keeper went into that pool after her child. If I’d seen Tam go in, I’d have gone in after him too.'] },
       { lines: ['This is Marrow’s Oil-House. I sell lamp-oil and potions.', 'Take a potion before you go up the road to the Gate.'] },
     ],
