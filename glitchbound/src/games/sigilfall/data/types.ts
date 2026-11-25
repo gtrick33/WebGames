@@ -1096,7 +1096,7 @@ export interface Lair {
 /** What a quest's thing in the world is (data/things.ts has each one's model). */
 export type ThingLook =
   | 'nest' | 'crate' | 'barrel' | 'sack' | 'cart' | 'brazier' | 'campfire' | 'banner' | 'grave' | 'runestone' | 'altar' | 'shrine' | 'tent' | 'boat'
-  | 'weapons' | 'bones' | 'tracks' | 'herb' | 'mushroom' | 'ore' | 'coffin' | 'books' | 'well' | 'lantern' | 'totem' | 'captive' | 'statue' | 'log' | 'anvil' | 'chest' | 'notice' | 'gibbet';
+  | 'weapons' | 'bones' | 'tracks' | 'herb' | 'mushroom' | 'ore' | 'coffin' | 'books' | 'well' | 'lantern' | 'totem' | 'captive' | 'statue' | 'log' | 'anvil' | 'chest' | 'notice' | 'gibbet' | 'candle' | 'spear';
 
 /** Lasting gifts from the ends of quest chains; the seven sigils are the main story's. */
 export type PerkId = 'mount' | 'satchel' | 'flask' | 'hearth' | SigilId;

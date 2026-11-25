@@ -14,9 +14,15 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     id: 'west-road',
     name: 'Fernstead’s Candles',
     giver: 'maren',
-    text: 'Elyra carries one sigil of seven, and the Host will come back for it. Briarhollow needs scouts to see it coming. Fernstead’s rangers are the best in the Vale, but their own dead are climbing out of the old barrows. Take the west road into the Brackenridge Hills and find Warden Hollis in Fernstead.',
+    text: 'Elyra carries one sigil of seven, and the Host will come back for it. Briarhollow needs scouts to see it coming. Fernstead’s rangers are the best in the Vale, but their own dead are climbing out of the old barrows. Take the west road into the Brackenridge Hills. Fernstead’s watch-lanterns have gone dark: light them as you come in, and find Warden Hollis.',
     offer: ['Elyra carries one sigil, and the Host holds none. It will come back for hers. We need scouts to see it coming.', 'Fernstead’s rangers watch the Brackenridge Hills, west of here. But a shepherd says their dead are climbing out of the barrows.', 'Go west and help Warden Hollis. If her rangers join us, they can watch our roads.'],
-    objective: { kind: 'talk', npc: 'warden-hollis', label: 'Talk to Warden Hollis in Fernstead' },
+    // (it was a walk and a talk. The quest is named for Fernstead's candles: the watch-lanterns on the village's edge
+    // have gone out, and what the hero sees lighting them is the land's trouble told before Hollis says a word)
+    objective: {
+      kind: 'use', region: 'brackenridge', at: 'warden-hollis', count: 3, thing: 'lantern', verb: 'Light', label: 'Light the watch-lanterns round Fernstead', secs: 0.9, spread: 10,
+      notes: ['Scratches on the post, at the height of a hand.', 'Grave-earth on the road. Something walked in from the barrows.', 'Lit. From here the barrows’ fog shows grey on the hill.'],
+    },
+    then: [{ kind: 'talk', npc: 'warden-hollis', label: 'Talk to Warden Hollis' }],
     // the Vale after the north road is safe: dawn, then the Whisperwood and Grimtusk (the Prologue's own order)
     after: ['the-empty-tomb', 'alpha'],
     level: 5,
@@ -29,9 +35,17 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     name: 'The Old Barrows',
     giver: 'warden-hollis',
     auto: true,
-    text: 'About a month ago, kobolds digging for gold broke into the Old Barrows, the ancient graves south-west of Fernstead. Since then, the dead climb out at dusk and walk toward the village lights. Go to the barrows with Hollis’s rangers and put them down.',
+    text: 'About a month ago, kobolds digging for gold broke into the Old Barrows, the ancient graves south-west of Fernstead. Since then, the dead climb out at dusk and walk toward the village lights. Go to the barrows with Hollis’s rangers, put them down, and set the grave-seals back.',
     objective: { kind: 'explore', spot: 'old-barrows', label: 'Go to the Old Barrows, south-west of Fernstead' },
-    then: [{ kind: 'kill', region: 'brackenridge', count: 6, enemies: ['restless-shade', 'barrow-skeleton'], label: 'Put down the dead that rise from the barrows' }],
+    then: [
+      { kind: 'kill', region: 'brackenridge', count: 4, enemies: ['restless-shade', 'barrow-skeleton'], label: 'Put down the dead that rise from the barrows' },
+      // (the dead put down, the graves are shut again: the seals the kobolds levered up are set back, and the largest
+      // is found broken, with words cut under its carving)
+      {
+        kind: 'use', region: 'brackenridge', at: 'old-barrows', count: 3, thing: 'grave', verb: 'Reseal', label: 'Set the grave-seals back on the barrows', spread: 6, ambush: ['barrow-skeleton', 'restless-shade'],
+        notes: ['Levered up from outside. Kobold picks did this.', 'This barrow is empty. Its dead already walked.', 'The largest seal is cracked through. Words are cut under it.'],
+      },
+    ],
     after: ['west-road'],
     zone: 'brackenridge',
     level: 6,
@@ -40,7 +54,7 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
       kind: 'relic',
       about: 'A piece of the stone that sealed the largest of the Old Barrows, cracked where the kobolds dug through. Under the old carving, a less steady hand has cut three more words. Mother Alsa at Fernstead’s inn knows every grave and every song in these hills.',
       body: ['Here lies Ser Edric of Fernstead, who held the gate.', 'Wait for me.'],
-      step: 0,
+      step: 2,
     },
     reward: { xp: 140, gold: 50, text: 'The dead go down without a sound, like tired people lying down to sleep. Then, from the far side of the barrows, a woman begins to sing. It is a slow, sad song, and the grass over the graves shivers as she sings it.' },
   },
@@ -49,8 +63,20 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     name: 'The Widow’s Song',
     giver: 'warden-hollis',
     auto: true,
-    text: 'Every night, a woman in grey walks the barrows singing, and the dead rise to listen. Hollis doesn’t know the song. Mother Alsa runs the inn in Fernstead and knows every old song in the hills. Ask her about this one.',
-    objective: { kind: 'talk', npc: 'mother-alsa', label: 'Ask Mother Alsa about the grey woman’s song' },
+    text: 'Every night, a woman in grey walks the barrows singing, and the dead rise to listen. Hollis doesn’t know the song. Mother Alsa runs the inn in Fernstead and knows every old song in the hills. Ask her about this one. What she doesn’t have is cut on the Warden’s Cairn, west of the village.',
+    // (it was one talk. Alsa has the tune and half the words; the rest are cut on the Warden's Cairn, Edric's own, and
+    // are read there among his company's dead before she can say whose song it is)
+    objective: {
+      kind: 'talk', npc: 'mother-alsa', label: 'Ask Mother Alsa about the grey woman’s song',
+      lines: ['Hum it for me, dear. Yes. I know that tune. My gran sang me to sleep with it.', 'But I only ever had the first verse. The rest are cut on the Warden’s Cairn, out west on the hill, where no one has gone since the dead woke.', 'Read me the verses, and I’ll tell you who she is.'],
+    },
+    then: [
+      {
+        kind: 'use', region: 'brackenridge', at: 'wardens-cairn', count: 3, thing: 'runestone', verb: 'Read', label: 'Read the song’s verses on the Warden’s Cairn', spread: 5, guards: ['barrow-skeleton'],
+        notes: ['“He rode to the gate when the beacons burned.”', '“She lit a candle every night he was gone.”', '“Three hundred years, and the candle is burning still.”'],
+      },
+      { kind: 'talk', npc: 'mother-alsa', label: 'Tell Mother Alsa the verses' },
+    ],
     after: ['the-old-barrows'],
     zone: 'brackenridge',
     reward: { xp: 120, gold: 40, text: 'The song is a lament for Ser Edric of Fernstead, the forgotten eighth warden, who held the Gloam Gate alone while the other seven rode away with the sigils. His widow sang it at his barrow every night until she died. Now she is up again, and the dead rise to hear her.' },
@@ -60,8 +86,14 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     name: 'Lay the Grey Lady',
     giver: 'warden-hollis',
     auto: true,
-    text: 'The Grey Lady is Edric’s widow. Something is feeding on her grief, and every time she sings, more dead rise. Elyra thinks the sigil’s light can break its hold on her. Find the Lady at the Old Barrows, south-west of Fernstead, and lay her to rest.',
-    objective: { kind: 'kill', region: 'brackenridge', count: 1, enemies: ['the-grey-lady'], label: 'Lay the Grey Lady to rest in the Old Barrows' },
+    text: 'The Grey Lady is Edric’s widow. Something is feeding on her grief, and every time she sings, more dead rise. Elyra thinks the sigil’s light can break its hold on her. Light her candles again at Edric’s barrow, south-west of Fernstead. She will come to them. Then lay her to rest.',
+    // (it was one kill. The song says she lit a candle every night: they are lit for her again, at Edric's barrow, and
+    // she comes to them)
+    objective: {
+      kind: 'use', region: 'brackenridge', at: 'old-barrows', count: 3, thing: 'candle', verb: 'Light', label: 'Light the Lady’s candles at Edric’s barrow', secs: 1.2, spread: 5, ambush: ['restless-shade', 'restless-shade'],
+      notes: ['A candle for the night he rode out.', 'A candle for every night she waited.', 'The last candle. The singing has stopped. She is here.'],
+    },
+    then: [{ kind: 'kill', region: 'brackenridge', count: 1, enemies: ['the-grey-lady'], label: 'Lay the Grey Lady to rest', lair: { at: 'old-barrows', enemies: ['the-grey-lady'] } }],
     after: ['the-widows-song'],
     zone: 'brackenridge',
     level: 7,
@@ -84,6 +116,13 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     giver: 'mara-venn',
     text: 'The Host burned Fernstead the night the Herald took Elyra, and a small force of its soldiers still holds the village square. Mara means to take Fernstead back tonight, with Hollis’s rangers and the riders Dunmore sent. Ride west to Fernstead in the Brackenridge Hills and fight beside her.',
     objective: { kind: 'event', event: 'fern-retake', label: 'Take Fernstead back with Mara and Hollis’s rangers' },
+    // (the square won, the village is still the Host's work: the people it kept for its digging are cut loose)
+    then: [
+      {
+        kind: 'use', region: 'brackenridge', at: 'fern-e', count: 3, thing: 'captive', verb: 'Cut loose', label: 'Cut loose the people the Host kept', secs: 1, spread: 5,
+        notes: ['“They kept us for the digging. Under the stones.”', '“Hollis? Is Hollis alive?”', '“There were more of us. They took the strong ones north.”'],
+      },
+    ],
     after: ['fall-of-fernstead'],
     zone: 'brackenridge',
     level: 40,
@@ -109,8 +148,11 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     name: 'Rangers for Briarhollow',
     giver: 'warden-hollis',
     auto: true,
-    text: 'The barrows are quiet, and Hollis keeps her promise. Six of Fernstead’s rangers are on the road to Briarhollow to keep watch at the camp’s gate. Meet them in Briarhollow’s square.',
+    text: 'The barrows are quiet, and Hollis keeps her promise. Six of Fernstead’s rangers are on the road to Briarhollow to keep watch at the camp’s gate. Meet them in Briarhollow’s square, and show them where to stand watch.',
     objective: { kind: 'event', event: 'camp-scouts', label: 'Meet Fernstead’s rangers in Briarhollow' },
+    // (they came, and that was all. The rangers are strangers to the camp: the hero, who knows it, walks its edge and
+    // marks where they are to stand)
+    then: [{ kind: 'use', region: 'briarhollow', at: 'briar-square', count: 3, thing: 'banner', verb: 'Set a watch-post', label: 'Mark the rangers’ three watch-posts round the camp', secs: 1, spread: 12 }],
     after: ['the-harvest-stones'],
     zone: 'briarhollow',
     reward: { xp: 180, gold: 60, text: 'A watchfire burns by Briarhollow’s gate. Now the camp will see the Host coming.' },
@@ -120,8 +162,10 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     id: 'russet-hides',
     name: 'Russet Hides',
     giver: 'pip-tanner',
-    text: 'Pip Tanner, Fernstead’s tanner, needs five russet boar hides. The boars live on the hills around Fernstead and charge anything that moves. Step aside when one charges.',
-    objective: { kind: 'loot', region: 'brackenridge', item: 'Russet Hide', from: ['russet-boar'], chance: 0.5, count: 5, label: 'Collect Russet Hides from russet boars' },
+    text: 'Pip Tanner, Fernstead’s tanner, needs four russet boar hides, and one boar roped alive for his pen. The boars live on the hills around Fernstead and charge anything that moves. Step aside when one charges.',
+    objective: { kind: 'loot', region: 'brackenridge', item: 'Russet Hide', from: ['russet-boar'], chance: 0.5, count: 4, label: 'Collect Russet Hides from russet boars' },
+    // (it was five hides. Pip wants one boar alive as well: what is on the hides is easier to read on the beast)
+    then: [{ kind: 'subdue', region: 'brackenridge', enemies: ['russet-boar'], count: 1, verb: 'Rope', label: 'Wear a boar down and rope it for Pip’s pen' }],
     after: ['west-road'],
     zone: 'brackenridge',
     level: 6,
@@ -131,8 +175,16 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     id: 'tusker-gully',
     name: 'Tusker Gully',
     giver: 'pip-tanner',
-    text: 'Every hide you brought has the same scar, a tusk mark the size of Pip’s hand. Old Rustback, the oldest boar in the hills, made those marks. He used to den in Tusker Gully, south of Fernstead. Go and see if he is still there.',
-    objective: { kind: 'explore', spot: 'tusker-gully', label: 'Find Tusker Gully' },
+    text: 'Every hide you brought has the same scar, a tusk mark the size of Pip’s hand. Old Rustback, the oldest boar in the hills, made those marks. He used to den in Tusker Gully, south of Fernstead. Pick up his sign at Wolfback Tor and follow it to see if he is still there.',
+    // (it was a walk to a spot. The old boar is tracked there from the tor, and the wallow searched)
+    objective: {
+      kind: 'trail', region: 'brackenridge', from: 'wolfback-tor', to: 'tusker-gully', marks: 3, label: 'Follow the big boar’s sign south from Wolfback Tor',
+      notes: ['Saplings snapped at the height of a man’s chest.', 'A wallow, still wet. Prints the size of plates.', 'Flakes of green bronze in the mud. Old metal, newly broken.'],
+    },
+    then: [
+      { kind: 'explore', spot: 'tusker-gully', label: 'Find Tusker Gully' },
+      { kind: 'use', region: 'brackenridge', at: 'tusker-gully', count: 1, thing: 'log', verb: 'Search', label: 'Search the wallow', secs: 1.2, spread: 3, notes: ['A snapped arrow, its fletching dyed Tanner red.'] },
+    ],
     after: ['russet-hides'],
     zone: 'brackenridge',
     level: 7,
@@ -147,8 +199,14 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     id: 'old-rustback',
     name: 'Old Rustback',
     giver: 'pip-tanner',
-    text: 'Old Rustback is still in Tusker Gully, with old arrows stuck in his hide. One of them was shot by Pip’s grandad. Bring the old boar down, and Pip will make you a jerkin from his hide.',
-    objective: { kind: 'kill', region: 'brackenridge', count: 1, enemies: ['old-rustback'], label: 'Defeat Old Rustback in Tusker Gully' },
+    text: 'Old Rustback is still in Tusker Gully, with old arrows stuck in his hide. One of them was shot by Pip’s grandad. Stake the gully mouth with Pip’s boar-spears, bring the old boar down, and cut those arrows out: Pip wants his grandad’s back. He will make you a jerkin from the hide.',
+    // (it was one kill. The gully's mouth is staked first, so that his charge has somewhere to end; and what is in his
+    // hide is cut out and looked at)
+    objective: { kind: 'use', region: 'brackenridge', at: 'tusker-gully', count: 3, thing: 'spear', verb: 'Set the spears', label: 'Stake Pip’s boar-spears across the gully mouth', secs: 1, spread: 5 },
+    then: [
+      { kind: 'kill', region: 'brackenridge', count: 1, enemies: ['old-rustback'], label: 'Defeat Old Rustback', lair: { at: 'tusker-gully', enemies: ['old-rustback'] } },
+      { kind: 'use', region: 'brackenridge', at: 'tusker-gully', count: 1, thing: 'bones', verb: 'Cut out the arrows', label: 'Cut the old arrows out of his hide', secs: 1.4, spread: 2, notes: ['One arrow is Tanner red. The other ten are bronze.'] },
+    ],
     after: ['tusker-gully'],
     zone: 'brackenridge',
     level: 8,
@@ -168,7 +226,13 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     text: 'The Applebys fled their orchard when the kobolds came, and the last cider apples are rotting on the trees. Mother Alsa makes her harvest cordial from them every autumn. Fill a sack at Appleby Orchard, south-east of Fernstead. Watch out for kobolds there.',
     objective: { kind: 'explore', spot: 'appleby-orchard', label: 'Pick apples at Appleby Orchard' },
     // (it was a walk to a spot with kobolds standing in it: now the orchard is cleared for the Applebys to come home to)
-    then: [{ kind: 'kill', region: 'brackenridge', count: 3, enemies: ['ridge-kobold', 'kobold-candler'], label: 'Clear the kobolds out of the orchard' }],
+    then: [
+      // (the apples are picked by hand, tree by tree, with the kobolds coming up out of the cellar at the noise; and
+      // the sack is carried home)
+      { kind: 'use', region: 'brackenridge', at: 'appleby-orchard', count: 3, thing: 'barrel', verb: 'Fill', label: 'Fill the sack from the cider trees', secs: 1, spread: 5, ambush: ['ridge-kobold', 'ridge-kobold'] },
+      { kind: 'kill', region: 'brackenridge', count: 3, enemies: ['ridge-kobold', 'kobold-candler'], label: 'Clear the kobolds out of the orchard', lair: { at: 'appleby-orchard', enemies: ['ridge-kobold', 'ridge-kobold', 'kobold-candler'] } },
+      { kind: 'carry', region: 'brackenridge', from: 'appleby-orchard', to: 'mother-alsa', thing: 'sack', verb: 'Shoulder the sack', label: 'Carry the apples home to Mother Alsa', ambush: [['ridge-kobold', 'ridge-kobold']] },
+    ],
     after: ['west-road'],
     zone: 'brackenridge',
     level: 6,
@@ -187,8 +251,11 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     name: 'The Harvest Stones',
     giver: 'mother-alsa',
     auto: true,
-    text: 'The Lady is at rest, but the Harvest Stones, Fernstead’s shrine north of the village, are still grey and cold, and the dead gather there at night. Mother Alsa says candles lit at the stones will make them clean again. Keep the dead away while the candles burn. Two of Hollis’s rangers will go with you.',
-    objective: { kind: 'event', event: 'fern-stones', label: 'Hold the Harvest Stones while the candles burn' },
+    text: 'The Lady is at rest, but the Harvest Stones, Fernstead’s shrine north of the village, are still grey and cold, and the dead gather there at night. Mother Alsa says candles lit at the stones will make them clean again. Carry hers up from the inn, and keep the dead away while they burn. Two of Hollis’s rangers will go with you.',
+    // (the candles were already at the stones. They are Alsa's, and go up the hill in the hero's arms, with the dead
+    // that gather there coming down to meet them)
+    objective: { kind: 'carry', region: 'brackenridge', from: 'mother-alsa', to: 'fern-stones', thing: 'candle', verb: 'Take the candles', label: 'Carry Mother Alsa’s candles to the Harvest Stones', ambush: [['restless-shade'], ['restless-shade', 'barrow-skeleton']] },
+    then: [{ kind: 'event', event: 'fern-stones', label: 'Hold the Harvest Stones while the candles burn' }],
     after: ['lay-the-grey-lady'],
     zone: 'brackenridge',
     level: 8,
@@ -247,7 +314,7 @@ export const BRACKENRIDGE_NPCS: Record<string, NpcDef> = {
       {
         when: { quest: 'the-widows-song', state: 'active' },
         lines: [
-          'That’s the Grey Lady’s song. She sang it for her husband, Ser Edric of Fernstead.',
+          'A candle every night. Then that’s the Grey Lady’s song. She sang it for her husband, Ser Edric of Fernstead.',
           'The songs say seven wardens hid the Starlight Crown. Fernstead always said there were eight, and the eighth was ours.',
           'Edric stayed behind to hold the Gloam Gate while the other seven rode away. He held it alone until dusk, and he died there.',
           'She brought him home to the Old Barrows and sang at his grave every night until she died. Now she’s singing again, and the dead come when she calls.',
@@ -278,11 +345,11 @@ export const BRACKENRIDGE_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'russet-hides', state: 'active' },
-        lines: ['Russet boar hides are the best in the hills. I need five.', 'When a boar paws the ground, it’s about to charge. Step aside.'],
+        lines: ['Russet boar hides are the best in the hills. I need four.', 'And one boar alive. Wear it down until it stands, then rope it. I want to look at a hide that’s still on the beast.', 'When a boar paws the ground, it’s about to charge. Step aside.'],
       },
       {
         when: { quest: 'tusker-gully', state: 'active' },
-        lines: ['Every hide you brought has the same scar, a tusk mark the size of my hand. That’s Old Rustback’s mark.', 'He used to den in Tusker Gully, south of Fernstead. Go and see if he’s still there.'],
+        lines: ['Every hide you brought has the same scar, a tusk mark the size of my hand, and the one in my pen has it too, half healed. That’s Old Rustback’s mark.', 'He used to den in Tusker Gully, south of Fernstead. Go and see if he’s still there.'],
       },
       {
         when: { quest: 'old-rustback', state: 'active' },

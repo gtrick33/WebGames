@@ -50,4 +50,6 @@ export const THINGS: Record<ThingLook, ThingDef> = {
   chest: { model: 'chest', h: 13, after: 'opened', glow: '#ffe08a' },
   notice: { model: 'sign', h: 15, after: 'gone', glow: '#ff6a4d' },
   gibbet: { model: 'post_skull', h: 24, after: 'opened', glow: '#c8b0ff' },
+  candle: { model: 'candle_triple', h: 9, tint: [0.7, 0.7, 0.75], after: 'lit', glow: '#ffd27a' },
+  spear: { model: 'p_weaponrack', h: 15, after: 'same', glow: '#ffe08a' },
 };
