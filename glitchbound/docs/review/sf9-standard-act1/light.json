@@ -1,0 +1,482 @@
+[
+ {
+  "size": "desktop",
+  "preset": "prologue-dusk",
+  "light": 40
+ },
+ {
+  "size": "desktop",
+  "preset": "prologue-raid",
+  "light": 66
+ },
+ {
+  "size": "desktop",
+  "preset": "camp-dawn",
+  "light": 80
+ },
+ {
+  "size": "desktop",
+  "preset": "hearthstead",
+  "light": 64
+ },
+ {
+  "size": "desktop",
+  "preset": "hearth-ram",
+  "light": 74
+ },
+ {
+  "size": "desktop",
+  "preset": "hearth-morning",
+  "light": 82
+ },
+ {
+  "size": "desktop",
+  "preset": "chapel-door",
+  "light": 70
+ },
+ {
+  "size": "desktop",
+  "preset": "camp-riders",
+  "light": 70
+ },
+ {
+  "size": "desktop",
+  "preset": "v3-fern-candles",
+  "light": 87
+ },
+ {
+  "size": "desktop",
+  "preset": "v3-fern-barrows",
+  "light": 93
+ },
+ {
+  "size": "desktop",
+  "preset": "v3-fern-lady",
+  "light": 90
+ },
+ {
+  "size": "desktop",
+  "preset": "v3-fern-stones",
+  "light": 91
+ },
+ {
+  "size": "desktop",
+  "preset": "v3-fern-scouts",
+  "light": 91
+ },
+ {
+  "size": "desktop",
+  "preset": "v3-mill",
+  "light": 80
+ },
+ {
+  "size": "desktop",
+  "preset": "v3-mill-kettle",
+  "light": 87
+ },
+ {
+  "size": "desktop",
+  "preset": "v3-mill-nyx",
+  "light": 82
+ },
+ {
+  "size": "desktop",
+  "preset": "v3-mill-bridge",
+  "light": 82
+ },
+ {
+  "size": "desktop",
+  "preset": "v3-mill-wheel",
+  "light": 82
+ },
+ {
+  "size": "desktop",
+  "preset": "v3-hearth",
+  "light": 81
+ },
+ {
+  "size": "desktop",
+  "preset": "v3-hearth-caravan",
+  "light": 81
+ },
+ {
+  "size": "desktop",
+  "preset": "v3-hearth-captain",
+  "light": 81
+ },
+ {
+  "size": "desktop",
+  "preset": "v3-hearth-stones",
+  "light": 81
+ },
+ {
+  "size": "desktop",
+  "preset": "v3-hearth-sigil",
+  "light": 82
+ },
+ {
+  "size": "desktop",
+  "preset": "v3-hearth-orders",
+  "light": 82
+ },
+ {
+  "size": "laptop",
+  "preset": "prologue-dusk",
+  "light": 46
+ },
+ {
+  "size": "laptop",
+  "preset": "prologue-raid",
+  "light": 68
+ },
+ {
+  "size": "laptop",
+  "preset": "camp-dawn",
+  "light": 81
+ },
+ {
+  "size": "laptop",
+  "preset": "hearthstead",
+  "light": 67
+ },
+ {
+  "size": "laptop",
+  "preset": "hearth-ram",
+  "light": 73
+ },
+ {
+  "size": "laptop",
+  "preset": "hearth-morning",
+  "light": 81
+ },
+ {
+  "size": "laptop",
+  "preset": "chapel-door",
+  "light": 70
+ },
+ {
+  "size": "laptop",
+  "preset": "camp-riders",
+  "light": 69
+ },
+ {
+  "size": "laptop",
+  "preset": "v3-fern-candles",
+  "light": 86
+ },
+ {
+  "size": "laptop",
+  "preset": "v3-fern-barrows",
+  "light": 89
+ },
+ {
+  "size": "laptop",
+  "preset": "v3-fern-lady",
+  "light": 86
+ },
+ {
+  "size": "laptop",
+  "preset": "v3-fern-stones",
+  "light": 86
+ },
+ {
+  "size": "laptop",
+  "preset": "v3-fern-scouts",
+  "light": 86
+ },
+ {
+  "size": "laptop",
+  "preset": "v3-mill",
+  "light": 82
+ },
+ {
+  "size": "laptop",
+  "preset": "v3-mill-kettle",
+  "light": 83
+ },
+ {
+  "size": "laptop",
+  "preset": "v3-mill-nyx",
+  "light": 81
+ },
+ {
+  "size": "laptop",
+  "preset": "v3-mill-bridge",
+  "light": 81
+ },
+ {
+  "size": "laptop",
+  "preset": "v3-mill-wheel",
+  "light": 81
+ },
+ {
+  "size": "laptop",
+  "preset": "v3-hearth",
+  "light": 80
+ },
+ {
+  "size": "laptop",
+  "preset": "v3-hearth-caravan",
+  "light": 80
+ },
+ {
+  "size": "laptop",
+  "preset": "v3-hearth-captain",
+  "light": 80
+ },
+ {
+  "size": "laptop",
+  "preset": "v3-hearth-stones",
+  "light": 80
+ },
+ {
+  "size": "laptop",
+  "preset": "v3-hearth-sigil",
+  "light": 81
+ },
+ {
+  "size": "laptop",
+  "preset": "v3-hearth-orders",
+  "light": 81
+ },
+ {
+  "size": "tablet",
+  "preset": "prologue-dusk",
+  "light": 19
+ },
+ {
+  "size": "tablet",
+  "preset": "prologue-raid",
+  "light": 72
+ },
+ {
+  "size": "tablet",
+  "preset": "camp-dawn",
+  "light": 109
+ },
+ {
+  "size": "tablet",
+  "preset": "hearthstead",
+  "light": 69
+ },
+ {
+  "size": "tablet",
+  "preset": "hearth-ram",
+  "light": 90
+ },
+ {
+  "size": "tablet",
+  "preset": "hearth-morning",
+  "light": 107
+ },
+ {
+  "size": "tablet",
+  "preset": "chapel-door",
+  "light": 96
+ },
+ {
+  "size": "tablet",
+  "preset": "camp-riders",
+  "light": 96
+ },
+ {
+  "size": "tablet",
+  "preset": "v3-fern-candles",
+  "light": 113
+ },
+ {
+  "size": "tablet",
+  "preset": "v3-fern-barrows",
+  "light": 134
+ },
+ {
+  "size": "tablet",
+  "preset": "v3-fern-lady",
+  "light": 134
+ },
+ {
+  "size": "tablet",
+  "preset": "v3-fern-stones",
+  "light": 134
+ },
+ {
+  "size": "tablet",
+  "preset": "v3-fern-scouts",
+  "light": 134
+ },
+ {
+  "size": "tablet",
+  "preset": "v3-mill",
+  "light": 100
+ },
+ {
+  "size": "tablet",
+  "preset": "v3-mill-kettle",
+  "light": 119
+ },
+ {
+  "size": "tablet",
+  "preset": "v3-mill-nyx",
+  "light": 107
+ },
+ {
+  "size": "tablet",
+  "preset": "v3-mill-bridge",
+  "light": 107
+ },
+ {
+  "size": "tablet",
+  "preset": "v3-mill-wheel",
+  "light": 107
+ },
+ {
+  "size": "tablet",
+  "preset": "v3-hearth",
+  "light": 103
+ },
+ {
+  "size": "tablet",
+  "preset": "v3-hearth-caravan",
+  "light": 102
+ },
+ {
+  "size": "tablet",
+  "preset": "v3-hearth-captain",
+  "light": 103
+ },
+ {
+  "size": "tablet",
+  "preset": "v3-hearth-stones",
+  "light": 103
+ },
+ {
+  "size": "tablet",
+  "preset": "v3-hearth-sigil",
+  "light": 107
+ },
+ {
+  "size": "tablet",
+  "preset": "v3-hearth-orders",
+  "light": 107
+ },
+ {
+  "size": "phone",
+  "preset": "prologue-dusk",
+  "light": 22
+ },
+ {
+  "size": "phone",
+  "preset": "prologue-raid",
+  "light": 72
+ },
+ {
+  "size": "phone",
+  "preset": "camp-dawn",
+  "light": 110
+ },
+ {
+  "size": "phone",
+  "preset": "hearthstead",
+  "light": 71
+ },
+ {
+  "size": "phone",
+  "preset": "hearth-ram",
+  "light": 92
+ },
+ {
+  "size": "phone",
+  "preset": "hearth-morning",
+  "light": 105
+ },
+ {
+  "size": "phone",
+  "preset": "chapel-door",
+  "light": 87
+ },
+ {
+  "size": "phone",
+  "preset": "camp-riders",
+  "light": 87
+ },
+ {
+  "size": "phone",
+  "preset": "v3-fern-candles",
+  "light": 117
+ },
+ {
+  "size": "phone",
+  "preset": "v3-fern-barrows",
+  "light": 126
+ },
+ {
+  "size": "phone",
+  "preset": "v3-fern-lady",
+  "light": 125
+ },
+ {
+  "size": "phone",
+  "preset": "v3-fern-stones",
+  "light": 125
+ },
+ {
+  "size": "phone",
+  "preset": "v3-fern-scouts",
+  "light": 125
+ },
+ {
+  "size": "phone",
+  "preset": "v3-mill",
+  "light": 115
+ },
+ {
+  "size": "phone",
+  "preset": "v3-mill-kettle",
+  "light": 116
+ },
+ {
+  "size": "phone",
+  "preset": "v3-mill-nyx",
+  "light": 102
+ },
+ {
+  "size": "phone",
+  "preset": "v3-mill-bridge",
+  "light": 103
+ },
+ {
+  "size": "phone",
+  "preset": "v3-mill-wheel",
+  "light": 103
+ },
+ {
+  "size": "phone",
+  "preset": "v3-hearth",
+  "light": 98
+ },
+ {
+  "size": "phone",
+  "preset": "v3-hearth-caravan",
+  "light": 99
+ },
+ {
+  "size": "phone",
+  "preset": "v3-hearth-captain",
+  "light": 99
+ },
+ {
+  "size": "phone",
+  "preset": "v3-hearth-stones",
+  "light": 99
+ },
+ {
+  "size": "phone",
+  "preset": "v3-hearth-sigil",
+  "light": 105
+ },
+ {
+  "size": "phone",
+  "preset": "v3-hearth-orders",
+  "light": 105
+ }
+]

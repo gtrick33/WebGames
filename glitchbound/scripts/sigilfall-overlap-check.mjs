@@ -12,6 +12,8 @@
  *   node scripts/sigilfall-overlap-check.mjs --all           every preset there is (over a hundred and fifty: hours)
  *   node scripts/sigilfall-overlap-check.mjs --quick         six presets that cover the kinds of moment
  *   node scripts/sigilfall-overlap-check.mjs --size phone --preset hearthstead
+ *   node scripts/sigilfall-overlap-check.mjs --preset a,b,c --shots docs/review/x   several beats, with a picture of
+ *                                                           each at each size and how light it is
  *   node scripts/sigilfall-overlap-check.mjs --hints         a first-timer's opening: a new hero with the hints on, at
  *                                                           the gate, the hint cards left up (the other runs turn them off)
  *   node scripts/sigilfall-overlap-check.mjs --url http://localhost:5173   (a dev server already running)
@@ -206,6 +208,7 @@ async function run() {
   const server = await devServer();
   const browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
   const report = [];
+  const lights = [];
   try {
     for (const size of sizes) {
       const context = await browser.newContext({ viewport: size.viewport, hasTouch: size.touch, isMobile: size.touch, deviceScaleFactor: 1 });
@@ -231,7 +234,7 @@ async function run() {
       // (the presets of the later passes, v3- and v4-, are the same moments seen again: the story's own beats are enough
       // for a run, and --all takes every one)
       // (a first-timer's opening is one stop: the new hero at the gate, as they are)
-      const list = flag('hints') ? [{ id: 'first-fight', region: 'briarhollow', asIs: true }] : presets.filter((p) => (only ? p.id === only : flag('quick') ? QUICK.includes(p.id) : flag('all') ? true : !/^v\d-/.test(p.id)));
+      const list = flag('hints') ? [{ id: 'first-fight', region: 'briarhollow', asIs: true }] : presets.filter((p) => (only ? only.split(',').includes(p.id) : flag('quick') ? QUICK.includes(p.id) : flag('all') ? true : !/^v\d-/.test(p.id)));
       for (const p of list) {
         if (!p.asIs) await page.evaluate((id) => globalThis.__rb.usePreset(id), p.id);
         await page.waitForFunction((region) => globalThis.__rb.world?.region.id === region && !globalThis.__rb.renderer.waiting, p.region, { timeout: 60_000 }).catch(() => undefined);
@@ -242,6 +245,32 @@ async function run() {
           e.toast('New quest: Nothing Covered', 'quest', undefined, 'Hold the line with Mara');
           e.toast('Low health! Press 1 to drink a potion.', 'warn');
         });
+        // (`--shots <folder>`: a picture of each beat at each size as it opens, and how light it is, for looking a whole
+        // act over against the Prologue: NINE_PLAN.md piece 6)
+        if (value('shots')) {
+          await page.waitForTimeout(2200);
+          const dir = join(ROOT, value('shots'));
+          mkdirSync(dir, { recursive: true });
+          const buf = await page.screenshot({ type: 'jpeg', quality: 70 });
+          writeFileSync(join(dir, `${size.id}-${p.id}.jpg`), buf);
+          const light = await page.evaluate(async (b64) => {
+            const img = new globalThis.Image();
+            img.src = `data:image/jpeg;base64,${b64}`;
+            await img.decode();
+            const c = globalThis.document.createElement('canvas');
+            c.width = 64;
+            c.height = 36;
+            const g = c.getContext('2d');
+            g.drawImage(img, 0, 0, 64, 36);
+            const d = g.getImageData(0, 0, 64, 36).data;
+            let sum = 0;
+            for (let i = 0; i < d.length; i += 4) sum += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+            return Math.round(sum / (d.length / 4));
+          }, buf.toString('base64'));
+          lights.push({ size: size.id, preset: p.id, light });
+          writeFileSync(join(dir, 'light.json'), JSON.stringify(lights, null, 1));
+          console.log(`  ${size.id.padEnd(7)} ${p.id.padEnd(26)} light ${light} of 255`);
+        }
         const seen = new Set();
         // (an overlap counts once it lasts: seen in two samples running, half a second apart, not a frame of an
         // animation passing by)
