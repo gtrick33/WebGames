@@ -235,6 +235,7 @@ async function run() {
       // for a run, and --all takes every one)
       // (a first-timer's opening is one stop: the new hero at the gate, as they are)
       const list = flag('hints') ? [{ id: 'first-fight', region: 'briarhollow', asIs: true }] : presets.filter((p) => (only ? only.split(',').includes(p.id) : flag('quick') ? QUICK.includes(p.id) : flag('all') ? true : !/^v\d-/.test(p.id)));
+      let lastRegion = null;
       for (const p of list) {
         if (!p.asIs) await page.evaluate((id) => globalThis.__rb.usePreset(id), p.id);
         await page.waitForFunction((region) => globalThis.__rb.world?.region.id === region && !globalThis.__rb.renderer.waiting, p.region, { timeout: 60_000 }).catch(() => undefined);
@@ -248,7 +249,8 @@ async function run() {
         // (`--shots <folder>`: a picture of each beat at each size as it opens, and how light it is, for looking a whole
         // act over against the Prologue: NINE_PLAN.md piece 6)
         if (value('shots')) {
-          await page.waitForTimeout(2200);
+          // (a beat in the land the last one was in is there at once by the test above: give its jump time to land)
+          await page.waitForTimeout(2200 + (lastRegion === p.region ? 3000 : 0));
           const dir = join(ROOT, value('shots'));
           mkdirSync(dir, { recursive: true });
           const buf = await page.screenshot({ type: 'jpeg', quality: 70 });
@@ -271,6 +273,7 @@ async function run() {
           writeFileSync(join(dir, 'light.json'), JSON.stringify(lights, null, 1));
           console.log(`  ${size.id.padEnd(7)} ${p.id.padEnd(26)} light ${light} of 255`);
         }
+        lastRegion = p.region;
         const seen = new Set();
         // (an overlap counts once it lasts: seen in two samples running, half a second apart, not a frame of an
         // animation passing by)

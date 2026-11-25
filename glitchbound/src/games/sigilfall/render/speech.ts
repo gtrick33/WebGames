@@ -334,6 +334,13 @@ export function placeSpeech(asks: readonly SpeechAsk[], room: SpeechRoom, hudMap
       out[i] = null;
       continue;
     }
+    // (nothing is free. Before it goes over the head whatever is there: a place that covers only the HUD, never
+    // another line. A HUD piece under a line fades until it is said; two lines written over each other can't be read.
+    // Seen on a phone with four people speaking at once at the great lamp: NINE_PLAN.md, the release bar)
+    for (let k = 0; k < shapes.length && !pick; k++) {
+      pick = first(candidates(shapes[k]!, room, hudMap, spot), (c) => inView(c) && !placed.some((b) => boxesMeet(c, b, 6)));
+      shaped = k;
+    }
     pick ??= over;
     if (pick === kept && o.keep) pick = { ...pick, keep: o.keep };
     else if (pick.lane) pick = { ...pick, keep: { lane: true } };
