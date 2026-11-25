@@ -1,0 +1,174 @@
+{
+ "boss": "lady-cendre",
+ "shots": [
+  {
+   "state": "entrance",
+   "close": "01-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "02-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "03-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "04-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "05-entrance-close.jpg"
+  },
+  {
+   "state": "line-up",
+   "file": "06-line-up.jpg",
+   "close": "06-line-up-close.jpg"
+  },
+  {
+   "state": "portrait",
+   "file": "07-portrait.jpg"
+  },
+  {
+   "state": "phase-1-spell-ring-windup",
+   "file": "08-phase-1-spell-ring-windup.jpg",
+   "close": "08-phase-1-spell-ring-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-spell-ring-strike",
+   "file": "09-phase-1-spell-ring-strike.jpg",
+   "close": "09-phase-1-spell-ring-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-spell-grief-windup",
+   "file": "10-phase-1-spell-grief-windup.jpg",
+   "close": "10-phase-1-spell-grief-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-spell-grief-strike",
+   "file": "11-phase-1-spell-grief-strike.jpg",
+   "close": "11-phase-1-spell-grief-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-cleave-windup",
+   "file": "12-phase-1-cleave-windup.jpg",
+   "close": "12-phase-1-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-cleave-strike",
+   "file": "13-phase-1-cleave-strike.jpg",
+   "close": "13-phase-1-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-dusk-vigil-windup",
+   "file": "14-phase-1-dusk-vigil-windup.jpg",
+   "close": "14-phase-1-dusk-vigil-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-dusk-vigil-strike",
+   "file": "15-phase-1-dusk-vigil-strike.jpg",
+   "close": "15-phase-1-dusk-vigil-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-change",
+   "file": "16-phase-2-change.jpg",
+   "close": "16-phase-2-change-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-ring-windup",
+   "file": "17-phase-2-spell-ring-windup.jpg",
+   "close": "17-phase-2-spell-ring-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-ring-strike",
+   "file": "18-phase-2-spell-ring-strike.jpg",
+   "close": "18-phase-2-spell-ring-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-grief-windup",
+   "file": "19-phase-2-spell-grief-windup.jpg",
+   "close": "19-phase-2-spell-grief-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-grief-strike",
+   "file": "20-phase-2-spell-grief-strike.jpg",
+   "close": "20-phase-2-spell-grief-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-cleave-windup",
+   "file": "21-phase-2-cleave-windup.jpg",
+   "close": "21-phase-2-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-cleave-strike",
+   "file": "22-phase-2-cleave-strike.jpg",
+   "close": "22-phase-2-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-dusk-vigil-windup",
+   "file": "23-phase-2-dusk-vigil-windup.jpg",
+   "close": "23-phase-2-dusk-vigil-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-dusk-vigil-strike",
+   "file": "24-phase-2-dusk-vigil-strike.jpg",
+   "close": "24-phase-2-dusk-vigil-strike-close.jpg"
+  },
+  {
+   "state": "dazed",
+   "close": "25-dazed-close.jpg"
+  },
+  {
+   "state": "struck",
+   "file": "26-struck.jpg",
+   "close": "26-struck-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "27-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "28-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "29-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "30-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "31-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "32-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "33-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "34-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "35-death-close.jpg"
+  }
+ ],
+ "errors": [],
+ "cost": {
+  "file": "boss_cendre",
+  "tris": 5856,
+  "frame": {
+   "calls": 34,
+   "tris": 325755,
+   "quality": 1
+  }
+ }
+}

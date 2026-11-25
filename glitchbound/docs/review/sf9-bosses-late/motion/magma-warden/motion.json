@@ -1,0 +1,162 @@
+{
+  "boss": "magma-warden",
+  "file": "boss_magmawarden",
+  "form": "magmawarden",
+  "float": 0,
+  "walked": {
+    "samples": 186,
+    "moving": 92,
+    "walking": 88,
+    "clips": {
+      "walk": 87,
+      "chop2": 1,
+      "slice": 2,
+      "run": 1,
+      "cast": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "walk",
+        "slice",
+        "idle",
+        "chop2"
+      ],
+      "readings": 44
+    },
+    {
+      "phase": 1,
+      "id": "throne:eruption",
+      "clips": [
+        "smash",
+        "idle",
+        "walk",
+        "chop2"
+      ],
+      "readings": 46
+    },
+    {
+      "phase": 1,
+      "id": "throne:pour",
+      "clips": [
+        "cast",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 46
+    },
+    {
+      "phase": 1,
+      "id": "slamRings",
+      "clips": [
+        "chop2",
+        "idle",
+        "walk"
+      ],
+      "readings": 53
+    },
+    {
+      "phase": 1,
+      "id": "barrage",
+      "clips": [
+        "punch",
+        "walk",
+        "idle",
+        "cast"
+      ],
+      "readings": 45
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "block",
+        "bash",
+        "slice"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "run",
+        "slice",
+        "idle"
+      ],
+      "readings": 68
+    },
+    {
+      "phase": 2,
+      "id": "throne:eruption",
+      "clips": [
+        "smash",
+        "walk",
+        "idle",
+        "bash"
+      ],
+      "readings": 28
+    },
+    {
+      "phase": 2,
+      "id": "throne:pour",
+      "clips": [
+        "cast",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 35
+    },
+    {
+      "phase": 2,
+      "id": "throne:core",
+      "clips": [
+        "idle",
+        "block",
+        "walk",
+        "slice"
+      ],
+      "readings": 57
+    },
+    {
+      "phase": 2,
+      "id": "barrage",
+      "clips": [
+        "punch",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 45
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "bash",
+        "idle",
+        "slice"
+      ],
+      "readings": 31
+    },
+    {
+      "phase": 2,
+      "id": "roar",
+      "clips": [
+        "taunt",
+        "idle",
+        "cast"
+      ],
+      "readings": 32
+    }
+  ],
+  "found": [],
+  "errors": []
+}
