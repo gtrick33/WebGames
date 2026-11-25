@@ -2352,6 +2352,87 @@ BOSS_KITS.boss_herald = {
   ],
 };
 
+/* The lands' named foes of the story (NINE_PLAN.md, the rest of piece 2i): not a dungeon's boss, so no form of their
+   own (render3d/bossKit.ts is for the bosses' fights); each is a figure nobody else in the game is, moving with the
+   shared skeleton's own walk and attack. */
+
+// The Grey Lady: "A Sigil-warden's widow, buried beside him three hundred years ago. She sings, and the barrow dead rise
+// to listen." The Druid's long robes on the Witch's bare head, a grave shroud for a cape, and the lantern she was
+// buried with, still lit.
+BOSS_KITS.boss_greylady = {
+  rig: 'medium',
+  from: [['Druid', /Body|Arm|Leg/], ['Witch', /Head/], ['Mage', /Cape/]],
+  grow: [['head', 1.04]],
+  ties: [{ bit: 'lantern_decorated', joint: 'handslot.l', at: [0, -0.1, 0.02], size: 0.5 }],
+};
+// Prince Thistlemourn: "Heir of the Summer Court, crowned in thorns." The Rogue's court coat and cape, the Vampire's
+// fine pale head, a crown on it gone to thorn, a bare thorn-bough grown from his back, and a living staff.
+BOSS_KITS.boss_thistlemourn = {
+  rig: 'medium',
+  from: [['Rogue', /Body|Leg|Cape|Arm/], ['Vampire', /Head/], ['Necromancer', /Crown/]],
+  grow: [['head', 1.05]],
+  ties: [
+    { bit: 'druid_staff', joint: 'handslot.r', at: [0, 0, 0], size: 1.15 },
+    { bit: 'Tree_Bare_1_A_Color1', joint: 'chest', at: [0, 0.25, -0.3], size: 0.7, turn: [-30, 0, 0] },
+  ],
+};
+// The Tearborn: "A thing the Tear made out of everything that came through the Tear." The Monstrosity whole, with
+// lengths of broken chain still hanging from the arms that held the wound open.
+BOSS_KITS.boss_tearborn = {
+  rig: 'large',
+  from: [['Monstrosity', /Body|Arm|Leg|Head/]],
+  grow: [['hand.l', 1.2], ['hand.r', 1.2]],
+  ties: [
+    { bit: 'chain_link', joint: 'lowerarm.l', at: [0, -0.5, 0], size: 1.5, tint: [0.5, 0.3, 0.6] },
+    { bit: 'chain_link', joint: 'lowerarm.r', at: [0, -0.5, 0], size: 1.5, tint: [0.5, 0.3, 0.6] },
+  ],
+};
+// The Gatewarden: "a giant in blackened plate with the Gloam Gate's portcullis for a shield and its key for a mace."
+// The Black Knight's plate without the cape, the great shield, and the gate's key the length of a man.
+BOSS_KITS.boss_gatewarden = {
+  rig: 'large',
+  from: [['BlackKnight', /Body|Arm|Leg|Shoulder|Head/]],
+  grow: [['chest', 1.14]],
+  ties: [
+    { bit: 'key', joint: 'handslot.r', at: [0, 0.2, 0], size: 1.5 },
+    { bit: 'BlackKnight_Shield_Large', joint: 'handslot.l', at: [0, 0, 0], size: 1.3 },
+  ],
+};
+// The Weeping Lord: "Lord Halvard of the Wardens' Watch, who swore to hold the wood until Vaelor fell, and has held it
+// for three hundred years with tears frozen on his helm." The Paladin in his helm and cape, the two-handed sword of
+// his company, and the Watch's white banner on his back.
+BOSS_KITS.boss_weepinglord = {
+  rig: 'medium',
+  from: [['Paladin_with_Helmet', /Body|Arm|Leg|Cape|Helmet/]],
+  grow: [['chest', 1.06]],
+  ties: [
+    { bit: 'sword_2handed', joint: 'handslot.r', at: [0, 0, 0], size: 1.1 },
+    { bit: 'banner_thin_white', joint: 'chest', at: [0, 0.1, -0.3], size: 0.6, turn: [-38, 0, 0] },
+  ],
+};
+// The Lich of Hollowmere: "a sorcerer of the old kingdom who had himself drowned so he could rule the drowned, crowned
+// in coral and bone." The Necromancer's robes on a bare skull, the crown on it, the anchor chain he went down with
+// still shackled to him, and a staff.
+BOSS_KITS.boss_lich = {
+  rig: 'medium',
+  from: [['Necromancer', /Body|Arm|Leg|Crown/], [`${SK}Mage`, /Head|Jaw|Eyes/]],
+  grow: [['head', 1.12]],
+  ties: [
+    { bit: 'staff_D', joint: 'handslot.r', at: [0, 0, 0], size: 1.2 },
+    { bit: 'chain_shackle', joint: 'lowerarm.l', at: [0, -0.3, 0], size: 1.2, tint: [0.35, 0.45, 0.45] },
+    { bit: 'anchor', joint: 'chest', at: [0, 0.1, -0.42], size: 0.7, turn: [-30, 0, 0] },
+  ],
+};
+// Vosk the Hollowed, in the saddle: "Rider-Captain Vosk, who stole the Sigil of Stone from Hearthstead... The Ash
+// Crown has hollowed him out." The Knight's plate and cape he rode in as a captain, a bare skull where his face was,
+// and his lance.
+BOSS_KITS.boss_vosk = {
+  rig: 'medium',
+  from: [['Knight', /Body|Arm|Leg|Cape/], [`${SK}Warrior`, /Head|Jaw|Eyes/]],
+  grow: [['head', 1.08]],
+  ties: [{ bit: 'spear_A', joint: 'handslot.r', at: [0, 0, 0], size: 1.25 }],
+};
+
 const quatOf = (rx, ry, rz) => new THREE.Quaternion().setFromEuler(new THREE.Euler((rx * Math.PI) / 180, (ry * Math.PI) / 180, (rz * Math.PI) / 180, 'YXZ')).toArray();
 
 /** The model with what hangs from one joint, and from every joint under it, made `k` times its size about that joint. */

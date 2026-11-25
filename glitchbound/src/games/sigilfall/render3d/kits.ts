@@ -110,7 +110,7 @@ put('legion-overseer', { k: 'sk_golem', tint: ASH, size: 0.85, ...CASTER });
 put('legion-scout', { k: 'a_horse_white', tint: '#58545f', top: { k: 'sk_warrior', tint: ASH, clip: 'sit', y: 0.62, size: 0.74 } });
 put('legion-lancer', { k: 'a_horse_white', tint: '#6c6470', top: { k: 'sk_spear', tint: ASH, clip: 'sit', y: 0.62, size: 0.74 } });
 put('border-reaver', { k: 'a_horse_white', tint: '#47505a', top: { k: 'sk_warrior', tint: COLD, clip: 'sit', y: 0.62, size: 0.74 } });
-put('death-knight death-knight-initiate death-knight-squire pale-knight revenant-knight hollow-sentinel the-gatewarden the-headless-lord sir-corvane sir-corvane-foot general-morvain hollow-guard', { k: 'black_knight', tint: '#8a8698', atk: 'chop2' });
+put('death-knight death-knight-initiate death-knight-squire pale-knight revenant-knight hollow-sentinel the-headless-lord sir-corvane sir-corvane-foot general-morvain hollow-guard', { k: 'black_knight', tint: '#8a8698', atk: 'chop2' });
 // Vaelor, the Hallow King, last holder of the last sigil: black plate rimed over with three hundred winters, its old
 // gilding gone to pale silver, an ice greatsword alight in his hand; and the Ash Crown on his brow, his old circlet grown
 // into nine points of ice, his eyes two cold lights under it. No plume: nothing of his has had color for three centuries.
@@ -155,7 +155,6 @@ put('bone-weaver', { k: 'sk_mage', ...CASTER });
 put('pale-acolyte', { k: 'sk_mage', tint: PALE, atk: 'chop' });
 put('cistern-acolyte', { k: 'sk_mage', tint: ROT, ...CASTER });
 put('lich-acolyte morgrave', { k: 'sk_necro', ...CASTER });
-put('the-lich-of-hollowmere', { k: 'sk_necro', size: 1.18, ...CASTER });
 put('the-sun-king', { k: 'sk_necro', tint: GOLD, size: 1.16, ...CASTER });
 put('the-pale-crown', { k: 'sk_necro', tint: VOID, float: 0.45, ...CASTER });
 put('king-hrodric', { k: 'sk_king' });
@@ -221,13 +220,11 @@ put('coffin-matron', {
   ],
 });
 put('morgrave-soul', { k: 'ghost', tint: '#9cff9c', float: 0.6, size: 0.7, ghost: 0.7, walk: 'skelidle' });
-put('the-weeping-lord the-tearborn', { k: 'ghost', tint: '#bfd8f0', float: 0.45, size: 1.25, ghost: 0.82, walk: 'skelidle' });
 put('corpse-candle candle-wraith', { k: 'wisp', tint: FIRE, size: 0.7, float: 0.35 });
 put('marsh-light marsh-wisp', { k: 'wisp', tint: '#c8f0a0', size: 0.7, float: 0.35 });
 put('storm-wisp', { k: 'wisp', tint: ICE, size: 0.7, float: 0.35 });
 put('spire-mote', { k: 'wisp', tint: VOID, size: 0.7, float: 0.35 });
 put('spire-echo', { k: 'vampire', tint: VOID, ghost: 0.7, float: 0.3, ...CASTER });
-put('the-grey-lady', { k: 'witch', tint: PALE, ghost: 0.72, float: 0.3, ...CASTER });
 /*
  * The animals, each painted and dressed as its kind (render3d/beast.ts): a coat with its belly, back, socks and muzzle,
  * eyes, and what the plain model hasn't (tusks, a bristled ridge, a mane, curled horns). A model so made is no longer
@@ -444,7 +441,7 @@ put('blight-bloom rotspore-shambler', { k: 'slime', tint: '#b890d8' });
 put('blighted-dryad', { k: 'plant_warrior', tint: ROT, ...CASTER });
 put('briar-lasher vine-strangler', { k: 'plant_warrior', tint: MOSS, atk: 'stab' });
 put('thorn-archer', { k: 'plant_archer', ...BOWMAN });
-put('fey-knight thorn-court-knight prince-thistlemourn', { k: 'plant_warrior' });
+put('fey-knight thorn-court-knight', { k: 'plant_warrior' });
 put('sprite thorn-court-sprite', { k: 'wisp', tint: '#a8f0b0', size: 0.72, float: 0.35 });
 put('mother-mire bloated-corpse cistern-bloat cistern-vatborn abomination mire-horror', { k: 'monstrosity', tint: ROT, ...SMASH });
 put('bloated-drowned', { k: 'monstrosity', tint: SEA, size: 0.85, ...SMASH });
@@ -473,7 +470,8 @@ put('farm-horse', { k: 'a_horse', tint: '#9a6844' });
 /** Those who fight under another's name, set apart from the creature they borrow. */
 const BY_ENEMY: Record<string, Kit> = {
   'captain-vosk': { k: 'a_horse_white', tint: '#3e3a44', top: { k: 'sk_guard', tint: DARK, clip: 'sit', y: 0.62, size: 0.76 } },
-  'vosk-the-hollowed': { k: 'a_horse_white', tint: '#3e3a44', top: { k: 'sk_warrior', tint: ASH, clip: 'sit', y: 0.62, size: 0.74 } },
+  // (his own rider: the captain's plate and cape with a bare skull in the helm's place, scripts/sigilfall-3d-assets.mjs boss_vosk)
+  'vosk-the-hollowed': { k: 'a_horse_white', tint: '#3e3a44', top: { k: 'boss_vosk', tint: '#a8a2b4', clip: 'sit', y: 0.62, size: 0.8 } },
   'the-pale-herald': TABLE['herald-in-the-spire']!,
   'the-heralds-voice': TABLE['herald-in-the-spire']!,
   'the-heralds-first-face': TABLE['herald-in-the-spire']!,
@@ -1108,6 +1106,96 @@ TABLE['herald-in-the-spire'] = {
     { to: '#b8b0cc', keep: 0.9 },
   ],
   wears: [{ piece: 'halo', a: '#a03ae0', b: '#ffd0ff', size: 0.9 }, { piece: 'eyes', b: '#ff9af0' }],
+};
+
+/* The lands' named foes of the story: a figure of their own each (scripts/sigilfall-3d-assets.mjs), no form, since
+   theirs is not a dungeon boss's fight: they walk and strike with the shared skeleton's own clips. */
+// The Grey Lady: grave-pale and half there, her shroud the grey of her name, the lantern she was buried with alight.
+TABLE['the-grey-lady'] = {
+  k: 'boss_greylady',
+  size: 1.1,
+  ghost: 0.8,
+  atk: 'cast',
+  paint: [
+    { joint: 'handslot.l', lum: [0.6, 1], to: '#c8b0ff', glow: true, keep: 0.3 },
+    { joint: 'head', hue: [5, 45], sat: [0.15, 0.9], to: '#d8d4e8', keep: 0.8 },
+    { joint: 'head', to: '#9a96b0', keep: 0.8 },
+    { lum: [0.55, 1], to: '#c4c0d8', keep: 0.6 },
+    { to: '#6e6a88', keep: 0.6 },
+  ],
+  wears: [{ piece: 'eyes', b: '#c8b0ff' }],
+};
+// Prince Thistlemourn: summer's green and gold gone to thorn: a briar coat, a bramble cape, the crown and the bough
+// on his back the brown of old thorn, his skin the pale green of the court.
+TABLE['prince-thistlemourn'] = {
+  k: 'boss_thistlemourn',
+  size: 1.12,
+  atk: 'cast',
+  paint: [
+    { joint: 'handslot.r', lum: [0.7, 1], to: '#d8ff8a', glow: true, keep: 0.3 },
+    { joint: 'head', hue: [5, 45], sat: [0.1, 0.9], lum: [0.45, 1], to: '#cfe8b0', keep: 0.8 },
+    { joint: 'head', to: '#4a3a22', keep: 0.7 },
+    { hue: [330, 60], sat: [0.3, 1], to: '#c8a83a', keep: 0.8 },
+    { lum: [0.5, 1], to: '#6a9a3a', keep: 0.7 },
+    { to: '#2e4a22', keep: 0.7 },
+  ],
+  wears: [{ piece: 'eyes', b: '#d8ff8a' }],
+};
+// The Tearborn: the Tear's own violet glass, its bright parts the pink of the wound's lightning.
+TABLE['the-tearborn'] = {
+  k: 'boss_tearborn',
+  size: 1.2,
+  atk: 'cast',
+  paint: [
+    { lum: [0.78, 1], to: '#ff7fe0', glow: true, keep: 0.3 },
+    { lum: [0.45, 0.78], to: '#8a4ab8', keep: 0.7 },
+    { to: '#32204e', keep: 0.7 },
+  ],
+  wears: [{ piece: 'eyes', b: '#ff7fe0' }],
+};
+// The Gatewarden: plate blackened by three hundred years at the gate, the key in his hand old gold.
+TABLE['the-gatewarden'] = {
+  k: 'boss_gatewarden',
+  size: 1.25,
+  atk: 'smash',
+  paint: [
+    { joint: 'handslot.r', to: '#c8a040', keep: 0.6 },
+    { joint: 'handslot.l', lum: [0.5, 1], to: '#6a6878', keep: 0.7 },
+    { hue: [330, 30], sat: [0.35, 1], to: '#5a2a6a', keep: 0.6 },
+    { lum: [0.5, 1], to: '#5c5a6c', keep: 0.7 },
+    { to: '#24222e', keep: 0.7 },
+  ],
+  wears: [{ piece: 'eyes', b: '#a87aff' }],
+};
+// The Weeping Lord: a warden's silver gone to frost, his cape and the Watch's banner the pale blue of old ice.
+TABLE['the-weeping-lord'] = {
+  k: 'boss_weepinglord',
+  size: 1.18,
+  ghost: 0.86,
+  atk: 'chop2',
+  paint: [
+    { joint: 'chest', hue: [190, 270], sat: [0.3, 1], to: '#a8c8e8', keep: 0.3 },
+    { hue: [330, 60], sat: [0.3, 1], to: '#bfe8ff', keep: 0.6 },
+    { lum: [0.55, 1], to: '#d4e4f4', keep: 0.7 },
+    { to: '#5c7896', keep: 0.7 },
+  ],
+  wears: [{ piece: 'eyes', b: '#bfe8ff' }],
+};
+// The Lich of Hollowmere: robes the green-black of the lake's bottom, bone gone grey-green, the crown coral red, and
+// the head of his staff alight with grave-cold.
+TABLE['the-lich-of-hollowmere'] = {
+  k: 'boss_lich',
+  size: 1.2,
+  atk: 'cast',
+  paint: [
+    { joint: 'handslot.r', lum: [0.72, 1], to: '#b8a8ff', glow: true, keep: 0.3 },
+    { joint: 'head', hue: [330, 60], sat: [0.35, 1], to: '#d86a5a', keep: 0.7 },
+    { joint: 'head', sat: [0, 0.35], lum: [0.5, 1], to: '#b8c8b0', keep: 0.8 },
+    { hue: [330, 60], sat: [0.35, 1], to: '#d86a5a', keep: 0.7 },
+    { lum: [0.55, 1], to: '#4a7a72', keep: 0.7 },
+    { to: '#16302e', keep: 0.7 },
+  ],
+  wears: [{ piece: 'eyes', b: '#b8a8ff' }],
 };
 // (he is one man wherever the story meets him)
 for (const id of ['the-pale-herald', 'the-heralds-voice', 'the-heralds-first-face']) BY_ENEMY[id] = TABLE['herald-in-the-spire'];
