@@ -16,7 +16,14 @@ export interface Kit {
   /** Its size next to what its body radius would give it. */
   size?: number;
   /** Floats this far off the ground, in old-grid tiles (16 world pixels). */
-  float?: number;
+/**
+   * A boss drawn with a shared creature (no file or form of its own: render3d/bossKit.ts): the clip of that creature's
+   * skeleton it makes for each of its attack patterns, so that a charge is not a bite and a howl is not a bite either.
+   * Every boss has a move for every pattern, one way or the other (the owner, 2026-11-24: bosses are animated, never
+   * gliding in one pose; tests/sigilfall-bosses-move.test.ts).
+   */
+  moves?: Readonly<Record<string, { clip: string; rate?: number }>>;
+    float?: number;
   /** Its attack clip. */
   atk?: 'chop' | 'chop2' | 'stab' | 'cast' | 'bow' | 'spin' | 'punch' | 'smash';
   /** Brightens its colors (some models are painted dark). */
@@ -57,6 +64,11 @@ export interface Kit {
   wears?: readonly Wear[];
   /** An animal's coat, markings, eyes and what it has that its plain model hasn't (render3d/beast.ts). */
   beast?: Beast;
+  /**
+   * A boss of its own (render3d/bossKit.ts): what is built onto its file's model in the browser, how it carries itself
+   * and the moves it makes for what the rules have it do. Its file is `k/boss_<id>.pack`.
+   */
+  form?: string;
 }
 
 const ASH = '#b9b4bf';
@@ -181,14 +193,39 @@ put('prior-vessant', { k: 'sk_necro', look: 'foe-prior-vessant', held: { kind: '
 // Highwall's own dead, sung up again: grey-green, in what is left of their mail
 put('risen-defender', { k: 'sk_guard', tint: '#a8c0a0' });
 // the Faded Lights' lamp-wardens: Elowen in the morning's gold with her lamp-staff, her sister Merrin in the evening's violet
-put('elowen-of-the-dawn', { k: 'witch', look: 'foe-elowen', held: { kind: 'staff', tint: '#ffe08a' }, size: 1.3, float: 0.2, ...CASTER });
+put('elowen-of-the-dawn', { k: 'witch', look: 'foe-elowen', held: { kind: 'staff', tint: '#ffe08a' }, size: 1.3, ...CASTER });
 put('merrin-of-the-dusk', { k: 'witch', look: 'foe-merrin', held: { kind: 'wand', tint: '#b48aff' }, size: 1.22, float: 0.2, ...CASTER });
 // the Weightless Gallery's astronomer: a robe of night and starlight, a star-crowned hat, floating well off her floor
 put('ilvane-the-unmoored', { k: 'witch', look: 'foe-ilvane', held: { kind: 'staff', tint: '#c8b8ff' }, size: 1.3, float: 0.7, ...CASTER });
 // Duskspire's Last Mourner in black, veiled, her staff's light violet; and the dead she bids keep vigil, ash-grey
-put('lady-cendre', { k: 'witch', look: 'foe-cendre', held: { kind: 'staff', tint: '#c08aff' }, size: 1.3, float: 0.12, ...CASTER });
+put('lady-cendre', { k: 'witch', look: 'foe-cendre', held: { kind: 'staff', tint: '#c08aff' }, size: 1.3, ...CASTER });
 put('mourning-dead', { k: 'sk_minion', tint: '#c8c4d0' });
-put('coffin-matron', { k: 'witch', look: 'foe-coffin-matron', held: { kind: 'staff' }, size: 1.2, float: 0.15, ...CASTER });
+// The Coffin Matron, Mother of the Ossuary: an old woman of the dead, pale as her charges, white-haired under a
+// mourner's veil, in grave linen and black; the dead's own arms; the coffin she hides in strapped to her back, a
+// sexton's spade beside it, and eyes of the crypt's green light (her file: scripts/sigilfall-3d-assets.mjs
+// BOSS_KITS; the veil, the candles on her crown and the straps: render3d/bossKit.ts).
+put('coffin-matron', {
+  k: 'boss_matron',
+  form: 'matron',
+  size: 1.5,
+  // (she walks the crypt's floor: she was lifted a hand's breadth off it, and her feet went through their walk in the air)
+  ...CASTER,
+  paint: [
+    // her eyes: the same light
+    { joint: 'head', lum: [0, 0.32], to: '#9cff9c', glow: true, keep: 0.2 },
+    // her hair, gone white
+    { joint: 'head', hue: [335, 14], sat: [0.4, 1], to: '#dedad0', keep: 0.9 },
+    // her face: the pallor of the dead
+    { joint: 'head', hue: [14, 40], sat: [0.2, 0.7], to: '#cfd3c2', keep: 0.9 },
+    // the bodice and the sleeves: mourning black
+    { hue: [20, 36], sat: [0.7, 1], to: '#2b2632', keep: 0.9 },
+    { hue: [215, 255], sat: [0.3, 1], to: '#2b2632', keep: 0.9 },
+    // the skirt: grave linen
+    { hue: [50, 95], sat: [0.4, 1], to: '#d6d0bd', keep: 0.9 },
+    // stockings and shoes
+    { hue: [5, 26], sat: [0.45, 0.75], lum: [0.3, 0.78], to: '#3a343c', keep: 0.9 },
+  ],
+});
 put('morgrave-soul', { k: 'ghost', tint: '#9cff9c', float: 0.6, size: 0.7, ghost: 0.7, walk: 'skelidle' });
 put('the-weeping-lord the-tearborn', { k: 'ghost', tint: '#bfd8f0', float: 0.45, size: 1.25, ghost: 0.82, walk: 'skelidle' });
 put('corpse-candle candle-wraith', { k: 'wisp', tint: FIRE, size: 0.7, float: 0.35 });
@@ -232,6 +269,15 @@ put('magma-hound', { k: 'a_wolf', beast: BEASTS.magmaHound });
 put('gnasher', {
   k: 'a_wolf',
   beast: BEASTS.warHound,
+  // his bites are the wolf's bite; he leaps into his charges, digs to go under the floor, and stands low and
+  // bristling to call the pack (the wolf's own clips: scripts/sigilfall-3d-assets.mjs MORE_CLIPS)
+  moves: {
+    cleave: { clip: 'chop', rate: 1.2 },
+    charge: { clip: 'leap' },
+    tripleCharge: { clip: 'leap', rate: 1.3 },
+    'gallows:burrow': { clip: 'dig' },
+    summon: { clip: 'low', rate: 1.4 },
+  },
   // (he was 2.3 of a wolf: eight tiles of hound, too long to see his own attacks past, and too big to stride)
   size: 1.3,
   gear: [
@@ -335,7 +381,7 @@ put('old-sluicegut', {
 put('brother-pustule', { k: 'cleric', tint: ROT, look: 'foe-brother-pustule', held: { kind: 'staff' }, ...CASTER });
 // the catacombs: the Herald's spymaster in a dark hood and oiled leathers, daggers in hand; the old kings' Auditor, a clerk's ghost in ink-black and gold
 put('silas-vey', { k: 'rogue_hooded', look: 'foe-silas-vey', held: { kind: 'dagger', tint: '#d8d4e0' }, size: 1.2 });
-put('the-royal-auditor', { k: 'cleric', look: 'foe-royal-auditor', held: { kind: 'wand', tint: '#f0e0a0' }, size: 1.3, float: 0.3, ...CASTER });
+put('the-royal-auditor', { k: 'cleric', look: 'foe-royal-auditor', held: { kind: 'wand', tint: '#f0e0a0' }, size: 1.3, ...CASTER });
 put('maelis-crane', { k: 'cleric', look: 'chancellor-crane', ...CASTER });
 put('goblin', { k: 'ranger', tint: '#9aa878', look: 'foe-briar-poacher', held: { kind: 'bow' }, ...BOWMAN });
 put('ridge-kobold kobold-candler', { k: 'caveman', tint: '#d0a070', size: 0.72 });
@@ -355,7 +401,15 @@ put('werewolf werewolf-howler moonfang', { k: 'werewolf' });
 // (a boar is a boar: it was the wolf in a paler coat)
 put('boar', { k: 'fbx_pig', beast: BEASTS.boar });
 put('russet-boar', { k: 'fbx_pig', beast: BEASTS.russetBoar, size: 0.86 });
-put('grimtusk', { k: 'orc_brute', tint: '#8a7a6c', size: 1.4, ...SMASH });
+// Grimtusk, Warlord of the Whisperwood: "a boar the size of a cart", the Host's violet light in its eyes and in the
+// motes that hang about it. Built as the great boars are (render3d/mountKit.ts), bare of any saddle: black bristle
+// unbroken down its spine, tusks grown long and wide.
+put('grimtusk', {
+  k: 'a_bull',
+  size: 1.12,
+  form: 'grimtusk',
+  steed: { id: 'boss-grimtusk', name: 'Grimtusk', lore: '', from: '', source: { kind: 'clears', regions: ['whisperwood'], tier: 0 }, body: 'boar', bare: true, coat: '#2e2622', mane: '#120e0c', tack: '#2e2622', tusks: true, plate: '#3a2e3e', glow: { kind: 'motes', color: '#b48cff' }, tier: 'shop' },
+});
 put('stag', { k: 'a_stag', beast: BEASTS.stag });
 put('blighted-stag', { k: 'a_stag', beast: BEASTS.blightedStag });
 put('frost-ram', { k: 'fbx_sheep', beast: BEASTS.frostRam });
@@ -402,7 +456,7 @@ put('scarab-swarm tomb-scarab', { k: 'scarab', size: 0.72 });
 put('marsh-strider', { k: 'strider' });
 put('blood-mosquito glimmer-moth rotwood-pod', { k: 'moth', size: 0.8, float: 0.4 });
 // the Tomb's Vizier Khepset: the dead king's vizier in the sun's gold, his crown of office on his brow, a gold staff
-put('vizier-khepset', { k: 'witch', look: 'foe-vizier-khepset', held: { kind: 'staff', tint: '#ffd27a' }, size: 1.35, float: 0.25, ...CASTER });
+put('vizier-khepset', { k: 'witch', look: 'foe-vizier-khepset', held: { kind: 'staff', tint: '#ffd27a' }, size: 1.35, ...CASTER });
 // the Barrow's Lamp-Eater: a drake built as the great drake mounts are, blacked out by a thousand years of devoured
 // lamplight: black plate, a crown of horns, wings veined with the pale fire of the lamps it has eaten
 put('gloomwing', {
@@ -510,9 +564,90 @@ const molten = (rock: string, hot: string): Kit['paint'] => [
   { lum: [0, 0.36], to: hot, glow: true, keep: 0 },
   { to: rock, keep: 0.8 },
 ];
-boss('grimtusk', { size: 1.5, wears: [{ piece: 'horns', a: '#5a4a3a', b: '#e8dcc0', size: 0.9 }, { piece: 'eyes', b: '#ffb04d' }] });
-boss('ossric', { size: 1.4, wears: [{ piece: 'eyes', b: '#ffe08a' }, { piece: 'halo', a: '#c89a3a', b: '#fff2c0', size: 0.8 }] });
-boss('morgrave', { size: 1.35, wears: [{ piece: 'ice-crown', a: '#7a2ab8', b: '#ff9af0', band: '#4a3a5c' }, { piece: 'eyes', b: '#ff7ae8' }] });
+// Warden Ossric, Keeper of the Crypt Gate: a warden of Aster who died at this gate three hundred years ago, woken by
+// the raiders' grieflight. His own plate gone to verdigris, the Regent's blue faded on his cape, his skull bare
+// with two grave candles burning gold on it (the candles of his fight), a halberd and a great shield.
+TABLE.ossric = {
+  k: 'boss_ossric',
+  form: 'ossric',
+  size: 1.42,
+  atk: 'chop2',
+  paint: [
+    // his eyes: candle gold
+    { joint: 'head', lum: [0, 0.3], hue: [0, 360], to: '#ffd88a', glow: true, keep: 0.2 },
+    // the cape and what cloth he wears: the Regent's blue, three hundred years faded
+    { hue: [330, 25], sat: [0.45, 1], to: '#3d4f78', keep: 0.9 },
+    // the plate: old bronze gone green-grey (his bones are left bone)
+    { joint: 'head', lum: [0.3, 1], to: '#e6dfc8', keep: 0.9 },
+    { hue: [190, 260], sat: [0.08, 1], to: '#6f7d74', keep: 1 },
+  ],
+};
+// Morgrave, the Ash-Scholar: a scholar thrown out of the Crown City's college, who sold himself to the Host. Ash-grey
+// in the face behind his spectacles, his robes the Host's ash and violet, his pack of books still on his back, the
+// rift's light in the book he reads from and in the crown the Host gave him.
+TABLE.morgrave = {
+  k: 'boss_morgrave',
+  form: 'morgrave',
+  size: 1.38,
+  atk: 'cast',
+  paint: [
+    // the open book's pages: alight with the rift
+    { joint: 'handslot.l', lum: [0.82, 1], to: '#ff9af0', glow: true, keep: 0.3 },
+    { joint: 'handslot.l', to: '#3a2f48', keep: 0.9 },
+    // his face: ash
+    { joint: 'head', hue: [10, 40], sat: [0.2, 0.75], to: '#b9b4bf', keep: 0.9 },
+    // the robes: the Host's ash, and violet where they were bright
+    { hue: [240, 330], sat: [0.25, 1], to: '#5a3f7a', keep: 0.9 },
+    { hue: [60, 180], sat: [0.2, 1], to: '#4a4654', keep: 0.9 },
+  ],
+  wears: [{ piece: 'ice-crown', a: '#7a2ab8', b: '#ff9af0', band: '#4a3a5c' }],
+};
+// The Hangman, Headsman of the Gallows Gang: "He hangs the people of Millbrook who can't pay the rope tax." A giant
+// bare to the waist, pale as tallow, under a headsman's black hood with only a slit to see by; the apron and breeches
+// of his trade the brown of old blood, the gang's iron on his axe.
+TABLE.hangman = {
+  k: 'boss_hangman',
+  form: 'hangman',
+  // (his axe held out makes him wider than he is tall, and a figure is sized by the greater: this stands him on his
+  // circle)
+  size: 1.5,
+  atk: 'chop2',
+  paint: [
+    // the slit of his hood: what looks out of it catches the light of the fire pits
+    { joint: 'head', hue: [5, 45], sat: [0.2, 0.9], lum: [0.35, 1], to: '#ff8a4a', glow: true, keep: 0.2 },
+    // the hood and mask: black
+    { joint: 'head', to: '#17131b', keep: 0.85 },
+    // his hide: tallow-pale
+    { hue: [8, 42], sat: [0.25, 0.8], lum: [0.4, 1], to: '#b89274', keep: 0.75 },
+    // what cloth and fur he wears: old blood
+    { hue: [200, 360], sat: [0.15, 1], to: '#4a2222', keep: 0.9 },
+    { hue: [45, 200], sat: [0.15, 1], to: '#3a2a26', keep: 0.9 },
+  ],
+};
+// Harlan Blackglove, King of the Gallows Gang: a bandit who crowned himself. Road leathers gone black with use, a
+// cape the red of the gang's banners, the black gauntlet on his left arm, a crown of stolen gold with a shard of
+// rift-glass for its jewel (the only magic he owns, and he doesn't know what it is).
+TABLE.varric = {
+  k: 'boss_harlan',
+  form: 'harlan',
+  size: 1.3,
+  atk: 'chop',
+  paint: [
+    // the black glove: black iron over the Knight's plate arm
+    { joint: 'upperarm.l', to: '#1d1a22', keep: 0.9 },
+    { joint: 'lowerarm.l', to: '#1d1a22', keep: 0.9 },
+    { joint: 'wrist.l', to: '#1d1a22', keep: 0.9 },
+    { joint: 'hand.l', to: '#141218', keep: 0.9 },
+    // the cape and what was bright on him: the gang's red
+    { hue: [80, 200], sat: [0.25, 1], to: '#7a1e22', keep: 0.9 },
+    // a sash of the same red at his waist
+    { joint: 'spine', to: '#8a2226', keep: 0.9 },
+    // his road leathers, which the pack has near black: worn brown, so he is a man and not a shadow from above
+    ...['chest', 'hips', 'upperarm.r', 'lowerarm.r', 'upperleg.l', 'upperleg.r', 'lowerleg.l', 'lowerleg.r'].map((joint) => ({ joint, lum: [0, 0.5] as [number, number], to: '#7a5638', keep: 0.9 })),
+    { joint: 'foot.l', to: '#3a2c24', keep: 0.9 },
+    { joint: 'foot.r', to: '#3a2c24', keep: 0.9 },
+  ],
+};
 boss('the-drowned', { size: 1.35, wears: [{ piece: 'eyes', b: '#9afff0' }] });
 boss('the-rot-mother', { size: 1.5, wears: [{ piece: 'horns', a: '#3a4a22', b: '#c8e070' }, { piece: 'eyes', b: '#e8ff70' }] });
 boss('slag-colossus', { size: 1.6, tint: undefined, paint: molten('#4a3a36', '#ff9a3a'), wears: [{ piece: 'eyes', b: '#fff0a0' }] });

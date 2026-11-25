@@ -1,0 +1,74 @@
+{
+  "boss": "vizier-khepset",
+  "file": "witch",
+  "form": null,
+  "float": 0,
+  "walked": {
+    "samples": 183,
+    "moving": 54,
+    "walking": 53,
+    "clips": {
+      "walk": 53,
+      "chop2": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "spell:sinkhole",
+      "clips": [
+        "idle",
+        "chop2"
+      ],
+      "readings": 93
+    },
+    {
+      "phase": 1,
+      "id": "tomb:hourglass",
+      "clips": [
+        "channel",
+        "idle"
+      ],
+      "readings": 70
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "idle",
+        "summon",
+        "channel",
+        "chop2"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "spell:sinkhole",
+      "clips": [
+        "idle",
+        "chop2"
+      ],
+      "readings": 93
+    },
+    {
+      "phase": 2,
+      "id": "tomb:hourglass",
+      "clips": [
+        "channel",
+        "idle"
+      ],
+      "readings": 73
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "summon",
+        "idle"
+      ],
+      "readings": 61
+    }
+  ],
+  "found": [],
+  "errors": []
+}

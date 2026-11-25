@@ -1,0 +1,179 @@
+{
+  "boss": "morgrave",
+  "file": "boss_morgrave",
+  "form": "morgrave",
+  "float": 0,
+  "walked": {
+    "samples": 185,
+    "moving": 59,
+    "walking": 59,
+    "clips": {
+      "walk": 59
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "soulVolley",
+      "clips": [
+        "cast",
+        "idle"
+      ],
+      "readings": 65
+    },
+    {
+      "phase": 1,
+      "id": "graveGrasp",
+      "clips": [
+        "channel",
+        "idle"
+      ],
+      "readings": 69
+    },
+    {
+      "phase": 1,
+      "id": "summon",
+      "clips": [
+        "summon",
+        "idle"
+      ],
+      "readings": 38
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "summon",
+        "idle"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "riftSpiral",
+      "clips": [
+        "channel",
+        "walk",
+        "idle"
+      ],
+      "readings": 63
+    },
+    {
+      "phase": 2,
+      "id": "riftBeams",
+      "clips": [
+        "cast",
+        "idle",
+        "walk"
+      ],
+      "readings": 27
+    },
+    {
+      "phase": 2,
+      "id": "graveGrasp",
+      "clips": [
+        "channel",
+        "walk",
+        "idle"
+      ],
+      "readings": 38
+    },
+    {
+      "phase": 2,
+      "id": "teleport",
+      "clips": [
+        "dodge",
+        "walk",
+        "idle"
+      ],
+      "readings": 32
+    },
+    {
+      "phase": 2,
+      "id": "soulVolley",
+      "clips": [
+        "cast",
+        "idle",
+        "walk"
+      ],
+      "readings": 51
+    },
+    {
+      "phase": 2,
+      "id": "crypt:soul-split",
+      "clips": [],
+      "readings": 94,
+      "hidden": true
+    },
+    {
+      "phase": 3,
+      "id": "(phase change)",
+      "clips": [
+        "summon",
+        "idle"
+      ]
+    },
+    {
+      "phase": 3,
+      "id": "riftNova",
+      "clips": [
+        "summon",
+        "idle"
+      ],
+      "readings": 44
+    },
+    {
+      "phase": 3,
+      "id": "riftBeams",
+      "clips": [
+        "idle",
+        "cast"
+      ],
+      "readings": 35
+    },
+    {
+      "phase": 3,
+      "id": "soulVolley",
+      "clips": [
+        "cast",
+        "idle"
+      ],
+      "readings": 42
+    },
+    {
+      "phase": 3,
+      "id": "riftSpiral",
+      "clips": [
+        "channel",
+        "idle"
+      ],
+      "readings": 51
+    },
+    {
+      "phase": 3,
+      "id": "summon",
+      "clips": [
+        "summon",
+        "idle"
+      ],
+      "readings": 33
+    },
+    {
+      "phase": 3,
+      "id": "crypt:soul-split",
+      "clips": [],
+      "readings": 94,
+      "hidden": true
+    },
+    {
+      "phase": 3,
+      "id": "collapse",
+      "clips": [
+        "channel",
+        "idle"
+      ],
+      "readings": 22
+    }
+  ],
+  "found": [],
+  "errors": []
+}

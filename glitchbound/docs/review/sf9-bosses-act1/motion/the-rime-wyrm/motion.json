@@ -1,0 +1,234 @@
+{
+  "boss": "the-rime-wyrm",
+  "file": "wyrm",
+  "form": null,
+  "float": 0.6,
+  "walked": {
+    "samples": 185,
+    "moving": 56,
+    "walking": 52,
+    "clips": {
+      "walk": 52,
+      "chop": 1,
+      "breath": 3
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "rime:breath",
+      "clips": [
+        "breath",
+        "idle",
+        "chop"
+      ],
+      "readings": 48
+    },
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "chop",
+        "idle",
+        "breath"
+      ],
+      "readings": 53
+    },
+    {
+      "phase": 1,
+      "id": "rime:gust",
+      "clips": [
+        "breath",
+        "idle",
+        "chop"
+      ],
+      "readings": 55
+    },
+    {
+      "phase": 1,
+      "id": "rime:icicles",
+      "clips": [
+        "spit",
+        "idle",
+        "breath",
+        "chop"
+      ],
+      "readings": 45
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "idle",
+        "rear"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "rime:breath",
+      "clips": [
+        "breath",
+        "idle",
+        "walk"
+      ],
+      "readings": 58
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "walk",
+        "chop",
+        "idle"
+      ],
+      "readings": 18
+    },
+    {
+      "phase": 2,
+      "id": "rime:gust",
+      "clips": [
+        "breath",
+        "idle",
+        "walk",
+        "chop"
+      ],
+      "readings": 48
+    },
+    {
+      "phase": 2,
+      "id": "rime:frost",
+      "clips": [
+        "breath",
+        "idle"
+      ],
+      "readings": 21
+    },
+    {
+      "phase": 2,
+      "id": "rime:icicles",
+      "clips": [
+        "spit",
+        "walk",
+        "breath",
+        "idle"
+      ],
+      "readings": 39
+    },
+    {
+      "phase": 2,
+      "id": "rime:flight",
+      "clips": [
+        "rear",
+        "idle"
+      ],
+      "readings": 94
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "roar",
+        "idle",
+        "walk",
+        "breath"
+      ],
+      "readings": 32
+    },
+    {
+      "phase": 3,
+      "id": "(phase change)",
+      "clips": [
+        "idle",
+        "walk",
+        "roar",
+        "breath",
+        "rear"
+      ]
+    },
+    {
+      "phase": 3,
+      "id": "rime:breath",
+      "clips": [
+        "breath",
+        "idle"
+      ],
+      "readings": 87
+    },
+    {
+      "phase": 3,
+      "id": "cleave",
+      "clips": [
+        "chop",
+        "idle",
+        "breath"
+      ],
+      "readings": 51
+    },
+    {
+      "phase": 3,
+      "id": "rime:gust",
+      "clips": [
+        "breath",
+        "idle",
+        "chop"
+      ],
+      "readings": 43
+    },
+    {
+      "phase": 3,
+      "id": "rime:frost",
+      "clips": [
+        "breath",
+        "idle",
+        "chop"
+      ],
+      "readings": 30
+    },
+    {
+      "phase": 3,
+      "id": "rime:flight",
+      "clips": [
+        "rear",
+        "idle"
+      ],
+      "readings": 96
+    },
+    {
+      "phase": 3,
+      "id": "summon",
+      "clips": [
+        "roar",
+        "idle",
+        "chop",
+        "breath"
+      ],
+      "readings": 33
+    },
+    {
+      "phase": 3,
+      "id": "roar",
+      "clips": [
+        "roar",
+        "idle",
+        "walk",
+        "breath",
+        "chop"
+      ],
+      "readings": 39
+    },
+    {
+      "phase": 3,
+      "id": "rime:storm",
+      "clips": [
+        "breath",
+        "idle",
+        "chop"
+      ],
+      "readings": 21
+    }
+  ],
+  "found": [
+    "its kit lifts it 0.6 off the ground (kits.ts float)"
+  ],
+  "errors": []
+}

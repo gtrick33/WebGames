@@ -139,6 +139,12 @@ export interface BossState {
   /** Seconds of rest before the next pattern. */
   rest: number;
   pattern: { use: PatternUse; t: number; step: number; data: Record<string, number> } | null;
+  /**
+   * The pattern it last began (a new mark each time). For whoever draws it: a pattern that is over the instant
+   * it opens (a roar, a call for hostages) is never seen as `pattern`, and the boss stood idle through its own move.
+   * The rules never read it.
+   */
+  began?: { id: string };
   /** Seconds until each pattern may come again. */
   cds: Record<string, number>;
   /** Patterns queued by a phase start. */
