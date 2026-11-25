@@ -35,7 +35,7 @@ requests open.**
 | 2g | Bosses: Act V (the Molten Throne): the Magma Warden, Ossa, Ashkar | `claude/sf9-bosses-late` | #373 | open | 2e (#372) |
 | 2h | Bosses: the finale (Duskspire): Lady Cendre, Ser Maltheus | `claude/sf9-bosses-late` | #373 | open | 2e (#372) |
 | 2i | Bosses: the Rift's fourteen (the Drowned, Saltbeard, Brother Pustule, Old Sluicegut, the Rot-Mother, the Runewarden, Slag Colossus, Forgemaster Grold, Rotwood Colossus, Elowen, the Withered Queen, Veil Sentinel, Ilvane, the Herald). The lands' named foes are not part of it | `claude/sf9-bosses-rift` | #374 | open | 2h (#373) |
-| 2j | The story's seven named foes of the lands: the Grey Lady, Prince Thistlemourn, the Tearborn, the Gatewarden, the Weeping Lord, the Lich of Hollowmere, Vosk the Hollowed. The other 63 named foes keep shared models (the owner, 2026-11-25) | `claude/sf9-bosses-named` | (this PR) | open | 2i (#374) |
+| 2j | The story's seven named foes of the lands: the Grey Lady, Prince Thistlemourn, the Tearborn, the Gatewarden, the Weeping Lord, the Lich of Hollowmere, Vosk the Hollowed. The other 63 named foes keep shared models (the owner, 2026-11-25) | `claude/sf9-bosses-named` | #376 | open | 2i (#374) |
 | 3 | The signature system in the first twenty minutes | `claude/sf9-first-epic` | #358 | merged 2026-11-25 | 1 (#355) |
 | 4 | Quests up to the Prologue's standard, one pull request per act | `claude/sf9-quests-act1` (Act I); `-act2` … `-act6` not started | #364 | Act I merged 2026-11-25; Act II read and left as it is; Acts III to VI not started | 1 |
 | 5 | Sound with its own character | `claude/sf9-sound-mix`; `-music`, `-voices` wait for the owner | #365 | the mix merged 2026-11-25; music and voices not started (no source approved) | 1 |
@@ -62,13 +62,11 @@ The table above is per piece. This is the whole picture in one place, for the ow
 | 5 | #372 | Bosses of Act III: the Sun King, Khepset, the Sand Warden, Hrimfang, Hallvor (built on #371) |
 | 6 | #373 | Bosses of Acts IV and V and the finale: Vessant, Morvain, the Magma Warden, Ossa, Ashkar, Cendre, Maltheus (built on #372) |
 | 7 | #374 | The Rift's fourteen bosses (built on #373) |
-| 8 | 2j's | The story's seven named foes (built on #374) |
+| 8 | #376 | The story's seven named foes (built on #374) |
 | any | #375 | The Vigil: events, new foes, a rule per land, champion attacks, motes and a weekly watch (on its own) |
 
-**Still being checked:**
-
-- The Sun King's whole fight (#372) has twice stopped at a screenshot that timed out at his sunbeam while the full tests
-  were running on the same machine. It is being pictured again with nothing else running.
+**Still running:** a second Vigil pass in its own session (more spells for each class, polish, whole nights played),
+to be a pull request on top of #375.
 
 **Left after that:**
 
