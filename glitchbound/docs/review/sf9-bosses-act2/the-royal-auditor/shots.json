@@ -1,0 +1,144 @@
+{
+ "boss": "the-royal-auditor",
+ "shots": [
+  {
+   "state": "entrance",
+   "close": "01-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "02-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "03-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "04-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "05-entrance-close.jpg"
+  },
+  {
+   "state": "line-up",
+   "file": "06-line-up.jpg",
+   "close": "06-line-up-close.jpg"
+  },
+  {
+   "state": "portrait",
+   "file": "07-portrait.jpg"
+  },
+  {
+   "state": "phase-1-spell-quills-windup",
+   "file": "08-phase-1-spell-quills-windup.jpg",
+   "close": "08-phase-1-spell-quills-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-spell-quills-strike",
+   "file": "09-phase-1-spell-quills-strike.jpg",
+   "close": "09-phase-1-spell-quills-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-cleave-windup",
+   "file": "10-phase-1-cleave-windup.jpg",
+   "close": "10-phase-1-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-cleave-strike",
+   "file": "11-phase-1-cleave-strike.jpg",
+   "close": "11-phase-1-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-change",
+   "file": "12-phase-2-change.jpg",
+   "close": "12-phase-2-change-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-quills-windup",
+   "file": "13-phase-2-spell-quills-windup.jpg",
+   "close": "13-phase-2-spell-quills-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-quills-strike",
+   "file": "14-phase-2-spell-quills-strike.jpg",
+   "close": "14-phase-2-spell-quills-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-cleave-windup",
+   "file": "15-phase-2-cleave-windup.jpg",
+   "close": "15-phase-2-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-cleave-strike",
+   "file": "16-phase-2-cleave-strike.jpg",
+   "close": "16-phase-2-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-crown-settle-windup",
+   "file": "17-phase-2-crown-settle-windup.jpg",
+   "close": "17-phase-2-crown-settle-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-crown-settle-strike",
+   "file": "18-phase-2-crown-settle-strike.jpg",
+   "close": "18-phase-2-crown-settle-strike-close.jpg"
+  },
+  {
+   "state": "dazed",
+   "close": "19-dazed-close.jpg"
+  },
+  {
+   "state": "struck",
+   "file": "20-struck.jpg",
+   "close": "20-struck-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "21-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "22-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "23-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "24-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "25-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "26-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "27-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "28-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "29-death-close.jpg"
+  }
+ ],
+ "errors": [],
+ "cost": {
+  "file": "boss_auditor",
+  "tris": 7985,
+  "frame": {
+   "calls": 40,
+   "tris": 191493,
+   "quality": 1
+  }
+ }
+}

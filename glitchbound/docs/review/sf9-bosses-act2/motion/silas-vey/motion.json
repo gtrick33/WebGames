@@ -1,0 +1,82 @@
+{
+  "boss": "silas-vey",
+  "file": "boss_silas",
+  "form": "silas",
+  "float": 0,
+  "walked": {
+    "samples": 184,
+    "moving": 41,
+    "walking": 41,
+    "clips": {
+      "walk": 41
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "spell:boomerang",
+      "clips": [
+        "walk",
+        "throw",
+        "idle"
+      ],
+      "readings": 69
+    },
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle"
+      ],
+      "readings": 63
+    },
+    {
+      "phase": 1,
+      "id": "crown:scatter",
+      "clips": [],
+      "note": "never began"
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "cheer",
+        "throw",
+        "slice"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "spell:boomerang",
+      "clips": [
+        "walk",
+        "throw",
+        "idle"
+      ],
+      "readings": 67
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "idle",
+        "slice"
+      ],
+      "readings": 65
+    },
+    {
+      "phase": 2,
+      "id": "crown:scatter",
+      "clips": [
+        "cheer",
+        "idle"
+      ],
+      "readings": 33
+    }
+  ],
+  "found": [],
+  "errors": []
+}
