@@ -159,7 +159,14 @@ describe('Sigilfall: Gnasher', () => {
 describe('Sigilfall: what the great beasts carry', () => {
   it("is on their backs, not hung in the air behind them (the Runewarden's hammer, Ossa's anvil, Sluicegut's wheel)", () => {
     for (const [boss, piece] of [['the-runewarden', 'w_hammer_D'], ['ossa-the-founder', 'anvil'], ['old-sluicegut', 'w_shield_round']] as const) {
-      const g = kitOf(boss).gear!.find((x) => x.m === piece)!;
+      const kit = kitOf(boss);
+      // (a boss since rebuilt as its own figure carries nothing hung on it here: what it holds is joined to a bone
+      // of its own file by the builder, and sigilfall-bosses-own.test.ts holds that file to its size and footprint)
+      if (kit.form) {
+        expect(kit.gear, boss).toBeUndefined();
+        continue;
+      }
+      const g = kit.gear!.find((x) => x.m === piece)!;
       expect(g.z!, boss).toBeLessThan(0);
       expect(g.z!, boss).toBeGreaterThanOrEqual(-0.2);
     }
@@ -206,6 +213,8 @@ describe('Sigilfall: a beast\'s gear is part of its body', () => {
   it('each piece is hung from a bone of the beast, so it goes where the body goes', () => {
     for (const sprite of ['ossa-the-founder', 'the-runewarden', 'old-sluicegut', 'clatterclaw', 'gnasher']) {
       const kit = kitOf(sprite);
+      // (a boss rebuilt as its own figure has no gear hung on it: see the test above)
+      if (kit.form) continue;
       const pack = readPack(`k/${kit.k}`);
       const body = pack.meshes.body!;
       const out = withGear(body, kit.gear!, prop);
