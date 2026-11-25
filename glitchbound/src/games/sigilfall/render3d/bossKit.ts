@@ -486,7 +486,8 @@ function sandglass(m: MeshData, joints: readonly string[]): MeshData {
   const cx = (box.min[0] + box.max[0]) / 2;
   const cz = (box.min[2] + box.max[2]) / 2 + (box.max[2] - box.min[2]) * 0.3;
   const y0 = box.max[1];
-  const tall = (box.max[1] - box.min[1]) * 2.6;
+  // (as tall as his forearm: any smaller and the game's camera never shows it)
+  const tall = (box.max[1] - box.min[1]) * 4.4;
   const r = tall * 0.3;
   const bits = new Bits();
   const mid = [cx, y0 + tall / 2, cz];

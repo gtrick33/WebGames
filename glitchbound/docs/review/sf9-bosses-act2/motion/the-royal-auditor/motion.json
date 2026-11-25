@@ -1,0 +1,96 @@
+{
+  "boss": "the-royal-auditor",
+  "file": "boss_auditor",
+  "form": "auditor",
+  "float": 0,
+  "walked": {
+    "samples": 184,
+    "moving": 57,
+    "walking": 55,
+    "clips": {
+      "walk": 55,
+      "throw": 2
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "spell:quills",
+      "clips": [
+        "idle",
+        "throw",
+        "walk"
+      ],
+      "readings": 66
+    },
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle",
+        "run"
+      ],
+      "readings": 62
+    },
+    {
+      "phase": 1,
+      "id": "crown:settle",
+      "clips": [
+        "summon",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 40
+    },
+    {
+      "phase": 1,
+      "id": "crown:ledger",
+      "clips": [],
+      "note": "never began"
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "summon",
+        "slice",
+        "throw"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "spell:quills",
+      "clips": [
+        "throw",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 55
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "idle",
+        "slice"
+      ],
+      "readings": 73
+    },
+    {
+      "phase": 2,
+      "id": "crown:settle",
+      "clips": [
+        "summon",
+        "idle"
+      ],
+      "readings": 29
+    }
+  ],
+  "found": [],
+  "errors": []
+}

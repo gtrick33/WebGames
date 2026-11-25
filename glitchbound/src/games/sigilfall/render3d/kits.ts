@@ -670,6 +670,8 @@ TABLE['the-sun-king'] = {
   paint: [
     // the sun-disc behind him: its bright face alight
     { joint: 'chest', lum: [0.55, 1], sat: [0.3, 1], to: '#ffe9a0', glow: true, keep: 0.3 },
+    // the rest of the disc: beaten gold, not the grey steel of the shield it is made from
+    { joint: 'chest', lum: [0.5, 1], sat: [0, 0.3], to: '#e0b040', keep: 0.8 },
     // his skull
     { joint: 'head', lum: [0.35, 1], sat: [0, 0.45], to: '#e6dfc8', keep: 0.9 },
     // the coat: what was red or dark on it, the old kingdom's white linen and gold
@@ -688,16 +690,18 @@ TABLE['vizier-khepset'] = {
   size: 1.5,
   atk: 'cast',
   paint: [
-    { joint: 'head', lum: [0.4, 1], sat: [0, 0.4], to: '#e6dfc8', keep: 0.9 },
-    // hood and cape: the house's gold; the robes: sand-white
-    { joint: 'head', to: '#b8862a', keep: 0.85 },
+    // his skull: only the bone, which is the palest thing on his head
+    { joint: 'head', lum: [0.72, 1], sat: [0, 0.4], to: '#e6dfc8', keep: 0.9 },
+    // his hood: the house's gold. His robes and cape: the deep blue-green of the tomb's glazed tiles, so that he
+    // stands dark on the sand floor (in sand-white he was a pale heap on it)
+    { joint: 'head', to: '#c8962a', keep: 0.85 },
     { hue: [330, 40], sat: [0.3, 1], to: '#d8a830', keep: 0.9 },
-    { hue: [190, 330], sat: [0.2, 1], to: '#efe4c8', keep: 0.85 },
+    { hue: [190, 330], sat: [0.2, 1], to: '#1f5666', keep: 0.85 },
   ],
   wears: [{ piece: 'eyes', b: '#ffd27a' }],
 };
-// The Sand Warden, Guardian of the Sun King's Tomb: built, not buried. Every part of it sandstone, the joints and
-// the cut lines of it dark, the sun-disc in its chest alight and its eyes the same.
+// The Sand Warden, Guardian of the Sun King's Tomb: built, not buried. Red sandstone, the joints and the cut
+// lines of it dark, a mace of the house's gold, the sun-disc on its back alight and its eyes the same.
 TABLE['the-sand-warden'] = {
   k: 'boss_sandwarden',
   form: 'sandwarden',
@@ -706,10 +710,12 @@ TABLE['the-sand-warden'] = {
   paint: [
     // the sun-disc in its chest
     { joint: 'chest', hue: [0, 360], sat: [0.6, 1], lum: [0.35, 1], to: '#ffe08a', glow: true, keep: 0.3 },
-    // sandstone, lighter where the bone was light
-    { lum: [0.55, 1], to: '#e2c88e', keep: 0.85 },
-    { lum: [0.3, 0.55], to: '#c4a468', keep: 0.85 },
-    { to: '#7a6238', keep: 0.85 },
+    // its mace: the house's gold
+    { joint: 'handslot.r', to: '#d8a830', keep: 0.9 },
+    // red sandstone, dark in the joints: it stands on a floor of pale sand, and in pale stone it was lost on it
+    { lum: [0.55, 1], to: '#b06c3c', keep: 0.9 },
+    { lum: [0.3, 0.55], to: '#7c4426', keep: 0.9 },
+    { to: '#2e1a10', keep: 0.85 },
   ],
   wears: [{ piece: 'eyes', b: '#ffe08a' }],
 };
@@ -773,7 +779,7 @@ TABLE['general-morvain'] = {
   k: 'boss_morvain',
   form: 'morvain',
   // (his banner stands over him: sized so that the man keeps his size)
-  size: 1.72,
+  size: 1.85,
   atk: 'chop2',
   paint: [
     { joint: 'handslot.r', lum: [0.4, 1], sat: [0, 0.4], to: '#ff8a4a', glow: true, keep: 0.3 },
@@ -884,7 +890,7 @@ const CORVANE: Kit = {
     // the bright of his blade: the frost his lances are thrown from
     { joint: 'handslot.r', lum: [0.52, 1], sat: [0, 0.4], to: '#a8c8ff', glow: true, keep: 0.3 },
     // the Watch's banner on his back: Aster's blue, ten years faded
-    { joint: 'chest', hue: [190, 270], sat: [0.3, 1], lum: [0.3, 1], to: '#34446e', keep: 0.95 },
+    { joint: 'chest', hue: [190, 270], sat: [0.3, 1], lum: [0.3, 1], to: '#2e3c66', keep: 0.2 },
     { hue: [320, 20], sat: [0.5, 1], to: '#5a7ad8' },
     { hue: [190, 270], lum: [0.5, 1], to: '#8a8ea8' },
     { hue: [190, 270], to: '#2c2c3c', keep: 0.9 },
