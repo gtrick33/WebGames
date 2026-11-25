@@ -1,4 +1,5 @@
 import { dist } from '../core/math';
+import { NPCS } from '../data/quests';
 import { THINGS } from '../data/things';
 import type { Lair, Objective, QuestDef, ThingLook } from '../data/types';
 import { activeQuests, currentObjective } from '../progress/character';
@@ -96,7 +97,11 @@ export function anchorOf(w: World, id: string): { x: number; y: number } | null 
   const place = w.places[id];
   if (place) return place;
   const spot = w.spots.find((s) => s.id === id) ?? w.shrines.find((s) => s.id === id) ?? w.npcs.find((n) => n.id === id);
-  return spot ? { x: spot.x, y: spot.y } : null;
+  if (spot) return { x: spot.x, y: spot.y };
+  // someone the story has moved away for now (a village emptied, a town under siege): where they stood is not known
+  // here, so the step is done at the place's waystone, its middle; the step is never left with nowhere to be done
+  if (NPCS[id] && w.waystones[0]) return { x: w.waystones[0].x, y: w.waystones[0].y };
+  return null;
 }
 
 const clearAt = (w: World, x: number, y: number, r = 7): boolean => x > TILE && y > TILE && x < (w.map.w - 1) * TILE && y < (w.map.h - 1) * TILE && !circleHitsWall(w.map, x, y, r);

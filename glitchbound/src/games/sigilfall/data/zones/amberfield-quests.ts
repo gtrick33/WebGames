@@ -18,7 +18,13 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     name: 'Refugees on the Road',
     giver: 'maren',
     text: 'Villages in the east are emptying ahead of the Ashen Host, and their people are gathering at Hearthstead, a walled town on the Amberfield Steppes. Its marshal, Dunmore, has written to Briarhollow for help. Elyra holds one sigil and the Host none, and Maren wants to know what the Host is hunting out there. Take the east road out of Thornvale and find Dunmore.',
-    objective: { kind: 'talk', npc: 'marshal-dunmore', label: 'Talk to Marshal Dunmore in Hearthstead' },
+    // (it was a walk and a talk. The road's people are met first: their carts are stuck at the gate, and what they say
+    // as the hero puts a shoulder to each is the news Dunmore then confirms)
+    objective: {
+      kind: 'use', region: 'amberfield', at: 'hearth-gate', count: 3, thing: 'cart', verb: 'Help push', label: 'Help the refugees’ carts in through Hearthstead’s gate', secs: 1.1, spread: 7,
+      notes: ['“Smoke in the east. We left the oven lit.”', '“Three villages on this road. One wagon made it.”', '“Dead men on dead horses. They didn’t even chase us.”'],
+    },
+    then: [{ kind: 'talk', npc: 'marshal-dunmore', label: 'Talk to Marshal Dunmore' }],
     after: ['the-regents-council'],
     level: 16,
     reward: { xp: 340, gold: 120 },
@@ -29,11 +35,21 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     name: 'The Broken Caravan',
     auto: true,
     giver: 'marshal-dunmore',
-    text: 'A wagon train from the east was due in Hearthstead three days ago. Dunmore’s riders saw smoke on the road south-east of town and turned back. Go and find out what happened, and whether anyone survived.',
+    text: 'A wagon train from the east was due in Hearthstead three days ago. Dunmore’s riders saw smoke on the road south-east of town and turned back. Go and find out what happened, search the wagons for anyone still alive, and bring them through whatever comes back.',
     objective: { kind: 'explore', spot: 'broken-caravan', label: 'Find the Broken Caravan' },
+    // (it was a walk to the wrecks. They are searched, wagon by wagon; the hounds come back for what is under the last
+    // one, and the hero stands over it until they give up)
+    then: [
+      {
+        kind: 'use', region: 'amberfield', at: 'broken-caravan', count: 3, thing: 'cart', verb: 'Search', label: 'Search the wagons for anyone left alive', spread: 6, ambush: ['grave-hound'],
+        notes: ['Arrows in the oxen, fletched with clan feathers.', 'The feathers are stained grey. Clan fletching never is.', 'Under the last wagon: a red scarf, and a child, alive.'],
+      },
+      { kind: 'hold', region: 'amberfield', at: 'broken-caravan', secs: 25, waves: [['grave-hound', 'grave-hound'], ['legion-scout', 'grave-hound']], label: 'Stand over the child until the hounds give up' },
+    ],
     after: ['refugees-on-the-road'],
     zone: 'amberfield',
     find: {
+      step: 1,
       name: 'A Grey-Stained Clan Feather',
       kind: 'token',
       about: 'A centaur war-feather found in the ashes of the Broken Caravan, its tip dyed clan red. Ada says the riders who burned the wagons wore feathers like it. But this one has gone grey to the quill and is as cold as ash-gold, as if whoever wore it was dead.',
@@ -45,8 +61,11 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     name: 'Riders in the Grass',
     auto: true,
     giver: 'marshal-dunmore',
-    text: 'The Ashen Host’s outriders are on the Amberfield roads: dead riders on dead horses, with grave hounds running ahead of them. Their captain has been seen on the ridges, watching the town. Dunmore wants the roads clear before the next wagons arrive.',
-    objective: { kind: 'kill', region: 'amberfield', count: 6, enemies: ['legion-scout', 'grave-hound'], label: 'Break up the outriders on the Hearthstead roads' },
+    text: 'The Ashen Host’s outriders are on the Amberfield roads: dead riders on dead horses, with grave hounds running ahead of them. Their captain has been seen on the ridges, watching the town. Dunmore wants the roads clear before the next wagons arrive, and the picket they ride from, on the north ridge, burnt.',
+    objective: { kind: 'kill', region: 'amberfield', count: 4, enemies: ['legion-scout', 'grave-hound'], label: 'Break up the outriders on the Hearthstead roads' },
+    // (it was six kills on the road. The roads stay clear only if the riders have nowhere to ride from: their picket
+    // on the north ridge is burnt out)
+    then: [{ kind: 'use', region: 'amberfield', at: 'legion-picket', count: 3, thing: 'tent', verb: 'Burn', label: 'Burn the outriders’ picket on the north ridge', secs: 1.2, spread: 6, guards: ['grave-hound'] }],
     after: ['the-broken-caravan'],
     zone: 'amberfield',
     reward: { xp: 540, gold: 150, text: 'The outriders’ horses fall to ash and bone when their riders die. The roads are clear for now. The captain on the ridge watched every fight and never came down, and tonight the refugees bar their doors.' },
@@ -58,6 +77,14 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     giver: 'marshal-dunmore',
     text: 'When the outriders raid the wagons, they wear feathers stolen from the centaur clans. Now the refugees blame the clans, and the clans blame the refugees. Someone has to tell the clans the truth. They meet at the Clan Stones, east of Hearthstead. Go there, and go in peace.',
     objective: { kind: 'explore', spot: 'clan-stones', label: 'Go to the Clan Stones' },
+    // (it was a walk to the stones. A guest of the clans greets each stone with a hand laid on it, and the stones
+    // answer: the oldest one's memory is what the hero came for)
+    then: [
+      {
+        kind: 'use', region: 'amberfield', at: 'clan-stones', count: 3, thing: 'runestone', verb: 'Lay a hand on it', label: 'Greet the clans’ stones as a guest does', secs: 1.3, spread: 6,
+        notes: ['A stone for every clan, worn smooth by hands.', 'This one remembers men and clans riding as one line.', 'The oldest stone is warm. It remembers the Crown.'],
+      },
+    ],
     after: ['riders-in-the-grass'],
     zone: 'amberfield',
     level: 18,
@@ -79,8 +106,11 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     id: 'stormhoof',
     name: 'Stormhoof',
     giver: 'marshal-dunmore',
-    text: 'Stormhoof, the clans’ war-chief, only listens to someone who beats him in his own fighting circle. Dunmore says to do it. Defeat Stormhoof at the Clan Stones, and the clans will hear the truth about the stolen feathers.',
-    objective: { kind: 'kill', region: 'amberfield', count: 1, enemies: ['stormhoof'], label: 'Defeat Stormhoof at the Clan Stones' },
+    text: 'Stormhoof, the clans’ war-chief, only listens to someone who beats him in his own fighting circle. Dunmore says to do it. Beat Stormhoof at the Clan Stones until he yields, offer him your hand, and burn the stolen feathers in the clans’ own fire.',
+    // (it was a kill, of a chief the story then has listening. He is beaten until he yields, and the hand is offered;
+    // then the stolen feathers go into the clans' fire, where everyone can see what color they burn)
+    objective: { kind: 'subdue', region: 'amberfield', enemies: ['stormhoof'], count: 1, verb: 'Offer your hand', label: 'Beat Stormhoof in his circle until he yields', lair: { at: 'clan-stones', enemies: ['stormhoof'] } },
+    then: [{ kind: 'use', region: 'amberfield', at: 'clan-stones', count: 1, thing: 'campfire', verb: 'Burn the feathers', label: 'Cast the grey feathers into the clans’ fire', secs: 1.2, spread: 3, notes: ['They burn grey. A clan feather burns blue.'] }],
     after: ['the-clan-stones'],
     zone: 'amberfield',
     level: 19,
@@ -94,6 +124,8 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     auto: true,
     text: 'Rider-Captain Vosk has sent everything he has against Hearthstead, and his riders are already in the streets. Mara Venn arrived from Briarhollow an hour ago with a message, and she stayed to fight. Get back to the town square.',
     objective: { kind: 'event', event: 'hearth-riders', label: 'Drive the riders out of Hearthstead’s square' },
+    // (the square cleared, its streets are shut behind the riders: they will come at the gate next, not through the town)
+    then: [{ kind: 'use', region: 'amberfield', at: 'hearth-square', count: 3, thing: 'cart', verb: 'Overturn', label: 'Block the three streets into the square', secs: 1, spread: 8 }],
     after: ['the-clan-stones'],
     zone: 'amberfield',
     level: 19,
@@ -104,8 +136,10 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     name: 'Hold the Wall',
     giver: 'marshal-dunmore',
     auto: true,
-    text: 'Vosk’s riders have pulled back to the north road to attack the gate together. Mara is on the wall, Dunmore’s riders guard the inside of the gate, and Warden Hollis’s rangers from Briarhollow’s camp hold the towers. Hold the gate.',
-    objective: { kind: 'event', event: 'hearth-wall', label: 'Hold Hearthstead’s north gate' },
+    text: 'Vosk’s riders have pulled back to the north road to attack the gate together. Mara is on the wall, Dunmore’s riders guard the inside of the gate, and Warden Hollis’s rangers from Briarhollow’s camp hold the towers. Carry Wynn’s arrows up to them, and hold the gate.',
+    // (the wall wants arrows before it wants the hero: Wynn's are carried up to the gate, and the fight begins there)
+    objective: { kind: 'carry', region: 'amberfield', from: 'hearth-square', to: 'hearth-gate', thing: 'crate', verb: 'Take the arrows', label: 'Carry Wynn’s arrows up to the north gate' },
+    then: [{ kind: 'event', event: 'hearth-wall', label: 'Hold Hearthstead’s north gate' }],
     after: ['hearth-the-riders-come'],
     zone: 'amberfield',
     level: 20,
@@ -118,6 +152,8 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     auto: true,
     text: 'An ashen ram is coming: a battering beam carried by a beast made of old bones. Blades barely scratch it. Elyra says she can destroy it if it stands still long enough. Keep it away from the gate until she can.',
     objective: { kind: 'event', event: 'hearth-ram', label: 'Keep the ashen ram off the gate' },
+    // (the ram broken, the gate it reached is burning)
+    then: [{ kind: 'use', region: 'amberfield', at: 'hearth-gate', count: 3, thing: 'barrel', verb: 'Douse', label: 'Put out the fires at the gate', secs: 1, spread: 6 }],
     after: ['hearth-hold-the-wall'],
     zone: 'amberfield',
     level: 21,
@@ -130,6 +166,13 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     auto: true,
     text: 'While everyone defended the gate, a few riders climbed over the south wall. Vosk led them. They went straight to the old shrine by the well, where Hearthstead has always kept its hearthstone. Go and look.',
     objective: { kind: 'explore', spot: 'hearth-shrine', label: 'Look at the shrine by the well' },
+    // (it was a look. What was taken, by whom and how is read from what he left)
+    then: [
+      {
+        kind: 'use', region: 'amberfield', at: 'hearth-shrine', count: 3, thing: 'bones', verb: 'Look closer', label: 'Search the shrine', secs: 1, spread: 4,
+        notes: ['The hearthstone’s seat is empty, the mortar fresh-broken.', 'One pair of boots, with a rider’s spurs. He knew the way.', 'A greave and a bone case, dropped by the well.'],
+      },
+    ],
     after: ['hearth-the-ram'],
     zone: 'amberfield',
     level: 21,
@@ -146,8 +189,13 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     name: 'Orders from the North',
     giver: 'marshal-dunmore',
     auto: true,
-    text: 'Vosk escaped north with the sigil. In the shrine he left a greave and a bone case of orders, written in the old script of Vaelmoor. Old Gaius, the old soldier with the armor cart in Hearthstead, learned that script as a boy. Take the orders to him.',
-    objective: { kind: 'talk', npc: 'old-gaius', label: 'Bring Vosk’s dropped orders to Old Gaius' },
+    text: 'Vosk escaped with the sigil: his tracks from the shrine will say which way. In the shrine he left a greave and a bone case of orders, written in the old script of Vaelmoor. Old Gaius, the old soldier with the armor cart in Hearthstead, learned that script as a boy. Take the orders to him.',
+    // (it was a walk across the square. Which way he went is read first, from the shrine to the wall he left by)
+    objective: {
+      kind: 'trail', region: 'amberfield', from: 'hearth-shrine', to: 'hearth-north', marks: 3, label: 'Follow Vosk’s tracks from the shrine',
+      notes: ['Spur marks, straight to the wall. He did not hide.', 'A torn strap. He was carrying something heavy.', 'Hoofprints, north, at a gallop.'],
+    },
+    then: [{ kind: 'talk', npc: 'old-gaius', label: 'Bring Vosk’s dropped orders to Old Gaius' }],
     after: ['hearth-the-shrine'],
     zone: 'amberfield',
     level: 20,
@@ -172,6 +220,8 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     auto: true,
     text: 'Hearthstead held, and Dunmore keeps his promises. Twenty of his riders are on their way to Briarhollow to serve as the camp’s cavalry. Meet them in Briarhollow’s square.',
     objective: { kind: 'event', event: 'camp-riders', label: 'Meet Dunmore’s riders in Briarhollow' },
+    // (they rode in, and that was all. Twenty horses have come a long road: the camp's troughs are filled for them)
+    then: [{ kind: 'use', region: 'briarhollow', at: 'briar-square', count: 3, thing: 'barrel', verb: 'Fill the trough', label: 'Fill the troughs for Dunmore’s horses', secs: 1, spread: 12 }],
     after: ['orders-from-the-north'],
     zone: 'briarhollow',
     level: 20,
@@ -184,10 +234,19 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     giver: 'tess-hearthkeeper',
     text: 'Tess’s brother Garrick refused to leave his farm when everyone else came to Hearthstead. Nobody has heard from him in a week. Ashby Farm is south-west of town. Tess would go herself, but she has four hundred people to feed.',
     objective: { kind: 'explore', spot: 'ashby-farm', label: 'Look for Garrick at Ashby Farm' },
+    // (it was a walk to an empty farm. The farm is searched, and the way he went followed until it says enough)
+    then: [
+      { kind: 'use', region: 'amberfield', at: 'ashby-farm', count: 3, thing: 'crate', verb: 'Search', label: 'Search the farm for Garrick', secs: 1, spread: 5, notes: ['The gate is open. The goat pen is empty.', 'Lion tracks in the yard. Big ones.', 'A note on the table, weighted with a stone.'] },
+      {
+        kind: 'trail', region: 'amberfield', from: 'ashby-farm', to: 'lion-rocks', marks: 3, label: 'Follow Garrick’s tracks west',
+        notes: ['Goat droppings, and a man’s boot prints after them.', 'One boot, stuck in the mud. He went on without it.', 'The other boot. Lion tracks over both.'],
+      },
+    ],
     after: ['refugees-on-the-road'],
     zone: 'amberfield',
     level: 17,
     find: {
+      step: 1,
       name: 'Garrick’s Note',
       kind: 'note',
       about: 'Nailed to the door of Ashby Farm. The farm is empty, the gate stands open, and lion tracks lead away west. Tess will know the hand.',
@@ -200,8 +259,11 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     id: 'the-pride',
     name: 'The Pride',
     giver: 'tess-hearthkeeper',
-    text: 'Ashby Farm was empty, its gate open and lion tracks leading west. Garrick’s note says he has gone after his goats. Lions have been taking the camp’s herds too, and Tess wants fewer of them between her brother and home.',
-    objective: { kind: 'kill', region: 'amberfield', count: 8, enemies: ['plains-lion'], label: 'Defeat plains lions' },
+    text: 'Ashby Farm was empty, its gate open and lion tracks leading west. Garrick’s note says he has gone after his goats. Lions have been taking the camp’s herds too. Tess wants fewer of them between her brother and home, and someone standing at the west pens when they come at dusk.',
+    objective: { kind: 'kill', region: 'amberfield', count: 5, enemies: ['plains-lion'], label: 'Defeat plains lions' },
+    // (it was eight kills. The lions come for the camp's herd at dusk whatever is done in the grass: the hero stands
+    // at the herd-pen for one night of it)
+    then: [{ kind: 'hold', region: 'amberfield', at: 'hearth-west', secs: 30, waves: [['plains-lion'], ['plains-lion', 'plains-lion'], ['plains-lion', 'plains-lion']], label: 'Guard the camp’s herd at the west pens until the pride gives up' }],
     after: ['ashby-farm'],
     zone: 'amberfield',
     reward: { xp: 480, gold: 160 },
@@ -211,7 +273,16 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     name: 'Goldmane',
     giver: 'tess-hearthkeeper',
     text: 'Garrick came back this morning with three goats and no boots. He says the lions are led by a huge lion with a golden mane that lives at Lion Rocks, in the west. Defeat Goldmane.',
-    objective: { kind: 'kill', region: 'amberfield', count: 1, enemies: ['goldmane'], label: 'Defeat Goldmane at Lion Rocks' },
+    // (it was one kill. The way up Lion Rocks is by the pride's kills, each one telling what he takes; and the collar
+    // is found by looking)
+    objective: {
+      kind: 'use', region: 'amberfield', at: 'lion-rocks', count: 3, thing: 'bones', verb: 'Look closer', label: 'Climb Lion Rocks by the pride’s kills', secs: 0.9, spread: 6, guards: ['plains-lion'],
+      notes: ['A goat. Fresh.', 'A herd-dog. Its collar is chewed through.', 'A saddle girth, gnawed. He takes horses too.'],
+    },
+    then: [
+      { kind: 'kill', region: 'amberfield', count: 1, enemies: ['goldmane'], label: 'Defeat Goldmane', lair: { at: 'lion-rocks', enemies: ['goldmane'] } },
+      { kind: 'use', region: 'amberfield', at: 'lion-rocks', count: 1, thing: 'bones', verb: 'Search', label: 'Search Goldmane’s lair', secs: 1.2, spread: 2, notes: ['Something gilt, deep in his mane. A collar.'] },
+    ],
     after: ['the-pride'],
     zone: 'amberfield',
     level: 19,
@@ -229,8 +300,16 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     id: 'borrowed-arrows',
     name: 'Borrowed Arrows',
     giver: 'wynn',
-    text: 'Wynn makes the arrows for Hearthstead’s wall. The clans make better ones, and she wants to learn how. She needs eight clan arrows to study. The centaur outriders carry full quivers.',
-    objective: { kind: 'loot', region: 'amberfield', item: 'Clan Arrow', from: ['centaur-outrider'], chance: 0.6, count: 8, label: 'Take Clan Arrows from centaur outriders' },
+    text: 'Wynn makes the arrows for Hearthstead’s wall. The clans make better ones, and she wants to learn how. She needs five clan arrows to study, and the old ones still stuck in the lance-butts at Lancers’ Rest, north-west of town. The centaur outriders carry full quivers.',
+    objective: { kind: 'loot', region: 'amberfield', item: 'Clan Arrow', from: ['centaur-outrider'], chance: 0.6, count: 5, label: 'Take Clan Arrows from centaur outriders' },
+    // (it was eight arrows off the dead. The clans shot at the old lance-butts at Lancers' Rest for a hundred years:
+    // what is still stuck in them shows how the arrows are made)
+    then: [
+      {
+        kind: 'use', region: 'amberfield', at: 'lancers-rest', count: 3, thing: 'spear', verb: 'Pull the arrows', label: 'Pull old clan arrows from the butts at Lancers’ Rest', secs: 1, spread: 6,
+        notes: ['Old lance-butts, shot full of clan arrows.', 'Fletched with a twist. That is the trick of it.', 'A broken one shows the glue: sinew, not hide.'],
+      },
+    ],
     after: ['refugees-on-the-road'],
     zone: 'amberfield',
     level: 17,
@@ -240,8 +319,10 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     id: 'a-steppe-bow',
     name: 'A Steppe Bow',
     giver: 'wynn',
-    text: 'Wynn has worked out how the clans fletch their arrows. To make a proper steppe bow, she needs horn, and the centaur warbringers wear horn on their helmets. Bring her four. Warbringers charge in straight lines, so step aside when one lowers its head.',
-    objective: { kind: 'loot', region: 'amberfield', item: 'Warbringer Horn', from: ['centaur-warbringer'], chance: 0.5, count: 4, label: 'Take Warbringer Horns from centaur warbringers' },
+    text: 'Wynn has worked out how the clans fletch their arrows. To make a proper steppe bow, she needs horn, and the centaur warbringers wear horn on their helmets. Bring her three, and split her some ash staves from the logs round the town. Warbringers charge in straight lines, so step aside when one lowers its head.',
+    objective: { kind: 'loot', region: 'amberfield', item: 'Warbringer Horn', from: ['centaur-warbringer'], chance: 0.5, count: 3, label: 'Take Warbringer Horns from centaur warbringers' },
+    // (it was four horns. A bow is horn and wood: the staves are split for her as well)
+    then: [{ kind: 'use', region: 'amberfield', at: 'wynn', count: 3, thing: 'log', verb: 'Split a stave', label: 'Split ash staves for Wynn’s bows', secs: 1, spread: 9 }],
     after: ['borrowed-arrows'],
     zone: 'amberfield',
     level: 18,
@@ -278,7 +359,7 @@ export const AMBERFIELD_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'stormhoof', state: 'active' },
-        lines: ['Stormhoof won’t listen to talk. He listens to whoever beats him in his circle.', 'Beat him in front of his clan, and the whole steppe will hear what you have to say.'],
+        lines: ['Stormhoof won’t listen to talk. He listens to whoever beats him in his circle.', 'Beat him in front of his clan, and don’t kill him: when he drops his guard, hold out your hand. Then the whole steppe will hear what you have to say.'],
       },
       { when: { quest: 'hearth-the-shrine', state: 'active' }, lines: ['The gate held. But while we were holding it, Vosk wasn’t trying to take the town at all.', 'Go and look at the shrine. I can’t.'] },
       {
@@ -342,11 +423,11 @@ export const AMBERFIELD_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'borrowed-arrows', state: 'active' },
-        lines: ['The clans make the best arrows on the steppe, and they shoot them at our wall. I want to study a few.', 'Bring me eight. The outriders carry them. Let them come to you instead of chasing them.'],
+        lines: ['The clans make the best arrows on the steppe, and they shoot them at our wall. I want to study a few.', 'Bring me five. The outriders carry them. Let them come to you instead of chasing them.', 'And go up to Lancers’ Rest. The clans shot at the old lance-butts there for a hundred years. Pull what’s still in them.'],
       },
       {
         when: { quest: 'a-steppe-bow', state: 'active' },
-        lines: ['I’ve worked out how they fletch. Now I need horn for a bow, and the warbringers wear it on their helmets.', 'Bring me four. When one lowers its head to charge, step aside.'],
+        lines: ['I’ve worked out how they fletch. Now I need horn for a bow, and the warbringers wear it on their helmets.', 'Bring me three. When one lowers its head to charge, step aside.', 'And split me some staves from the ash logs round the town. A bow is horn and wood, and I’ve no wood.'],
       },
       { when: { quest: 'a-steppe-bow', state: 'done' }, lines: ['That’s the best bow I’ve ever made. I’m keeping it.'] },
       { lines: ['I make the arrows for the wall. We use a hundred a day.', 'Bring me any good feathers you find.'] },
