@@ -63,6 +63,38 @@ describe('stale build after a deploy (#15-#19)', () => {
     expect(reload).toHaveBeenCalledTimes(1);
   });
 
+  it('reloads for a missing file, and not for anything else an import ends in (an API call that failed)', async () => {
+    stubReload();
+    const page = await nextPage();
+    const send = (payload: unknown): void => {
+      const e = Object.assign(new Event('vite:preloadError', { cancelable: true }), { payload });
+      window.addEventListener('vite:preloadError', page.onPreloadError);
+      window.dispatchEvent(e);
+      window.removeEventListener('vite:preloadError', page.onPreloadError);
+      expect(e.defaultPrevented).toBe(false);
+    };
+    // the site's own API error, as it arrives when the call that follows a lazy import fails
+    send(new Error('request_failed'));
+    send(new TypeError('Failed to fetch'));
+    send('offline');
+    expect(reload).not.toHaveBeenCalled();
+    // a file of the old build is gone: what the event is for
+    send(new Error('Unable to preload CSS for /assets/Game-abc123.css'));
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('reloads for a module the browser could not fetch, in each browser’s words', async () => {
+    for (const words of ['Failed to fetch dynamically imported module: https://example.test/assets/x.js', 'Importing a module script failed.', 'error loading dynamically imported module']) {
+      vi.resetModules();
+      sessionStorage.clear();
+      stubReload();
+      reload.mockClear();
+      const page = await nextPage();
+      page.onPreloadError(Object.assign(new Event('vite:preloadError'), { payload: new TypeError(words) }));
+      expect(reload, words).toHaveBeenCalledTimes(1);
+    }
+  });
+
   it('passes real errors and successful loads straight through', async () => {
     stubReload();
     await expect(fresh(() => Promise.resolve(42))()).resolves.toBe(42);
