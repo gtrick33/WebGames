@@ -466,16 +466,19 @@ words and kept in the Journal. The Tear alone has none: the Veil pulled from the
 | `thieves-cant` | The Orders, as Nyx Reads Them | orders | story |
 | `the-bandit-king` | A Coin of Ash-Gold | token | story |
 | `tobins-fields` | The Flock’s Bell | token | side |
+| `hunt-old-greymane` | A Bone Whistle on a Red Cord | token | side |
 | `the-old-barrows` | A Broken Grave-Seal | relic | story |
 | `lay-the-grey-lady` | The Grey Lady’s Locket | relic | story |
 | `fern-retaken` | The Regent’s Order | orders | story |
 | `tusker-gully` | Grandad Tanner’s Arrow | relic | side |
+| `old-rustback` | Barrow-Bronze Arrowheads | relic | side |
 | `appleby-apples` | The Applebys’ Note | note | side |
 | `the-broken-caravan` | A Grey-Stained Clan Feather | token | story |
 | `the-clan-stones` | The Memory in the Oldest Stone | page | story |
 | `hearth-the-shrine` | Vosk’s Bone Case | relic | story |
 | `orders-from-the-north` | Vosk’s Orders | orders | story |
 | `ashby-farm` | Garrick’s Note | note | side |
+| `hunt-goldmane` | A Gilt Collar | token | side |
 | `the-last-lamp` | A Black-Rose Shield-Boss | relic | story |
 | `the-kings-mound` | The Roll of the Ninefold Watch | page | story |
 | `sir-corvane` | The Countermanded Order | orders | story |
