@@ -63,6 +63,7 @@ table (the unit test checks that); the browser did not see the last two play.
 
 ## What was not checked
 
-- Corvane's banner was repainted darker (a faded navy rather than bright blue) after these pictures; the sheet shows
-  it as it was before, and the darker one has not been pictured.
+- Corvane's banner was repainted darker (a faded navy rather than bright blue) after his fight was pictured: the
+  sheet shows the brighter one, and `sir-corvane/06-line-up-close-after.jpg` and `07-portrait-after.jpg` the darker.
+  His fight was not pictured again with it.
 - Nothing here was seen on a real phone.
