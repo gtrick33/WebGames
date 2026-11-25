@@ -501,14 +501,6 @@ const BY_ENEMY: Record<string, Kit> = {
  * wears what its story gives it (a crown, horns, a disc of rays), built onto its head so it moves as its own; where its
  * model was one flat tint it is painted in two (render3d/repaint.ts).
  */
-const boss = (id: string, more: Partial<Kit>): void => {
-  TABLE[id] = { ...(TABLE[id] ?? { k: 'sk_minion' }), ...more };
-};
-/** Rock gone dark, the cracks in it alight from within: a thing of the forge, or of the rift. */
-const molten = (rock: string, hot: string): Kit['paint'] => [
-  { lum: [0, 0.36], to: hot, glow: true, keep: 0 },
-  { to: rock, keep: 0.8 },
-];
 // Warden Ossric, Keeper of the Crypt Gate: a warden of Aster who died at this gate three hundred years ago, woken by
 // the raiders' grieflight. His own plate gone to verdigris, the Regent's blue faded on his cape, his skull bare
 // with two grave candles burning gold on it (the candles of his fight), a halberd and a great shield.
@@ -925,7 +917,7 @@ TABLE.saltbeard = {
   k: 'boss_saltbeard',
   form: 'saltbeard',
   size: 1.75,
-  atk: 'slice',
+  atk: 'chop',
   paint: [
     { joint: 'handslot.l', lum: [0.55, 1], to: '#ffd27a', glow: true, keep: 0.3 },
     { joint: 'chest', hue: [10, 50], sat: [0.3, 1], lum: [0, 0.6], to: '#6a4a2a', keep: 0.9 },
@@ -1057,7 +1049,7 @@ TABLE['the-withered-queen'] = {
   k: 'boss_witheredqueen',
   form: 'witheredqueen',
   size: 1.95,
-  atk: 'slice',
+  atk: 'chop',
   paint: [
     { joint: 'handslot.r', lum: [0.6, 1], sat: [0, 0.35], to: '#d8ff8a', glow: true, keep: 0.3 },
     { joint: 'head', hue: [30, 70], sat: [0.3, 1], to: '#8aa04a', keep: 0.9 },

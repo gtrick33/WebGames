@@ -991,7 +991,7 @@ FORMS.veilsentinel = {
 // a finger, and lets go of the floor with her arms wide.
 FORMS.ilvane = {
   clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'stab', 'throw', 'dodge', 'wave', 'taunt', 'spawn', 'cheer', 'cast', 'channel', 'summon', 'block', 'bash', 'chop2'],
-  bend: (joint, clip, phase) => (joint === 'spine' ? [-0.05 + Math.sin(phase * Math.PI * 2) * 0.02, 0, 0] : null),
+  bend: (joint, _clip, phase) => (joint === 'spine' ? [-0.05 + Math.sin(phase * Math.PI * 2) * 0.02, 0, 0] : null),
   moves: {
     'spell:meteors': { clip: 'summon' },
     'spell:constellation': { clip: 'cast' },
