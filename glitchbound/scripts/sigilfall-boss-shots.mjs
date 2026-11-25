@@ -6,6 +6,7 @@
  *   node scripts/sigilfall-boss-shots.mjs --boss coffin-matron --out … --tag before      (file names begin "before-")
  *   node scripts/sigilfall-boss-shots.mjs --boss coffin-matron --only-look              (the line-up and the portrait)
  *   node scripts/sigilfall-boss-shots.mjs --boss coffin-matron --only-fall              (those, then dazed, struck and its death)
+ *   node scripts/sigilfall-boss-shots.mjs --boss coffin-matron --motion                 (in motion: does it walk, has every attack a move)
  *
  * A review hero walks into the boss's own room in its own dungeon, so everything is the game's: the arena, the light,
  * the rules' timing. The fight is then led by hand, one state at a time, and each is pictured twice: the whole screen
@@ -241,6 +242,84 @@ async function run() {
               const ky = c.height / (r.viewH || c.height);
               return { x: c.left + feet.x * kx, y: c.top + feet.y * ky };
             }
+            case 'anim': {
+              // how it is being drawn this instant: its clip and how far through, how fast it really moves, and whether
+              // its kit lifts it off the ground (render3d/worldCast.ts FoeAnim, render3d/kits.ts float)
+              if (!foe) return null;
+              const a = e.renderer.people?.foes?.get(foe.id);
+              const { kitOf } = await import('/src/games/sigilfall/render3d/kits.ts');
+              const { bossHidden } = await import('/src/games/sigilfall/sim/boss.ts');
+              const kit = kitOf(foe.boss.def.sprite, foe.def.id);
+              return { clip: a?.clip ?? null, t: a?.t ?? 0, speed: a?.speed ?? 0, state: foe.state, pattern: foe.boss.pattern?.use.id ?? null, hidden: bossHidden(foe), float: kit.float ?? 0, form: kit.form ?? null, file: kit.k };
+            }
+            case 'record': {
+              // reads it sixteen times a second from inside the page (a reading asked for from outside takes too long
+              // on a slow machine to catch a blow), until the readings are taken
+              const { kitOf } = await import('/src/games/sigilfall/render3d/kits.ts');
+              const { bossHidden } = await import('/src/games/sigilfall/sim/boss.ts');
+              globalThis.clearInterval(globalThis.__sfRecT);
+              globalThis.__sfRec = [];
+              globalThis.__sfRecT = globalThis.setInterval(() => {
+                const ww = globalThis.__rb.world;
+                const f = ww?.enemies.find((x) => x.boss?.def.id === boss);
+                if (!f) return;
+                const a = globalThis.__rb.renderer.people?.foes?.get(f.id);
+                globalThis.__sfRec.push({ clip: a?.clip ?? null, t: a?.t ?? 0, speed: a?.speed ?? 0, pattern: f.boss.pattern?.use.id ?? null, began: f.boss.began?.id ?? null, hidden: bossHidden(f), shift: f.boss.shift > 0, x: Math.round(f.x), y: Math.round(f.y), dazed: f.boss.dazed > 0, stun: f.statuses.some((q) => q.id === 'stun') });
+              }, 60);
+              const kit = foe ? kitOf(foe.boss.def.sprite, foe.def.id) : null;
+              return { float: kit?.float ?? 0, form: kit?.form ?? null, file: kit?.k ?? null };
+            }
+            case 'recorded': {
+              const out = globalThis.__sfRec ?? [];
+              globalThis.__sfRec = [];
+              return out;
+            }
+            case 'near': {
+              // the hero beside it, so that it and what it does are both on a phone's short screen
+              if (!foe) return false;
+              p.x = foe.x - 62;
+              p.y = foe.y + 14;
+              return true;
+            }
+            case 'walk': {
+              // nothing to do but come: its attacks wait, its helpers are gone, and the hero stands well off
+              if (!foe) return false;
+              w.clearHostile();
+              foe.boss.pattern = null;
+              foe.boss.queue = [];
+              foe.boss.rest = arg;
+              // (and nothing left over from a rush cut short: not stunned against a wall, not sliding)
+              foe.boss.dazed = 0;
+              foe.statuses.length = 0;
+              foe.vx = 0;
+              foe.vy = 0;
+              foe.state = 'chase';
+              for (const o of w.enemies) {
+                if (o === foe || o.boss || o.dead) continue;
+                o.hp = 0;
+                o.dead = true;
+                o.deathT = 9;
+              }
+              // (a tile of its own room, as far from it as the room gives within ten tiles)
+              const enc = w.encounters.find((x) => x.def.boss === boss);
+              let far = null;
+              let best = 0;
+              for (const t of w.map.roomTiles[enc.index] ?? []) {
+                if (w.map.solid[t]) continue;
+                const q = { x: ((t % w.map.w) + 0.5) * TILE, y: (Math.floor(t / w.map.w) + 0.5) * TILE };
+                const d = Math.hypot(q.x - foe.x, q.y - foe.y);
+                // (to the side of it, so that both stay on a phone's short screen)
+                if (d > best && d < TILE * 10 && Math.abs(q.y - foe.y) < TILE * 2.5) {
+                  best = d;
+                  far = q;
+                }
+              }
+              if (far) {
+                p.x = far.x;
+                p.y = far.y;
+              }
+              return !!far;
+            }
             case 'cost': {
               const cast = e.renderer.stage?.cast;
               const { kitOf } = await import('/src/games/sigilfall/render3d/kits.ts');
@@ -297,8 +376,124 @@ async function run() {
       await until(async () => (await fight('time')) >= t0 + ms / 1000, ms * 30 + 8000);
     };
 
+    /**
+     * `--motion`: the boss in motion, not held still. It walks to the hero with nothing else to do, then makes each of
+     * its attacks in every phase, in the fight's own time. All the while what it is drawn with is read ten times a
+     * second (its clip, how far through, how fast it is really moving), and six pictures are taken a fifth of a
+     * second apart: one strip per state, all on `<tag->motion.jpg`. `<tag->motion.json` has what was read and what is
+     * wrong: moving without a walk, an attack with no move of its own, or a kit that lifts it off the ground.
+     */
+    const motion = async () => {
+      const sharp = createRequire(import.meta.url)('sharp');
+      const fw = Math.round(size.viewport.width / 2);
+      const fh = Math.round(size.viewport.height / 2);
+      const rows = [];
+      const found = [];
+      // (stop-motion: the fight is held for each picture and let run a sixth of a second of its own time between
+      // them, so the six are the same moments of a move on a slow machine as on a fast one)
+      const strip = async (label, ms, keep = false) => {
+        // (`keep`: the readings so far are part of this one: a move that began before the first picture could be asked for)
+        if (!keep) await fight('recorded');
+        const frames = [];
+        const t0 = await fight('time');
+        for (let i = 0; i < 6; i++) {
+          await fight('freeze', true);
+          await page.waitForTimeout(60);
+          // (the whole screen at half size: a crop round where the boss was reckoned to stand kept missing it)
+          frames.push(await sharp(await page.screenshot({ type: 'jpeg', quality: 84 })).resize(fw, fh).jpeg({ quality: 82 }).toBuffer());
+          await fight('freeze', false);
+          await wait(160);
+        }
+        await until(async () => (await fight('time')) >= t0 + ms / 1000, ms * 30 + 8000);
+        rows.push({ label, frames });
+        return fight('recorded');
+      };
+      if (await fight('scene')) await fight('skip');
+      await wait(600);
+      const first = await fight('record');
+      // (four bosses are creatures of the air and drift on purpose: tests/sigilfall-bosses-move.test.ts ALOFT)
+      const ALOFT = ['morgrave', 'the-rime-wyrm', 'ilvane-the-unmoored', 'herald-in-the-spire'];
+      if (first?.float && !ALOFT.includes(BOSS)) found.push(`its kit lifts it ${first.float} off the ground (kits.ts float)`);
+      // standing: its idle runs
+      await fight('hold', true);
+      const still = await strip('standing', 1500);
+      await fight('hold', false);
+      const ts = new Set(still.map((a) => a.t.toFixed(2)));
+      if (ts.size < 3) found.push('standing, its clip does not advance');
+      // walking: it comes to the hero
+      const walked = { samples: 0, moving: 0, walking: 0, clips: {} };
+      const onlyMoves = value('moves')?.split(',') ?? null;
+      const onlyWalk = args.includes('--only-walk');
+      for (let go = 0; go < (onlyMoves ? 0 : 2); go++) {
+        if (!(await fight('walk', 5))) break;
+        for (const a of await strip(go ? 'walking (again)' : 'walking', 2200)) {
+          walked.samples++;
+          if (onlyWalk && walked.samples % 8 === 1) console.log('   ', JSON.stringify(a));
+          if (a.speed <= 8) continue;
+          walked.moving++;
+          walked.clips[a.clip] = (walked.clips[a.clip] ?? 0) + 1;
+          if (a.clip === 'walk' || a.clip === 'run') walked.walking++;
+        }
+      }
+      if (onlyMoves) void 0;
+      else if (walked.moving < 5) found.push(`it was never seen moving (${walked.moving} of ${walked.samples} readings)`);
+      else if (walked.walking / walked.moving < 0.8) found.push(`moving, it walks only ${Math.round((walked.walking / walked.moving) * 100)}% of the time: ${JSON.stringify(walked.clips)}`);
+      // each attack of each phase, in the fight's own time
+      const attacks = [];
+      const PLAIN = new Set(['idle', 'walk', 'run', 'hit']);
+      for (const [pi, phase] of where.phases.entries()) {
+        if (onlyWalk) break;
+        if (pi > 0) {
+          await fight('phase');
+          await until(async () => ((await fight('state'))?.shift ?? 0) > 0, 4000);
+          const shifting = await strip(`phase ${pi + 1} begins`, 1600);
+          attacks.push({ phase: pi + 1, id: '(phase change)', clips: [...new Set(shifting.map((a) => a.clip))] });
+          await until(async () => ((await fight('state'))?.shift ?? 0) <= 0, 6000);
+        }
+        for (const id of [...new Set([...phase.patterns, ...phase.enter])]) {
+          if (onlyWalk || (onlyMoves && !onlyMoves.includes(id))) continue;
+          await fight('near');
+          // (read from before it is asked for: a blow can be over before the next question gets an answer)
+          await fight('recorded');
+          if (!(await fight('pattern', id))) continue;
+          if (!(await until(async () => (await fight('state'))?.pattern === id, 6000))) {
+            attacks.push({ phase: pi + 1, id, clips: [], note: 'never began' });
+            continue;
+          }
+          const all = await strip(`phase ${pi + 1}: ${id}`, 2600, true);
+          // (its readings: from when it began, through it, and the second and a half after, where the move of a
+          // pattern that is over the instant it opens plays)
+          const from = all.findIndex((a) => a.began === id);
+          const seen = from < 0 ? [] : all.slice(from).filter((a) => a.pattern === id || !a.pattern);
+          const clips = [...new Set(seen.filter((a) => !a.hidden).map((a) => a.clip))];
+          const hiddenAll = seen.length > 0 && seen.every((a) => a.hidden);
+          attacks.push({ phase: pi + 1, id, clips, readings: seen.length, hidden: hiddenAll || undefined });
+          if (!hiddenAll && !clips.some((c) => c && !PLAIN.has(c))) found.push(`phase ${pi + 1}, ${id}: no move of its own (${clips.join(', ') || 'nothing read'})`);
+          await until(async () => !(await fight('state'))?.pattern, 8000);
+        }
+      }
+      // the strips, one row a state
+      const parts = [];
+      for (const [r, row] of rows.entries()) {
+        const label = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${fw * 6}" height="18"><rect width="100%" height="100%" fill="#111"/><text x="4" y="13" font-family="Helvetica" font-size="12" fill="#fff">${row.label.replace(/[<&]/g, '')}</text></svg>`);
+        parts.push({ input: label, left: 0, top: r * (fh + 18) });
+        for (const [i, f] of row.frames.entries()) parts.push({ input: f, left: i * fw, top: r * (fh + 18) + 18 });
+      }
+      await sharp({ create: { width: fw * 6, height: Math.max(1, rows.length) * (fh + 18), channels: 3, background: '#000' } }).composite(parts).jpeg({ quality: 80 }).toFile(join(OUT, `${TAG}motion.jpg`));
+      const out = { boss: BOSS, file: first?.file, form: first?.form, float: first?.float ?? 0, walked, attacks, found, errors: report.errors };
+      writeFileSync(join(OUT, `${TAG}motion.json`), JSON.stringify(out, null, 2));
+      console.log(`  walking: ${walked.walking} of ${walked.moving} moving readings in a walk or a run ${JSON.stringify(walked.clips)}`);
+      for (const a of attacks) console.log(`  phase ${a.phase} ${a.id.padEnd(22)} ${a.hidden ? '(out of sight throughout)' : a.clips.join(', ')}${a.note ? ` (${a.note})` : ''}`);
+      console.log(found.length ? `\n${found.map((f) => `  WRONG: ${f}`).join('\n')}` : '\n  It walks when it moves and has a move for every attack.');
+      if (found.length) process.exitCode = 1;
+    };
+
     await fight('enter');
     if (!(await until(() => fight('there'), 30_000))) throw new Error(`${BOSS} never came out`);
+    if (args.includes('--motion')) {
+      await motion();
+      return;
+    }
     // the entrance: the first time it is shown
     for (const ms of [150, 350, 450, 500, 600]) {
       await page.waitForTimeout(ms);

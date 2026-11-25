@@ -20,6 +20,7 @@ import type { Held } from './dress';
 import { kitOf } from './kits';
 import { inView } from './land';
 import { shapeOf } from './mountLook';
+import { defaultMove } from './bossMoves';
 import { chained, moveOf, type Move } from './moves';
 import { strikeOf, type Strike } from './strike';
 import { LIGHT, type RigAnim } from './toon';
@@ -125,6 +126,9 @@ interface FoeAnim {
   pattern: object | null;
   step: number;
   blowAt: number;
+  /** The pattern its last blow was for, and the pattern-begun mark last seen (sim/types.ts BossState.began). */
+  blowOf?: string;
+  began?: object;
   /** When it last flinched from a hit. */
   flinchAt: number;
   hurt: boolean;
@@ -505,6 +509,7 @@ export class WorldCast {
     const kit = kitOf(sprite, e.def.id);
     // a boss of its own: its moves for what the rules have it do, and the moments of its fight (render3d/bossKit.ts)
     const form = e.boss ? bossForm(kit.form) : undefined;
+    // (a boss drawn with a shared beast has its moves on its kit: kits.ts `moves`)
     const h = heightFromRadius(e.r);
     let anim = this.foes.get(e.id);
     if (!anim) {
@@ -527,9 +532,21 @@ export class WorldCast {
       anim.step = pattern?.step ?? 0;
     } else if (pattern && pattern.step !== anim.step) {
       anim.step = pattern.step;
-      // (a pattern that steps quickly: the blow under way is finished first)
-      if (time - anim.blowAt > BLOW_EVERY) anim.blowAt = time;
+      // (a pattern that steps quickly: the blow under way is finished first; a blow left over from the pattern
+      // before never holds up this one's)
+      if (time - anim.blowAt > BLOW_EVERY || anim.blowOf !== pattern.use.id) anim.blowAt = time;
     }
+    // a pattern that does its one thing the instant it opens (a roar, a call for hostages) is past its first step, or
+    // over, before it is ever seen here: that was its blow, and the boss stood idle through its own move
+    const began = e.boss?.began;
+    if (began && began !== anim.began) {
+      anim.began = began;
+      if (!pattern || pattern.step > 0) {
+        anim.blowAt = time;
+        anim.blowOf = began.id;
+      }
+    }
+    if (pattern) anim.blowOf = pattern.use.id;
     const since = time - anim.since;
     // where it's drawn eases after where it is, and from that, how it's really moving
     const gapX = e.x - anim.x;
@@ -592,7 +609,10 @@ export class WorldCast {
       else if (fall === 'heavy') alpha = Math.max(0, 1 - Math.max(0, e.deathT - 1.1) / 0.6);
       if (alpha <= 0) return;
     } else {
-      const move = form && e.boss?.pattern ? form.moves[e.boss.pattern.use.id] : undefined;
+      // (its move for the pattern it is in, or for the one that was over as it began)
+      const moveOf = e.boss?.pattern?.use.id ?? (time - anim.blowAt < 1.6 ? anim.blowOf : undefined);
+      // (a boss nobody has chosen moves for makes the move of its attack's kind: render3d/bossMoves.ts)
+      const move = moveOf ? ((form?.moves ?? kit.moves)?.[moveOf] ?? (form ? undefined : defaultMove(moveOf, (c) => cast.hasClip(sprite, c, e.def.id), kit.atk))) : undefined;
       const atk = move?.clip ?? kit.atk ?? 'chop';
       const blowRate = BLOW_RATE * (move?.rate ?? 1);
       // where the blow is in its attack: the lift is shown over the wind-up, so the weapon comes down as the hit lands
@@ -637,14 +657,14 @@ export class WorldCast {
         default:
           break;
       }
-      if (pattern && !bossDazed(e)) {
+      if (e.boss && (pattern || moveOf) && !bossDazed(e)) {
         // a boss: the lift held while its pattern gathers, and a blow each time the pattern moves on
         const since2 = time - anim.blowAt;
         if (blow.from + since2 * blowRate < blow.to) {
           clip = atk;
           t = blow.from + since2 * blowRate;
           loop = false;
-        } else if (pattern.step === 0 && anim.speed <= 5) {
+        } else if (pattern && pattern.step === 0 && anim.speed <= 5) {
           clip = atk;
           t = blow.lift + (blow.from - blow.lift) * Math.min(1, pattern.t / BOSS_LIFT);
           loop = false;
@@ -660,7 +680,8 @@ export class WorldCast {
         sx = 1 + (e.state === 'windup' ? 0.15 : -0.1 * k);
         sy = 1 + (e.state === 'windup' ? -0.15 : 0.12 * k);
       }
-      if (hasStatus(e, 'stun') || e.boss?.dazed) {
+      // (its daze counts down past nothing: only one still running is a daze, or it stood struck through every attack after)
+      if (hasStatus(e, 'stun') || (e.boss?.dazed ?? 0) > 0) {
         clip = form?.dazed ?? 'hit';
         t = form ? time - anim.since : time * 0.4;
       }

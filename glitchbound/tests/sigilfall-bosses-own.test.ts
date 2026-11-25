@@ -65,6 +65,10 @@ describe('Sigilfall: bosses of their own', () => {
     for (const id of ['coffin-matron', 'ossric', 'morgrave', 'grimtusk']) expect(OWN.map((x) => x.boss.id)).toContain(id);
   });
 
+  it('Gallows Keep’s Hangman and Harlan Blackglove have one (Act I)', () => {
+    for (const id of ['hangman', 'varric']) expect(OWN.map((x) => x.boss.id)).toContain(id);
+  });
+
   it('each has a file of its own, shared with no other creature, on one of the shared skeletons', () => {
     const files = new Map<string, string>();
     for (const { boss, kit } of OWN) {

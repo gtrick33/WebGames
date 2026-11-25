@@ -1,0 +1,118 @@
+{
+  "boss": "grimtusk",
+  "file": "a_bull",
+  "form": "grimtusk",
+  "float": 0,
+  "walked": {
+    "samples": 187,
+    "moving": 66,
+    "walking": 58,
+    "clips": {
+      "walk": 58,
+      "chop": 5,
+      "hit": 3
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "charge",
+      "clips": [
+        "hit",
+        "walk",
+        "chop",
+        "idle"
+      ],
+      "readings": 73
+    },
+    {
+      "phase": 1,
+      "id": "stomp",
+      "clips": [
+        "kick",
+        "idle",
+        "hit",
+        "chop"
+      ],
+      "readings": 79
+    },
+    {
+      "phase": 1,
+      "id": "gore",
+      "clips": [
+        "chop",
+        "idle",
+        "hit"
+      ],
+      "readings": 73
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "hit",
+        "idle",
+        "low",
+        "chop",
+        "kick"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "tripleCharge",
+      "clips": [
+        "chop",
+        "hit",
+        "idle",
+        "kick"
+      ],
+      "readings": 77
+    },
+    {
+      "phase": 2,
+      "id": "stomp",
+      "clips": [
+        "kick",
+        "idle",
+        "hit"
+      ],
+      "readings": 65
+    },
+    {
+      "phase": 2,
+      "id": "gore",
+      "clips": [
+        "chop",
+        "idle",
+        "kick",
+        "hit"
+      ],
+      "readings": 72
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "low",
+        "idle",
+        "hit",
+        "kick",
+        "chop"
+      ],
+      "readings": 56
+    },
+    {
+      "phase": 2,
+      "id": "roar",
+      "clips": [
+        "low",
+        "idle",
+        "chop",
+        "hit"
+      ],
+      "readings": 61
+    }
+  ],
+  "found": [],
+  "errors": []
+}

@@ -1,0 +1,202 @@
+{
+  "boss": "varric",
+  "file": "boss_harlan",
+  "form": "harlan",
+  "float": 0,
+  "walked": {
+    "samples": 182,
+    "moving": 85,
+    "walking": 81,
+    "clips": {
+      "walk": 81,
+      "slice": 3,
+      "throw": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "walk",
+        "run",
+        "slice",
+        "idle",
+        "throw"
+      ],
+      "readings": 58
+    },
+    {
+      "phase": 1,
+      "id": "volley",
+      "clips": [
+        "throw",
+        "idle",
+        "walk",
+        "run"
+      ],
+      "readings": 63
+    },
+    {
+      "phase": 1,
+      "id": "tripleCharge",
+      "clips": [
+        "walk",
+        "stab",
+        "run",
+        "idle"
+      ],
+      "readings": 74
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "wave",
+        "cheer",
+        "dodge",
+        "walk",
+        "throw",
+        "slice"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "gallows:hostages",
+      "clips": [
+        "cheer",
+        "walk",
+        "idle",
+        "run"
+      ],
+      "readings": 36
+    },
+    {
+      "phase": 2,
+      "id": "vanish",
+      "clips": [
+        "dodge",
+        "idle",
+        "walk",
+        "throw"
+      ],
+      "readings": 47
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle",
+        "walk"
+      ],
+      "readings": 52
+    },
+    {
+      "phase": 2,
+      "id": "volley",
+      "clips": [
+        "throw",
+        "idle",
+        "walk"
+      ],
+      "readings": 58
+    },
+    {
+      "phase": 2,
+      "id": "tripleCharge",
+      "clips": [
+        "stab",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 64
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "wave",
+        "idle",
+        "cheer",
+        "throw"
+      ],
+      "readings": 49
+    },
+    {
+      "phase": 3,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "cheer",
+        "dodge",
+        "slice"
+      ]
+    },
+    {
+      "phase": 3,
+      "id": "gallows:hostages",
+      "clips": [
+        "cheer",
+        "idle"
+      ],
+      "readings": 34
+    },
+    {
+      "phase": 3,
+      "id": "vanish",
+      "clips": [
+        "dodge",
+        "idle",
+        "throw"
+      ],
+      "readings": 48
+    },
+    {
+      "phase": 3,
+      "id": "volley",
+      "clips": [
+        "throw",
+        "idle",
+        "slice"
+      ],
+      "readings": 50
+    },
+    {
+      "phase": 3,
+      "id": "tripleCharge",
+      "clips": [
+        "stab",
+        "idle",
+        "slice"
+      ],
+      "readings": 30
+    },
+    {
+      "phase": 3,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle",
+        "dodge"
+      ],
+      "readings": 65
+    },
+    {
+      "phase": 3,
+      "id": "summon",
+      "clips": [
+        "wave",
+        "idle",
+        "slice"
+      ],
+      "readings": 42
+    }
+  ],
+  "found": [],
+  "errors": []
+}

@@ -26,6 +26,13 @@ from its Fantasy Weapons, Skeletons and Adventurers packs. **Grimtusk** is built
 Ultimate Animated Animals, as the boar mounts already are (see CREDITS_AND_LICENSES.md for that pack's terms: used
 inside the game only). Their names and titles are unchanged, and each one's look is its own story's.
 
+Gallows Keep's two (piece 2c, the same day) take nothing new. **The Hangman** is the large Barbarian with the hooded
+Rogue's head and mask, the Adventurers pack's great axe (twice) and a coil of rope from the RPG Tools Bits. **Harlan
+Blackglove** is the Rogue with the Survivalist's head (Mystery Monthly Series 4) and the Knight's plate arm, two
+daggers from the Fantasy Weapons Bits and a keyring from the Dungeon Pack; his crown is built in code. All of the
+same KayKit collection (CC0), each pack already credited. Their names and titles are unchanged. A headsman's hood and
+a self-crowned bandit are stock figures of the genre, and neither copies a named character of another game.
+
 ## A Rift legendary on every place (2026-11-24)
 
 The owner asked for "a legendary for each spec and 3 legendaries common for the class" on every item slot. What is taken

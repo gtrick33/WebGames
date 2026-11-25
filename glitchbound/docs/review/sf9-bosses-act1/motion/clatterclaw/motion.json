@@ -1,0 +1,118 @@
+{
+  "boss": "clatterclaw",
+  "file": "crab",
+  "form": null,
+  "float": 0,
+  "walked": {
+    "samples": 185,
+    "moving": 88,
+    "walking": 83,
+    "clips": {
+      "walk": 82,
+      "chop": 1,
+      "leap": 4,
+      "run": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "grotto:pincers",
+      "clips": [
+        "chop",
+        "idle",
+        "walk",
+        "run"
+      ],
+      "readings": 77
+    },
+    {
+      "phase": 1,
+      "id": "grotto:scuttle",
+      "clips": [
+        "leap",
+        "idle",
+        "run",
+        "walk"
+      ],
+      "readings": 57
+    },
+    {
+      "phase": 1,
+      "id": "grotto:froth",
+      "clips": [
+        "rear",
+        "idle"
+      ],
+      "readings": 62
+    },
+    {
+      "phase": 1,
+      "id": "grotto:shell",
+      "clips": [],
+      "note": "never began"
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "idle",
+        "rear",
+        "low",
+        "chop"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "grotto:pincers",
+      "clips": [
+        "idle",
+        "chop",
+        "walk"
+      ],
+      "readings": 80
+    },
+    {
+      "phase": 2,
+      "id": "grotto:scuttle",
+      "clips": [
+        "idle",
+        "leap",
+        "walk"
+      ],
+      "readings": 43
+    },
+    {
+      "phase": 2,
+      "id": "grotto:froth",
+      "clips": [
+        "rear",
+        "idle",
+        "leap"
+      ],
+      "readings": 20
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "low",
+        "idle",
+        "walk"
+      ],
+      "readings": 48
+    },
+    {
+      "phase": 2,
+      "id": "grotto:molt",
+      "clips": [
+        "rear",
+        "idle",
+        "walk"
+      ],
+      "readings": 41
+    }
+  ],
+  "found": [],
+  "errors": []
+}
