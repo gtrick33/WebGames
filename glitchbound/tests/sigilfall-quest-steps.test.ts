@@ -29,7 +29,7 @@ function placesOf(region: string): Set<string> {
 }
 
 /** The lands whose quests have been gone through (it grows as the pass does). */
-const DONE = ['thornvale', 'brackenridge', 'amberfield', 'ashen-barrows', 'sunscorch', 'glimmerwood', 'rimeheld', 'shattered-vale', 'highwall', 'gloamhollow'];
+const DONE = ['thornvale', 'brackenridge', 'amberfield', 'ashen-barrows', 'sunscorch', 'glimmerwood', 'rimeheld', 'shattered-vale', 'highwall', 'gloamhollow', 'weeping-woods', 'emberdeep'];
 /** A step that is something to do, not somewhere to be or something to count. */
 const DOING = new Set(['use', 'carry', 'hold', 'trail', 'subdue', 'event', 'boss', 'clear', 'tutorial']);
 /** What fits on the interact button, and in a toast's two lines on a phone. */
