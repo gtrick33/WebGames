@@ -2269,6 +2269,7 @@ const de: string[] = [
   'Keine Tipps außer den Hinweisen! {name} rät.',
   'jetzt online',
   'in {game}',
+  'Wir hängen an, wo du im Spiel warst:',
 ];
 
 export default de;

@@ -2269,6 +2269,7 @@ const tr: string[] = [
   'İpuçları dışında yardım yok! {name} tahmin ediyor.',
   'şu an çevrimiçi',
   '{game} oyununda',
+  'Oyunda nerede olduğunu ekleyeceğiz:',
 ];
 
 export default tr;

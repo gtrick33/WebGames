@@ -91,7 +91,10 @@ function firstPartySink(): Sink {
     track: (name, props) => {
       queue.push({ name, props });
       if (queue.length > 200) queue = queue.slice(-200);
-      if (queue.length >= 20) flush();
+      // the page is already hidden (a phone's player swiped away, and a game said where they stopped): there may be
+      // no later, so it goes now, the way the queue went when the page hid
+      if (document.visibilityState === 'hidden') flush(true);
+      else if (queue.length >= 20) flush();
       else if (!timer) timer = window.setTimeout(() => flush(), 4000);
     },
   };

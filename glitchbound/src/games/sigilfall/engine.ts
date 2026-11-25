@@ -49,6 +49,7 @@ import { Steps } from './audio/steps';
 import { voiceSound } from './audio/voice';
 import type { Interactable } from './sim/types';
 import { emptyInput, World, type InputFrame } from './sim/world';
+import { FIRST_KEEPSAKE } from './data/items';
 import { advanceScene, endScene, previewScene, sceneDue } from './sim/scene';
 import { SCENES } from './data/scenes';
 import { applyPreset, PRESETS } from './progress/presets';
@@ -63,7 +64,8 @@ import { wornLooks } from './progress/wardrobe';
 import { giveTips, tipDue, tipShown, tipSteps, type TipId, type TipStep } from './progress/tips';
 import { SPEC_LEVEL } from './data/talents';
 import { track } from '../../platform/analytics';
-import { counted, fallProps, stopProps } from './progress/telemetry';
+import { setBugContext } from '../../platform/bugContext';
+import { bugLine, counted, fallProps, stopProps } from './progress/telemetry';
 
 /**
  * The game around the simulation: heroes and the save, travelling between regions, expeditions
@@ -76,7 +78,16 @@ import { counted, fallProps, stopProps } from './progress/telemetry';
  * starts while one is waiting, so the tale is told in its order (the owner: "i do a dungeon and suddenly in my inventory
  * tab i see 4/7 sigils"; and a quest's ending, written in its reward, was never shown when it paid out by itself).
  */
-export type StoryPage = { kind: 'tale'; act: string } | { kind: 'find'; quest: string } | { kind: 'sigil'; sigil: SigilId } | { kind: 'deed'; quest: string };
+/** Kept on the hero once the page of their first skill-changing piece has been shown. */
+export const KEEPSAKE_SEEN = 'hint:keepsake';
+
+export type StoryPage =
+  | { kind: 'tale'; act: string }
+  | { kind: 'find'; quest: string }
+  | { kind: 'sigil'; sigil: SigilId }
+  | { kind: 'deed'; quest: string }
+  /** The first piece of gear that changes a skill (data/items.ts FIRST_KEEPSAKE): the piece, its gold line and the skill. */
+  | { kind: 'gear'; uid: string };
 
 /** A quest page in a dialogue: one offered (Accept), one to hand in (Complete), one just paid (a talk quest). */
 export interface DialoguePage {
@@ -535,11 +546,14 @@ export class SigilEngine {
   private onVisibility = (): void => {
     this.hidden = document.hidden;
     if (document.hidden) {
+      this.reportStop();
       this.persist();
       this.kbm?.release();
       this.touch.release();
       if (this.ui.screen === 'game' && !this.isPaused()) this.setUi({ pause: true });
     }
+    // back again: the next time they go is a stop of its own
+    else this.stopSent = false;
     this.sound.suspend(document.hidden || this.ui.pause);
   };
 
@@ -547,11 +561,30 @@ export class SigilEngine {
   private sittingFrom = performance.now();
   private stopSent = false;
 
-  /** Where a player stopped playing, sent once a sitting (the page left, or the game closed). */
+  /**
+   * Where a player stopped playing: sent when the page is hidden or left, or the game closed. A phone's player who
+   * swipes the browser away never leaves the page, they only hide it, so that counts; one who comes back and plays on
+   * stops again later, and the later stop is the one to read (docs/ANALYTICS.md: each player's last of the day).
+   */
   private reportStop(): void {
+    this.leaveBugLine();
     if (this.stopSent || !counted(this.hero, !!this.trial) || this.ui.screen !== 'game') return;
     this.stopSent = true;
-    track('game_stop', stopProps(this.hero, this.world?.region.id ?? null, (performance.now() - this.sittingFrom) / 60_000));
+    track('game_stop', stopProps(this.hero, this.world?.region.id ?? null, (performance.now() - this.sittingFrom) / 60_000, this.world?.keyRun?.key ?? 0));
+  }
+
+  /** Where the player is, left for a bug report they may go and write (progress/telemetry.ts bugLine): no name, no save. */
+  private leaveBugLine(): void {
+    const playing = this.ui.screen === 'game';
+    const key = playing ? (this.world?.keyRun?.key ?? 0) : 0;
+    setBugContext('sigilfall', bugLine(__BUILD__.sha, playing ? this.hero : null, playing ? (this.world?.region.id ?? null) : null, key, this.playing ?? (key ? 'rift' : 'story')));
+  }
+
+  /** A mode that draws itself is up (ui/playedMode.ts): a bug report written from it says which. */
+  playing: 'ring' | 'vigil' | null = null;
+
+  setPlaying(mode: 'ring' | 'vigil' | null): void {
+    this.playing = mode;
   }
 
   private onPageHide = (): void => {
@@ -792,6 +825,12 @@ export class SigilEngine {
           // in a Riftstone run, nothing about a piece picked up: it waits in the bag, the run is a race (the owner,
           // 2026-11-24: "if ur doing riftstones, it should not be visible as its distracting")
           else if (w.keyRun) break;
+          // the Coffin Matron's keepsake, the first piece that changes a skill: a page of its own, once (NINE_PLAN.md
+          // piece 3), in place of the strip or the card any other piece gets
+          else if (this.hero && ev.item.base === FIRST_KEEPSAKE && !this.hero.opened.includes(KEEPSAKE_SEEN)) {
+            this.hero.opened.push(KEEPSAKE_SEEN);
+            this.pages.push({ kind: 'gear', uid: ev.item.uid });
+          }
           // on a touch screen a piece worth wearing has the one strip at the top (ui/EquipAsk.tsx), not a card as well
           // (the owner: "double item notifications on collecting items, it should only be the one on top")
           else if (this.offerEquip(ev.item)) changed = true;
@@ -886,7 +925,7 @@ export class SigilEngine {
           // where heroes fall, counted without anything personal (progress/telemetry.ts; POLISH_PLAN.md piece 28)
           if (counted(this.hero, !!this.trial)) {
             const b = w.boss();
-            track('game_fall', fallProps(this.hero, w.region.id, b && !b.dead ? b.def.id : null));
+            track('game_fall', fallProps(this.hero, w.region.id, b && !b.dead ? b.def.id : null, w.keyRun?.key ?? 0));
           }
           this.endBossBar();
           break;
@@ -1113,6 +1152,7 @@ export class SigilEngine {
   }
 
   persist(): void {
+    this.leaveBugLine();
     if (!this.canSave) return;
     // what any hero's runs have opened, dungeon by dungeon, is its calling's on this account (progress/trial.ts stoneIn)
     if (this.hero && Object.keys(this.hero.stones).length) {
@@ -1698,7 +1738,7 @@ export class SigilEngine {
     if (page.kind === 'find' && this.hero && !this.hero.opened.includes(`kept:${page.quest}`)) this.hero.opened.push(`kept:${page.quest}`);
     this.kbm?.release();
     this.touch.release();
-    this.sound.play(page.kind === 'sigil' ? 'sigil' : page.kind === 'find' ? 'pickupBig' : page.kind === 'tale' ? 'bell' : 'quest');
+    this.sound.play(page.kind === 'sigil' ? 'sigil' : page.kind === 'find' || page.kind === 'gear' ? 'pickupBig' : page.kind === 'tale' ? 'bell' : 'quest');
     this.setUi({ story: page });
   }
 

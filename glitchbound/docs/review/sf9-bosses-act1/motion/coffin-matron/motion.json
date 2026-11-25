@@ -1,0 +1,93 @@
+{
+  "boss": "coffin-matron",
+  "file": "boss_matron",
+  "form": "matron",
+  "float": 0,
+  "walked": {
+    "samples": 185,
+    "moving": 93,
+    "walking": 91,
+    "clips": {
+      "walk": 91,
+      "cast": 2
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "crypt:coffins",
+      "clips": [],
+      "readings": 95,
+      "hidden": true
+    },
+    {
+      "phase": 1,
+      "id": "spell:seekers",
+      "clips": [
+        "cast",
+        "idle",
+        "walk"
+      ],
+      "readings": 29
+    },
+    {
+      "phase": 1,
+      "id": "spell:cage",
+      "clips": [
+        "channel",
+        "idle",
+        "walk"
+      ],
+      "readings": 29
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "summon"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "crypt:coffins",
+      "clips": [],
+      "readings": 97,
+      "hidden": true
+    },
+    {
+      "phase": 2,
+      "id": "spell:seekers",
+      "clips": [
+        "cast",
+        "idle",
+        "walk"
+      ],
+      "readings": 15
+    },
+    {
+      "phase": 2,
+      "id": "spell:cage",
+      "clips": [
+        "channel",
+        "idle",
+        "walk"
+      ],
+      "readings": 76
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "summon",
+        "idle",
+        "walk"
+      ],
+      "readings": 17
+    }
+  ],
+  "found": [],
+  "errors": []
+}

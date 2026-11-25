@@ -1,0 +1,117 @@
+{
+  "boss": "ossric",
+  "file": "boss_ossric",
+  "form": "ossric",
+  "float": 0,
+  "walked": {
+    "samples": 214,
+    "moving": 71,
+    "walking": 63,
+    "clips": {
+      "walk": 63,
+      "stab": 1,
+      "bash": 2,
+      "block": 2,
+      "chop2": 3
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "charge",
+      "clips": [
+        "bash",
+        "run",
+        "block"
+      ],
+      "readings": 13
+    },
+    {
+      "phase": 1,
+      "id": "slam",
+      "clips": [
+        "chop2",
+        "block"
+      ],
+      "readings": 9
+    },
+    {
+      "phase": 1,
+      "id": "spearFan",
+      "clips": [
+        "stab"
+      ],
+      "readings": 1
+    },
+    {
+      "phase": 1,
+      "id": "crypt:candles",
+      "clips": [
+        "taunt"
+      ],
+      "readings": 1
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "chop2",
+        "bash",
+        "run",
+        "walk",
+        "stab"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "slamRings",
+      "clips": [
+        "chop2",
+        "idle",
+        "block"
+      ],
+      "readings": 21
+    },
+    {
+      "phase": 2,
+      "id": "charge",
+      "clips": [
+        "bash",
+        "run",
+        "block"
+      ],
+      "readings": 20
+    },
+    {
+      "phase": 2,
+      "id": "spearFan",
+      "clips": [
+        "block"
+      ],
+      "readings": 7
+    },
+    {
+      "phase": 2,
+      "id": "crypt:candles",
+      "clips": [
+        "taunt",
+        "walk",
+        "idle",
+        "block"
+      ],
+      "readings": 50
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "taunt"
+      ],
+      "readings": 1
+    }
+  ],
+  "found": [],
+  "errors": []
+}

@@ -1,0 +1,111 @@
+{
+  "boss": "gloomwing",
+  "file": "fbx_trex",
+  "form": null,
+  "float": 0,
+  "walked": {
+    "samples": 183,
+    "moving": 22,
+    "walking": 20,
+    "clips": {
+      "walk": 19,
+      "roar": 1,
+      "run": 1,
+      "hit": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "spell:rain",
+      "clips": [
+        "chop",
+        "idle",
+        "walk",
+        "hit"
+      ],
+      "readings": 80
+    },
+    {
+      "phase": 1,
+      "id": "charge",
+      "clips": [
+        "leap",
+        "hit",
+        "idle"
+      ],
+      "readings": 55
+    },
+    {
+      "phase": 1,
+      "id": "barrow:feast",
+      "clips": [
+        "roar",
+        "idle",
+        "run"
+      ],
+      "readings": 36
+    },
+    {
+      "phase": 1,
+      "id": "barrow:dark",
+      "clips": [],
+      "note": "never began"
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "idle",
+        "roar",
+        "run",
+        "walk",
+        "chop",
+        "leap"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "spell:rain",
+      "clips": [
+        "chop",
+        "idle",
+        "walk"
+      ],
+      "readings": 52
+    },
+    {
+      "phase": 2,
+      "id": "spell:hurl",
+      "clips": [
+        "chop",
+        "idle",
+        "run",
+        "walk"
+      ],
+      "readings": 40
+    },
+    {
+      "phase": 2,
+      "id": "tripleCharge",
+      "clips": [
+        "leap",
+        "idle"
+      ],
+      "readings": 39
+    },
+    {
+      "phase": 2,
+      "id": "barrow:feast",
+      "clips": [
+        "roar",
+        "idle",
+        "run",
+        "walk"
+      ],
+      "readings": 47
+    }
+  ],
+  "found": [],
+  "errors": []
+}

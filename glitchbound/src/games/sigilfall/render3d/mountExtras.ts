@@ -433,5 +433,9 @@ export function boarExtras(base: MeshData, def: MountDef, rig: RigAnim): MeshDat
   }
 
   if (hasExtra(def, 'runes')) parts.push(...runes(base, [[3.9, 1.05], [4.0, -1.45]], 0.5, glow, R));
+  // a beast nobody rides, with a light of its own: it burns in its eyes (Grimtusk, the grieflight's violet)
+  if (def.bare && def.glow) {
+    for (const side of [1, -1]) parts.push(lit([side * 0.5, 3.3, 2.86], [side * 0.62, 3.34, 3.02], 0.17, 0.11, 6, glow, mix(glow, WHITE, 0.5), head, R));
+  }
   return parts;
 }

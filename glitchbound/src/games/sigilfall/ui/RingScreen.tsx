@@ -1,3 +1,4 @@
+import { usePlayedMode } from './playedMode';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { fullBar, PRESETS, SLOTS, styleOfBar, type Ability } from '../arena/abilities';
@@ -198,6 +199,7 @@ const setupName = (s: Spec): string => `${CLASSES[s.cls].name} (${PRESETS[s.cls]
  * match and its result lie beyond them, and every page has one way back.
  */
 export function RingScreen({ engine, face, body, cls, name, onBack, resume, party: invitedTo }: { engine: SigilEngine; face?: Face; body?: 'm' | 'f'; cls?: ClassId; name?: string; onBack: () => void; resume?: LiveMatch; party?: string }) {
+  usePlayedMode(engine, 'ring');
   const [save, setSave] = useState<RingSave>(readRing);
   const latest = useRef(save);
   const commit = (fn: (s: RingSave) => RingSave): void => {

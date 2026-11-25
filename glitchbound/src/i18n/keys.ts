@@ -2279,6 +2279,8 @@ export const KEYS: string[] = [
   // a friend who is here right now (the Friends page; Sigilfall's own list says it in its own words)
   "online now",
   "in {game}",
+  // the Report a bug page: a game says where its player was (src/platform/bugContext.ts)
+  "We’ll attach where you were in the game:",
 ];
 
 export const UI_COUNT = 311;

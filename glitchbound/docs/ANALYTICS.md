@@ -32,31 +32,55 @@ dashboard (`/admin`) reads it. Nothing is sent to third parties unless you also 
 | `sign_in`, `subscribe` | Account / email list | `method` / `via` |
 | `game_error` | A game did not load | `game` |
 | `web_vitals` | The page is hidden after a load | `page` (route name), `device`, `lcp` and `inp` (ms), `cls` |
-| `game_fall` | A game's hero falls (Sigilfall) | `game`, `region`, `quest`, `level`, `boss` |
-| `game_stop` | A player leaves a game mid-play: the page is left or the game closed (Sigilfall, once a sitting) | `game`, `region`, `quest`, `level`, `minutes` |
+| `game_fall` | A game's hero falls (Sigilfall) | `game`, `mode`, `key`, `region`, `quest`, `level`, `boss` |
+| `game_stop` | A player stops playing a game: the page is hidden or left, or the game or one of its modes closed (Sigilfall) | `game`, `mode`, `key`, `region`, `quest`, `level`, `minutes` |
 
 The last 100 events are also visible in the browser console as `__glitchbound.events`.
 
 ## Sigilfall's playtest numbers
 
 `game_fall` and `game_stop` say where heroes fall and where players stop (src/games/sigilfall/progress/telemetry.ts).
-Their props are the game's own content only: the land, the quest being followed, the hero's level, the boss if one was
-up, the minutes played. No name, hero or save. A review hero (a preset, a scene preview) and a Rift Trial send nothing.
+Their props are the game's own content only: the mode (`story`, `rift` with the stone's number in `key`, `ring`,
+`vigil`), the land, the quest being followed, the hero's level, the boss if one was up, the minutes played. No name,
+hero or save, and **no account**: `/api/events` leaves a signed-in member's id off these two events
+(`functions/api/events.ts`), so players are counted by the visitor key, which changes every day. A review hero (a
+preset, a scene preview) and a Rift Trial send nothing.
+
+A stop is sent when the page is hidden as well as when it is left, because a phone's player swipes the browser away
+and never leaves the page. Someone who comes back and plays on stops again later, so read each player's last stop of
+the day. The Ring and the Vigil send a stop when they are left, with the minutes spent in them and no hero's details.
+
 To read them, in the D1 console:
 
 ```sql
 -- where heroes fall most (the last 14 days)
-SELECT json_extract(props, '$.quest') AS quest, json_extract(props, '$.boss') AS boss, COUNT(*) AS falls,
-       COUNT(DISTINCT visitor) AS players
+SELECT json_extract(props, '$.mode') AS mode, json_extract(props, '$.quest') AS quest,
+       json_extract(props, '$.boss') AS boss, COUNT(*) AS falls, COUNT(DISTINCT visitor) AS players
 FROM events WHERE name = 'game_fall' AND game = 'sigilfall' AND ts > (strftime('%s', 'now') - 14 * 86400) * 1000
-GROUP BY quest, boss ORDER BY falls DESC LIMIT 25;
+GROUP BY mode, quest, boss ORDER BY falls DESC LIMIT 25;
 
--- where players stop, and after how long
-SELECT json_extract(props, '$.quest') AS quest, COUNT(*) AS stops,
+-- where players stop for the day in the story, and after how long (each player's last stop of each day)
+SELECT json_extract(props, '$.quest') AS quest, COUNT(*) AS players,
        ROUND(AVG(json_extract(props, '$.minutes')), 1) AS avg_minutes
+FROM events e WHERE name = 'game_stop' AND game = 'sigilfall' AND json_extract(props, '$.mode') = 'story'
+  AND ts > (strftime('%s', 'now') - 14 * 86400) * 1000
+  AND ts = (SELECT MAX(ts) FROM events l WHERE l.name = 'game_stop' AND l.game = 'sigilfall' AND l.visitor = e.visitor
+            AND l.day = e.day AND json_extract(l.props, '$.mode') = 'story')
+GROUP BY quest ORDER BY players DESC LIMIT 25;
+
+-- how many players opened each mode, and how long they stayed in it altogether
+SELECT json_extract(props, '$.mode') AS mode, COUNT(DISTINCT visitor || day) AS players, COUNT(*) AS visits,
+       SUM(json_extract(props, '$.minutes')) AS minutes
 FROM events WHERE name = 'game_stop' AND game = 'sigilfall' AND ts > (strftime('%s', 'now') - 14 * 86400) * 1000
-GROUP BY quest ORDER BY stops DESC LIMIT 25;
+GROUP BY mode ORDER BY players DESC;
 ```
+
+## Bug reports from inside a game
+
+A game may leave one short line on the device saying where its player is (`src/platform/bugContext.ts`); the Report a
+bug page shows it to the player and sends it at the end of the description, as `In the game: …`. It is kept 30
+minutes and only used for a report about that game. Sigilfall leaves its build, mode, land, quest, level and class
+(`bugLine` in its `progress/telemetry.ts`): never the hero's name or the save.
 
 ## The admin dashboard shows
 

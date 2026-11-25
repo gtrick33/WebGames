@@ -1,3 +1,4 @@
+import { usePlayedMode } from './playedMode';
 import { useEffect, useRef, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { CLASS_IDS } from '../data/classes';
@@ -149,6 +150,7 @@ const faceOf = (f: RoomPick['face']): Face | undefined => (f ? { skin: Math.max(
 
 /** The Vigil: choosing a hero and a land, alone or with friends, then the night itself. */
 export function VigilScreen({ engine, face, body, cls, name, onBack }: { engine: SigilEngine; face?: Face; body?: 'm' | 'f'; cls?: ClassId; name?: string; onBack: () => void }) {
+  usePlayedMode(engine, 'vigil');
   const [setup, setSetup] = useState<{ cls: ClassId; map: VigilMap } | null>(null);
   const [from, setFrom] = useState<{ cls: ClassId; map: VigilMap } | null>(null);
   const linkRef = useRef<Link<RoomView, RoomAction> | null>(null);
