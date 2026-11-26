@@ -38,7 +38,13 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     giver: 'orren-at-the-mere',
     auto: true,
     text: 'You carry Ysane’s Sigil of Tides, the sixth of seven. The seventh, the Sigil of Stone that Vosk stole from Hearthstead, is set in the Ash Crown on the Hallow King’s brow, in Duskspire. The Regent has called every ally north to take it from him. Take the north road out of Hollowmere into the Pale Reach, and find Mara and Elyra at Dawn’s Rest, the army’s camp.',
-    objective: { kind: 'talk', npc: 'mara-at-the-reach', label: 'Talk to Mara at Dawn’s Rest in the Pale Reach' },
+    // (it was a walk and a talk. An army is coming up behind the hero into a land with no fire in it: its first three
+    // watch-fires are lit by the hero, and what watches from the dark is seen)
+    objective: {
+      kind: 'use', region: 'pale-reach', at: 'reach-camp', count: 3, thing: 'campfire', verb: 'Light the fire', label: 'Light the first watch-fires at Dawn’s Rest', secs: 1.2, spread: 8, ambush: ['pale-hound', 'pale-hound'],
+      notes: ['The wood is frozen through. It takes at the third try.', 'Eyes beyond the firelight. Hounds, pale ones.', 'Three fires. The camp has an edge now.'],
+    },
+    then: [{ kind: 'talk', npc: 'mara-at-the-reach', label: 'Talk to Mara at Dawn’s Rest' }],
     after: ['ysanes-last-echo'],
     // the hand-off that sends the hero to pale-reach: it starts when the last chapter ends, not on arrival
     level: 56,
@@ -62,7 +68,10 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     giver: 'mara-at-the-reach',
     auto: true,
     text: 'The Ashen Host has drawn up in ranks at the King’s Host, north-west of Dawn’s Rest, on the army’s flank. Rider-Captain Vosk leads it, the man who stole the Sigil of Stone from Hearthstead and carried it north to his king. The Ash Crown has hollowed him out. Kill him, so the army can march on Duskspire without his riders at its back.',
-    objective: { kind: 'kill', region: 'pale-reach', count: 1, enemies: ['vosk-the-hollowed'], label: 'Defeat Vosk at the King’s Host' },
+    // (it was one kill. He rides at the head of a Host that stands by its standards: they are cut down on its flank
+    // first, and he comes to see who did it)
+    objective: { kind: 'use', region: 'pale-reach', at: 'the-kings-host', count: 3, thing: 'banner', verb: 'Cut it down', label: 'Cut down the Host’s standards at the King’s Host', secs: 1.2, spread: 7, guards: ['hollow-legionnaire'] },
+    then: [{ kind: 'kill', region: 'pale-reach', count: 1, enemies: ['vosk-the-hollowed'], label: 'Kill Vosk at the head of the Host', lair: { at: 'the-kings-host', enemies: ['vosk-the-hollowed'] } }],
     after: ['the-last-road'],
     zone: 'pale-reach',
     level: 58,
@@ -74,7 +83,9 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     giver: 'mara-at-the-reach',
     auto: true,
     text: 'Duskspire’s outer wall stands between the army and the Duskspire Gate, and it has never been breached. Magister Quell’s siege mages from Shardwatch can bring it down, but their spell is slow, and the Host will throw everything it has at them. Hold the field below the wall, north of Dawn’s Rest, until the spell is done.',
-    objective: { kind: 'event', event: 'reach-the-mages', label: 'Protect the siege mages at Duskspire’s outer wall' },
+    // (the mages' spell needs Quell's focus on the field, and it is the hero who gets it there)
+    objective: { kind: 'carry', region: 'pale-reach', from: 'reach-camp', to: 'wall-field', thing: 'rod', verb: 'Take the focus', label: 'Carry Quell’s focus to the field below the wall', ambush: [['pale-knight'], ['soul-reaver', 'hollow-legionnaire']] },
+    then: [{ kind: 'event', event: 'reach-the-mages', label: 'Protect the siege mages at Duskspire’s outer wall' }],
     after: ['the-seventh-sigil'],
     zone: 'pale-reach',
     level: 58,
@@ -98,7 +109,10 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     giver: 'mara-at-the-reach',
     auto: true,
     text: 'The Pale Herald waits in the Duskspire Gate, a shape of grey light with no face. For three hundred years he has spoken for the Hallow King, paid traitors in ash-gold and hunted the sigils. He took Elyra at the Tear and kept Nyx’s brother in a cell. Break him at the gate.',
-    objective: { kind: 'kill', region: 'pale-reach', count: 1, enemies: ['the-heralds-voice'], label: 'Defeat the Pale Herald at the Duskspire Gate' },
+    // (it was one kill. He is a voice, and speaks out of three grey fires at the Gate: they are put out, and what is
+    // left of him has to stand in one place)
+    objective: { kind: 'use', region: 'pale-reach', at: 'duskspire-gate', count: 3, thing: 'brazier', verb: 'Put it out', label: 'Put out the three grey fires the Herald speaks from', secs: 1.2, spread: 6, guards: ['soul-reaver'] },
+    then: [{ kind: 'kill', region: 'pale-reach', count: 1, enemies: ['the-heralds-voice'], label: 'Break the Pale Herald at the Duskspire Gate', lair: { at: 'duskspire-gate', enemies: ['the-heralds-voice'] } }],
     after: ['march-the-breach'],
     zone: 'pale-reach',
     level: 59,
@@ -111,9 +125,17 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     giver: 'mara-at-the-reach',
     auto: true,
     text: 'The Duskspire Gate has seven locks, one for each sigil. Six will turn for the six sigils in Elyra. The seventh is the Stone’s, and the Stone is on the Hallow King’s brow. Go up to the gate with Elyra.',
-    objective: { kind: 'explore', spot: 'duskspire-gate', label: 'Go up to the Duskspire Gate' },
+    objective: { kind: 'explore', spot: 'duskspire-gate', label: 'Go up to the Duskspire Gate with Elyra' },
+    // (the seven locks were told of. They are turned, one sigil at a time, and the seventh is tried)
+    then: [
+      {
+        kind: 'use', region: 'pale-reach', at: 'duskspire-gate', count: 3, thing: 'runestone', verb: 'Turn the lock', label: 'Turn the Gate’s locks with Elyra, sigil by sigil', secs: 1.5, spread: 4,
+        notes: ['Embers, Sun, Thorns. Three locks turn.', 'Frost, Veil, Tides. Six.', 'The seventh does not move. The Stone is on his brow.'],
+      },
+    ],
     // the wardens' words over the locks: how the gate opens, and the one way the seventh can open without the Stone
     find: {
+      step: 1,
       name: 'The Wardens’ Lock-Plate',
       kind: 'page',
       about: 'A bronze plate set over the seven locks of the Duskspire Gate, cut by the Sigil-wardens when they shut the Hallow King inside, three hundred years ago. It says how the gate can be opened.',
@@ -136,7 +158,9 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     giver: 'mara-at-the-reach',
     auto: true,
     text: 'Inside Duskspire, the way up runs over the Bone Bridge, through the Hall of Kneeling Dead where Lady Cendre keeps the King’s dead, and into the Court of the Ashen Guard. Ser Maltheus, captain of the King’s guard, has held that court for three hundred years. Defeat him to open the Stair of Ash to the throne.',
-    objective: { kind: 'boss', boss: 'hollow-guard', label: 'Defeat Ser Maltheus in Duskspire’s court' },
+    // (six locks open the Gate a man's width, and an army has to come through it: it is held while they do)
+    objective: { kind: 'hold', region: 'pale-reach', at: 'duskspire-gate', secs: 25, waves: [['pale-knight', 'hollow-legionnaire'], ['soul-reaver', 'pale-knight'], ['pale-knight', 'pale-knight']], label: 'Hold the Gate while the army comes through' },
+    then: [{ kind: 'boss', boss: 'hollow-guard', label: 'Defeat Ser Maltheus in Duskspire’s court' }],
     after: ['the-duskspire-gate'],
     zone: 'pale-reach',
     level: 59,
@@ -219,8 +243,15 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     id: 'the-hollowing',
     name: 'The Hollowing',
     giver: 'orren-at-the-reach',
-    text: 'Orren has a tent full of soldiers he can’t heal. Soul-reavers struck them with a cold violet light, and no medicine or prayer warms them again. The camp calls it the Hollowing. Bring Orren four of the violet shards that soul-reavers carry, so he can learn what it is.',
-    objective: { kind: 'loot', region: 'pale-reach', item: 'Reaver’s Shard', from: ['soul-reaver'], chance: 0.35, count: 4, label: 'Take Reaver’s Shards from soul-reavers' },
+    text: 'Orren has a tent full of soldiers he can’t heal. Soul-reavers struck them with a cold violet light, and no medicine or prayer warms them again. The camp calls it the Hollowing. Bring Orren three of the violet shards that soul-reavers carry, and try them on the hollowed with him, so he can learn what it is.',
+    objective: { kind: 'loot', region: 'pale-reach', item: 'Reaver’s Shard', from: ['soul-reaver'], chance: 0.35, count: 3, label: 'Take Reaver’s Shards from soul-reavers' },
+    // (it was four shards handed over. What they do is tried, at the tents where the hollowed lie)
+    then: [
+      {
+        kind: 'use', region: 'pale-reach', at: 'orren-at-the-reach', count: 3, thing: 'shelter', verb: 'Try a shard', label: 'Try the shards on Orren’s hollowed soldiers', secs: 1.3, spread: 6,
+        notes: ['His eyes follow the shard. Nothing else moves.', '“Cold,” she says. Her first word in three days.', 'The shard dims in your hand. He is no warmer.'],
+      },
+    ],
     after: ['the-last-road'],
     zone: 'pale-reach',
     level: 57,
@@ -231,7 +262,12 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     name: 'Old Wintersend',
     giver: 'orren-at-the-reach',
     text: 'Orren’s books name one cure for the Hollowing: a reliquary kept in Wintersend Hall, in the village of Old Wintersend, west of Dawn’s Rest. Nobody has been there since the plague winter, three hundred years ago. Go and see if the hall still stands.',
-    objective: { kind: 'explore', spot: 'frozen-village', label: 'Find Old Wintersend, west of Dawn’s Rest' },
+    // (it was a walk west. Nobody has been there in three hundred years, and the road says so)
+    objective: {
+      kind: 'trail', region: 'pale-reach', from: 'reach-camp', to: 'frozen-village', marks: 3, label: 'Follow the old road west to Wintersend',
+      notes: ['A road-post, iced over: “Wintersend, one league.”', 'Sledges in a row, loaded for leaving. They never left.', 'A village, whole. Every door is barred from inside.'],
+    },
+    then: [{ kind: 'explore', spot: 'frozen-village', label: 'Find Old Wintersend' }],
     // (pays out in the village: laying its watchers to rest starts there, with no walk back to Orren between)
     turnIn: false,
     find: {
@@ -254,8 +290,11 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     id: 'the-watchers-of-wintersend',
     name: 'The Watchers of Wintersend',
     giver: 'orren-at-the-reach',
-    text: 'The people of Old Wintersend swore to guard their hall’s reliquary until help came, and they are guarding it still, as frost wraiths. Lay eight of them to rest, as gently as you can. Then take the reliquary back to Orren at Dawn’s Rest.',
-    objective: { kind: 'kill', region: 'pale-reach', count: 8, enemies: ['frost-wraith'], label: 'Lay frost wraiths to rest' },
+    text: 'The people of Old Wintersend swore to guard their hall’s reliquary until help came, and they are guarding it still, as frost wraiths. Wear three of them down, as gently as you can, and tell them help has come. Then carry the reliquary back to Orren at Dawn’s Rest.',
+    // (it was eight kills, "as gently as you can". They kept an oath: they are worn down and told that help has come, and
+    // the reliquary they guarded goes to Orren in the hero's arms)
+    objective: { kind: 'subdue', region: 'pale-reach', enemies: ['frost-wraith'], count: 3, verb: 'Release', label: 'Wear the watchers down, and release them from their oath' },
+    then: [{ kind: 'carry', region: 'pale-reach', from: 'frozen-village', to: 'orren-at-the-reach', thing: 'chest', verb: 'Take the reliquary', label: 'Carry Wintersend’s reliquary to Orren', ambush: [['frost-wraith'], ['pale-hound', 'pale-hound']] }],
     after: ['old-wintersend'],
     zone: 'pale-reach',
     level: 58,
@@ -267,8 +306,10 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     id: 'cold-iron',
     name: 'Cold Iron',
     giver: 'quartermaster-holt',
-    text: 'Quartermaster Holt says the army’s mail is too thin for the cold of the Reach. The pale knights wear good steel plate, and Holt can rivet it onto the soldiers’ coats. Bring him four pieces of Blackened Plate from pale knights anywhere on the Reach.',
-    objective: { kind: 'loot', region: 'pale-reach', item: 'Blackened Plate', from: ['pale-knight'], chance: 0.35, count: 4, label: 'Take Blackened Plate from pale knights' },
+    text: 'Quartermaster Holt says the army’s mail is too thin for the cold of the Reach. The pale knights wear good steel plate, and Holt can rivet it onto the soldiers’ coats. Bring him three pieces of Blackened Plate from pale knights anywhere on the Reach, and hold them for him while he rivets.',
+    objective: { kind: 'loot', region: 'pale-reach', item: 'Blackened Plate', from: ['pale-knight'], chance: 0.35, count: 3, label: 'Take Blackened Plate from pale knights' },
+    // (it was four plates handed over. Holt has one pair of hands: the hero holds the plates while he rivets)
+    then: [{ kind: 'use', region: 'pale-reach', at: 'quartermaster-holt', count: 3, thing: 'anvil', verb: 'Hold the plate', label: 'Hold the plates while Holt rivets the first coats', secs: 1.2, spread: 4 }],
     after: ['the-last-road'],
     zone: 'pale-reach',
     level: 58,
@@ -278,13 +319,22 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     id: 'riveted-coats',
     name: 'Riveted Coats',
     giver: 'quartermaster-holt',
-    text: 'The plated coats work. The first soldier to wear one took a reaver’s bolt in the chest and walked back to camp. Holt wants a plated coat for every soldier before the army marches. Defeat six pale knights at the King’s Host, north-west of Dawn’s Rest, or on the roads.',
-    objective: { kind: 'kill', region: 'pale-reach', count: 6, enemies: ['pale-knight'], label: 'Defeat pale knights' },
+    text: 'The plated coats work. The first soldier to wear one took a reaver’s bolt in the chest and walked back to camp. Holt wants a plated coat for every soldier before the army marches. Defeat four pale knights at the King’s Host, north-west of Dawn’s Rest, or on the roads, and search the armory crates the Host keeps there.',
+    objective: { kind: 'kill', region: 'pale-reach', count: 4, enemies: ['pale-knight'], label: 'Defeat pale knights' },
+    // (it was six kills, and the stamp was noticed back at camp. The Host's plate comes in crates: they are searched
+    // where they stand, and say whose it was)
+    then: [
+      {
+        kind: 'use', region: 'pale-reach', at: 'the-kings-host', count: 3, thing: 'crate', verb: 'Search', label: 'Search the Host’s armory crates at the King’s Host', secs: 1.1, spread: 7, guards: ['pale-knight'],
+        notes: ['Plate, crated and oiled. It never saw a battle.', 'The crates are stencilled in Aster’s script.', 'Under the black: an armory stamp. Aster’s. Ten years old.'],
+      },
+    ],
     after: ['cold-iron'],
     zone: 'pale-reach',
     level: 58,
     // (the side story's turn, and Act II's money found at last: the steel bought for the Watch's relief that never marched)
     find: {
+      step: 1,
       name: 'A Plate with Aster’s Armory Stamp',
       kind: 'relic',
       about: 'One of the pale knights’ breastplates, scrubbed of its black for riveting. Under the rot it carries the stamp of Aster’s own armory, a year ten years gone, and a muster mark: “Relief of the Ninefold Watch.” The Regent’s treasury paid for that relief and it never marched. Its steel went north instead, and the Hallow King’s knights have worn it ever since.',
@@ -297,10 +347,16 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     name: 'A Hound Named Bran',
     giver: 'outrider-maeve',
     text: 'Three days ago, Outrider Maeve’s hound Bran ran after the King’s hounds, and he hasn’t come back. They went toward the King’s Kennels, east of Dawn’s Rest. Maeve can’t leave her post. Go to the Kennels and look for Bran.',
-    objective: { kind: 'explore', spot: 'hound-kennels', label: 'Look for Bran at the King’s Kennels' },
+    // (it was a walk to the kennels. A hound that ran off leaves tracks)
+    objective: {
+      kind: 'trail', region: 'pale-reach', from: 'outrider-maeve', to: 'hound-kennels', marks: 3, label: 'Follow Bran’s tracks east',
+      notes: ['A hound’s prints among bigger ones. He was keeping up.', 'Blood on the snow. Not much.', 'A collar, chewed through, at the kennel gate.'],
+    },
+    then: [{ kind: 'explore', spot: 'hound-kennels', label: 'Find the King’s Kennels' }],
     // (pays out at the kennels: the hunt for the hound that chased him starts there, with no walk back to Maeve between)
     turnIn: false,
     find: {
+      step: 0,
       name: 'Bran’s Collar',
       kind: 'token',
       about: 'A dwarf-leather dog collar, chewed clean through, lying in the snow of the King’s Kennels. Beside it are paw prints as wide as a plate. There is no blood on it.',
@@ -316,7 +372,13 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     name: 'Gravejaw',
     giver: 'outrider-maeve',
     text: 'Gravejaw, the great hound of the King’s pack, chewed through Bran’s collar and is hunting him across the Reach. While she lives, Bran can’t come home. Kill Gravejaw at the King’s Kennels, east of Dawn’s Rest, then tell Maeve.',
-    objective: { kind: 'kill', region: 'pale-reach', count: 1, enemies: ['gravejaw'], label: 'Kill Gravejaw at the King’s Kennels' },
+    // (it was one kill, and Bran came home in a line of talk. She is drawn out by opening her kennels; and he is called
+    // out of hiding by the hero)
+    objective: { kind: 'use', region: 'pale-reach', at: 'hound-kennels', count: 3, thing: 'crate', verb: 'Open the cage', label: 'Open the King’s kennel cages', secs: 1, spread: 6, ambush: ['pale-hound', 'pale-hound'] },
+    then: [
+      { kind: 'kill', region: 'pale-reach', count: 1, enemies: ['gravejaw'], label: 'Kill Gravejaw', lair: { at: 'hound-kennels', enemies: ['gravejaw'] } },
+      { kind: 'use', region: 'pale-reach', at: 'hound-kennels', count: 1, thing: 'log', verb: 'Call him', label: 'Call Bran out of hiding', secs: 1.8, spread: 3, notes: ['He comes on three legs, tail going.'] },
+    ],
     after: ['a-hound-named-bran'],
     zone: 'pale-reach',
     level: 58,
@@ -378,7 +440,7 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       { when: { quest: 'crownfall-the-ash-crown', state: 'done' }, lines: ['The Crown is gone. Vaelmoor’s dead can rest now, and so can my brother Davin.', 'For forty years I told mourners that the dead must stay dead. Now I have seen why it matters.'] },
-      { when: { quest: 'the-hollowing', state: 'active' }, lines: ['The soul-reavers carry violet shards inside them. When they strike my soldiers, the cold never leaves.', 'Bring me four shards. I need to know what I’m fighting.'] },
+      { when: { quest: 'the-hollowing', state: 'active' }, lines: ['The soul-reavers carry violet shards inside them. When they strike my soldiers, the cold never leaves.', 'Bring me three shards, and come round the tents with me while I try them. I need to know what I’m fighting.'] },
       { when: { quest: 'old-wintersend', state: 'active' }, lines: ['My old books say Wintersend Hall kept a reliquary that cured the Hollowing. Old Wintersend is west of here. Go and look.'] },
       { when: { quest: 'the-watchers-of-wintersend', state: 'active' }, lines: ['Wintersend’s people are still guarding the reliquary, as frost wraiths. Lay them to rest gently. They’ve kept watch for three hundred years.'] },
       // Tobiah's daughter crossed at Hollowmere
@@ -469,7 +531,7 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
     shop: 'armor',
     shopName: 'Holt’s Stores',
     talk: [
-      { when: { quest: 'cold-iron', state: 'active' }, lines: ['Our mail was made for Highwall’s winters. The Reach is much colder.', 'The pale knights wear good steel under the rot. Bring me four plates, and I’ll rivet them onto the coats.'] },
+      { when: { quest: 'cold-iron', state: 'active' }, lines: ['Our mail was made for Highwall’s winters. The Reach is much colder.', 'The pale knights wear good steel under the rot. Bring me three plates, and hold them while I rivet. I’ve one pair of hands and nine hundred coats.'] },
       { when: { quest: 'riveted-coats', state: 'active' }, lines: ['It works. The first soldier to wear one took a bolt in the chest and walked away.', 'Bring down six more knights, and every coat in camp gets a plate.'] },
       { when: { quest: 'riveted-coats', state: 'done' }, lines: ['Every coat in camp has a plate on it. Our own armory’s steel, ten years late.', 'The Watch’s relief was paid for and never came. Now it’s marching after all, on our backs.'] },
       { lines: ['Holt’s Stores. Armor, boots and blankets.', 'It’s even colder in Duskspire than out here. Dress warmly.'] },

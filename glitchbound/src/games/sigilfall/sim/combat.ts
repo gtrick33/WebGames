@@ -5,6 +5,7 @@ import { hitSound } from '../data/voices';
 import { typeBonus } from '../progress/build';
 import { bossHidden } from './boss';
 import { moveCircle } from './map';
+import { yieldsTo } from './tasks';
 import { fallOf } from '../data/falls';
 import { summonPet } from './pets';
 import type { Enemy, Projectile, Status } from './types';
@@ -75,7 +76,7 @@ export interface HitOpts {
 
 /** A hit from the hero on an enemy: returns the damage dealt (0 if it was absorbed or ignored). */
 export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: HitOpts): number {
-  if (e.dead || e.state === 'spawn' || base <= 0) return 0;
+  if (e.dead || e.state === 'spawn' || base <= 0 || e.yielded) return 0;
   if (e.boss && (e.boss.shift > 0 || e.boss.dying > 0 || bossHidden(e))) {
     w.text(e.x, e.y - e.r - 8, 'IMMUNE', '#c9c3e6', false);
     return 0;
@@ -126,7 +127,7 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
     const k = knockTo > 0 && !e.boss && o.fromX !== undefined ? knockTo / Math.max(0.6, e.def.mass) : 0;
     w.coop!.out.push({ t: 'dmg', id: e.id, dmg, kx: Math.round(Math.cos(a) * k), ky: Math.round(Math.sin(a) * k) });
     e.hp = Math.max(1, e.hp - dmg);
-  } else if (!e.dummy) e.hp -= dmg;
+  } else if (!e.dummy && !yieldsTo(w, e, dmg)) e.hp -= dmg;
   e.flash = 0.12;
   e.hurtT = 0;
   // some attacks give mana back (the Mage's bolt): only the direct hit, never splits or chains
@@ -268,7 +269,7 @@ export function remoteHit(w: World, e: Enemy, dmg: number, kx: number, ky: numbe
     e.shield -= took;
     dmg -= took;
   }
-  if (!e.dummy) e.hp -= dmg;
+  if (!e.dummy && !yieldsTo(w, e, dmg)) e.hp -= dmg;
   e.flash = 0.12;
   e.hurtT = 0;
   e.aggro = true;

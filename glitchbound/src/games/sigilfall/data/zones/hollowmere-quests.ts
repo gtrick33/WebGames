@@ -21,7 +21,13 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
     name: 'The Dead Lake',
     giver: 'thane-hroki',
     text: 'The Pale Crown is broken, but the Hallow King will have another made, and he still needs Elyra and every sigil for it. The last sigil still hidden, the Sigil of Tides, lies under Hollowmere, at Queen Ysane’s grave. Take the west road out of Emberdeep to the lake. The Ferryman keeps a landing on its south shore.',
-    objective: { kind: 'talk', npc: 'the-ferryman', label: 'Find the Ferryman on Hollowmere’s south shore' },
+    // (it was a walk and a talk. Three dead lie on his landing waiting to cross, and nobody has paid for them: the hero
+    // does, and sees who the lake takes)
+    objective: {
+      kind: 'use', region: 'hollowmere', at: 'the-ferryman', count: 3, thing: 'grave', verb: 'Lay a penny', label: 'Pay the ferry-toll for the three dead on the landing', secs: 1, spread: 5,
+      notes: ['A fisherman. His boat came back without him.', 'A child. Someone has tucked a doll in beside her.', 'A soldier of Aster. Three hundred years late.'],
+    },
+    then: [{ kind: 'talk', npc: 'the-ferryman', label: 'Talk to the Ferryman on Hollowmere’s south shore' }],
     after: ['ashkar-the-bound'],
     // the hand-off that sends the hero to hollowmere: it starts when the last chapter ends, not on arrival
     level: 53,
@@ -33,8 +39,10 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
     name: 'The Restless Shore',
     auto: true,
     giver: 'the-ferryman',
-    text: 'The Ferryman rows the dead across Hollowmere so they can rest. They used to wait quietly on the shore for him. Now the Lich pulls the drowned up off the bottom, and every night they walk out of the lake and bang on the landing’s shutters. Put down six of them along the shore.',
-    objective: { kind: 'kill', region: 'hollowmere', count: 6, enemies: ['drowned-dead'], label: 'Put down the drowned dead on the shore' },
+    text: 'The Ferryman rows the dead across Hollowmere so they can rest. They used to wait quietly on the shore for him. Now the Lich pulls the drowned up off the bottom, and every night they walk out of the lake and bang on the landing’s shutters. Put down four of them along the shore, and bar the landing’s shutters before dark.',
+    objective: { kind: 'kill', region: 'hollowmere', count: 4, enemies: ['drowned-dead'], label: 'Put down the drowned dead on the shore' },
+    // (it was six kills. They bang on the landing's shutters every night: the shutters are barred before this one)
+    then: [{ kind: 'use', region: 'hollowmere', at: 'the-ferryman', count: 3, thing: 'crate', verb: 'Bar the shutter', label: 'Bar the landing’s shutters before dark', secs: 1.1, spread: 6, ambush: ['drowned-dead', 'drowned-dead'] }],
     after: ['the-dead-lake'],
     zone: 'hollowmere',
     level: 53,
@@ -64,7 +72,12 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
     giver: 'the-ferryman',
     auto: true,
     text: 'The Lich of Hollowmere rules the island in the middle of the lake, where Queen Ysane is buried. He makes the lake’s dead into soldiers for the Host, and he is searching the water for the Sigil of Tides. The Ferryman won’t row there, but an old causeway runs out to the island north-east of the landing. Cross it and reach the Necropolis.',
-    objective: { kind: 'explore', spot: 'the-necropolis', label: 'Cross the causeway to the Necropolis' },
+    // (it was a walk north-east. The causeway is under water and has to be found stone by stone)
+    objective: {
+      kind: 'trail', region: 'hollowmere', from: 'the-ferryman', to: 'the-necropolis', marks: 3, thing: 'runestone', label: 'Find the old causeway, stone by stone',
+      notes: ['The first stone, under a hand of water.', 'Bone-weavers’ thread, strung from post to post.', 'The island’s gate. It has no door, and never did.'],
+    },
+    then: [{ kind: 'explore', spot: 'the-necropolis', label: 'Cross to the Necropolis' }],
     find: {
       name: 'A Ferry Penny',
       kind: 'token',
@@ -82,7 +95,10 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
     auto: true,
     giver: 'the-ferryman',
     text: 'Inside the Necropolis, the drowned lie in rows, waiting to be made into soldiers. The Lich sits on a throne of coral and bone, built over Queen Ysane’s grave, and calls more of them up out of the lake. Kill him, and the lake’s dead can cross in peace.',
-    objective: { kind: 'kill', region: 'hollowmere', count: 1, enemies: ['the-lich-of-hollowmere'], label: 'Defeat the Lich of Hollowmere in the Necropolis' },
+    // (it was one kill. The drowned on his slabs are half sewn into soldiers: the thread is cut first, so that he has
+    // nothing to call up)
+    objective: { kind: 'use', region: 'hollowmere', at: 'the-necropolis', count: 3, thing: 'coffin', verb: 'Cut the thread', label: 'Cut the bone-weavers’ thread from the drowned on the slabs', secs: 1.1, spread: 6, guards: ['lich-acolyte'] },
+    then: [{ kind: 'kill', region: 'hollowmere', count: 1, enemies: ['the-lich-of-hollowmere'], label: 'Kill the Lich of Hollowmere', lair: { at: 'the-necropolis', enemies: ['the-lich-of-hollowmere'] } }],
     find: {
       name: 'Ysane’s Last Letter',
       kind: 'letter',
@@ -106,7 +122,13 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
     giver: 'the-ferryman',
     auto: true,
     text: 'Behind the Lich’s throne, on the steps of the drowned altar, waits the last echo of Queen Ysane. She is the strongest memory the Ash Crown keeps, and she has waited three hundred years for someone to listen to her. Go down to the altar and talk to her.',
-    objective: { kind: 'talk', npc: 'echo-of-ysane-mere', label: 'Talk to Queen Ysane at the drowned altar' },
+    // (it was a walk to the altar. She has waited three hundred years to be listened to: her altar is lit first, and she
+    // comes to it)
+    objective: {
+      kind: 'use', region: 'hollowmere', at: 'echo-of-ysane-mere', count: 3, thing: 'candle', verb: 'Light', label: 'Light the three candles of the drowned altar', secs: 1.2, spread: 4,
+      notes: ['It lights under the water. It should not.', 'A woman’s voice, close: “Not yet. One more.”', 'The altar is lit. She is standing behind you.'],
+    },
+    then: [{ kind: 'talk', npc: 'echo-of-ysane-mere', label: 'Listen to Queen Ysane at the drowned altar' }],
     after: ['the-necropolis'],
     zone: 'hollowmere',
     level: 56,
@@ -123,10 +145,18 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
     name: 'A Pilgrim’s Errand',
     giver: 'pilgrim-tobiah',
     text: 'Pilgrim Tobiah’s daughter, Wenna, drowned three winters ago. People say every drowned soul who is still mourned ends up in Hollowmere, and Tobiah still mourns her. He thinks she walks in Drowned Elsmere, a town that sank the night Vaelmoor died. Go north-west of the landing and see what is there.',
-    objective: { kind: 'explore', spot: 'drowned-town', label: 'Find Drowned Elsmere north-west of the landing' },
+    objective: { kind: 'explore', spot: 'drowned-town', label: 'Find Drowned Elsmere, north-west of the landing' },
+    // (it was a walk to the tower. Others have come here before Tobiah: what they left on its steps is read)
+    then: [
+      {
+        kind: 'use', region: 'hollowmere', at: 'drowned-town', count: 3, thing: 'books', verb: 'Read', label: 'Read the notes left on the tower steps', secs: 1.1, spread: 5, guards: ['lake-wraith'],
+        notes: ['“Wenna, nine. Was it cold?” In a stranger’s hand.', 'Dozens of notes, each to someone drowned.', 'Fresh ink: “Papa is still looking.” No name.'],
+      },
+    ],
     // (pays out in Elsmere: the keepsakes are looked for there, with no walk back to Tobiah between)
     turnIn: false,
     find: {
+      step: 1,
       name: 'Notes on the Tower Steps',
       kind: 'note',
       about: 'Scraps of paper weighted with stones on the steps of Elsmere’s bell tower, where the water laps. Mourners leave them for their drowned. Some are three hundred years old. One is from last spring.',
@@ -141,9 +171,17 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
     id: 'keepsakes-of-elsmere',
     name: 'Keepsakes of Elsmere',
     giver: 'pilgrim-tobiah',
-    text: 'The drowned women of Elsmere carry what they had when they went into the water. Tobiah hopes one of them carries something of Wenna’s. Take five keepsakes from the lake wraiths around the tower, and bring them to Tobiah at the landing.',
-    objective: { kind: 'loot', region: 'hollowmere', item: 'Elsmere Keepsake', from: ['lake-wraith'], chance: 0.35, count: 5, label: 'Take Elsmere Keepsakes from lake wraiths' },
+    text: 'The drowned women of Elsmere carry what they had when they went into the water. Tobiah hopes one of them carries something of Wenna’s. Take three keepsakes from the lake wraiths around the tower, open the keepsake-boxes inside it, and bring what you find to Tobiah at the landing.',
+    objective: { kind: 'loot', region: 'hollowmere', item: 'Elsmere Keepsake', from: ['lake-wraith'], chance: 0.35, count: 3, label: 'Take Elsmere Keepsakes from lake wraiths' },
+    // (it was five keepsakes, and hers among them by luck. What they carried is kept in the tower, in boxes: they are opened)
+    then: [
+      {
+        kind: 'use', region: 'hollowmere', at: 'drowned-town', count: 3, thing: 'chest', verb: 'Open', label: 'Open the keepsake-boxes in the drowned tower', secs: 1.1, spread: 5, ambush: ['lake-wraith'],
+        notes: ['A thimble and a wedding ring.', 'A wooden horse, its paint worn off by small hands.', 'A locket. Inside, a curl of hair, and a “W”.'],
+      },
+    ],
     find: {
+      step: 1,
       name: 'Wenna’s Locket',
       kind: 'relic',
       about: 'A small silver locket, the newest of the keepsakes the lake wraiths carried. It is still bright. There is a name engraved inside.',
@@ -159,7 +197,9 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
     name: 'The Bell of Elsmere',
     giver: 'pilgrim-tobiah',
     text: 'Wenna is in the lake, and Tobiah wants her to rest. But Elsmere’s sexton is still ringing the bell in the drowned tower, and every ring calls the lake’s dead back up. Kill the Bell-Ringer in Drowned Elsmere, north-west of the landing.',
-    objective: { kind: 'kill', region: 'hollowmere', count: 1, enemies: ['the-bell-ringer'], label: 'Kill the Bell-Ringer in Drowned Elsmere' },
+    // (it was one kill. The bell calls the lake's dead up at every ring: its ropes are cut, and the sexton comes down)
+    objective: { kind: 'use', region: 'hollowmere', at: 'drowned-town', count: 3, thing: 'gibbet', verb: 'Cut the rope', label: 'Cut the three bell-ropes of the drowned tower', secs: 1.1, spread: 5, guards: ['drowned-dead'] },
+    then: [{ kind: 'kill', region: 'hollowmere', count: 1, enemies: ['the-bell-ringer'], label: 'Kill the Bell-Ringer', lair: { at: 'drowned-town', enemies: ['the-bell-ringer'] } }],
     after: ['keepsakes-of-elsmere'],
     zone: 'hollowmere',
     level: 54,
@@ -170,8 +210,15 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
     id: 'the-answering-dead',
     name: 'The Answering Dead',
     giver: 'old-nan',
-    text: 'Mourners’ Shore is where the living call out to their dead across the water. Lately the lake wraiths answer, and they attack anyone they find. Old Nan’s lodgers are hiding in the reeds, too scared to move. Lay eight lake wraiths to rest, on Mourners’ Shore east of the landing.',
-    objective: { kind: 'kill', region: 'hollowmere', count: 8, enemies: ['lake-wraith'], label: 'Lay lake wraiths to rest' },
+    text: 'Mourners’ Shore is where the living call out to their dead across the water. Lately the lake wraiths answer, and they attack anyone they find. Old Nan’s lodgers are hiding in the reeds, too scared to move. Lay five lake wraiths to rest, on Mourners’ Shore east of the landing, and bring her lodgers out of the reeds.',
+    objective: { kind: 'kill', region: 'hollowmere', count: 5, enemies: ['lake-wraith'], label: 'Lay lake wraiths to rest' },
+    // (it was eight kills, and the lodgers stayed in the reeds. They are fetched out)
+    then: [
+      {
+        kind: 'use', region: 'hollowmere', at: 'mourners-reeds', count: 3, thing: 'captive', verb: 'Lead out', label: 'Bring Old Nan’s lodgers out of the reeds', secs: 1, spread: 5,
+        notes: ['“Is it gone? I heard my mother’s voice.”', '“Don’t answer them. Whatever they say.”', '“Nan said someone would come. She always says.”'],
+      },
+    ],
     after: ['the-dead-lake'],
     zone: 'hollowmere',
     level: 54,
@@ -182,8 +229,13 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
     id: 'buried-twice',
     name: 'Buried Twice',
     giver: 'digger-mott',
-    text: 'Digger Mott has buried the landing’s dead for forty years. Lately something digs up his graves at night and carries the bodies off in their shrouds. The Ferryman says it is the bone-weavers, who sew the dead into soldiers for the Lich. Take four stolen shrouds back from the bone-weavers at the Corpse Landing, on the east shore.',
-    objective: { kind: 'loot', region: 'hollowmere', item: 'Stolen Shroud', from: ['bone-weaver'], chance: 0.4, count: 4, label: 'Take Stolen Shrouds from bone-weavers' },
+    text: 'Digger Mott has buried the landing’s dead for forty years. Lately something digs up his graves at night and carries the bodies off in their shrouds. The Ferryman says it is the bone-weavers, who sew the dead into soldiers for the Lich. Follow the drag marks from his graves, and take three stolen shrouds back from the bone-weavers at the Corpse Landing.',
+    // (the shrouds were taken off whichever weaver had one. Where the dead were carried is followed from the graves)
+    objective: {
+      kind: 'trail', region: 'hollowmere', from: 'digger-mott', to: 'corpse-landing', marks: 3, label: 'Follow the drag marks from Mott’s graves',
+      notes: ['An open grave. Drag marks, toward the lake.', 'A scrap of shroud on the reeds. It has stitches in it.', 'Corpse Landing. They are sewing.'],
+    },
+    then: [{ kind: 'loot', region: 'hollowmere', item: 'Stolen Shroud', from: ['bone-weaver'], chance: 0.4, count: 3, label: 'Take Stolen Shrouds from bone-weavers' }],
     after: ['the-dead-lake'],
     zone: 'hollowmere',
     level: 54,
@@ -193,8 +245,15 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
     id: 'old-customers',
     name: 'Faces Mott Buried',
     giver: 'digger-mott',
-    text: 'Mott took a close look at the guards on the north road in their bone armor. He knows some of their faces, because he buried them himself. The Lich has sewn the landing’s own dead into his guard. Lay six necropolis guards to rest, on the roads north of the landing or on the island.',
-    objective: { kind: 'kill', region: 'hollowmere', count: 6, enemies: ['necropolis-guard'], label: 'Lay necropolis guards to rest' },
+    text: 'Mott took a close look at the guards on the north road in their bone armor. He knows some of their faces, because he buried them himself. The Lich has sewn the landing’s own dead into his guard. Lay four necropolis guards to rest, on the roads north of the landing or on the island, and help him put the ones he knew back in the ground.',
+    objective: { kind: 'kill', region: 'hollowmere', count: 4, enemies: ['necropolis-guard'], label: 'Lay necropolis guards to rest' },
+    // (it was six kills. They are Mott's own dead: they go back in the ground he dug for them, and he names each)
+    then: [
+      {
+        kind: 'use', region: 'hollowmere', at: 'digger-mott', count: 3, thing: 'grave', verb: 'Rebury', label: 'Help Mott rebury the ones he knew', secs: 1.3, spread: 6,
+        notes: ['“Old Harl. I buried him in his good boots.”', '“The Tams girl. Fever. Nine years back.”', '“This one I never knew. He gets a stone anyway.”'],
+      },
+    ],
     after: ['buried-twice'],
     zone: 'hollowmere',
     level: 55,
@@ -343,7 +402,7 @@ export const HOLLOWMERE_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'old-customers', state: 'active' },
-        lines: ['I’ve seen the guards on the north road in their bone armor. I know some of those faces. I buried them.', 'I want them back in the ground where I put them. Lay six of them to rest, and I’ll dig deeper this time.'],
+        lines: ['I’ve seen the guards on the north road in their bone armor. I know some of those faces. I buried them.', 'I want them back in the ground where I put them. Lay four of them to rest, and take the other spade. I’ll tell you who each one was.'],
       },
       { when: { quest: 'old-customers', state: 'done' }, lines: ['Six new graves on the hill, nice and deep. They’ll stay down this time.', 'If you need anything dug, I’m always here.'] },
       { lines: ['I’m Mott. I dig the graves here.', 'These are hard times. The lake’s dead don’t stay buried anymore.'] },

@@ -18,6 +18,7 @@ import * as room from '../src/games/sigilfall/net/room';
 import { AWAY_MS, dropAway } from '../src/party/rooms/seats';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { TILE } from '../src/games/sigilfall/sim/map';
+import { BRING_MOST, bringFor, workOn } from '../src/games/sigilfall/sim/tasks';
 import { World } from '../src/games/sigilfall/sim/world';
 import { SigilEngine } from '../src/games/sigilfall/engine';
 import { readyHero } from './sigilfall-bot';
@@ -289,6 +290,40 @@ describe('sigilfall: questing together', () => {
     expect(gw.layer?.quests['briar-dusk']?.state ?? 'locked').not.toBe('done');
   });
 
+  it('a friend’s quest step that brings foes has the leader’s game put them down, and only foes that land’s quests name', () => {
+    const lead = hero('warrior');
+    const friend = hero('priest');
+    // (the friend is on Rimeheld's cellar door: three things, and a yeti at the middle one and the last)
+    friend.quests['the-mead-thieves'] = { state: 'active', n: 0, step: 1 };
+    const { hw, gw, step } = pair('rimeheld', 0, { host: lead, guest: friend, tier: 0 });
+    step(30);
+    hw.enemies.length = 0;
+    step(20);
+    const things = gw.tasks.things.filter((t) => !t.used);
+    expect(things).toHaveLength(3);
+    expect(hw.tasks.things).toHaveLength(0);
+    for (const t of things.slice(0, 2)) {
+      gw.player.x = t.x + 8;
+      gw.player.y = t.y;
+      gw.player.iframe = 9;
+      workOn(gw, t.id);
+      for (let i = 0; i < 80; i++) {
+        gw.player.hp = gw.player.maxHp;
+        step(1);
+      }
+    }
+    expect(gw.hero.quests['the-mead-thieves']?.n).toBe(2);
+    step(20);
+    // the yeti of the middle one stands in the leader's game, and so in the friend's
+    expect(hw.enemies.filter((e) => e.def.id === 'yeti' && !e.dead)).toHaveLength(1);
+    expect(gw.enemies.some((e) => e.def.id === 'yeti' && !e.dead)).toBe(true);
+    // a game that asks for what no step of the land names, or for a crowd, gets neither
+    const before = hw.enemies.length;
+    expect(bringFor(hw, ['vaelor', 'the-rime-wyrm'], hw.player.x, hw.player.y, true)).toBe(0);
+    expect(bringFor(hw, Array(40).fill('yeti'), hw.player.x, hw.player.y, true)).toBe(BRING_MOST);
+    expect(hw.enemies.length).toBe(before + BRING_MOST);
+  });
+
   it('a story event the leader’s game wins counts for every hero whose quest waits on it', () => {
     const lead = hero('warrior');
     const friend = hero('priest');
@@ -300,7 +335,8 @@ describe('sigilfall: questing together', () => {
     step(20);
     hw.coop!.out.push({ t: 'event', id: 'hearth-riders' });
     step(10);
-    expect(gw.hero.quests['hearth-the-riders-come']?.state).toBe('done');
+    // (the fight counts for the friend too: their quest goes on to its next step, the streets to block, which is each hero's own)
+    expect(gw.hero.quests['hearth-the-riders-come']).toMatchObject({ state: 'active', step: 1 });
   });
 
   it('in an open land a frame holds only the enemies near a hero', () => {

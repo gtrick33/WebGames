@@ -6,7 +6,7 @@ import { questState, type Character } from '../src/games/sigilfall/progress/char
 import { migrate } from '../src/games/sigilfall/progress/save';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import type { World } from '../src/games/sigilfall/sim/world';
-import { newWorld, readyHero } from './sigilfall-bot';
+import { doSteps, newWorld, readyHero } from './sigilfall-bot';
 
 /**
  * Act II on the simulation (STORY_BIBLE.md §3, "Road to the Crown City"): the refugee wagon through the
@@ -52,6 +52,8 @@ describe('Sigilfall: the road to the Crown City (Act II)', () => {
     const w = newWorld('ashen-barrows', heroAt('the-last-lamp'));
     expect(w.storyState?.gloom).toBe(true);
     expect(w.npcs.some((n) => n.id === 'cael-varrow')).toBe(true);
+    // (the night's oil is carried up first: that step's own test plays it)
+    doSteps(w, 'the-last-lamp');
     goTo(w, 'lantern-hill');
     run(w, 0.3);
     expect(w.story.run?.def.id).toBe('lantern-vigil');

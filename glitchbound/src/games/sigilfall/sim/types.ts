@@ -177,6 +177,8 @@ export interface Enemy {
   hunts?: boolean;
   /** Seen coming in a scene's shot (a story fight's foes mustering, a boss met): it stands until the shot is over. */
   held?: boolean;
+  /** Beaten low by a hero who is to take it alive: it stands still, takes no more harm, and waits to be bound (sim/tasks.ts). */
+  yielded?: boolean;
   /** A figure of a boss stood in its den for a scene's shot (world.ts `stageBoss`): not the boss, and gone with the shot. */
   staged?: boolean;
   /** A raider's own way to whoever it hunts, past the reach of the shared field (and when it was made). */
@@ -496,6 +498,8 @@ export type CoopOut =
   | { t: 'event'; id: string }
   /** Guest: a hit on one of the host's enemies (already worked out: crit, armor, resistances). */
   | { t: 'dmg'; id: number; dmg: number; kx: number; ky: number }
+  /** Guest: foes a quest step of theirs brings (a thing's guards, an ambush, a hold's wave: sim/tasks.ts), for the host's game to put down. */
+  | { t: 'bring'; ids: string[]; x: number; y: number; hunt: boolean }
   /** Guest: control on one of the host's enemies (stun, chill, a mark...). */
   | { t: 'st'; id: number; status: StatusId; dur: number; power: number }
   /** Guest: their hero fell (the clock takes its penalty). */
@@ -633,4 +637,7 @@ export type WorldEvent =
 export type Interactable =
   | { kind: 'npc'; id: string; x: number; y: number; label: string }
   | { kind: 'waystone'; x: number; y: number; label: string }
-  | { kind: 'exit'; to: string; x: number; y: number; label: string; locked: string | null; door?: boolean };
+  | { kind: 'exit'; to: string; x: number; y: number; label: string; locked: string | null; door?: boolean }
+  /** A quest's thing to act on, or a foe that has yielded to be bound (sim/tasks.ts). */
+  | { kind: 'thing'; id: number; x: number; y: number; label: string }
+  | { kind: 'yield'; id: number; x: number; y: number; label: string };

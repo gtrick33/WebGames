@@ -8,7 +8,7 @@ import { acceptQuests, declined, questState, startQuests, type Character } from 
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { holds } from '../src/games/sigilfall/sim/story';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
-import { newWorld, readyHero } from './sigilfall-bot';
+import { doSteps, newWorld, readyHero } from './sigilfall-bot';
 
 /**
  * Act VI, Crownfall, the Epilogue and the postgame in the world (STORY_BIBLE.md §3): the factions the hero
@@ -64,6 +64,8 @@ describe('Sigilfall: the Last March (Act VI)', () => {
     const alone = heroAt('march-the-siege-mages');
     for (const id of ['fern-retaken', 'camp-riders', 'break-the-chains', 'the-clans-decide', 'the-vault-of-rime', 'the-sun-king', 'silvaines-song', 'the-thorn-court']) delete alone.quests[id];
     const w = newWorld('pale-reach', alone);
+    // (Quell's focus is carried to the field first: that step's own test plays it)
+    doSteps(w, 'march-the-siege-mages');
     goTo(w, 'wall-field');
     run(w, 0.3);
     expect(w.story.run?.def.id).toBe('reach-the-mages');
@@ -74,6 +76,7 @@ describe('Sigilfall: the Last March (Act VI)', () => {
     all.quests['silvaines-song'] = { state: 'done', n: 1 };
     all.quests['the-thorn-court'] = { state: 'done', n: -1 };
     const full = newWorld('pale-reach', all);
+    doSteps(full, 'march-the-siege-mages');
     goTo(full, 'wall-field');
     run(full, 0.3);
     const came = full.pets.filter((p) => FACTION_PETS.includes(p.def.id)).map((p) => p.def.id);
@@ -85,6 +88,7 @@ describe('Sigilfall: the Last March (Act VI)', () => {
     other.quests['the-thorn-court'] = { state: 'done', n: 1 };
     other.quests['silvaines-song'] = { state: 'done', n: -1 };
     const ow = newWorld('pale-reach', other);
+    doSteps(ow, 'march-the-siege-mages');
     goTo(ow, 'wall-field');
     run(ow, 0.3);
     expect(ow.pets.some((p) => p.def.id === 'thorn-knight')).toBe(false);
@@ -96,6 +100,7 @@ describe('Sigilfall: the Last March (Act VI)', () => {
     // (of the Voice's level: it waits for a hero of 59)
     const w = newWorld('pale-reach', heroAt('march-the-siege-mages', 59));
     expect(w.storyState?.id).toBe('host-waits');
+    doSteps(w, 'march-the-siege-mages');
     goTo(w, 'wall-field');
     run(w, 0.3);
     beat(w, 'march-the-siege-mages');
