@@ -115,7 +115,14 @@ describe('Sigilfall: the boss bar and the Riftstone clock', () => {
     expect(r).toContain('left: 50%');
     expect(r).toContain('translateX(-50%)');
     expect(r).toContain('top: calc(4px + var(--sa-t))');
-    expect(rule('  .rb-ui.is-boss .rb-hud-bars')).toContain('50cqw - min(23cqw, 230px)');
+    expect(r).toContain('width: var(--rb-boss-w)');
+    expect(rule('  .rb-ui.is-boss .rb-hud-bars')).toContain('50cqw - var(--rb-boss-w) / 2 - 78px - var(--sa-l)');
+  });
+
+  it('the two are sized from the screen\'s safe width: on an iPhone on its side the hero\'s bars ran under the boss\'s', () => {
+    // (the owner, on an iPhone 17 Pro: "boss healthbar goes below the UI"; 62 px at each side for the island)
+    expect(rule('  .rb-ui.is-boss')).toContain('--rb-boss-w: min(calc((100cqw - var(--sa-l) - var(--sa-r)) * 0.46)');
+    expect(rule('  .rb-ui.is-boss.is-mouse .rb-hud-bars')).toContain('- var(--sa-l)');
   });
 
   it('a boss\'s name is said once, on its bar: no banner of it under the bar, across what the boss calls', () => {

@@ -6,7 +6,7 @@ import { zoneLight } from './zoneLight';
 import { currentObjective } from '../progress/character';
 import { drawMapIcon, type MapIcon } from '../ui/mapIcons';
 import { isMainQuest, turnInNpc } from '../progress/handin';
-import { edgeArrowAngle, LEAD, leanTarget, LIFT } from './camera';
+import { edgeArrowAngle, edgeArrowPoint, inArrowView, type Insets, LEAD, leanTarget, LIFT, NO_INSETS } from './camera';
 import { boxesMeet, placeSpeech, type SpeechAsk, type SpeechKeep, type ViewBox } from './speech';
 import { ghostName, TALK_ZOOM, TYPE_CPS } from '../sim/scene';
 import { Effects, headOf, inView } from './effects';
@@ -223,6 +223,8 @@ export class Renderer {
   hud = 1;
   /** Plates over heads (Settings): the hero's health and resource, and every foe's health. */
   plates = true;
+  /** What the screen keeps for itself at each edge (Game.tsx reads it off the stage): the quest's arrow stays inside it. */
+  safe: Insets = NO_INSETS;
   private cssW = 1;
   private cssH = 1;
   /** Canvas pixels per CSS pixel of this top canvas. */
@@ -1211,8 +1213,8 @@ export class Renderer {
     }
     if (time - this.arrowSince < 0.5) return;
     const s = st.project(target.x, target.y, PERSON_H);
-    const m = 28;
-    if (s.front !== false && s.x > m && s.x < W - m && s.y > m && s.y < H - m) {
+    const m = 30;
+    if (s.front !== false && inArrowView(s.x, s.y, W, H, m, this.safe)) {
       // something to be found there (a letter, a relic: data/types.ts Keepsake) glints on the ground where it lies
       if (this.findHere(w)) this.drawGlint(st.project(target.x, target.y, 3), time);
       this.questArrow = this.arrowAt(s.x, s.y, null);
@@ -1220,15 +1222,13 @@ export class Renderer {
     }
     // (over the ground from the hero, not from where the place falls on the screen: render/camera.ts)
     const a = edgeArrowAngle(w.player.x, w.player.y, target.x, target.y);
-    const mx = W / 2 - m;
-    const my = H / 2 - m;
-    const t = Math.min(Math.abs(mx / (Math.cos(a) || 1e-6)), Math.abs(my / (Math.sin(a) || 1e-6)));
-    this.questArrow = this.arrowAt(W / 2 + Math.cos(a) * t, H / 2 + Math.sin(a) * t, a);
+    const p = edgeArrowPoint(W, H, a, m, this.safe);
+    this.questArrow = this.arrowAt(p.x, p.y, a);
   }
 
   /** The quest's arrow at (x, y), and whether it lies across a piece of the HUD (its box, with a little to spare). */
   private arrowAt(x: number, y: number, angle: number | null): NonNullable<Renderer['questArrow']> {
-    const r = 14 * (angle === null ? this.hud : 1);
+    const r = angle === null ? 14 * this.hud : 20;
     const box = { x: x - r, y: y - r, w: r * 2, h: r * 2 };
     let over = false;
     for (const b of this.hudBoxes.values()) if (boxesMeet(box, b)) over = true;

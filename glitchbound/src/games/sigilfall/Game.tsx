@@ -5,6 +5,7 @@ import { takeSavesLive } from '../../platform/syncGate';
 import { SigilEngine } from './engine';
 import { ArrivalCard } from './ui/Arrival';
 import { GameScreen } from './ui/GameScreen';
+import { stopDoubleTap } from './ui/noSelect';
 import { isTurned, setTurned } from './ui/turn';
 import { FullscreenContext } from './ui/fullscreen';
 import { CreateScreen, TitleScreen } from './ui/Title';
@@ -92,10 +93,28 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
       document.addEventListener('selectionchange', noSelection);
       stage.addEventListener('contextmenu', noMenu);
     }
+    // and two fast taps are two taps: not Safari's magnifying glass (ui/noSelect.ts; only touches are looked at)
+    const letTaps = stopDoubleTap(stage);
     // a field being typed in (a hero's name, a party code): the phone's keyboard shortens the screen meanwhile
     const typing = (): boolean => {
       const a = document.activeElement;
       return (a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) && stage.contains(a);
+    };
+    // what the screen keeps for itself at each edge (a phone's island and corners), as the stage's styles give it (Game.css
+    // --sa-*: turned round with the stage), read off a probe padded by it: the quest's arrow keeps inside it
+    const probe = document.createElement('i');
+    probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;padding:var(--sa-t,0px) var(--sa-r,0px) var(--sa-b,0px) var(--sa-l,0px)';
+    probe.setAttribute('aria-hidden', 'true');
+    stage.appendChild(probe);
+    const readSafe = (): void => {
+      const s = getComputedStyle(probe);
+      const px = (v: string): number => parseFloat(v) || 0;
+      const was = e.renderer.safe;
+      const t = px(s.paddingTop);
+      const r = px(s.paddingRight);
+      const b = px(s.paddingBottom);
+      const l = px(s.paddingLeft);
+      if (t !== was.t || r !== was.r || b !== was.b || l !== was.l) e.renderer.safe = { t, r, b, l };
     };
     // the canvas follows the stage's size; the view picks a crisp whole-number pixel scale
     let last = '';
@@ -111,6 +130,8 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
       stage.style.setProperty('--turn-h', `${ph}px`);
       setTurned(turn ? stage : null);
       e.turned = turn;
+      // (a phone turned round changes which edge its island is on, sometimes with no change of size)
+      readSafe();
       // its own layout size (a turned box's on-screen rectangle is the other way round)
       const r = { width: stage.offsetWidth, height: stage.offsetHeight };
       const dpr = Math.min(3, window.devicePixelRatio || 1);
@@ -184,6 +205,8 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
       document.documentElement.classList.remove('rb-touch-playing');
       document.removeEventListener('selectionchange', noSelection);
       stage.removeEventListener('contextmenu', noMenu);
+      letTaps();
+      probe.remove();
       stopLive();
       ro.disconnect();
       cancelAnimationFrame(frame);
