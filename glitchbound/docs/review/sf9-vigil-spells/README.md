@@ -7,6 +7,7 @@ on its side (844×390, touch).
 | --- | --- | --- |
 | `play/` | Four whole nights played by touch input: a log of each (`<name>.json`) and a picture every twenty seconds, at each event, at the first three level-ups and at the end | `node scripts/sigilfall-vigil-play.mjs --out … --class … --land … --gpu` |
 | `party/` | A party's night with two real games through the rooms worker run on this machine: its log and pictures of both phones | `node scripts/sigilfall-vigil-party.mjs --out … --gpu` |
+| `balance.md` | Each class's share of 600 bot nights held five minutes, and the edge that evens them | `VIGIL_BALANCE=<file> VIGIL_N=600 npx vitest run --no-fsModuleCache tests/sigilfall-vigil-balance` |
 | `builds.md` | Which spells a bot ended 30 nights with, for each class, and how often those nights reached 5:00 | `VIGIL_BUILDS=<file> npx vitest run --no-fsModuleCache tests/sigilfall-vigil-builds` |
 | `lobby-*.jpg` | The lobby with ten spells a class, the Watchfire, its deeds and its codex | `node scripts/sigilfall-vigil-shots.mjs --out … --only lobby` |
 | `foes-*.jpg`, `land-08-*.jpg` | The two things the first pass's README called weak, after the fix: the kinds of foe, and the sandstorm on sand | the same script, `--only foes` and `--only lands --land sunscorch` |
@@ -81,7 +82,16 @@ the cut both hold the screen's 60, but the two after-runs had fewer of the Host 
 Cinderbloats and the land thin the crowd), so **a like-for-like after-number at 300 or more of the Host was not
 measured.** The script's own share of a frame is up by about a millisecond.
 
+## Class balance
+
+`balance.md`: every class holds five minutes in 48.5% to 53.0% of 600 bot nights, after one number a class (its edge)
+was found and checked on nights it was not found on. It says what a win is taken to be, how the numbers were got, and
+what they do not show.
+
 ## Builds
+
+(Made again after the classes were evened. Its 30 nights a class are too few to check the balance by: there the mage
+and warlock reach 5:00 in 30% and the druid in 63%, against 51%, 52% and 53% over 600 in `balance.md`.)
 
 `builds.md`: for each class, 30 nights by a bot that takes a card at random. How many of the 30 ended with a different
 set of five spells, how often each spell was in the five, and how often the nights with it and without it reached

@@ -392,6 +392,27 @@ export const CLASS_BODY: Record<ClassId, { hp: number; speed: number }> = {
   gloamknight: { hp: 165, speed: 74 },
 };
 
+/**
+ * Each class's edge: what evens the classes out. A class's spells hit this much harder (or softer) and its health is
+ * the square root of it more (or less), so that the same bot, keeping many nights with each class, holds five minutes
+ * about half the time with every one of them (the owner, 2026-11-26: "keep them in the 48-52% win rate zone ...
+ * deviation up to 5% is ok"). Found by `VIGIL_TUNE=1 npx vitest run tests/sigilfall-vigil-balance` and checked on
+ * other nights by the same file; docs/review/sf9-vigil-spells/balance.md has the table. Change a spell's numbers and
+ * these want finding again.
+ */
+export const CLASS_EDGE: Record<ClassId, number> = {
+  warrior: 0.98,
+  paladin: 1.32,
+  druid: 1.52,
+  priest: 0.8,
+  mage: 2.12,
+  warlock: 1.86,
+  ranger: 2.41,
+  gloamknight: 0.8,
+};
+/** A class's health as a night begins, its edge in. */
+export const classHealth = (cls: ClassId): number => CLASS_BODY[cls].hp * Math.sqrt(CLASS_EDGE[cls]);
+
 export const STRENGTHS: Record<StrengthId, { id: StrengthId; name: string; text: string; icon: string; max?: number }> = {
   might: { id: 'might', name: 'Might', text: '+15% damage', icon: 'strength_up_status_flexed_arm_on_red' },
   haste: { id: 'haste', name: 'Haste', text: 'Spells come 10% faster', icon: 'lightning_hourglass_on_violet' },

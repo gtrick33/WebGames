@@ -23,7 +23,7 @@ import { deedState, readReturns } from '../vigil/returns';
 import { DEEDS } from '../vigil/deeds';
 import { Watchfire } from './VigilWatchfire';
 import { EVOLVE_AT } from '../vigil/sim';
-import { CLASS_BODY, mapOpen, partyScale, spellsOf, STRENGTHS, UNLOCK_HOLD, VIGIL_MAPS, type VigilMap } from '../vigil/kit';
+import { CLASS_BODY, classHealth, mapOpen, partyScale, spellsOf, STRENGTHS, UNLOCK_HOLD, VIGIL_MAPS, type VigilMap } from '../vigil/kit';
 import { ScreenGate } from './ScreenGate';
 
 export { readBests, saveBest } from '../vigil/bests';
@@ -319,7 +319,7 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
               <strong>{c.name}</strong>
               {(wear || myTitle) && <Titled className="rb-wear-who" name={wear ? wear.name : 'You'} title={myTitle} />}
               <small>
-                {stats.hp} health · {stats.speed >= 84 ? 'quick on their feet' : stats.speed <= 74 ? 'heavy but sturdy' : 'steady'}
+                {Math.round(classHealth(pick))} health · {stats.speed >= 84 ? 'quick on their feet' : stats.speed <= 74 ? 'heavy but sturdy' : 'steady'}
               </small>
             </div>
           </div>

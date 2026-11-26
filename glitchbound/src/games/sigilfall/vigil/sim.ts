@@ -1,5 +1,5 @@
 import type { ClassId } from '../data/types';
-import { BOSS_EVERY, CLASS_BODY, firstSpell, FOE_KINDS, foesOf, landTough, MAX_SPELL, MAX_STRENGTH, partyScale, PLAIN_AI, smallOf, SPELL_SLOTS, SPELLS, spellsOf, STRENGTH_SLOTS, STRENGTHS, upgradesOf, VIGIL_MAPS, type Element, type FoeAi, type FoeDef, type PartyScale, type RuleId, type SpellDef, type StrengthId, type VigilMap } from './kit';
+import { BOSS_EVERY, CLASS_BODY, CLASS_EDGE, classHealth, firstSpell, FOE_KINDS, foesOf, landTough, MAX_SPELL, MAX_STRENGTH, partyScale, PLAIN_AI, smallOf, SPELL_SLOTS, SPELLS, spellsOf, STRENGTH_SLOTS, STRENGTHS, upgradesOf, VIGIL_MAPS, type Element, type FoeAi, type FoeDef, type PartyScale, type RuleId, type SpellDef, type StrengthId, type VigilMap } from './kit';
 import { crossed, EVENT_KINDS, EVENTS, GALE, GALE_PUSH, galeAngle, inPhase, LANE_LEN, LANE_RUN, LANE_W, LANE_WARN, LANTERN_HOLD, LANTERN_R, MIRE_CELL, mireIn, RALLY_R, RULES, STORM, TIDE, TRAIT, TRAITS, VENT_CELL, VENT_QUIET, ventClock, ventIn, type BoonId, type EventKind, type Feats, type HeroKit, type Spot } from './night';
 
 /**
@@ -433,7 +433,7 @@ function newHero(id: number, cls: ClassId, name: string, x: number, y: number, k
     vy: 0,
     dirX: 0,
     dirY: 1,
-    hp: CLASS_BODY[cls].hp * (1 + (kit?.boons.hearth ?? 0) * 0.04),
+    hp: classHealth(cls) * (1 + (kit?.boons.hearth ?? 0) * 0.04),
     iframe: 0,
     spells: { [firstSpell(cls).id]: 1 },
     took: {},
@@ -627,10 +627,10 @@ export class Vigil {
     return h.strengths[id] ?? 0;
   }
   maxHpOf(h: Hero): number {
-    return CLASS_BODY[h.cls].hp * (1 + this.str(h, 'vigor') * 0.2) * (this.str(h, 'glass') ? 0.75 : 1) * (1 + (h.boons.hearth ?? 0) * 0.04);
+    return classHealth(h.cls) * (1 + this.str(h, 'vigor') * 0.2) * (this.str(h, 'glass') ? 0.75 : 1) * (1 + (h.boons.hearth ?? 0) * 0.04);
   }
   private powerOf(h: Hero): number {
-    return 1 + this.str(h, 'might') * 0.15 + this.str(h, 'glass') * 0.4 + (h.boons.edge ?? 0) * 0.03;
+    return (1 + this.str(h, 'might') * 0.15 + this.str(h, 'glass') * 0.4 + (h.boons.edge ?? 0) * 0.03) * CLASS_EDGE[h.cls];
   }
   private paceOf(h: Hero): number {
     return Math.max(0.45, 1 - this.str(h, 'haste') * 0.1);
