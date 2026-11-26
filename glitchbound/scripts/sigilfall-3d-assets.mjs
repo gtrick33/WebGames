@@ -2056,6 +2056,65 @@ BOSS_KITS.boss_auditor = {
   ],
 };
 
+// The Sun King, Risen Lord of the Old Kingdom: one of the seven wardens, who sealed himself in his tomb to watch the
+// Sigil of the Sun and woke angry. A king's long coat (the Vampire's, with no wings) on the bare skull of the tomb's
+// dead; his staff of office, and behind his head the great sun-disc of his house, leaned to catch the light.
+BOSS_KITS.boss_sunking = {
+  rig: 'medium',
+  from: [['Vampire', /Body|Arm|Leg/], [`${SK}Mage`, /Skull|Jaw|Eyes/]],
+  grow: [['head', 0.9], ['chest', 1.1]],
+  ties: [
+    { bit: 'staff_D', joint: 'handslot.r', at: [0, 0, 0], size: 1.25 },
+    { bit: 'shield_round_color', joint: 'chest', at: [0, 0.55, -0.42], size: 1.7, turn: [-38, 0, 0] },
+  ],
+};
+// Vizier Khepset, Keeper of the Last Hour: buried with his king to serve him after death. A court mage's robes and
+// cape on the hooded dead (the Skeleton Rogue's skull); his rod of office in one hand. The sand-glass he turns is
+// built in the browser, in the other (render3d/bossKit.ts).
+BOSS_KITS.boss_khepset = {
+  rig: 'medium',
+  from: [['Mage', /Body|Arm|Leg|Cape/], [`${SK}Rogue`, /Head|Jaw|Eyes|Hood/]],
+  grow: [['head', 0.92], ['hand.l', 1.25]],
+  ties: [{ bit: 'staff_A', joint: 'handslot.r', at: [0, 0, 0], size: 1.15 }],
+};
+// The Sand Warden, Guardian of the Sun King's Tomb: a thing the old desert kingdom built, not a man who died. The
+// great bone golem's frame, cut in sandstone by its paint, with a soldier's shoulder plates, a mace the size of a
+// man, and the sun-disc of the house it guards on its back.
+BOSS_KITS.boss_sandwarden = {
+  rig: 'large',
+  from: [[`${SK}Golem`, /Body|Arm|Leg|Head|Jaw|Eyes/], ['Barbarian_Large', /Shoulderpad/]],
+  grow: [['chest', 1.1]],
+  ties: [
+    { bit: `${SK}Mace_Large`, joint: 'handslot.r', at: [0, 0, 0], size: 1.15 },
+    // (on its back and leaned: the game looks steeply down, and on its chest nobody saw it)
+    { bit: 'shield_round_color', joint: 'chest', at: [0, 0.6, -0.7], size: 1.3, turn: [-38, 0, 0] },
+  ],
+};
+// Jarl Hrimfang, Jarl of the Rime Giants: he kept a treaty two hundred years, then took the Herald's ash-gold. The
+// large Barbarian whole, in his bear's head and pelt; a great maul, and at his belt the stack of ash-gold he sold
+// Frostgate for.
+BOSS_KITS.boss_hrimfang = {
+  rig: 'large',
+  from: [['Barbarian_Large', /Body|Arm|Leg|Head|BearHat|BearPelt/]],
+  grow: [['upperarm.l', 1.12], ['upperarm.r', 1.12]],
+  ties: [
+    // (the pack's large maul is made at a giant's size already)
+    { bit: 'hammer_large_blue', joint: 'handslot.r', at: [0, 0, 0], size: 0.33 },
+    { bit: 'coin_stack_small', joint: 'hips', at: [0.6, 0, 0.15], size: 1.7 },
+  ],
+};
+// Hallvor, Ingrith's Shield-Thane: she let the ice take her rather than leave her jarl's side. The helmed Paladin's
+// plate and cape, broad in the chest; a halberd, and the great shield she is named for.
+BOSS_KITS.boss_hallvor = {
+  rig: 'medium',
+  from: [['Paladin_with_Helmet', /Body|Arm|Leg|Cape|Helmet/]],
+  grow: [['chest', 1.12]],
+  ties: [
+    { bit: 'halberd', joint: 'handslot.r', at: [0, 0, 0], size: 1.2 },
+    { bit: `${SK}Shield_Large_A`, joint: 'handslot.l', at: [0, 0, 0], size: 1.25 },
+  ],
+};
+
 const quatOf = (rx, ry, rz) => new THREE.Quaternion().setFromEuler(new THREE.Euler((rx * Math.PI) / 180, (ry * Math.PI) / 180, (rz * Math.PI) / 180, 'YXZ')).toArray();
 
 /** The model with what hangs from one joint, and from every joint under it, made `k` times its size about that joint. */

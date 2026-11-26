@@ -1,0 +1,72 @@
+{
+  "boss": "vizier-khepset",
+  "file": "boss_khepset",
+  "form": "khepset",
+  "float": 0,
+  "walked": {
+    "samples": 183,
+    "moving": 51,
+    "walking": 50,
+    "clips": {
+      "walk": 50,
+      "cast": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "spell:sinkhole",
+      "clips": [
+        "idle",
+        "cast"
+      ],
+      "readings": 94
+    },
+    {
+      "phase": 1,
+      "id": "tomb:hourglass",
+      "clips": [],
+      "note": "never began"
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "summon",
+        "channel",
+        "cast"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "spell:sinkhole",
+      "clips": [
+        "idle",
+        "cast"
+      ],
+      "readings": 94
+    },
+    {
+      "phase": 2,
+      "id": "tomb:hourglass",
+      "clips": [
+        "channel",
+        "idle"
+      ],
+      "readings": 61
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "summon",
+        "idle"
+      ],
+      "readings": 68
+    }
+  ],
+  "found": [],
+  "errors": []
+}

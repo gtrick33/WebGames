@@ -470,6 +470,140 @@ FORMS.auditor = {
   fall: { clip: 'die', end: 'dead', kept: 2.8, sink: 0 },
 };
 
+/* ------------------------------------------------------------------ the Tomb of the Sun King (Act III) */
+
+const SAND_GLASS = hex('#ffd27a');
+const BRASS = hex('#a8782a');
+
+/**
+ * The sand-glass Khepset turns (data/dungeons/tomb-of-the-sun-king.ts `tomb:hourglass`): two bulbs point to point in a
+ * brass frame, held up in his left hand, the sand in it alight. It is what the hero must break.
+ */
+function sandglass(m: MeshData, joints: readonly string[]): MeshData {
+  const hand = joints.indexOf('hand.l');
+  const box = hand >= 0 ? (boxOf(m, hand) as Box | null) : null;
+  if (!box) return m;
+  const cx = (box.min[0] + box.max[0]) / 2;
+  const cz = (box.min[2] + box.max[2]) / 2 + (box.max[2] - box.min[2]) * 0.3;
+  const y0 = box.max[1];
+  // (as tall as his forearm: any smaller and the game's camera never shows it)
+  const tall = (box.max[1] - box.min[1]) * 4.4;
+  const r = tall * 0.3;
+  const bits = new Bits();
+  const mid = [cx, y0 + tall / 2, cz];
+  // the two bulbs, each a point at the waist
+  post(bits, [cx, y0, cz], mid, r, 0.004, SAND_GLASS, [255, 255, 255], true);
+  post(bits, [cx, y0 + tall, cz], mid, r, 0.004, shade(SAND_GLASS, 0.9), SAND_GLASS, true);
+  // its frame: a plate under and over, and two posts
+  post(bits, [cx, y0 - tall * 0.06, cz], [cx, y0, cz], r * 1.25, r * 1.25, shade(BRASS, 0.7), BRASS);
+  post(bits, [cx, y0 + tall, cz], [cx, y0 + tall * 1.06, cz], r * 1.25, r * 1.25, BRASS, shade(BRASS, 1.2));
+  for (const side of [-1, 1]) post(bits, [cx + side * r * 1.05, y0, cz], [cx + side * r * 1.05, y0 + tall, cz], r * 0.14, r * 0.14, shade(BRASS, 0.8), BRASS);
+  return withBits(m, bits, hand);
+}
+
+// The Sun King. A king's gestures, each one an order: the beams and the pyre come when he holds the staff out and
+// keeps it there; he lifts both arms and the disc behind him answers; the scarabs come at a wave of his hand, the
+// spots of sun at a flick. He cuts with the staff when someone dares stand near. He rises from where he sealed
+// himself in. He dies as a man does, and the noon goes out of the room.
+FORMS.sunking = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'channel', 'summon', 'throw', 'wave', 'taunt', 'cast', 'cheer', 'rise'],
+  bend: (joint, clip, phase) => (joint === 'head' ? [-0.08, 0, 0] : joint === 'chest' && clip === 'idle' ? [-0.03 + Math.sin(phase * Math.PI * 2) * 0.015, 0, 0] : null),
+  moves: {
+    cleave: { clip: 'slice' },
+    volley: { clip: 'throw' },
+    roar: { clip: 'taunt' },
+    'tomb:sunbeam': { clip: 'channel' },
+    'tomb:pyre': { clip: 'channel', rate: 0.8 },
+    'tomb:sun-disc': { clip: 'summon', rate: 0.9 },
+    'tomb:scarabs': { clip: 'wave' },
+    'spell:orbit': { clip: 'cheer', rate: 0.9 },
+    'spell:sunspot': { clip: 'cast', rate: 1.2 },
+  },
+  enter: { clip: 'rise', then: 'taunt' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 2.8, sink: 0 },
+};
+
+// Vizier Khepset. A servant's economy: he does three things. He holds the glass up and turns it; he points, and the
+// floor opens; he calls the tomb's dead with both arms raised. He steps out from behind his king's door.
+FORMS.khepset = {
+  build: sandglass,
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'channel', 'cast', 'summon', 'taunt', 'spawn'],
+  bend: (joint, clip) => (joint === 'spine' ? [0.06, 0, 0] : joint === 'head' ? [0.05, 0, 0] : joint === 'upperarm.l' && (clip === null || clip === 'idle' || clip === 'walk' || clip === 'run') ? [-0.9, 0, 0.1] : joint === 'lowerarm.l' && (clip === null || clip === 'idle' || clip === 'walk' || clip === 'run') ? [-0.5, 0, 0] : null),
+  moves: {
+    'tomb:hourglass': { clip: 'channel' },
+    'spell:sinkhole': { clip: 'cast' },
+    summon: { clip: 'summon' },
+  },
+  enter: { clip: 'spawn', then: 'channel' },
+  shift: { clip: 'taunt', rate: 1.2 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 2.6, sink: 0 },
+};
+
+// The Sand Warden. A made thing has no flourish: the mace goes across, or down, or right round, and when it strikes
+// the floor the floor answers (the quicksand at a held-out hand, the falling stone at a blow with its shoulder). It is
+// standing in its hall when the hero comes, as it has stood for three hundred years. It breaks where it stands.
+FORMS.sandwarden = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'chop2', 'spin', 'smash', 'cast', 'bash', 'block', 'taunt'],
+  bend: (joint) => (joint === 'head' ? [0.1, 0, 0] : null),
+  moves: {
+    cleave: { clip: 'slice', rate: 0.85 },
+    chop: { clip: 'chop2', rate: 0.85 },
+    slamRings: { clip: 'smash', rate: 0.8 },
+    'tomb:quicksand': { clip: 'cast', rate: 0.8 },
+    'tomb:sandsweep': { clip: 'spin', rate: 0.9 },
+    'tomb:crumble': { clip: 'bash' },
+  },
+  enter: { clip: 'block', then: 'idle' },
+  shift: { clip: 'taunt', rate: 0.9 },
+  dazed: 'block',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+/* ------------------------------------------------------------------ the Vault of Rime (Act III) */
+
+// Jarl Hrimfang. A giant with a maul: the cut across, the blow down, the floor broken under it, a boulder flung
+// one-handed, his shoulder into the charge. He beats his chest for the war cry. He is at his longfire when the hero
+// comes, and gets to his feet. He falls like a tree.
+FORMS.hrimfang = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'chop2', 'smash', 'punch', 'taunt', 'bash', 'block'],
+  bend: (joint, clip, phase) => (joint === 'chest' && clip === 'idle' ? [0.04 + Math.sin(phase * Math.PI * 2) * 0.03, 0, 0] : null),
+  moves: {
+    cleave: { clip: 'slice', rate: 0.9 },
+    chop: { clip: 'chop2', rate: 0.85 },
+    tripleCharge: { clip: 'bash', rate: 1.3 },
+    'rime:shatter': { clip: 'smash', rate: 0.85 },
+    'rime:boulder': { clip: 'punch', rate: 0.9 },
+    'rime:warcry': { clip: 'taunt' },
+  },
+  enter: { clip: 'taunt', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.2 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// Hallvor. A bodyguard's moves, all of them made from behind the shield: she cuts over it, brings the halberd down,
+// thrusts to pin, and goes in shield-first. Her orders to the woken dead are a lifted arm. She thaws out of the ice
+// where she stood guard, and stands guard again. Struck dumb she holds her shield. She falls and the ice has her back.
+FORMS.hallvor = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'chop2', 'stab', 'bash', 'block', 'wave', 'summon', 'rise', 'taunt'],
+  bend: (joint, clip, phase) => (joint === 'head' ? [0.08, 0, 0] : joint === 'chest' && clip === 'idle' ? [Math.sin(phase * Math.PI * 2) * 0.015, 0, 0] : null),
+  moves: {
+    cleave: { clip: 'slice' },
+    chop: { clip: 'chop2', rate: 0.9 },
+    tripleCharge: { clip: 'bash', rate: 1.3 },
+    summon: { clip: 'summon' },
+    'rime:orders': { clip: 'wave' },
+    'spell:pin': { clip: 'stab' },
+  },
+  enter: { clip: 'rise', then: 'block' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'block',
+  fall: { clip: 'die', end: 'dead', kept: 2.8, sink: 0.4 },
+};
+
 export const bossForm = (id: string | undefined): BossForm | undefined => (id ? FORMS[id] : undefined);
 export const BOSS_FORMS: Readonly<Record<string, BossForm>> = FORMS;
 

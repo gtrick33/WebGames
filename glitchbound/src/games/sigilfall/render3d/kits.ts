@@ -187,7 +187,6 @@ put('soul-reaver', { k: 'ghost', tint: VOID, float: 0.45, ghost: 0.82, walk: 'sk
 put('weeping-specter tear-wraith', { k: 'ghost', tint: '#bfd8f0', float: 0.45, ghost: 0.78, walk: 'skelidle' });
 // the Chapel Crypt's boss fights (sim/patterns/crypt.ts): the Matron of the Ossuary, a pale old witch of the dead, and Morgrave's soul-shards
 // the first of the Sigil-wardens, frozen at her post: rime-white plate, a helm of ice, the halberd of the watch
-put('hallvor-the-unthawed', { k: 'paladin', look: 'foe-hallvor', held: { kind: 'halberd', tint: '#d8f2ff' }, size: 1.38, atk: 'chop2' });
 // the Host's chaplain in Highwall's chapel: a prior's grey robe and hood, the censer-staff glowing with his dirge
 put('prior-vessant', { k: 'sk_necro', look: 'foe-prior-vessant', held: { kind: 'staff', tint: '#9cff9c' }, size: 1.3, ...CASTER });
 // Highwall's own dead, sung up again: grey-green, in what is left of their mail
@@ -454,7 +453,6 @@ put('scarab-swarm tomb-scarab', { k: 'scarab', size: 0.72 });
 put('marsh-strider', { k: 'strider' });
 put('blood-mosquito glimmer-moth rotwood-pod', { k: 'moth', size: 0.8, float: 0.4 });
 // the Tomb's Vizier Khepset: the dead king's vizier in the sun's gold, his crown of office on his brow, a gold staff
-put('vizier-khepset', { k: 'witch', look: 'foe-vizier-khepset', held: { kind: 'staff', tint: '#ffd27a' }, size: 1.35, ...CASTER });
 // the Barrow's Lamp-Eater: a drake built as the great drake mounts are, blacked out by a thousand years of devoured
 // lamplight: black plate, a crown of horns, wings veined with the pale fire of the lamps it has eaten
 put('gloomwing', {
@@ -719,9 +717,103 @@ TABLE['king-hrodric'] = {
   ],
   wears: [{ piece: 'ice-crown', a: '#8a6a22', b: '#f0d27a', band: '#c9a24a' }, { piece: 'eyes', b: '#bfe8ff' }],
 };
-boss('the-sand-warden', { size: 1.45, wears: [{ piece: 'eyes', b: '#ffe08a' }] });
-boss('the-sun-king', { size: 1.4, wears: [{ piece: 'halo', a: '#e8a030', b: '#fff4c0', size: 1.1 }, { piece: 'ice-crown', a: '#d89a2a', b: '#fff6c8', band: '#b8862a' }, { piece: 'eyes', b: '#fff2a0' }] });
-boss('jarl-hrimfang', { size: 1.3, wears: [{ piece: 'horns', a: '#5a86b8', b: '#eefaff', size: 1.1 }, { piece: 'eyes', b: '#bfe8ff' }] });
+/* The Tomb of the Sun King and the Vault of Rime (Act III) */
+// The Sun King, Risen Lord of the Old Kingdom: a warden of the seven, three hundred years sealed in with his sigil. A
+// king's long coat gone the white and gold of his house, his skull bare, the sun-disc behind his head alight, a crown
+// and a ring of light over it: the one boss of the game who is all noon.
+TABLE['the-sun-king'] = {
+  k: 'boss_sunking',
+  form: 'sunking',
+  size: 1.5,
+  atk: 'cast',
+  paint: [
+    // the sun-disc behind him: its bright face alight
+    { joint: 'chest', lum: [0.55, 1], sat: [0.3, 1], to: '#ffe9a0', glow: true, keep: 0.3 },
+    // the rest of the disc: beaten gold, not the grey steel of the shield it is made from
+    { joint: 'chest', lum: [0.5, 1], sat: [0, 0.3], to: '#e0b040', keep: 0.8 },
+    // his skull
+    { joint: 'head', lum: [0.35, 1], sat: [0, 0.45], to: '#e6dfc8', keep: 0.9 },
+    // the coat: what was red or dark on it, the old kingdom's white linen and gold
+    { hue: [330, 30], sat: [0.3, 1], to: '#d8a830', keep: 0.9 },
+    { lum: [0, 0.3], to: '#efe4c8', keep: 0.6 },
+    { hue: [190, 330], sat: [0.15, 1], to: '#c8a050', keep: 0.9 },
+  ],
+  wears: [{ piece: 'halo', a: '#e8a030', b: '#fff4c0', size: 1.1 }, { piece: 'ice-crown', a: '#d89a2a', b: '#fff6c8', band: '#b8862a' }, { piece: 'eyes', b: '#fff2a0' }],
+};
+// Vizier Khepset, Keeper of the Last Hour: buried with his king to serve him after death. Court robes of sand-white
+// and a cape of the house's gold on a hooded skull, and in his left hand the sand-glass whose turning undoes every
+// wound given him: the glass is the one thing on him with light in it, and the thing to break.
+TABLE['vizier-khepset'] = {
+  k: 'boss_khepset',
+  form: 'khepset',
+  size: 1.5,
+  atk: 'cast',
+  paint: [
+    // his skull: only the bone, which is the palest thing on his head
+    { joint: 'head', lum: [0.72, 1], sat: [0, 0.4], to: '#e6dfc8', keep: 0.9 },
+    // his hood: the house's gold. His robes and cape: the deep blue-green of the tomb's glazed tiles, so that he
+    // stands dark on the sand floor (in sand-white he was a pale heap on it)
+    { joint: 'head', to: '#c8962a', keep: 0.85 },
+    { hue: [330, 40], sat: [0.3, 1], to: '#d8a830', keep: 0.9 },
+    { hue: [190, 330], sat: [0.2, 1], to: '#1f5666', keep: 0.85 },
+  ],
+  wears: [{ piece: 'eyes', b: '#ffd27a' }],
+};
+// The Sand Warden, Guardian of the Sun King's Tomb: built, not buried. Red sandstone, the joints and the cut
+// lines of it dark, a mace of the house's gold, the sun-disc on its back alight and its eyes the same.
+TABLE['the-sand-warden'] = {
+  k: 'boss_sandwarden',
+  form: 'sandwarden',
+  size: 1.82,
+  atk: 'chop2',
+  paint: [
+    // the sun-disc in its chest
+    { joint: 'chest', hue: [0, 360], sat: [0.6, 1], lum: [0.35, 1], to: '#ffe08a', glow: true, keep: 0.3 },
+    // its mace: the house's gold
+    { joint: 'handslot.r', to: '#d8a830', keep: 0.9 },
+    // red sandstone, dark in the joints: it stands on a floor of pale sand, and in pale stone it was lost on it
+    { lum: [0.55, 1], to: '#b06c3c', keep: 0.9 },
+    { lum: [0.3, 0.55], to: '#7c4426', keep: 0.9 },
+    { to: '#2e1a10', keep: 0.85 },
+  ],
+  wears: [{ piece: 'eyes', b: '#ffe08a' }],
+};
+// Jarl Hrimfang, Jarl of the Rime Giants: two hundred years of treaty, sold for ash-gold. A frost giant's hide
+// ice-blue under a white bear's pelt, rime on his maul, and at his belt the pale gold he was paid in, alight as that
+// gold is: what he did is on him where everyone can see it.
+TABLE['jarl-hrimfang'] = {
+  k: 'boss_hrimfang',
+  form: 'hrimfang',
+  size: 1.82,
+  atk: 'chop2',
+  paint: [
+    // the ash-gold at his belt
+    { joint: 'hips', hue: [30, 65], sat: [0.6, 1], lum: [0.5, 1], to: '#f0e0a0', glow: true, keep: 0.25 },
+    // his hide: ice
+    { hue: [8, 42], sat: [0.25, 0.8], lum: [0.4, 1], to: '#a9c8e6', keep: 0.75 },
+    // the maul's color, and what else was bright: rime
+    { hue: [190, 260], sat: [0.3, 1], to: '#d8f2ff', keep: 0.85 },
+  ],
+  wears: [{ piece: 'horns', a: '#5a86b8', b: '#eefaff', size: 1.1 }, { piece: 'eyes', b: '#bfe8ff' }],
+};
+// Hallvor, Ingrith's Shield-Thane: she let the ice take her rather than leave her jarl. Her plate rimed pale blue
+// from helm to heel, the cape Frostgate's deep blue, the edge of her halberd alight with the cold that kept her.
+TABLE['hallvor-the-unthawed'] = {
+  k: 'boss_hallvor',
+  form: 'hallvor',
+  size: 1.45,
+  atk: 'chop2',
+  paint: [
+    // the halberd's bright edge
+    { joint: 'handslot.r', lum: [0.72, 1], sat: [0, 0.4], to: '#d8f2ff', glow: true, keep: 0.3 },
+    // the cape and what cloth she wears: Frostgate's blue
+    { hue: [330, 40], sat: [0.35, 1], to: '#2a5a8a', keep: 0.9 },
+    // the plate: rimed
+    { lum: [0.45, 1], to: '#cfe6f6', keep: 0.7 },
+    { to: '#7fa6c8', keep: 0.7 },
+  ],
+  wears: [{ piece: 'eyes', b: '#dff6ff' }],
+};
 boss('rotwood-colossus', { size: 1.35, wears: [{ piece: 'horns', a: '#4a3a22', b: '#8ab04a', size: 1.2 }, { piece: 'eyes', b: '#c8ff70' }] });
 boss('the-withered-queen', { size: 1.35, wears: [{ piece: 'ice-crown', a: '#4a6a2a', b: '#d8ff8a', band: '#3a3a2a' }, { piece: 'eyes', b: '#e0ff9a' }] });
 boss('herald-in-the-spire', { size: 1.35, wears: [{ piece: 'halo', a: '#a03ae0', b: '#ffd0ff', size: 0.9 }, { piece: 'eyes', b: '#ff9af0' }] });

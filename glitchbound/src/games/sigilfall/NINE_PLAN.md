@@ -30,7 +30,7 @@ requests open.**
 | 2b | Bosses: the Prologue (Ossric, Morgrave, Grimtusk) | `claude/sf9-bosses-prologue` | #357 | merged 2026-11-25 | 2a (#356) |
 | 2c | Bosses: Act I (Gallows Keep): the Hangman and Harlan Blackglove; Gnasher's moves; a move for every attack of all 43 bosses | `claude/sf9-bosses-act1` | #363 | merged 2026-11-25 | 2b (#357) |
 | 2d | Bosses: Act II (the Barrow of Kings, the Crown Catacombs): Hrodric, Corvane, Silas Vey, the Royal Auditor | `claude/sf9-bosses-act2` | #371 | open | 2c (#363, merged) |
-| 2e | Bosses: Act III (the Tomb of the Sun King, the Vault of Rime) | `claude/sf9-bosses-act3` | | not started | 2a |
+| 2e | Bosses: Act III (the Tomb of the Sun King, the Vault of Rime): the Sun King, Khepset, the Sand Warden, Hrimfang, Hallvor | `claude/sf9-bosses-act3` | #372 | open | 2d (#371) |
 | 2f | Bosses: Act IV (the Siege of Highwall) | `claude/sf9-bosses-act4` | | not started | 2a |
 | 2g | Bosses: Act V (the Molten Throne) | `claude/sf9-bosses-act5` | | not started | 2a |
 | 2h | Bosses: the finale (Duskspire) | `claude/sf9-bosses-finale` | | not started | 2a |

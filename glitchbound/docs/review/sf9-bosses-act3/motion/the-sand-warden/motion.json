@@ -1,0 +1,123 @@
+{
+  "boss": "the-sand-warden",
+  "file": "boss_sandwarden",
+  "form": "sandwarden",
+  "float": 0,
+  "walked": {
+    "samples": 183,
+    "moving": 59,
+    "walking": 56,
+    "clips": {
+      "walk": 55,
+      "run": 1,
+      "slice": 2,
+      "cast": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle",
+        "walk"
+      ],
+      "readings": 50
+    },
+    {
+      "phase": 1,
+      "id": "chop",
+      "clips": [
+        "idle",
+        "chop2",
+        "walk"
+      ],
+      "readings": 30
+    },
+    {
+      "phase": 1,
+      "id": "tomb:quicksand",
+      "clips": [
+        "cast",
+        "idle",
+        "walk"
+      ],
+      "readings": 44
+    },
+    {
+      "phase": 1,
+      "id": "tomb:sandsweep",
+      "clips": [
+        "spin",
+        "idle",
+        "walk"
+      ],
+      "readings": 68
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "idle",
+        "slice"
+      ],
+      "readings": 58
+    },
+    {
+      "phase": 2,
+      "id": "tomb:sandsweep",
+      "clips": [
+        "idle",
+        "spin"
+      ],
+      "readings": 97
+    },
+    {
+      "phase": 2,
+      "id": "tomb:quicksand",
+      "clips": [
+        "cast",
+        "idle",
+        "walk"
+      ],
+      "readings": 40
+    },
+    {
+      "phase": 2,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle",
+        "walk"
+      ],
+      "readings": 20
+    },
+    {
+      "phase": 2,
+      "id": "slamRings",
+      "clips": [
+        "smash",
+        "idle",
+        "walk"
+      ],
+      "readings": 43
+    },
+    {
+      "phase": 2,
+      "id": "tomb:crumble",
+      "clips": [],
+      "note": "never began"
+    }
+  ],
+  "found": [],
+  "errors": []
+}
