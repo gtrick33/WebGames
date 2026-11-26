@@ -153,3 +153,36 @@ export function ackFor(raw: unknown, seat: number): Ack | null {
   }
   return null;
 }
+
+/** The reasons a host's game turns a guest's press away that a round trip's catching up can undo. */
+const LATE_WHY = new Set(['Too far away', 'Out of sight']);
+/** How long such a press is tried again at most (ms). */
+export const LATE_MOST = 500;
+
+/**
+ * The host's side: a guest's press its game turned away as out of reach or out of sight. Its copy of the guest is a round
+ * trip behind them, so a guest who pressed as they stepped into reach on their own screen is still a stride short here:
+ * the press is tried again each frame for a moment (`wait` ms, about the guest's one-way trip), and goes off the moment
+ * the copy is there. Any other answer (done, or a reason of its own) ends it. One per seat: a newer press takes its place.
+ */
+export class LatePresses {
+  private list = new Map<number, { ab: string; at?: Spot; until: number }>();
+
+  /** A press and what the host's game said to it (null: it went off). */
+  pressed(id: number, ab: string, at: Spot | undefined, why: string | null, now: number, wait: number): void {
+    if (why && LATE_WHY.has(why)) this.list.set(id, { ab, at, until: now + Math.min(LATE_MOST, Math.max(0, wait)) });
+    else this.list.delete(id);
+  }
+
+  /** Each frame, before the fight moves on: tries what is waiting with `press` (the host's game's own). */
+  retry(now: number, press: (id: number, ab: string, at?: Spot) => string | null): void {
+    for (const [id, p] of this.list) {
+      const why = now > p.until ? 'late' : press(id, p.ab, p.at);
+      if (!why || !LATE_WHY.has(why)) this.list.delete(id);
+    }
+  }
+
+  get size(): number {
+    return this.list.size;
+  }
+}

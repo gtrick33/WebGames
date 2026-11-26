@@ -29,7 +29,7 @@ import { TitleFx } from '../../../components/TitleFx';
 import { classEmblem } from './classEmblem';
 import { Coach, useLabels, useSpot } from './RingCoach';
 import { frameOf } from '../arena/record';
-import { ackFor, SeatInputs, SelfSync } from '../net/selfSync';
+import { ackFor, LatePresses, SeatInputs, SelfSync } from '../net/selfSync';
 import { showPing } from '../net/ping';
 
 /** `skill`: how sharp the computer plays (arena/ladder.ts skillAt); `mates`, in solo: the player's own side's, when not the same. */
@@ -774,6 +774,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     // host's word is a round trip old: net/selfSync.ts); the host says which of each guest's moves it last had
     const sync = role.kind === 'client' ? new SelfSync() : null;
     const heard = role.kind === 'host' ? new SeatInputs() : null;
+    // a guest's press turned away as out of reach is tried again while our copy of them catches up (net/selfSync.ts)
+    const late = new LatePresses();
     // each player's round trip to the room, as they said (ms), by fighter: the match's ping
     const rtts = new Map<number, number>();
     const ownRtt = (): number => (role.kind === 'solo' ? 0 : (role.rtt?.() ?? 0));
@@ -806,7 +808,11 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         // (press checks it's on their bar, and the rules, as for anyone)
         // (a placed ability comes with where: two plain numbers, which the rules bring into reach and sight)
         const at = Array.isArray(q.at) && q.at.length === 2 && q.at.every((n) => typeof n === 'number' && Number.isFinite(n)) ? { x: q.at[0] as number, y: q.at[1] as number } : undefined;
-        if (typeof q.p === 'string') m.press(f.id, q.p, at);
+        if (typeof q.p === 'string') {
+          const why = m.press(f.id, q.p, at);
+          // (for about their one-way trip and ours: theirs is half their round trip to the room, ours half our own)
+          late.pressed(f.id, q.p, at, why, performance.now(), 120 + ((rtts.get(f.id) ?? 100) + ownRtt()) / 2);
+        }
         if (typeof q.tg === 'number' && Number.isInteger(q.tg)) m.setTarget(f.id, q.tg);
       });
     } else if (role.kind === 'client') {
@@ -926,6 +932,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       const mine = moveNow();
       let sent: Match['events'] | null = null;
       if (role.kind !== 'client') {
+        if (late.size) late.retry(performance.now(), (id, ab, at) => m.press(id, ab, at));
         // the fight moves by the frame's own length (in pieces no longer than MAX_STEP when a frame ran long): fixed
         // steps against a screen that is never quite regular made everyone stutter, a step missed here, two there
         const pieces = Math.max(1, Math.ceil(dt / MAX_STEP));

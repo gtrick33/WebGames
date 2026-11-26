@@ -16,7 +16,7 @@ import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { TILE } from '../src/games/sigilfall/sim/map';
 import { World } from '../src/games/sigilfall/sim/world';
 import { pingTone } from '../src/games/sigilfall/net/ping';
-import { ackFor, SeatInputs, SelfSync } from '../src/games/sigilfall/net/selfSync';
+import { ackFor, LATE_MOST, LatePresses, SeatInputs, SelfSync } from '../src/games/sigilfall/net/selfSync';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';
 import { Match, PACE, type FighterSetup, type MoveInput, type Snapshot } from '../src/games/sigilfall/arena/sim';
 import { Vigil, type VigilInput } from '../src/games/sigilfall/vigil/sim';
@@ -539,5 +539,46 @@ describe('sigilfall: the room link measures its round trip (net/link.ts)', () =>
     ws.onmessage?.({ data: JSON.stringify({ t: 'relay', data: { n: 1, d: { t: 'p' } } }) });
     expect(relayed).toEqual([{ t: 'p' }]);
     link.close();
+  });
+});
+
+describe('sigilfall: a faraway guest’s press at the edge of reach isn’t dropped by the host', () => {
+  it('is tried again for a moment while the host’s copy of them catches up, and goes off once it is there', () => {
+    const late = new LatePresses();
+    let reach = false;
+    const pressed: string[] = [];
+    const press = (id: number, ab: string): string | null => {
+      if (!reach) return 'Too far away';
+      pressed.push(`${id}:${ab}`);
+      return null;
+    };
+    late.pressed(3, 'w-gash', undefined, press(3, 'w-gash'), 1000, 300);
+    expect(late.size).toBe(1);
+    late.retry(1100, press);
+    expect(pressed).toEqual([]);
+    reach = true;
+    late.retry(1200, press);
+    expect(pressed).toEqual(['3:w-gash']);
+    expect(late.size).toBe(0);
+  });
+
+  it('gives up after its moment, on any other answer, and never waits past LATE_MOST', () => {
+    const late = new LatePresses();
+    const far = (): string => 'Too far away';
+    late.pressed(1, 'a', undefined, 'Too far away', 0, 200);
+    late.retry(150, far);
+    expect(late.size).toBe(1);
+    late.retry(250, far);
+    expect(late.size).toBe(0);
+    late.pressed(1, 'a', undefined, 'Out of sight', 0, 99_999);
+    late.retry(LATE_MOST + 1, far);
+    expect(late.size).toBe(0);
+    late.pressed(1, 'a', undefined, 'Too far away', 0, 300);
+    late.retry(10, () => 'Not enough rage');
+    expect(late.size).toBe(0);
+    // a press that went off, or was turned away for its own reasons, isn't kept at all
+    late.pressed(2, 'b', undefined, null, 0, 300);
+    late.pressed(2, 'b', undefined, 'Not ready yet', 0, 300);
+    expect(late.size).toBe(0);
   });
 });
