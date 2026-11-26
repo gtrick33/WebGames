@@ -7,7 +7,7 @@ import { currentObjective } from '../progress/character';
 import { drawMapIcon, type MapIcon } from '../ui/mapIcons';
 import { isMainQuest, turnInNpc } from '../progress/handin';
 import { edgeArrowAngle, LEAD, leanTarget, LIFT } from './camera';
-import { placeSpeech, type SpeechAsk, type SpeechKeep, type ViewBox } from './speech';
+import { boxesMeet, placeSpeech, type SpeechAsk, type SpeechKeep, type ViewBox } from './speech';
 import { ghostName, TALK_ZOOM, TYPE_CPS } from '../sim/scene';
 import { Effects, headOf, inView } from './effects';
 import { THEMES } from '../data/themes';
@@ -879,6 +879,7 @@ export class Renderer {
     }
     this.upright(p.x, p.y);
     this.drawSpeech(w, time);
+    this.questArrow = null;
     if (ui && st) {
       this.drawInteractMarker(w, time, st);
       this.drawObjectiveArrow(w, time, st);
@@ -1183,6 +1184,14 @@ export class Renderer {
     this.label(word, s.x, s.y + Math.sin(time * 4) * 1.5, 13, '#ffe066');
   }
 
+  /**
+   * The quest's arrow this frame, in the view's CSS pixels: at the edge of the view, turned the way to go (`angle`), or
+   * over the place itself once it is in sight (`angle` null). The HUD draws it, over its own pieces (ui/GameScreen.tsx
+   * QuestArrow): drawn on the picture, it went under the hero's bars and the skills along the edges, where it mostly
+   * is. `over` when it lies across one of them: it is drawn fainter there. Null: no arrow.
+   */
+  questArrow: { x: number; y: number; angle: number | null; over: boolean } | null = null;
+
   /** An arrow at the edge of the view toward the current objective. */
   private arrowLand = '';
   private arrowSince = 0;
@@ -1191,7 +1200,6 @@ export class Renderer {
     const target = objectiveTarget(w);
     // enemies to hunt show on the minimap; the edge arrow is for places
     if (!target || target.soft) return;
-    const g = this.g;
     const W = this.cssW;
     const H = this.cssH;
     // right after a change of land the camera can still be on the old one: point nowhere until it is on the hero
@@ -1207,7 +1215,7 @@ export class Renderer {
     if (s.front !== false && s.x > m && s.x < W - m && s.y > m && s.y < H - m) {
       // something to be found there (a letter, a relic: data/types.ts Keepsake) glints on the ground where it lies
       if (this.findHere(w)) this.drawGlint(st.project(target.x, target.y, 3), time);
-      this.label('▼', s.x, s.y + Math.sin(time * 5) * 3, 15, '#ffe066');
+      this.questArrow = this.arrowAt(s.x, s.y, null);
       return;
     }
     // (over the ground from the hero, not from where the place falls on the screen: render/camera.ts)
@@ -1215,27 +1223,16 @@ export class Renderer {
     const mx = W / 2 - m;
     const my = H / 2 - m;
     const t = Math.min(Math.abs(mx / (Math.cos(a) || 1e-6)), Math.abs(my / (Math.sin(a) || 1e-6)));
-    g.setTransform(this.k, 0, 0, this.k, 0, 0);
-    g.translate(W / 2 + Math.cos(a) * t, H / 2 + Math.sin(a) * t);
-    g.rotate(a);
-    g.globalAlpha = 0.85 + Math.sin(time * 5) * 0.15;
-    g.fillStyle = '#1b1428';
-    g.beginPath();
-    g.moveTo(15, 0);
-    g.lineTo(-11, -13);
-    g.lineTo(-5, 0);
-    g.lineTo(-11, 13);
-    g.closePath();
-    g.fill();
-    g.fillStyle = '#ffe066';
-    g.beginPath();
-    g.moveTo(11, 0);
-    g.lineTo(-8, -9);
-    g.lineTo(-2.5, 0);
-    g.lineTo(-8, 9);
-    g.closePath();
-    g.fill();
-    g.globalAlpha = 1;
+    this.questArrow = this.arrowAt(W / 2 + Math.cos(a) * t, H / 2 + Math.sin(a) * t, a);
+  }
+
+  /** The quest's arrow at (x, y), and whether it lies across a piece of the HUD (its box, with a little to spare). */
+  private arrowAt(x: number, y: number, angle: number | null): NonNullable<Renderer['questArrow']> {
+    const r = 14 * (angle === null ? this.hud : 1);
+    const box = { x: x - r, y: y - r, w: r * 2, h: r * 2 };
+    let over = false;
+    for (const b of this.hudBoxes.values()) if (boxesMeet(box, b)) over = true;
+    return { x, y, angle, over };
   }
 
   /** Is the place the hero is led to one where the quest finds something (and the hero is to look there now)? */
@@ -1497,7 +1494,7 @@ export class Renderer {
     // room elsewhere (render/speech.ts placeSpeech; POLISH_PLAN.md piece 2)
     const cards = placeSpeech(
       said.map((x) => x.ask),
-      { hud: hud ? [...this.hudBoxes.values(), ...this.floatBoxes] : [], action: hud ? this.fightBox(w, toScreen) : null, lane: hud ? this.speechLane() : null, fight: hud && this.fighting(w) },
+      { hud: hud ? [...this.hudBoxes.values(), ...this.floatBoxes] : [], action: hud ? this.fightBox(w, toScreen) : null, lane: hud ? this.speechLane() : null },
       hud ? this.hudBoxes : null,
     );
     said.forEach(({ s, name, accent }, i) => {
@@ -1585,13 +1582,6 @@ export class Renderer {
     g.restore();
   }
 
-  /** A fight is on: the hero struck or was struck a moment ago, or a foe near them is after them. */
-  private fighting(w: World): boolean {
-    const p = w.player;
-    if (p.calm < 4) return true;
-    return w.enemies.some((e) => !e.dead && !e.dummy && (e.state === 'chase' || e.state === 'windup' || e.state === 'act') && Math.hypot(e.x - p.x, e.y - p.y) < TILE * 8);
-  }
-
   /**
    * Where the fight is on the screen: the hero, and the foes after them close by. Words written across it would hide
    * the blow they warn of (render/speech.ts placeSpeech keeps off it where it can). It reaches no further than a
@@ -1627,7 +1617,8 @@ export class Renderer {
 
   /**
    * The subtitle lane: along the bottom of the picture over the skills on a desk, and between the stick and the
-   * buttons on a phone. Lines shouted in a fight go here, off the fight (render/speech.ts placeSpeech).
+   * buttons on a phone. A line goes here only when there is no room for it near whoever says it (render/speech.ts
+   * placeSpeech).
    */
   private speechLane(): { left: number; right: number; bottom: number } | null {
     const W = this.cssW;

@@ -12279,6 +12279,76 @@ html.rb-touch-playing textarea {
   letter-spacing: 0.06em;
 }
 
+/* ---- the quest's arrow (ui/GameScreen.tsx QuestArrow) ----
+   Over every piece of the HUD (above them all, under the cards, the talk, the news and the windows: none of those is
+   up while it shows), and fainter where it lies across one, so the bars and the skills under it still read. Placed
+   and turned by the renderer at the point it points from (render/renderer.ts questArrow). */
+.rb-qarrow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 12;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.rb-qarrow[hidden] {
+  display: none;
+}
+.rb-qarrow.is-over {
+  opacity: 0.4;
+}
+.rb-qarrow svg {
+  position: absolute;
+  max-width: none;
+  overflow: visible;
+}
+/* (the way, at the edge of the view: its point where the picture drew it, pulsing as it did) */
+.rb-qarrow-way {
+  top: -14px;
+  left: -12px;
+  width: 28px;
+  height: 28px;
+  animation: rb-qarrow-pulse 0.63s ease-in-out infinite alternate;
+}
+/* (the place itself, in sight: a mark over it, bobbing, the size of the picture's words) */
+.rb-qarrow-here {
+  display: none;
+  top: calc(-7px * var(--hud, 1));
+  left: calc(-8px * var(--hud, 1));
+  width: calc(16px * var(--hud, 1));
+  height: calc(14px * var(--hud, 1));
+  animation: rb-qarrow-bob 0.63s ease-in-out infinite alternate;
+}
+.rb-qarrow.is-here .rb-qarrow-way {
+  display: none;
+}
+.rb-qarrow.is-here .rb-qarrow-here {
+  display: block;
+}
+@keyframes rb-qarrow-pulse {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes rb-qarrow-bob {
+  from {
+    translate: 0 -3px;
+  }
+  to {
+    translate: 0 3px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-qarrow svg {
+    animation: none;
+  }
+}
+
 /* ---- a boss fight: the screen is the fight's ----
    The owner: "during boss fights it would be nice if the screen wasnt as stacked ... leave only the pause button and
    map, hide everything else and display the boss hp bar states and attacks a bit more to the top of the screen".
@@ -12293,9 +12363,13 @@ html.rb-touch-playing textarea {
 .rb-ui.is-boss .rb-encounter {
   display: none;
 }
+/* (the name and the title in one row in the middle, over a health bar as wide as the boss's bar the whole fight. With
+   the columns sized by the words alone the bar was only as long as "Grimtusk  Warlord of the Whisperwood", and it
+   stretched whenever a longer call came up under it, a third longer and back. The owner: "the boss healthbar should
+   be 'big' the whole time, now it starts as small and sometimes gets big". A title too long for the row wraps under
+   itself, beside the name) */
 .rb-ui.is-boss .rb-bossbar {
-  grid-template-columns: auto auto;
-  justify-content: center;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, max-content) minmax(0, 1fr);
   align-items: baseline;
   column-gap: 8px;
 }
@@ -12303,11 +12377,16 @@ html.rb-touch-playing textarea {
   grid-column: 1 / -1;
 }
 .rb-ui.is-boss .rb-bossbar > strong {
-  grid-column: 1;
+  grid-column: 2;
+  white-space: nowrap;
 }
 .rb-ui.is-boss .rb-bossbar > .rb-boss-title {
-  grid-column: 2;
+  grid-column: 3;
+  justify-self: stretch;
+  min-width: 0;
   margin-bottom: 0;
+  text-align: left;
+  text-wrap: balance;
 }
 @container (min-width: 700px) {
   /* (at the top of the screen and in its middle. The owner, twice: set to one side between the hero's bars and

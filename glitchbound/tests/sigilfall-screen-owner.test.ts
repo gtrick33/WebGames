@@ -1,7 +1,7 @@
 /**
  * The screen's one owner (POLISH_PLAN.md piece 2): words said on the picture never under the HUD or over each other,
- * shouts in a fight off the fight, and what comes and goes slid clear of what stays. The live game is checked at four
- * sizes by scripts/sigilfall-overlap-check.mjs; this holds the rules it rests on.
+ * with whoever says them and off the fight, and what comes and goes slid clear of what stays. The live game is checked
+ * at four sizes by scripts/sigilfall-overlap-check.mjs; this holds the rules it rests on.
  */
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -43,11 +43,11 @@ const SCREENS: { id: string; view: [number, number]; touch: boolean; hud: Record
   },
 ];
 
-function room(s: (typeof SCREENS)[number], fight: boolean, action: ViewBox | null): SpeechRoom {
+function room(s: (typeof SCREENS)[number], action: ViewBox | null): SpeechRoom {
   const [W, H] = s.view;
   const wide = Math.min(W - 32, 600);
   const lane = s.touch ? { left: W * 0.26, right: Math.min(W * 0.66, s.hud.thumbs!.x - 10), bottom: H - 10 } : { left: (W - wide) / 2, right: (W + wide) / 2, bottom: s.hud.bar!.y - 8 };
-  return { hud: Object.values(s.hud), action, lane, fight };
+  return { hud: Object.values(s.hud), action, lane };
 }
 
 function ask(s: (typeof SCREENS)[number], text: string, hx: number, hy: number, extra: Partial<SpeechAsk> = {}): SpeechAsk {
@@ -67,7 +67,7 @@ describe('Sigilfall: words said on the picture', () => {
         [0.3 + (i % 4) * 0.1, 0.62],
       ];
       const asks = spots.slice(0, n).map(([hx, hy], k) => ask(s, LINES[i + k]!, hx, hy));
-      const cards = placeSpeech(asks, room(s, false, null), new Map(Object.entries(s.hud)));
+      const cards = placeSpeech(asks, room(s, null), new Map(Object.entries(s.hud)));
       cards.forEach((c, k) => {
         const where = `${s.id}: "${asks[k]!.text.slice(0, 30)}"`;
         // (only a foe's bark ever gives way: these are the story's own lines)
@@ -111,7 +111,7 @@ describe('Sigilfall: words said on the picture', () => {
       const action = { x: W * 0.38, y: H * 0.36, w: W * 0.24, h: H * 0.24 };
       const story = ask(s, 'Rangers on the left, riders on the right! Take back the square!', 0.5, 0.5);
       const barks = [0.2, 0.35, 0.5, 0.65, 0.8, 0.3, 0.7].map((hx, k) => ask(s, LINES[k * 7]!, hx, 0.3 + (k % 3) * 0.1, { minor: true }));
-      const cards = placeSpeech([...barks, story], room(s, true, action), new Map(Object.entries(s.hud)));
+      const cards = placeSpeech([...barks, story], room(s, action), new Map(Object.entries(s.hud)));
       const drawn = cards.filter((c): c is NonNullable<typeof c> => !!c);
       // the line that matters is always drawn, and placed before the barks: nothing lies over it
       expect(cards[cards.length - 1], s.id).not.toBeNull();
@@ -119,19 +119,42 @@ describe('Sigilfall: words said on the picture', () => {
     }
   });
 
-  it('in a fight, goes to the lane along the bottom, off the fight', () => {
+  // the owner, 2026-11-26: "the dialogue boxes sometimes get stuck on the bottom". Every line that wasn't a scene's went
+  // to the lane along the bottom whenever it was free; it belongs with whoever says it
+  it('outside a scene, goes over its speaker’s head, not down to the lane', () => {
+    for (const s of SCREENS) {
+      const cards = placeSpeech([ask(s, 'Stay close to me, the road bends down to the river here.', 0.45, 0.42)], room(s, null), new Map(Object.entries(s.hud)));
+      expect(cards[0]!.lane, s.id).toBeFalsy();
+      expect(cards[0]!.tailX, s.id).not.toBeNull();
+    }
+  });
+
+  it('in a fight, stays with its speaker and off the fight', () => {
     for (const s of SCREENS) {
       const [W, H] = s.view;
       // (the hero in the middle of the picture with a foe on each side, as the renderer measures a fight)
       const action = { x: W * 0.38, y: H * 0.36, w: W * 0.24, h: H * 0.24 };
-      const cards = placeSpeech([ask(s, 'Archer! Dodge when it draws!', 0.5, 0.35), ask(s, 'Hold the line, all of you!', 0.45, 0.4)], room(s, true, action), new Map(Object.entries(s.hud)));
-      for (const c of cards) {
+      const asks = [ask(s, 'Archer! Dodge when it draws!', 0.5, 0.35), ask(s, 'Hold the line, all of you!', 0.45, 0.4)];
+      const cards = placeSpeech(asks, room(s, action), new Map(Object.entries(s.hud)));
+      cards.forEach((c, k) => {
         if (!c) throw new Error('left out');
-        expect(c.lane, s.id).toBe(true);
+        expect(c.lane, s.id).toBeFalsy();
         expect(boxesMeet(c, action, 0), s.id).toBe(false);
-        expect(c.tailX, s.id).toBeNull();
-      }
+        // (near its speaker: within a few cards' height of their head)
+        expect(Math.abs(c.y + c.h / 2 - asks[k]!.headY), s.id).toBeLessThan(c.h * 4);
+      });
       expect(boxesMeet(cards[0]!, cards[1]!, 2), s.id).toBe(false);
+    }
+  });
+
+  it('goes to the lane only when there is no room near its speaker', () => {
+    for (const s of SCREENS) {
+      const [W, H] = s.view;
+      // (everything round the speaker taken: a wall of the HUD across the open middle of the picture)
+      const wall = { x: 0, y: s.touch ? 62 : 44, w: W, h: H * 0.62 };
+      const crowded: SpeechRoom = { ...room(s, null), hud: [...Object.values(s.hud), wall] };
+      const card = placeSpeech([ask(s, 'Hold the line, all of you!', 0.5, 0.4)], crowded, new Map(Object.entries(s.hud)))[0]!;
+      expect(card.lane, s.id).toBe(true);
     }
   });
 
@@ -143,14 +166,14 @@ describe('Sigilfall: words said on the picture', () => {
       const [W, H] = s.view;
       const hudMap = new Map(Object.entries(s.hud));
       const line = 'Stay close to me, the road bends down to the river here and the bridge is out.';
-      const over = placeSpeech([ask(s, line, 0.5, 0.5)], room(s, false, null), hudMap)[0]!;
+      const over = placeSpeech([ask(s, line, 0.5, 0.5)], room(s, null), hudMap)[0]!;
       // the hero beside the speaker, now across the card over their head, now not, frame after frame as they walk
       const across = { x: over.x, y: over.y, w: over.w, h: over.h };
       let keep = over.keep;
       let was: ViewBox | null = null;
       let moves = 0;
       for (let f = 0; f < 24; f++) {
-        const card = placeSpeech([ask(s, line, 0.5, 0.5, keep ? { keep } : {})], room(s, false, f % 2 ? null : across), hudMap)[0]!;
+        const card = placeSpeech([ask(s, line, 0.5, 0.5, keep ? { keep } : {})], room(s, f % 2 ? null : across), hudMap)[0]!;
         if (was && (Math.abs(card.x - was.x) > 2 || Math.abs(card.y - was.y) > 2)) moves++;
         was = card;
         keep = card.keep;
@@ -161,13 +184,17 @@ describe('Sigilfall: words said on the picture', () => {
     }
   });
 
-  it('a subtitle in the lane stays in the lane while the fight comes and goes', () => {
+  it('a subtitle put in the lane stays there while it is free, rather than jumping back up and down', () => {
     for (const s of SCREENS) {
+      const [W, H] = s.view;
       const hudMap = new Map(Object.entries(s.hud));
-      let keep = placeSpeech([ask(s, 'Hold the line, all of you!', 0.5, 0.4)], room(s, true, null), hudMap)[0]!.keep;
+      const wall = { x: 0, y: s.touch ? 62 : 44, w: W, h: H * 0.62 };
+      const crowded: SpeechRoom = { ...room(s, null), hud: [...Object.values(s.hud), wall] };
+      let keep = placeSpeech([ask(s, 'Hold the line, all of you!', 0.5, 0.4)], crowded, hudMap)[0]!.keep;
       expect(keep && 'lane' in keep && keep.lane, s.id).toBe(true);
+      // (the room round the head comes and goes, frame after frame)
       for (let f = 0; f < 10; f++) {
-        const card = placeSpeech([ask(s, 'Hold the line, all of you!', 0.5, 0.4, { keep })], room(s, f % 2 === 0, null), hudMap)[0]!;
+        const card = placeSpeech([ask(s, 'Hold the line, all of you!', 0.5, 0.4, { keep })], f % 2 ? crowded : room(s, null), hudMap)[0]!;
         expect(card.lane, `${s.id} frame ${f}`).toBe(true);
         keep = card.keep;
       }
@@ -176,7 +203,7 @@ describe('Sigilfall: words said on the picture', () => {
 
   it('keeps a scene’s line over its speaker: a scene’s words never go to the lane', () => {
     for (const s of SCREENS) {
-      const cards = placeSpeech([ask(s, 'Three of ours died last night, and the courier.', 0.5, 0.45, { staged: true })], room(s, true, null), null);
+      const cards = placeSpeech([ask(s, 'Three of ours died last night, and the courier.', 0.5, 0.45, { staged: true })], room(s, null), null);
       expect(cards[0]!.lane, s.id).toBeFalsy();
       expect(cards[0]!.tailX, s.id).not.toBeNull();
     }
@@ -184,7 +211,7 @@ describe('Sigilfall: words said on the picture', () => {
 
   it('two people side by side in a scene get a card each, not one over the other', () => {
     const view: [number, number] = [844, 390];
-    const scene: SpeechRoom = { hud: [], action: null, lane: null, fight: false };
+    const scene: SpeechRoom = { hud: [], action: null, lane: null };
     for (let i = 0; i + 1 < LINES.length; i += 11) {
       const a = { text: LINES[i]!, name: 'Elder Maren', headX: 400, headY: 170, footY: 210, viewW: view[0], viewH: view[1], top: 39, bottom: 39, measure, staged: true };
       const b = { ...a, text: LINES[i + 1]!, name: 'Elyra', headX: 440, staged: false };
