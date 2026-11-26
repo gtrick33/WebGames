@@ -4,7 +4,10 @@
  * has gone off. Rows are the class's spells; the left column is the spell, the right its evolution (blank when it has
  * none). Each spell's picture is cropped round the hero.
  *
- *   node scripts/sigilfall-vigil-spellsheet.mjs --out docs/review/sf9-vigil-looks/after [--root <another checkout>] [--class mage] [--gpu]
+ *   node scripts/sigilfall-vigil-spellsheet.mjs --out docs/review/sf9-vigil-looks/after [--root <another checkout>] [--class mage] [--gpu] [--strip]
+ *
+ * `--strip`: only the spells that evolve, each as a strip of frames (a still undersells what moves): the spell's
+ * frames on one row and its evolution's on the row under it, the same moments after each is set going.
  *
  * `--root` draws another checkout's game with the same script (the branch before a change), for a before and after.
  * Writes <out>/<class>.jpg and, for each spell, <out>/tiles/<class>-<spell>[-evolved].jpg.
@@ -27,6 +30,9 @@ const OUT = resolve(join(HERE, '..'), value('out', '.cache/vigil-spellsheet'));
 const { chromium } = createRequire(import.meta.url)('playwright');
 const CLASSES = { warrior: 'Warrior', mage: 'Mage', ranger: 'Ranger', paladin: 'Paladin', priest: 'Priest', warlock: 'Warlock', druid: 'Druid', gloamknight: 'Gloamknight' };
 const ONLY = value('class');
+const STRIP = flag('strip');
+/** A strip's moments, in ms after the spell is set going (a dash's after the dash). */
+const FRAMES = [180, 420, 700, 1050];
 /** How long after a spell is set going to take its picture, by its kind (when its look is at its fullest). */
 const WAIT = { bolt: 380, nova: 220, chain: 120, orbit: 600, strike: 470, field: 900, cone: 110, lance: 140, rain: 420, pet: 1200, aura: 600, pulse: 260, boomerang: 360, mine: 1700, totem: 1300, dash: 160, sweep: 380, ward: 450 };
 const CROP = { left: 172, top: 55, width: 500, height: 290 };
@@ -78,7 +84,9 @@ try {
     }, cls);
     const rows = [];
     for (const s of kit) {
+      if (STRIP && !s.evolve) continue;
       const tiles = [];
+      const strips = [];
       for (const evolved of [false, true]) {
         if (evolved && !s.evolve) {
           tiles.push(null);
@@ -105,6 +113,8 @@ try {
             v.sparks = [];
             v.pickups = [];
             v.foes = [];
+            // (and what the last spell left on the ground: render/vigil.ts's marks, where there are any)
+            if (Array.isArray(g.painter.scars)) g.painter.scars.length = 0;
             // a ring of the Host, walking in slowly and harmless
             const def = v.waves[0];
             for (let i = 0; i < 12; i++) {
@@ -125,6 +135,28 @@ try {
           await page.evaluate(() => globalThis.dispatchEvent(new globalThis.KeyboardEvent('keydown', { code: 'Space' })));
         }
         if (s.kind === 'pulse') await page.evaluate(() => (globalThis.__vigil.me.hp = globalThis.__vigil.v.maxHpOf(globalThis.__vigil.me) * 0.5));
+        if (STRIP) {
+          // the same moments after it is set going, for the spell and for its evolution
+          const strip = [];
+          let at = 0;
+          for (const [i, when] of FRAMES.entries()) {
+            await page.waitForTimeout(when - at);
+            at = when;
+            if (s.kind === 'ward' && i === 2)
+              await page.evaluate(() => {
+                const g = globalThis.__vigil;
+                g.me.iframe = 0;
+                g.v.wound(g.me, g.me.ward + 1);
+                g.me.hp = 1e9;
+              });
+            const file = join(OUT, 'tiles', `${cls}-${s.id}${evolved ? '-evolved' : ''}-${i}.jpg`);
+            await page.screenshot({ path: file, type: 'jpeg', quality: 78, clip: { x: CROP.left, y: CROP.top, width: CROP.width, height: CROP.height } });
+            strip.push(file);
+          }
+          if (s.kind === 'pulse') await page.evaluate(() => (globalThis.__vigil.me.hp = 1e9));
+          strips.push(strip);
+          continue;
+        }
         await page.waitForTimeout(WAIT[s.kind] ?? 400);
         if (s.kind === 'pulse') await page.evaluate(() => (globalThis.__vigil.me.hp = 1e9));
         if (s.kind === 'ward') {
@@ -140,15 +172,39 @@ try {
         await page.screenshot({ path: file, type: 'jpeg', quality: 80, clip: { x: CROP.left, y: CROP.top, width: CROP.width, height: CROP.height } });
         tiles.push(file);
       }
-      rows.push({ s, tiles });
+      rows.push({ s, tiles, strips });
       console.log(`${cls.padEnd(12)}${s.name}`);
+    }
+    const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/’/g, '&#8217;');
+    if (STRIP) {
+      // a strip sheet: for each spell that evolves, its frames on one row and its evolution's under it
+      const tw = 240;
+      const th = Math.round((tw * CROP.height) / CROP.width);
+      const lab = 22;
+      const W = FRAMES.length * (tw + 6) + 6;
+      const per = 2 * (th + lab) + 14;
+      const H = rows.length * per + 40;
+      const parts = [{ input: Buffer.from(`<svg width="${W}" height="40"><text x="${W / 2}" y="28" font-family="Georgia" font-size="22" font-weight="700" fill="#ffe39a" text-anchor="middle">${esc(name)}: each spell that evolves, frame by frame</text></svg>`), top: 0, left: 0 }];
+      for (const [i, r] of rows.entries()) {
+        for (const [k, strip] of r.strips.entries()) {
+          const y = 40 + i * per + k * (th + lab);
+          const title = k === 0 ? `${r.s.name}: ${FRAMES.map((f) => `${f / 1000}s`).join(', ')}` : `${r.s.evolve} (evolved)`;
+          parts.push({ input: Buffer.from(`<svg width="${W}" height="${lab}"><text x="6" y="17" font-family="Georgia" font-size="15" font-weight="700" fill="${k ? '#ffd257' : '#efe6d4'}">${esc(title)}</text></svg>`), top: y, left: 0 });
+          for (const [c, file] of strip.entries()) parts.push({ input: await sharp(file).resize(tw, th).toBuffer(), top: y + lab, left: 6 + c * (tw + 6) });
+        }
+      }
+      await sharp({ create: { width: W, height: H, channels: 3, background: '#0b0816' } })
+        .composite(parts)
+        .jpeg({ quality: 76 })
+        .toFile(join(OUT, `${cls}-strip.jpg`));
+      await context.close();
+      continue;
     }
     // the sheet: a row a spell, its evolution beside it, each with its name
     const label = 26;
     const W = TILE_W * 2 + 12;
     const H = rows.length * (TILE_H + label + 6) + 40;
     const parts = [];
-    const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/’/g, '&#8217;');
     parts.push({ input: Buffer.from(`<svg width="${W}" height="40"><text x="${W / 2}" y="28" font-family="Georgia" font-size="24" font-weight="700" fill="#ffe39a" text-anchor="middle">${esc(name)}: each spell, and its evolution</text></svg>`), top: 0, left: 0 });
     rows.forEach((r, i) => {
       const y = 40 + i * (TILE_H + label + 6);
