@@ -189,12 +189,10 @@ export interface SpeechRoom {
   /** Where the fight is: the hero and the foes about them (null in a scene, or with nobody near). */
   action: ViewBox | null;
   /**
-   * The lane along the bottom of the picture where words go as subtitles in a fight: between `left` and `right`,
-   * standing on `bottom` (null in a scene: its bars keep the words).
+   * The lane along the bottom of the picture, where a line goes as a subtitle when there is no room for it near its
+   * speaker: between `left` and `right`, standing on `bottom` (null in a scene: its bars keep the words).
    */
   lane: { left: number; right: number; bottom: number } | null;
-  /** A fight is on: what is shouted in it goes to the lane first, off the fight. */
-  fight: boolean;
 }
 
 /** A card moved to (x, y), its words with it; its tail kept only if it still stands over (or under) its speaker. */
@@ -203,9 +201,8 @@ function moveCard(c: SpeechCard, x: number, y: number, tailX: number | null, tai
 }
 
 /**
- * The same line as a small card in the lane: a scene's card made smaller (its speaker's face, their name, the words in
- * a smaller hand), as wide as the lane lets it be, no tail (placed by packLane). The owner, 2026-11-20: the bubbles
- * over heads are hard to follow; the lines said outside a scene stand still, centered, as a cutscene's do but smaller.
+ * The same line as a small card in the lane: their name and the words in a smaller hand, as wide as the lane lets it
+ * be, no tail (placed by packLane).
  */
 function laneSized(o: SpeechAsk, lane: NonNullable<SpeechRoom['lane']>): SpeechCard {
   const wide = Math.max(120, lane.right - lane.left);
@@ -213,7 +210,7 @@ function laneSized(o: SpeechAsk, lane: NonNullable<SpeechRoom['lane']>): SpeechC
 }
 
 /**
- * The subtitles of a fight laid out together in the lane, as a reader takes them: side by side along its bottom row
+ * The subtitles laid out together in the lane, as a reader takes them: side by side along its bottom row
  * while they fit, each row centered, the next row above. Each line's spot, by its place in `cards` (none can meet
  * another: they are packed).
  */
@@ -251,9 +248,8 @@ function packLane(cards: readonly SpeechCard[], lane: NonNullable<SpeechRoom['la
  * Every place a line could go, best first, made one at a time as they are asked for (placeSpeech stops at the first
  * that is free: over the head, most often, so the rest are never made).
  */
-function* candidates(o: SpeechAsk, room: SpeechRoom, hudMap: ReadonlyMap<string, ViewBox> | null, spot: SpeechCard | undefined): Generator<SpeechCard> {
+function* candidates(o: SpeechAsk, hudMap: ReadonlyMap<string, ViewBox> | null, spot: SpeechCard | undefined): Generator<SpeechCard> {
   const over = layoutSpeech(o);
-  if (room.fight && spot) yield spot;
   yield over;
   // (beside the quest, as layoutSpeechClear lays it: a phone on its side)
   if (hudMap) {
@@ -273,7 +269,7 @@ function* candidates(o: SpeechAsk, room: SpeechRoom, hudMap: ReadonlyMap<string,
     if (dy === 99) yield moveCard(over, x, o.footY! + 10, onHead ? o.headX : null, true);
     else yield moveCard(over, x, over.y + dy * step, dy === 0 && over.tailX !== null && onHead ? o.headX : null);
   }
-  if (!room.fight && spot) yield spot;
+  if (spot) yield spot;
 }
 
 /** The first of `tries` that passes `ok`. */
@@ -286,11 +282,12 @@ function first(tries: Iterable<SpeechCard>, ok: (c: SpeechCard) => boolean): Spe
  * Where each spoken line goes, all of them at once so none is written over another or under the HUD. A scene's line is
  * placed first. Each takes the free place nearest over its speaker's head: there if it can (its tail on them), else
  * beside the quest (a phone on its side, where the quest reaches into the open middle), else the nearest spot round
- * the head that is clear, over it, beside it or under the feet, and last the lane along the bottom. In a fight a line
- * that isn't a scene's goes to the lane first, so the blows stay in sight. A place that would cover the fight is taken
- * only when no other is free; where nothing at all is free a foe's bark gives way (null: not drawn while there is no
- * room for it), and any other line stays over the head, as it always was, and the HUD piece under it fades until it is
- * said (ui/GameScreen.tsx). The lines that matter (a scene's, a companion's, a townsperson's, the hero's) are placed
+ * the head that is clear, over it, beside it or under the feet, and last the lane along the bottom (the owner,
+ * 2026-11-26, of the lines sat in the lane whenever it was free: "the dialogue boxes sometimes get stuck on the
+ * bottom"; they belong with whoever says them). A place that would cover the fight is taken only when no other is
+ * free; where nothing at all is free a foe's bark gives way (null: not drawn while there is no room for it), and any
+ * other line stays over the head, as it always was, and the HUD piece under it fades until it is said
+ * (ui/GameScreen.tsx). The lines that matter (a scene's, a companion's, a townsperson's, the hero's) are placed
  * before the foes', so a crowd of barks never takes their room.
  */
 export function placeSpeech(asks: readonly SpeechAsk[], room: SpeechRoom, hudMap: ReadonlyMap<string, ViewBox> | null = null): (SpeechCard | null)[] {
@@ -298,7 +295,7 @@ export function placeSpeech(asks: readonly SpeechAsk[], room: SpeechRoom, hudMap
   const placed: ViewBox[] = [];
   const rank = (o: SpeechAsk): number => (o.staged ? 0 : o.minor ? 2 : 1);
   const order = asks.map((_, i) => i).sort((i, j) => rank(asks[i]!) - rank(asks[j]!));
-  // the lane's spots, for every line that isn't a scene's: packed together, so in a fight they sit side by side
+  // the lane's spots, for every line that isn't a scene's: packed together, so those that end up there sit side by side
   const shouts = asks.map((o, i) => (room.lane && !o.staged ? i : -1)).filter((i) => i >= 0);
   const packed = room.lane ? packLane(shouts.map((i) => laneSized(asks[i]!, room.lane!)), room.lane) : [];
   const laneOf = new Map(shouts.map((i, k) => [i, packed[k]!]));
@@ -318,16 +315,14 @@ export function placeSpeech(asks: readonly SpeechAsk[], room: SpeechRoom, hudMap
     // be read (the owner: "their bubbles keep switching from top to bottom screen with their movement and i cant read
     // them"). It moves only when its place is taken, or would cover the fight with another free
     const kept = keptCard(o, shapes, spot);
-    // (a line that isn't a scene's goes to its fixed card in the lane whenever that is free, in a fight or out of one)
-    if (spot && free(spot)) pick = spot;
-    if (!pick && kept && free(kept) && calm(kept)) pick = kept;
+    if (kept && free(kept) && calm(kept)) pick = kept;
     for (let k = 0; k < shapes.length && !pick; k++) {
-      pick = first(candidates(shapes[k]!, room, hudMap, spot), (c) => free(c) && calm(c));
+      pick = first(candidates(shapes[k]!, hudMap, spot), (c) => free(c) && calm(c));
       shaped = k;
     }
     if (!pick && kept && free(kept)) pick = kept;
     for (let k = 0; k < shapes.length && !pick; k++) {
-      pick = first(candidates(shapes[k]!, room, hudMap, spot), free);
+      pick = first(candidates(shapes[k]!, hudMap, spot), free);
       shaped = k;
     }
     if (!pick && o.minor) {
@@ -338,7 +333,7 @@ export function placeSpeech(asks: readonly SpeechAsk[], room: SpeechRoom, hudMap
     // another line. A HUD piece under a line fades until it is said; two lines written over each other can't be read.
     // Seen on a phone with four people speaking at once at the great lamp: NINE_PLAN.md, the release bar)
     for (let k = 0; k < shapes.length && !pick; k++) {
-      pick = first(candidates(shapes[k]!, room, hudMap, spot), (c) => inView(c) && !placed.some((b) => boxesMeet(c, b, 6)));
+      pick = first(candidates(shapes[k]!, hudMap, spot), (c) => inView(c) && !placed.some((b) => boxesMeet(c, b, 6)));
       shaped = k;
     }
     pick ??= over;

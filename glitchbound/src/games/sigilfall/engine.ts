@@ -262,6 +262,8 @@ function keyResult(w: World): RunSummary['key'] | undefined {
 const EQUIP_ASK_MS = 9000;
 /** How long a finished quest's card stays up (ms). */
 const QUEST_CARD_MS = 5200;
+/** How soon after a talk window closes the same press may begin a talk again (ms). */
+const TALK_AGAIN_MS = 350;
 
 export class SigilEngine {
   save: SaveFile;
@@ -296,6 +298,8 @@ export class SigilEngine {
   private bannerHeld = false;
   /** Seconds of the world in view before a new hero is greeted at the gate (0: no greeting due). */
   private greetIn = 0;
+  /** When a talk window was last up (performance.now): a talk isn't begun again in the moment it closes. */
+  private talkUpAt = -Infinity;
   /** Title cards waiting for their moment (no one talking, no scene, no panel open). */
   private cards: Omit<TitleCard, 'id'>[] = [];
   /** Pages of the story waiting for their moment (StoryPage), in the order the tale tells them. */
@@ -660,7 +664,7 @@ export class SigilEngine {
           // (and a scene's staging is no time for a lesson)
           if (t > teach.until || (used && t > teach.shown + 1500) || w.scene) this.setUi({ teach: null });
         }
-      }
+      } else this.pressedBehind(w);
       // touch: aim with the stick when the mouse isn't in use
       if (this.touchMode) {
         f.aim = null;
@@ -712,9 +716,8 @@ export class SigilEngine {
         w.pendingExit = null;
         this.interact(ex);
       }
-    } else {
-      this.kbm?.fill(emptyInput(), this.toWorldFn, w.player.x, w.player.y);
-    }
+    } else this.pressedBehind(w);
+    if (this.ui.dialogue) this.talkUpAt = now;
     this.handleEvents(w);
     // the story's pages: none of its scenes begins while one is waiting, and the next comes up once the world is calm;
     // but what a quest came to waits for the scene of its aftermath, if one is due here, to have been shown first (Elyra
@@ -1627,10 +1630,26 @@ export class SigilEngine {
     this.leaving = { at: performance.now(), go };
   }
 
+  /**
+   * What is pressed while a window is over the world is not saved up for the world: in a run with friends (the world
+   * doesn't stop for a window there) the talk key pressed during a talk said "talk" again the moment it closed, and the
+   * window came straight back. In a talk the talk key takes the next line, and on the last one closes it, as a click
+   * on the window does.
+   */
+  private pressedBehind(w: World): void {
+    const f = emptyInput();
+    this.kbm?.fill(f, this.toWorldFn, w.player.x, w.player.y);
+    const u = this.ui;
+    if (f.interact && u.dialogue && !u.panel && !u.pause && !u.story && !u.tip && !this.dialoguePage()) this.nextLine();
+  }
+
   /** Talk, travel or leave, depending on what is in front of the hero. */
   interact(it: Interactable): void {
     // (on the way out already: nothing more is taken up)
     if (this.leaving) return;
+    // (nor a talk in the moment one closed: the press or tap that ended it, read twice, opened it again. The owner: the
+    // talk window "won't go")
+    if (it.kind === 'npc' && performance.now() - this.talkUpAt < TALK_AGAIN_MS) return;
     if (it.kind === 'npc') this.talk(it.id);
     else if (it.kind === 'thing') { if (this.world) workOn(this.world, it.id); }
     else if (it.kind === 'yield') { if (this.world) bindYielded(this.world, it.id); }

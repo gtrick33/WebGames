@@ -238,6 +238,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
         </div>
       )}
       {!overlay && (engine.touchMode ? <TouchControls engine={engine} /> : <DesktopBar engine={engine} />)}
+      {!overlay && <QuestArrow engine={engine} />}
       <SceneBars engine={engine} />
       {/* the frame-cost meter, with ?perf in the address (ui/PerfMeter.tsx; POLISH_PLAN.md piece 27) */}
       {perfAsked() && <PerfMeter engine={engine} />}
@@ -465,6 +466,45 @@ const CROWN_POINTS: [string, string, string][] = [
 
 /** What a boss's standing order says (World.order: Hallvor's watch), under its bar. */
 const ORDER_SAY = { hold: 'Hold your post: don’t move', march: 'Walk the round: keep moving' } as const;
+
+/**
+ * The quest's arrow (render/renderer.ts questArrow), over every piece of the HUD and under whatever opens over the game
+ * (it is not drawn while a window is up). The owner: "the quest arrow should also go on top of the whole ui (except
+ * pop ups obviously) but be more transparent if its on top of an ui element - health bar, spells, etc". Drawn on the
+ * picture it went under the hero's bars and the skills at the edges, where it mostly is.
+ */
+function QuestArrow({ engine }: { engine: SigilEngine }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const said = useRef('');
+  useFrame(engine, () => {
+    const el = ref.current;
+    const a = (engine.renderer as SigilEngine['renderer'] | undefined)?.questArrow;
+    if (!el) return;
+    hide(el, !a);
+    if (!a) {
+      said.current = '';
+      return;
+    }
+    const at = `translate(${a.x.toFixed(1)}px, ${a.y.toFixed(1)}px)${a.angle === null ? '' : ` rotate(${a.angle.toFixed(3)}rad)`}`;
+    if (at !== said.current) {
+      said.current = at;
+      el.style.transform = at;
+    }
+    el.classList.toggle('is-here', a.angle === null);
+    el.classList.toggle('is-over', a.over);
+  });
+  return (
+    <div className="rb-qarrow" ref={ref} hidden aria-hidden="true">
+      <svg className="rb-qarrow-way" viewBox="-12 -14 28 28">
+        <path d="M15 0 L-11 -13 L-5 0 L-11 13 Z" fill="#1b1428" />
+        <path d="M11 0 L-8 -9 L-2.5 0 L-8 9 Z" fill="#ffe066" />
+      </svg>
+      <svg className="rb-qarrow-here" viewBox="-8 -7 16 14">
+        <path d="M-5.5 -4.5 L5.5 -4.5 L0 4.5 Z" fill="#ffe066" stroke="rgba(20,12,32,0.92)" strokeWidth="2.4" strokeLinejoin="round" paintOrder="stroke" />
+      </svg>
+    </div>
+  );
+}
 
 function BossBar({ engine }: { engine: SigilEngine }) {
   const bar = useRef<HTMLElement>(null);
@@ -1086,7 +1126,9 @@ function Dialogue({ engine }: { engine: SigilEngine }) {
   const page = engine.dialoguePage();
   const last = d.i + 1 >= d.lines.length + d.pages.length;
   return (
-    <div className={`rb-dialogue${page ? ' is-quest' : ''}`} onClick={() => !last && !page && engine.nextLine()}>
+    // (a click or a tap on the window takes the next line, and on the last one closes it, as every line before went: on
+    // the last it did nothing, and only Farewell closed it. A quest's page waits for its own buttons)
+    <div className={`rb-dialogue${page ? ' is-quest' : ''}`} onClick={() => !page && engine.nextLine()}>
       <div className="rb-dialogue-face">
         <Portrait kind="npc" id={d.npc} size={56} />
       </div>
