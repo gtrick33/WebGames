@@ -267,4 +267,6 @@ export const OPENED_TABLE: readonly string[] = [
   'kept:hunt-old-greymane', 'kept:old-rustback', 'kept:hunt-goldmane',
   // the pass to 9/10: Act III's side stories turn (the Dune Tyrant, Grumbleback, the Glass Matron)
   'kept:the-dune-tyrant', 'kept:enough-is-enough', 'kept:the-glass-matron',
+  // the pass to 9/10: Act VI's Quartermaster Holt finds whose steel the pale knights wear
+  'kept:riveted-coats',
 ];

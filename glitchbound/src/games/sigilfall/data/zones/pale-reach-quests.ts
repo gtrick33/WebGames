@@ -283,7 +283,13 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     after: ['cold-iron'],
     zone: 'pale-reach',
     level: 58,
-    reward: { xp: 1100, gold: 900, item: 'holts-riveted-greaves', text: 'By nightfall half the army wears plated coats. Holt saves the best plates for a pair of greaves made to fit you, and he doesn’t charge you for them.' },
+    // (the side story's turn, and Act II's money found at last: the steel bought for the Watch's relief that never marched)
+    find: {
+      name: 'A Plate with Aster’s Armory Stamp',
+      kind: 'relic',
+      about: 'One of the pale knights’ breastplates, scrubbed of its black for riveting. Under the rot it carries the stamp of Aster’s own armory, a year ten years gone, and a muster mark: “Relief of the Ninefold Watch.” The Regent’s treasury paid for that relief and it never marched. Its steel went north instead, and the Hallow King’s knights have worn it ever since.',
+    },
+    reward: { xp: 1100, gold: 900, item: 'holts-riveted-greaves', text: 'Holt finds the stamp under the black on the sixth plate, and then on every plate in the pile. Aster’s armory, ten years back, mustered for the relief of the Ninefold Watch. The relief’s steel was sold to the enemy, and the army has spent the day cutting it off dead knights to wear home. Holt rivets it on anyway. By nightfall half the army wears plated coats, and he saves the best plates for a pair of greaves made to fit you. He sends the stamped one south to the Regent.' },
   },
   /* ------------------------------------------------------ Outrider Maeve's hound */
   {
@@ -465,6 +471,7 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
     talk: [
       { when: { quest: 'cold-iron', state: 'active' }, lines: ['Our mail was made for Highwall’s winters. The Reach is much colder.', 'The pale knights wear good steel under the rot. Bring me four plates, and I’ll rivet them onto the coats.'] },
       { when: { quest: 'riveted-coats', state: 'active' }, lines: ['It works. The first soldier to wear one took a bolt in the chest and walked away.', 'Bring down six more knights, and every coat in camp gets a plate.'] },
+      { when: { quest: 'riveted-coats', state: 'done' }, lines: ['Every coat in camp has a plate on it. Our own armory’s steel, ten years late.', 'The Watch’s relief was paid for and never came. Now it’s marching after all, on our backs.'] },
       { lines: ['Holt’s Stores. Armor, boots and blankets.', 'It’s even colder in Duskspire than out here. Dress warmly.'] },
     ],
   },
