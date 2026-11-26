@@ -2270,6 +2270,13 @@ const pl: string[] = [
   'teraz online',
   'w {game}',
   'Dołączymy informację, gdzie byłeś w grze:',
+  'Stuknij Udostępnij na pasku Safari (albo najpierw •••, potem Udostępnij)',
+  'Otwórz menu Udostępnij w przeglądarce',
+  'Otwórz menu przeglądarki (⋮)',
+  'Wybierz „Zainstaluj aplikację” lub „Dodaj do ekranu głównego”',
+  'Na pasku menu Safari wybierz „Plik”, a potem „Dodaj do Docka”',
+  'Kliknij ikonę instalacji na pasku adresu albo wybierz „Zainstaluj GlitchBound” w menu przeglądarki',
+  'Ta przeglądarka nie zainstaluje GlitchBound jako aplikacji: Chrome, Edge i Safari to potrafią.',
 ];
 
 export default pl;

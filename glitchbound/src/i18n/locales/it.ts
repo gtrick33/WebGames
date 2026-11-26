@@ -2270,6 +2270,13 @@ const it: string[] = [
   'online adesso',
   'in {game}',
   'Allegheremo dove ti trovavi nel gioco:',
+  'Tocca Condividi nella barra di Safari (o prima •••, poi Condividi)',
+  'Apri il menu Condividi del tuo browser',
+  'Apri il menu del browser (⋮)',
+  'Scegli «Installa app» o «Aggiungi a schermata Home»',
+  'Nella barra dei menu di Safari scegli «File», poi «Aggiungi al Dock»',
+  'Fai clic sull’icona di installazione nella barra degli indirizzi, o scegli «Installa GlitchBound» nel menu del browser',
+  'Questo browser non può installare GlitchBound come app: Chrome, Edge e Safari sì.',
 ];
 
 export default it;

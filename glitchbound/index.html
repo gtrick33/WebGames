@@ -26,6 +26,12 @@
           if (dark) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0522');
         } catch (e) {}
       })();
+      // The browser's offer to install the arcade (Chrome, Edge, Samsung Internet) can come before the settings' code
+      // has loaded: kept here for the Full screen app button, so one tap installs (src/platform/install.ts).
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        window.__gbInstall = e;
+      });
       // Arcade entrance: cover the page from the very first paint, so the landing page never flashes
       // before the cabinet animation (the app removes this as soon as the entrance is on screen).
       (function () {

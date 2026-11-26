@@ -2270,6 +2270,13 @@ const ro: string[] = [
   'online acum',
   'în {game}',
   'Vom atașa unde erai în joc:',
+  'Atinge Partajează în bara Safari (sau întâi •••, apoi Partajează)',
+  'Deschide meniul Partajează al browserului',
+  'Deschide meniul browserului (⋮)',
+  'Alege „Instalează aplicația” sau „Adaugă pe ecranul de pornire”',
+  'În bara de meniuri Safari, alege „Fișier”, apoi „Adaugă în Dock”',
+  'Dă clic pe pictograma de instalare din bara de adrese sau alege „Instalează GlitchBound” din meniul browserului',
+  'Acest browser nu poate instala GlitchBound ca aplicație: Chrome, Edge și Safari pot.',
 ];
 
 export default ro;
