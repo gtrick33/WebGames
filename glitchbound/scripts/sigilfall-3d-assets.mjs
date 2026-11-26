@@ -2000,6 +2000,62 @@ BOSS_KITS.boss_harlan = {
   ],
 };
 
+// King Hrodric, the Barrow King: "the first king buried on the downs", woken with his whole court. A king of the old
+// north, bigger than the men of now: the large Barbarian's body in his bear pelt and shoulder plates, the bare skull of
+// the barrow's dead (his crown is built on it in the browser: render3d/kits.ts), the great sword laid on his chest in the mound, and his round shield
+// slung behind him.
+BOSS_KITS.boss_hrodric = {
+  rig: 'large',
+  // (not his bear pelt: its hood sat over the skull and the crown, and from above he was a heap of white fur)
+  from: [['Barbarian_Large', /Body|Arm|Leg|Shoulderpad/], [`${SK}Warrior`, /Head|Jaw|Eyes/]],
+  grow: [['chest', 1.08], ['head', 1.25]],
+  ties: [
+    { bit: 'sword_2handed', joint: 'handslot.r', at: [0, 0, 0], size: 1.35 },
+    { bit: 'shield_round_barbarian_Large', joint: 'chest', at: [0, 0.15, -0.55], size: 1.05, turn: [0, 180, 0], tint: [0.7, 0.72, 0.8] },
+  ],
+};
+// Sir Corvane the Fallen, First Grave Knight of the Hallow King: he held the downs nine days for a relief that was
+// called off, then knelt to get his dead knights back. The Black Knight's plate and cape, broad in the chest, his
+// great sword and shield, and on his back still the banner of the Ninefold Watch he would not put down.
+BOSS_KITS.boss_corvane = {
+  rig: 'large',
+  from: [['BlackKnight', /Body|Arm|Leg|Cape|Shoulder|Head/]],
+  grow: [['chest', 1.1], ['head', 0.94]],
+  ties: [
+    { bit: 'BlackKnight_Sword_Large', joint: 'handslot.r', at: [0, 0, 0], size: 1.1 },
+    { bit: 'BlackKnight_Shield_Large', joint: 'handslot.l', at: [0, 0, 0], size: 1 },
+    // (leaned back, so that its cloth faces the game's steep camera and is not a pole seen end on)
+    { bit: 'banner_thin_blue', joint: 'chest', at: [0, 0.1, -0.55], size: 1.7, turn: [-38, 0, 0] },
+  ],
+};
+
+// Silas Vey, the Herald's Last Hand: the Pale Herald's spymaster in Aster for twenty years, who paid every traitor in
+// the city in ash-gold. The hooded Rogue, masked, with the Hoarder's purses hung about him (he carries the payroll),
+// a long knife, and a stack of the Herald's coin in his off hand: what he throws about the ossuary.
+BOSS_KITS.boss_silas = {
+  rig: 'medium',
+  from: [['Rogue_Hooded', /Body|Arm|Leg|Cape|Head|Mask/], ['Hoarder', /HipPouch|FrontPouch$/]],
+  grow: [['hand.l', 1.2]],
+  ties: [
+    { bit: 'dagger_B', joint: 'handslot.r', at: [0, 0, 0], size: 1.15 },
+    { bit: 'coin_stack_small', joint: 'handslot.l', at: [0, 0.02, 0.02], size: 0.9 },
+  ],
+};
+// The Royal Auditor, Keeper of the Old Kings' Accounts: "He kept the old kings' accounts for forty years and died at
+// his desk. Now he writes down every blow you strike." The Cleric's long robes on the dead's own skull, the
+// Lorekeeper's spectacles still on it; the ledger open in one hand, the pen in the other, and a candle to write by
+// at his shoulder.
+BOSS_KITS.boss_auditor = {
+  rig: 'medium',
+  from: [['Cleric', /Body|Arm|Leg/], [`${SK}Mage`, /Skull|Jaw|Eyes/], ['Lorekeeper', /Glasses/]],
+  grow: [['head', 0.8], ['hand.l', 1.2], ['hand.r', 1.2]],
+  ties: [
+    { bit: 'spellbook_open', joint: 'handslot.l', at: [0, 0.05, 0.05], size: 0.72 },
+    { bit: 'wand_A', joint: 'handslot.r', at: [0, 0, 0], size: 0.9 },
+    { bit: 'candle_lit', joint: 'chest', at: [-0.42, 0.42, -0.05], size: 0.8 },
+  ],
+};
+
 const quatOf = (rx, ry, rz) => new THREE.Quaternion().setFromEuler(new THREE.Euler((rx * Math.PI) / 180, (ry * Math.PI) / 180, (rz * Math.PI) / 180, 'YXZ')).toArray();
 
 /** The model with what hangs from one joint, and from every joint under it, made `k` times its size about that joint. */

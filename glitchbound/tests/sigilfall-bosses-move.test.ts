@@ -15,7 +15,7 @@ import { readPack } from './sigilfall-packs';
  */
 
 /** The bosses that have been through the pass: add each one here as it is done. */
-const DONE = ['coffin-matron', 'ossric', 'morgrave', 'grimtusk', 'hangman', 'gnasher', 'varric'];
+const DONE = ['coffin-matron', 'ossric', 'morgrave', 'grimtusk', 'hangman', 'gnasher', 'varric', 'king-hrodric', 'sir-corvane', 'silas-vey', 'the-royal-auditor'];
 /** The ones whose story has them off the ground (Morgrave drifts over his page: data/bosses.ts). */
 const DRIFTS = new Set(['morgrave']);
 /**

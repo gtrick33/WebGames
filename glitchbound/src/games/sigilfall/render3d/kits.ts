@@ -380,8 +380,6 @@ put('old-sluicegut', {
 });
 put('brother-pustule', { k: 'cleric', tint: ROT, look: 'foe-brother-pustule', held: { kind: 'staff' }, ...CASTER });
 // the catacombs: the Herald's spymaster in a dark hood and oiled leathers, daggers in hand; the old kings' Auditor, a clerk's ghost in ink-black and gold
-put('silas-vey', { k: 'rogue_hooded', look: 'foe-silas-vey', held: { kind: 'dagger', tint: '#d8d4e0' }, size: 1.2 });
-put('the-royal-auditor', { k: 'cleric', look: 'foe-royal-auditor', held: { kind: 'wand', tint: '#f0e0a0' }, size: 1.3, ...CASTER });
 put('maelis-crane', { k: 'cleric', look: 'chancellor-crane', ...CASTER });
 put('goblin', { k: 'ranger', tint: '#9aa878', look: 'foe-briar-poacher', held: { kind: 'bow' }, ...BOWMAN });
 put('ridge-kobold kobold-candler', { k: 'caveman', tint: '#d0a070', size: 0.72 });
@@ -648,6 +646,48 @@ TABLE.varric = {
     { joint: 'foot.r', to: '#3a2c24', keep: 0.9 },
   ],
 };
+// Silas Vey, the Herald's Last Hand: the Pale Herald's spymaster in Aster for twenty years. Nobody in the city could
+// have described him: a grey hood, a grey mask, the purses of the Herald's payroll hung about him, and in his off
+// hand the ash-gold itself, the only thing on him with any light in it.
+TABLE['silas-vey'] = {
+  k: 'boss_silas',
+  form: 'silas',
+  size: 1.3,
+  atk: 'chop',
+  paint: [
+    // the ash-gold in his hand: pale, and alight
+    { joint: 'handslot.l', to: '#f0e0a0', glow: true, keep: 0.25 },
+    // the mask and what shows under the hood: dark
+    { joint: 'head', lum: [0, 0.45], to: '#1c1a22', keep: 0.85 },
+    // hood, cloak and leathers: the grey nobody remembers
+    { hue: [70, 200], sat: [0.18, 1], to: '#5c5a68', keep: 0.9 },
+    { hue: [200, 330], sat: [0.18, 1], to: '#4a4654', keep: 0.9 },
+    // the purses: worn leather
+    { joint: 'hips', hue: [10, 60], to: '#7a5a3a', keep: 0.85 },
+  ],
+};
+// The Royal Auditor, Keeper of the Old Kings' Accounts: dead at his desk after forty years and still at his sums. The
+// robes of the old kings' household gone the blue-black of old ink, his skull bare with his spectacles on it, the
+// ledger open in his hand with its page alight: every blow struck is being written there.
+TABLE['the-royal-auditor'] = {
+  k: 'boss_auditor',
+  form: 'auditor',
+  // (a gaunt figure in narrow robes: he is sized to stand on his circle, and so stands tall)
+  size: 1.66,
+  atk: 'cast',
+  paint: [
+    // the open ledger's page
+    { joint: 'handslot.l', lum: [0.8, 1], to: '#f0e0a0', glow: true, keep: 0.3 },
+    { joint: 'handslot.l', to: '#3a3040', keep: 0.9 },
+    // his skull
+    { joint: 'head', lum: [0.35, 1], sat: [0, 0.45], to: '#cfc6aa', keep: 0.9 },
+    // the robes: old ink, with what was bright on them left a dull gold
+    { hue: [25, 65], sat: [0.45, 1], to: '#b8963e', keep: 0.85 },
+    { hue: [65, 360], sat: [0.15, 1], to: '#2e3550', keep: 0.9 },
+    { hue: [0, 25], sat: [0.15, 1], to: '#2e3550', keep: 0.9 },
+  ],
+  wears: [{ piece: 'eyes', b: '#f0e0a0' }],
+};
 boss('the-drowned', { size: 1.35, wears: [{ piece: 'eyes', b: '#9afff0' }] });
 boss('the-rot-mother', { size: 1.5, wears: [{ piece: 'horns', a: '#3a4a22', b: '#c8e070' }, { piece: 'eyes', b: '#e8ff70' }] });
 boss('slag-colossus', { size: 1.6, tint: undefined, paint: molten('#4a3a36', '#ff9a3a'), wears: [{ piece: 'eyes', b: '#fff0a0' }] });
@@ -656,7 +696,29 @@ boss('ashkar-the-bound', { size: 1.65, tint: undefined, paint: molten('#2e2428',
 boss('veil-sentinel', { size: 1.5, tint: undefined, paint: molten('#3a2e58', '#d8a8ff'), wears: [{ piece: 'eyes', b: '#f4e0ff' }, { piece: 'halo', a: '#8a4ae0', b: '#f0d8ff', size: 0.85 }] });
 boss('the-runewarden', { tint: undefined, paint: molten('#6a5c44', '#ffd27a'), wears: [{ piece: 'eyes', b: '#fff2c0' }] });
 boss('forgemaster-grold', { size: 1.45, wears: [{ piece: 'horns', a: '#3a2a22', b: '#ff9a4a', size: 0.9 }, { piece: 'eyes', b: '#ffd27a' }] });
-boss('king-hrodric', { size: 1.35, wears: [{ piece: 'eyes', b: '#bfe8ff' }] });
+// King Hrodric, the Barrow King: "the first king buried on the downs", woken with his whole court. A king of the old
+// north, a head taller than the men of now, three hundred years in the cold: his hide gone the grey-blue of the frost
+// he strikes with, his skull bare under the crown he was buried in, the mound's cold alight in his eyes.
+TABLE['king-hrodric'] = {
+  k: 'boss_hrodric',
+  form: 'hrodric',
+  size: 1.76,
+  atk: 'chop2',
+  paint: [
+    // the great sword's bright edge: rimed, and alight with the cold he strikes the floor with
+    { joint: 'handslot.r', sat: [0, 0.2], lum: [0.4, 1], to: '#bfe8ff', glow: true, keep: 0.3 },
+    // the crown he was buried in: old gold
+    { joint: 'head', hue: [25, 65], sat: [0.4, 1], to: '#c9a24a', keep: 0.85 },
+    { joint: 'head', hue: [240, 330], sat: [0.2, 1], to: '#c9a24a', keep: 0.85 },
+    // his skull
+    { joint: 'head', lum: [0.3, 1], to: '#e6dfc8', keep: 0.9 },
+    // his hide: frost-grey, dead
+    { hue: [8, 42], sat: [0.25, 0.8], lum: [0.4, 1], to: '#8fa3b8', keep: 0.75 },
+    // what was bright in his gear: the tarnish of the mound
+    { hue: [330, 8], sat: [0.3, 1], to: '#4a5a78', keep: 0.9 },
+  ],
+  wears: [{ piece: 'ice-crown', a: '#8a6a22', b: '#f0d27a', band: '#c9a24a' }, { piece: 'eyes', b: '#bfe8ff' }],
+};
 boss('the-sand-warden', { size: 1.45, wears: [{ piece: 'eyes', b: '#ffe08a' }] });
 boss('the-sun-king', { size: 1.4, wears: [{ piece: 'halo', a: '#e8a030', b: '#fff4c0', size: 1.1 }, { piece: 'ice-crown', a: '#d89a2a', b: '#fff6c8', band: '#b8862a' }, { piece: 'eyes', b: '#fff2a0' }] });
 boss('jarl-hrimfang', { size: 1.3, wears: [{ piece: 'horns', a: '#5a86b8', b: '#eefaff', size: 1.1 }, { piece: 'eyes', b: '#bfe8ff' }] });
@@ -665,8 +727,29 @@ boss('the-withered-queen', { size: 1.35, wears: [{ piece: 'ice-crown', a: '#4a6a
 boss('herald-in-the-spire', { size: 1.35, wears: [{ piece: 'halo', a: '#a03ae0', b: '#ffd0ff', size: 0.9 }, { piece: 'eyes', b: '#ff9af0' }] });
 boss('ossa-the-founder', { wears: [{ piece: 'eyes', b: '#fff6e0' }] });
 // the Host's knights: black plate, each with their own color where the pack's knight wears red
-boss('sir-corvane', { size: 1.3, tint: undefined, paint: [{ hue: [320, 20], sat: [0.5, 1], to: '#5a7ad8' }, { hue: [190, 270], lum: [0.5, 1], to: '#8a8ea8' }, { hue: [190, 270], to: '#2c2c3c', keep: 0.9 }], wears: [{ piece: 'eyes', b: '#a8c8ff' }] });
-boss('sir-corvane-foot', { size: 1.3, tint: undefined, paint: [{ hue: [320, 20], sat: [0.5, 1], to: '#5a7ad8' }, { hue: [190, 270], lum: [0.5, 1], to: '#8a8ea8' }, { hue: [190, 270], to: '#2c2c3c', keep: 0.9 }], wears: [{ piece: 'eyes', b: '#a8c8ff' }] });
+// Sir Corvane the Fallen, First Grave Knight of the Hallow King: he held the downs nine days for a relief that was
+// called off, then knelt to get his dead knights back. Black plate rimed pale at its edges, a plume gone from red to
+// the Host's cold blue, and on his back still the banner of the Ninefold Watch in Aster's faded blue: the one thing
+// of his old oath he would not put down. (Mounted and on foot he is the same figure.)
+const CORVANE: Kit = {
+  k: 'boss_corvane',
+  form: 'corvane',
+  // (his banner stands over him and a figure is sized by its greatest measure: this keeps the man his size)
+  size: 1.62,
+  atk: 'chop2',
+  paint: [
+    // the bright of his blade: the frost his lances are thrown from
+    { joint: 'handslot.r', lum: [0.52, 1], sat: [0, 0.4], to: '#a8c8ff', glow: true, keep: 0.3 },
+    // the Watch's banner on his back: Aster's blue, ten years faded
+    { joint: 'chest', hue: [190, 270], sat: [0.3, 1], lum: [0.3, 1], to: '#2e3c66', keep: 0.2 },
+    { hue: [320, 20], sat: [0.5, 1], to: '#5a7ad8' },
+    { hue: [190, 270], lum: [0.5, 1], to: '#8a8ea8' },
+    { hue: [190, 270], to: '#2c2c3c', keep: 0.9 },
+  ],
+  wears: [{ piece: 'eyes', b: '#a8c8ff' }],
+};
+TABLE['sir-corvane'] = CORVANE;
+TABLE['sir-corvane-foot'] = CORVANE;
 boss('general-morvain', { size: 1.4, tint: undefined, paint: [{ hue: [320, 20], sat: [0.5, 1], to: '#c8242c' }, { hue: [190, 270], lum: [0.5, 1], to: '#7a7480' }, { hue: [190, 270], to: '#1e1c24', keep: 0.9 }], wears: [{ piece: 'horns', a: '#1a181c', b: '#8a8490', size: 0.8 }, { piece: 'eyes', b: '#ff6a3a' }] });
 boss('hollow-guard', { size: 1.35, tint: undefined, paint: [{ hue: [320, 20], sat: [0.5, 1], to: '#e4ecfa' }, { hue: [190, 270], lum: [0.5, 1], to: '#a4b8d8' }, { hue: [190, 270], to: '#3a4a70', keep: 0.9 }], wears: [{ piece: 'eyes', b: '#dff6ff' }] });
 
