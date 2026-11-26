@@ -11666,6 +11666,12 @@ html.rb-touch-playing textarea {
 .rb-ui.is-touch > .rb-hud-hero {
   z-index: 2;
 }
+/* and the Talk button over the hero's head stands over them both: near the top of a land it came up across the quest,
+   and the first tap folded the quest instead of talking (the owner, 2026-11-26: "quest shouldnt collapse unless we
+   explicitly click it afterwards") */
+.rb-ui.is-touch > .rb-interact {
+  z-index: 3;
+}
 
 /* The Ring's keys */
 .rb-ring-dialog.is-keys {

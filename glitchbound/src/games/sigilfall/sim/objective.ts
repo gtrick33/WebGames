@@ -2,7 +2,7 @@ import { dist } from '../core/math';
 import { EVENTS } from '../data/events';
 import { QUESTS } from '../data/quests';
 import type { QuestDef, RegionId } from '../data/types';
-import { activeQuests, currentObjective, questRegion, questState, readyQuests, HOME } from '../progress/character';
+import { activeQuests, currentObjective, questRegion, questState, readyQuests, storyOffer, HOME } from '../progress/character';
 import { isMainQuest, turnInNpc } from '../progress/handin';
 import { TILE } from './map';
 import { bossRegion, nearestRegions, nextRegion, npcRegion, roadHops, spotRegion, wayHeading } from './routes';
@@ -49,9 +49,10 @@ export interface QuestMark extends Objective {
 
 /**
  * The land a quest's work is in now: a boss in its dungeon, a person where they stand, the story where it
- * happens; a finished quest, where it is handed in.
+ * happens; a finished quest, where it is handed in; the story's next quest still to be taken, where its giver is.
  */
 export function questWhere(h: World['hero'], q: QuestDef): RegionId | undefined {
+  if (questState(h, q.id) === 'offered') return npcRegion(q.giver, h);
   if (questState(h, q.id) === 'ready') {
     const who = turnInNpc(q);
     return who ? npcRegion(who, h) : undefined;
@@ -130,20 +131,21 @@ export function questCounts(h: World['hero']): Map<RegionId, { work: number; off
 
 /**
  * The hero's active and finished quests in the tracker's order (progress/character.ts trackedQuest): the followed one,
- * then the main story's (here first), then side quests (here first). The arrow pointed at a side quest done here while
- * the tracker showed the story's.
+ * then the main story's (here first), the story's next quest still to be taken (storyOffer), then side quests (here
+ * first). The arrow pointed at a side quest done here while the tracker showed the story's.
  */
 export function rankedQuests(w: World): QuestDef[] {
   const h = w.hero;
   const here = w.region.id;
-  const active = [...activeQuests(h), ...readyQuests(h)];
+  const offer = storyOffer(h);
+  const active = [...activeQuests(h), ...readyQuests(h), ...(offer ? [offer] : [])];
   // inside the dungeon a quest sent the hero to clear, on the tier it wants, that quest leads: the arrow goes through
   // the rooms, not back out to the story (a hero who walked into the Heroic crypt was pointed straight at the door)
   const clearing = (q: QuestDef): boolean => {
     const o = currentObjective(h, q);
     return o.kind === 'clear' && o.region === here && o.tier === w.tier && questState(h, q.id) === 'active';
   };
-  const rank = (q: QuestDef): number => (clearing(q) ? 16 : 0) + (q.id === h.tracked ? 8 : 0) + (isMainQuest(q.id) ? 4 : 0) + (questWhere(h, q) === here ? 1 : 0);
+  const rank = (q: QuestDef): number => (clearing(q) ? 16 : 0) + (q.id === h.tracked ? 8 : 0) + (q === offer ? 2 : isMainQuest(q.id) ? 4 : 0) + (questWhere(h, q) === here ? 1 : 0);
   return active.sort((a, b) => rank(b) - rank(a));
 }
 
@@ -236,9 +238,10 @@ export function questTarget(w: World, q: QuestDef, steady = false): Objective | 
     return stone ? { ...place(stone.x, stone.y), via: region } : null;
   };
 
-  // handed in: to the one who takes it back
-  if (questState(h, q.id) === 'ready') {
-    const who = turnInNpc(q);
+  // handed in: to the one who takes it back; still to be taken: to the one who gives it
+  const st = questState(h, q.id);
+  if (st === 'ready' || st === 'offered') {
+    const who = st === 'offered' ? q.giver : turnInNpc(q);
     const t = who
       ? goTo(npcRegion(who, h), () => {
           const n = w.npcs.find((x) => x.id === who);
