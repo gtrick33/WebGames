@@ -340,24 +340,20 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
                 </button>
               ))}
             </div>
+            {/* one short sentence, and what it evolves into in a few words (the owner: "there shouldnt be much reading";
+                the rest is in the Watchfire's codex) */}
             <p className="rb-vlobby-about">
               <strong>{shown.name}</strong>
               {shown.text}
               {shown.evolve && (
-                <span className="rb-vlobby-evolve">
+                <span className="rb-vlobby-evolve" title={`${foundHere} of ${evolutions.length} ${CLASSES[pick].name} evolutions found`}>
                   <img src={iconPicture(shown.evolve.icon)} alt="" draggable={false} className={codex.has(shown.id) ? '' : 'is-unknown'} />
                   <span>
-                    Evolves into <b>{shown.evolve.name}</b>. {shown.evolve.text}
-                    {!codex.has(shown.id) && ` Not found yet: it needs ${EVOLVE_AT} levels of ${STRENGTHS[shown.evolve.with]?.name ?? 'its strength'} with the spell at its top.`}
+                    <b>{shown.evolve.name}</b> · {EVOLVE_AT}× {STRENGTHS[shown.evolve.with]?.name ?? ''}
                   </span>
                 </span>
               )}
             </p>
-            {evolutions.length > 0 && (
-              <p className="rb-small rb-dim rb-vlobby-codex">
-                Codex: {foundHere} of {evolutions.length} {CLASSES[pick].name} evolutions found
-              </p>
-            )}
           </div>
         </section>
 
@@ -369,15 +365,11 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
               <img src={championUrl(weekly.map.champions[0]!.sprite)} alt="" draggable={false} />
               <span className="rb-vlobby-land-text">
                 <strong>The week’s watch · {weekly.map.name}</strong>
-                <small>
-                  The same night for everyone, {daysLeft === 1 ? 'until tomorrow' : `for ${daysLeft} more days`}. {RULES[weekly.map.rule].name}, under an omen: {RULES[weekly.omen].name}.
-                </small>
-                {weekPicked && (
-                  <small className="rb-vlobby-rule-text">
-                    {RULES[weekly.map.rule].text} {RULES[weekly.omen].text}
-                    {weekBest?.paid ? '' : ` Hold ${clock(WEEKLY_HOLD)} for ${WEEKLY_BOUNTY} motes.`}
-                  </small>
-                )}
+                <span className="rb-vlobby-rules">
+                  <em className="rb-vlobby-rule">{RULES[weekly.map.rule].name}</em>
+                  <em className="rb-vlobby-rule is-omen">{RULES[weekly.omen].name}</em>
+                </span>
+                {weekPicked && <small className="rb-vlobby-rule-text">{weekBest?.paid ? `One night for everyone, ${daysLeft === 1 ? 'until tomorrow' : `${daysLeft} more days`}.` : `Hold ${clock(WEEKLY_HOLD)} for ${WEEKLY_BOUNTY} motes, ${daysLeft === 1 ? 'until tomorrow' : `${daysLeft} more days`}.`}</small>}
               </span>
               {weekBest && weekBest.best > 0 && (
                 <b className="rb-vlobby-best" title={`Your best this week: ${clock(weekBest.best)}`}>
@@ -406,7 +398,6 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
                     <strong>{m.name}</strong>
                     {open ? (
                       <>
-                        <small className="rb-vlobby-blurb">{m.blurb}</small>
                         <em className="rb-vlobby-rule">{RULES[m.rule].name}</em>
                         {on && <small className="rb-vlobby-rule-text">{RULES[m.rule].text}</small>}
                       </>

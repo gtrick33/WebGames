@@ -1,4 +1,5 @@
 import { usePlayedMode } from './playedMode';
+import { useNoSelect } from './noSelect';
 import { useEffect, useRef, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { CLASS_IDS } from '../data/classes';
@@ -157,6 +158,7 @@ const faceOf = (f: RoomPick['face']): Face | undefined => (f ? { skin: Math.max(
 /** The Vigil: choosing a hero and a land, alone or with friends, then the night itself. */
 export function VigilScreen({ engine, face, body, cls, name, onBack }: { engine: SigilEngine; face?: Face; body?: 'm' | 'f'; cls?: ClassId; name?: string; onBack: () => void }) {
   usePlayedMode(engine, 'vigil');
+  useNoSelect();
   const [setup, setSetup] = useState<{ cls: ClassId; map: VigilMap; weekly?: Weekly } | null>(null);
   const [from, setFrom] = useState<{ cls: ClassId; map: VigilMap } | null>(null);
   const linkRef = useRef<Link<RoomView, RoomAction> | null>(null);
@@ -568,7 +570,7 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, weekly, onB
         if (ev) {
           const def = EVENTS[ev.kind];
           const trait = ev.kind === 'pack' ? TRAITS[ev.trait] : undefined;
-          const fills = ev.kind === 'lantern' || ev.kind === 'pack';
+          const fills = ev.kind === 'lantern' || ev.kind === 'pack' || ev.kind === 'gilded' || ev.kind === 'wisps' || ev.kind === 'hound';
           say(evRef.current.querySelector('b'), trait ? `${def.name}: ${trait.name}` : def.name);
           say(evRef.current.querySelector('small'), trait ? `${trait.text} ${def.text}` : def.text);
           evRef.current.querySelector('i')!.style.width = part(fills ? ev.prog : 1 - ev.t / ev.dur);

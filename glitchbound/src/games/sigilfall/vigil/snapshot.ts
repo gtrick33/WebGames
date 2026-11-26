@@ -9,7 +9,7 @@ import { ZONE_KINDS, type Card, type Foe, type Fx, type Hero, type Pet, type Pic
  */
 
 const SPELL_AT = new Map(ALL_SPELLS.map((s, i) => [s.id, i]));
-const PICKUPS: PickupKind[] = ['meat', 'magnet', 'bomb', 'frenzy', 'chest'];
+const PICKUPS: PickupKind[] = ['meat', 'magnet', 'bomb', 'frenzy', 'chest', 'wisp'];
 
 interface HeroBuild {
   sp: Record<string, number>;

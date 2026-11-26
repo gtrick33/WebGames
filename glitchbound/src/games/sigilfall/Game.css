@@ -18044,3 +18044,39 @@ button.rb-scard:not(:disabled):hover {
     top: 40%;
   }
 }
+
+/* the Vigil on a phone (the owner's notes, 2026-11-26) */
+/* a long press anywhere in the Vigil selected the words under the thumb, and iPhone's Safari offered to copy a link to
+   them over the clock: nothing in the lobby or the night is text to be picked up (what is typed into stays so) */
+.rb-vigil,
+.rb-vlobby,
+.rb-vend,
+.rb-vfire {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.rb-vlobby input,
+.rb-vlobby select {
+  -webkit-user-select: text;
+  user-select: text;
+}
+/* the kit's column starts at its top and scrolls: centered, a tall one ran off the top (the Wardrobe picker cut in half)
+   and its foot ran into the line under it */
+@container (max-height: 430px) {
+  .rb-vlobby-kit {
+    align-content: start;
+  }
+}
+.rb-vlobby-about .rb-vlobby-evolve {
+  align-items: center;
+  font-size: 11.5px;
+}
+.rb-vlobby-rules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.rb-vlobby-rule.is-omen {
+  border-style: dashed;
+}
