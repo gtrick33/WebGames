@@ -176,7 +176,13 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     after: ['a-matter-of-anatomy'],
     zone: 'shattered-vale',
     level: 37,
-    reward: { xp: 2300, gold: 500, item: 'matrons-heartglass', text: 'Ennis keeps most of the Matron for his cabinet. He hangs a sliver of her heart on a chain for you.' },
+    // (the side story's turn: what Ennis has been cataloguing is not an animal)
+    find: {
+      name: 'A Shard That Hums a Cradle Song',
+      kind: 'relic',
+      about: 'Broken from the heart of the Glass Matron in the Crystal Fields. The shardlings’ shards all sing one note, and Ennis took it for the note of their kind. The Matron’s heart sings the whole tune that note belongs to: three slow lines, the cradle song every child in the Vale is sung. The glass did not make it up. It heard it here, before the Tear, and has been growing it ever since.',
+    },
+    reward: { xp: 2300, gold: 500, item: 'matrons-heartglass', text: 'Ennis listens to the Matron’s heart with his pen in his hand and writes nothing down. He has six drawers of singing shards labelled as seeds. They are one note each of a song somebody sang to a child here. He keeps most of the Matron for his cabinet all the same, and hangs a sliver of her heart on a chain for you.' },
   },
   /* -------------------------------------------------------- Hesk's husband */
   {
@@ -314,7 +320,7 @@ export const SHATTERED_VALE_NPCS: Record<string, NpcDef> = {
         when: { quest: 'the-glass-matron', state: 'active' },
         lines: ['I was right. Shardlings are seeds, and the Glass Matron lays them.', 'She sits in the middle of the Crystal Fields, west of camp. Stop her, and save me a piece.'],
       },
-      { when: { quest: 'the-glass-matron', state: 'done' }, lines: ['The Matron fills eleven drawers of my cabinet. Thank you.', 'Wear that sliver of her heart. It hums when it’s cold.'] },
+      { when: { quest: 'the-glass-matron', state: 'done' }, lines: ['The Matron fills eleven drawers of my cabinet. Thank you.', 'I have taken the word “seeds” off the labels. I don’t yet know what to write instead.', 'Wear that sliver of her heart. It hums when it’s cold.'] },
       { lines: ['Welcome to Ennis’s Cabinet. Charms, rings and curios, most of them from the Tear.', 'I’ve studied everything here. It’s all safe to wear.'] },
     ],
   },

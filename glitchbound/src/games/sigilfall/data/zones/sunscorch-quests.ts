@@ -164,7 +164,13 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     after: ['venom-for-the-still'],
     zone: 'sunscorch',
     level: 31,
-    reward: { xp: 1400, gold: 450, item: 'tyrant-carapace', text: 'Kasim has the Tyrant’s shell made into a breastplate for you. Then he pours a drink at the stone he set up for his grandfather.' },
+    // (the side story's turn: the grandfather did not fail. The well has been safe from the Tyrant itself ever since)
+    find: {
+      name: 'A Spearhead with the Well-Mark',
+      kind: 'relic',
+      about: 'Found in the Dune Tyrant’s shell in Scorpion Hollow, under the plate over its heart, with the shell grown thick around it. It is an old iron spearhead stamped with the mark of the Last Well. Kasim’s grandfather put it there. The Tyrant has carried it ever since, and in all those years it never once climbed the shafts itself: it only sent the small ones.',
+    },
+    reward: { xp: 1400, gold: 450, item: 'tyrant-carapace', text: 'Kasim holds the spearhead a long time. His family has always said the old man died trying. He died having done most of it, and nobody knew. Kasim has the Tyrant’s shell made into a breastplate for you, sets the spearhead on his grandfather’s stone, and pours two drinks there.' },
   },
   /* -------------------------------------------------- Zahra's sand-ship */
   {
@@ -360,7 +366,7 @@ export const SUNSCORCH_NPCS: Record<string, NpcDef> = {
         when: { quest: 'the-dune-tyrant', state: 'active' },
         lines: ['The scorpions follow the Dune Tyrant, a black scorpion as big as a cart. It lives in Scorpion Hollow.', 'My grandfather went in to kill it and never came back. Please finish what he started.'],
       },
-      { when: { quest: 'the-dune-tyrant', state: 'done' }, lines: ['The Dune Tyrant is dead! Tonight I poured a drink at my grandfather’s stone. Thank you.'] },
+      { when: { quest: 'the-dune-tyrant', state: 'done' }, lines: ['The Dune Tyrant is dead! Tonight I poured a drink at my grandfather’s stone. Thank you.', 'His spearhead sits on that stone now. I tell every caravan who it was that kept the Tyrant out of this well.'] },
       { lines: ['This is the Last Well, the last inn before the deep desert. Rest here before you go out.', 'Shake out your boots in the morning. Scorpions like to sleep in them.'] },
     ],
   },

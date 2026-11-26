@@ -133,7 +133,13 @@ export const RIMEHELD_QUESTS: QuestDef[] = [
     after: ['the-stolen-casks'],
     zone: 'rimeheld',
     level: 36,
-    reward: { xp: 2200, gold: 520, item: 'olavs-bottomless-horn', text: 'Olav gives you his grandfather’s drinking horn, the pride of the Mead-Hall. He says it has never once been empty.' },
+    // (the side story's turn: the raids were a bargain nobody told Olav about, and he was the one who broke it)
+    find: {
+      name: 'A Notched Stick from the Mead-Hall',
+      kind: 'token',
+      about: 'Found in Grumbleback’s den in Yeti Hollow, on a ledge with forty empty casks stacked as neatly as a cellar. It is a counting stick from the Mead-Hall, cut in the hand of Olav’s father: one notch for each first snow, and beside each notch the same two marks, a cask set out and a clear road. The notches stop the winter the old brewer died.',
+    },
+    reward: { xp: 2200, gold: 520, item: 'olavs-bottomless-horn', text: 'Olav counts the notches twice. His father left a cask out at first snow every year and never said why, and Olav stopped when he took over the hall. Grumbleback had kept his side for forty winters: no yeti on the Frostgate road. Olav gives you his grandfather’s drinking horn, which he says has never once been empty. Then he rolls a cask out past the last house and leaves it in the snow for the young ones.' },
   },
   /* ---------------------------------------------------- Ylva's white wolf */
   /* ------------------------------------------------------- Hild's runes */
@@ -206,7 +212,7 @@ export const RIMEHELD_NPCS: Record<string, NpcDef> = {
         when: { quest: 'enough-is-enough', state: 'active' },
         lines: ['All four casks are empty. The stoppers are bitten clean off.', 'Only Grumbleback has jaws like that. He raided my father’s cellar before he ever raided mine.', 'He lives in Yeti Hollow, south-east of town. Stop him for good.'],
       },
-      { when: { quest: 'enough-is-enough', state: 'done' }, lines: ['My cellar is full, and nothing is scratching at the door. Your drinks are free today.'] },
+      { when: { quest: 'enough-is-enough', state: 'done' }, lines: ['My cellar is full, and nothing is scratching at the door. Your drinks are free today.', 'A cask goes out at first snow from now on. My father knew what he was doing. I wish he had told me.'] },
       { when: { quest: 'the-vault-of-rime', state: 'done' }, lines: ['You killed the Rime Wyrm! You drink free in the Mead-Hall, any time you like.'] },
       { lines: ['Welcome to the Mead-Hall! Mead for the cold, potions for the road, and a fire for everyone.', 'I make my mead from snow-honey. It warms you better than any coat.'] },
     ],

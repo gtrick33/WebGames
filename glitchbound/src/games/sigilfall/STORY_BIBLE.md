@@ -487,6 +487,7 @@ words and kept in the Journal. The Tear alone has none: the Veil pulled from the
 | `the-fallen-obelisk` | The Obelisk’s Carving | page | story |
 | `the-sunken-gate` | The Host’s Dig Orders | orders | story |
 | `the-sand-ship` | The Sand-Ship’s Log | note | side |
+| `the-dune-tyrant` | A Spearhead with the Well-Mark | relic | side |
 | `the-necropolis-of-ras` | The Dawn Temple’s Prayer | page | side |
 | `the-withered-ring` | A Silent Reed-Pipe | relic | story |
 | `the-pale-pavilion` | The Herald’s Bargain | letter | story |
@@ -495,11 +496,13 @@ words and kept in the Journal. The Tear alone has none: the Veil pulled from the
 | `the-harts-trail` | A Tuft of White Hair | relic | side |
 | `the-giants-hearth` | A Rune-Stone from the Vault Door | relic | story |
 | `the-vault-door` | Hrimfang’s Tally | note | story |
+| `enough-is-enough` | A Notched Stick from the Mead-Hall | token | side |
 | `thread-under-the-tear` | Aurel’s Harbor Badge | relic | side |
 | `the-breach-camp` | The Singers’ Hymn | page | story |
 | `the-heralds-cipher` | The Voidcallers’ Cipher | letter | story |
 | `the-heart-of-the-tear` | Maren’s Letter | letter | story |
 | `the-big-one` | Davin’s Last Tally | note | side |
+| `the-glass-matron` | A Shard That Hums a Cradle Song | relic | side |
 | `the-vale-watch` | A Sentry’s Last Note | note | side |
 | `gate-the-prison-map` | The Herald’s Prison Map | map | story |
 | `ashes-of-ashby` | A Child’s Drawing | page | story |
