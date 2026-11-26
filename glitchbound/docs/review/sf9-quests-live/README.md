@@ -56,18 +56,53 @@ phone's size (844 × 390, touch).
 | `thornvale-steps-1.jpg` | Eight more from Thornvale: notices, the search, the trail, the carried flour |
 | `lands-ten-steps.jpg` | One step from each of ten other lands: the Lady’s candles, Stormhoof yielding, the lamp oil carried, the guarded drums, the Pale Hart, the lamps across the glass, the letters read, Nan’s lodgers, the Gate’s locks, the Crown City (a scene was playing) |
 
+## Played by key and mouse
+
+After the pull request was opened, a player script of this pass's own (not in the repository) played quests in a
+browser by sending the game the key and mouse events a person's hands would: it walks where the quest's arrow leads,
+attacks what attacks it, uses every skill, and presses the interact key at things. Talk is read through; nothing else
+is skipped. Its hero is of the land's starting level plus two, with rare gear, a specialization and talents. It does
+not dodge, and it fights whatever is near: it is a poor fighter.
+
+48 quests were chosen, in fourteen lands: those with a hold, a carry, a trail or a foe taken alive, and no dungeon.
+
+| | |
+| --- | --- |
+| Played | 45 of 48 (the last three of Hollowmere and the Pale Reach were not reached: the machine was too loaded) |
+| Finished | 41, most in one to two minutes of the game's time |
+| Not finished | 4, all by dying over and over in a late land |
+
+**What it found, and what was done:**
+
+- **Work on a thing was undone by every blow.** *The Black Pool*'s last step took 105 seconds with eight
+  interruptions. Work broken off now keeps up to 80% of what was done: the same step took 27 seconds.
+- **A carry brought to a person never counted**, because the game keeps the hero a step off whoever stands there
+  (*Swallowed Silk*). What is carried is now set down from a little further off.
+- **A trail's mark could lie where it could not be walked to** from the one before. Every mark is now on ground the
+  trail's start can be walked from, and things prefer ground with nothing standing beside them; the test looks at
+  every one.
+- **A friend's step in co-op had no foes.** The leader's game now puts them down when the friend's game asks, only
+  foes that land's quests name and a few at a time.
+
+**What it could not settle:**
+
+- **The late lands kill this player**, on steps of the old kind as well as the new (*Ash on the Wind*'s plain "kill
+  ash drakes": seven deaths). *Captain Hollowbane*, *The Drowned Mother* and *Across the Mere* did not finish for that
+  reason. Whether a hold or an ambush there is too much for a person, who dodges and picks fights, it cannot say.
+- The player's own faults cost two full runs before they were found (it let go of its keys when the window lost the
+  focus, and its first hero had no talents). Only the last runs are counted above.
+
 ## What was not checked
 
-- **Nobody has played a quest through by hand.** The pictures are single moments set by script. The whole campaign is
-  walked by the test bot (`tests/sigilfall-campaign.test.ts`), which does every step, but a bot does not say whether a
-  step is fun, too long, or in a bad place.
+- **No person has played a quest.** A script played 45 by key and mouse (above), which shows they can be walked
+  to and done, not that a step is fun or well judged.
 - **Where things land.** They are put on clear ground near a named place; some will stand behind a tree or a house.
   Their light shows over it, and the arrow leads to them, but each of the 147 was not looked at.
 - **Difficulty.** Guards, ambushes and waves are of the land's own foes at the land's level. None was tuned by play;
   a hold of 25 to 30 seconds against three waves may be too much or too little for some classes.
-- **Co-op.** Each hero's things are their own, as chests are. The foes a step brings come only in the host's game, so
-  a guest's guarded thing is unguarded, their hold has no waves, and their subdue counts the kill instead. Unit-tested
-  for the host only; two real games were not run.
+- **Co-op.** Each hero's things are their own, as chests are. A friend's guards, ambushes and waves are put down by
+  the leader's game; a friend's subdue still counts the kill instead. Tested with two games linked in a unit test, not
+  with two real browsers.
 - **A hero part-way through a quest when this lands** carries on from the step number they were on, which may now be
   a different step: the campaign cannot break by it, but a count may carry over oddly.
 - Nothing was seen on a real phone.
