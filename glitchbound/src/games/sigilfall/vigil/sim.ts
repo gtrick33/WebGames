@@ -1,6 +1,6 @@
 import type { ClassId } from '../data/types';
 import { BOSS_EVERY, CLASS_BODY, CLASS_EDGE, classHealth, firstSpell, FOE_KINDS, foesOf, landTough, MAX_SPELL, MAX_STRENGTH, partyScale, PLAIN_AI, smallOf, SPELL_SLOTS, SPELLS, spellsOf, STRENGTH_SLOTS, STRENGTHS, upgradesOf, VIGIL_MAPS, type Element, type FoeAi, type FoeDef, type PartyScale, type RuleId, type SpellDef, type StrengthId, type VigilMap } from './kit';
-import { crossed, EVENT_KINDS, EVENTS, GALE, GALE_PUSH, galeAngle, inPhase, LANE_LEN, LANE_RUN, LANE_W, LANE_WARN, LANTERN_HOLD, LANTERN_R, MIRE_CELL, mireIn, RALLY_R, RULES, STORM, TIDE, TRAIT, TRAITS, VENT_CELL, VENT_QUIET, ventClock, ventIn, type BoonId, type EventKind, type Feats, type HeroKit, type Spot } from './night';
+import { crossed, EVENT_KINDS, EVENTS, GILDED_SHARE, WISPS, GALE, GALE_PUSH, galeAngle, inPhase, LANE_LEN, LANE_RUN, LANE_W, LANE_WARN, LANTERN_HOLD, LANTERN_R, MIRE_CELL, mireIn, RALLY_R, RULES, STORM, TIDE, TRAIT, TRAITS, VENT_CELL, VENT_QUIET, ventClock, ventIn, type BoonId, type EventKind, type Feats, type HeroKit, type Spot } from './night';
 
 /**
  * The Vigil's simulation, apart from all drawing so it can be tested and run fast: hundreds of foes come at the heroes
@@ -230,7 +230,7 @@ interface Sweep {
   hit: Set<number>;
 }
 
-export type PickupKind = 'meat' | 'magnet' | 'bomb' | 'frenzy' | 'chest';
+export type PickupKind = 'meat' | 'magnet' | 'bomb' | 'frenzy' | 'chest' | 'wisp';
 
 export interface Pickup {
   kind: PickupKind;
@@ -264,6 +264,9 @@ export interface Fx {
   who?: number;
   /** How many of them: a sweep with two is a beam each way. */
   n?: number;
+  /** The spell it is, and whether that spell has evolved: each is drawn its own way (render/vigilLooks.ts). */
+  spell?: string;
+  evo?: boolean;
 }
 
 export type Card = { kind: 'spell'; id: string; level: number; evolve?: boolean } | { kind: 'up'; id: string; up: string; level: number } | { kind: 'strength'; id: StrengthId; level: number };
@@ -532,6 +535,8 @@ export class Vigil {
   private fate: () => number;
   private bag: EventKind[] = [];
   private packLeft = 0;
+  /** The Gilded Host still standing, and the Lost Lights touched. */
+  private gildLeft = 0;
   private met = new Set<FoeAi>();
   private tips: string[] = [];
   private on: Partial<Record<RuleId, true>> = {};
@@ -1042,7 +1047,8 @@ export class Vigil {
     if (!this.event && this.t >= this.nextEvent) {
       const into = this.t % BOSS_EVERY;
       if (BOSS_EVERY - into > 8 && (into > 18 || this.t < BOSS_EVERY)) {
-        this.nextEvent = this.t + 48 + this.fate() * 16;
+        // (a little more often since there are more of them: every kind still comes before any comes again)
+        this.nextEvent = this.t + 40 + this.fate() * 14;
         this.beginEvent();
       }
     }
@@ -1161,10 +1167,43 @@ export class Vigil {
       this.makeRoom(1);
       this.addFoe(plain.find((f) => f.ai === 'rush') ?? cheap, null, null, this.within(h.x + Math.cos(a) * 150, h.y + Math.sin(a) * 150), true, TRAIT.thief);
       e.n = this.nextId - 1;
+    } else if (kind === 'gilded') {
+      // a crowd in gold, scattered round, worth stopping for: each leaves gold sparks
+      e.n = 10 + this.heroes.length * 4;
+      this.makeRoom(e.n);
+      for (let i = 0; i < e.n; i++) {
+        const a = (i / e.n) * TAU + this.fate();
+        const d = 120 + this.fate() * 90;
+        this.addFoe(cheap, null, null, this.within(h.x + Math.cos(a) * d, h.y + Math.sin(a) * d), false, TRAIT.gilded);
+      }
+      this.gildLeft = e.n;
+    } else if (kind === 'wisps') {
+      // lights strewn about the hero, each to be touched
+      e.n = WISPS;
+      const a0 = this.fate() * TAU;
+      for (let i = 0; i < WISPS; i++) {
+        const a = a0 + (i / WISPS) * TAU + (this.fate() - 0.5) * 0.6;
+        const d = 90 + this.fate() * 100;
+        const at = this.within(h.x + Math.cos(a) * d, h.y + Math.sin(a) * d);
+        this.avoid(at, 10, 0);
+        this.pickups.push({ kind: 'wisp', x: at.x, y: at.y, t: 0, dead: false });
+      }
+    } else if (kind === 'hound') {
+      // one hunter, out of the dark: fast, hard-biting, and after a hero alone
+      const a = this.fate() * TAU;
+      this.makeRoom(1);
+      this.addFoe(plain[plain.length - 1]!, null, null, this.within(h.x + Math.cos(a) * 230, h.y + Math.sin(a) * 230), true, TRAIT.hound);
+      e.n = this.nextId - 1;
     }
     this.event = e;
     this.eventLog.push(kind);
     this.banner = { text: name, t: 2.8 };
+  }
+
+  /** An event won leaves a chest, near where it was won. */
+  private reward(x: number, y: number): void {
+    const at = this.within(x, y);
+    this.pickups.push({ kind: 'chest', x: at.x, y: at.y, t: 0, dead: false });
   }
 
   private endEvent(won: boolean, say?: string): void {
@@ -1205,8 +1244,58 @@ export class Vigil {
       }
     } else if (e.kind === 'pack') {
       e.prog = e.n ? 1 - Math.min(e.n, this.packLeft) / e.n : 0;
+    } else if (e.kind === 'gilded') {
+      e.prog = e.n ? 1 - Math.min(e.n, this.gildLeft) / e.n : 0;
+      if (this.gildLeft <= 0) {
+        this.reward(e.x, e.y);
+        this.endEvent(true, 'The Gilded Host is felled: a chest!');
+        return;
+      }
+    } else if (e.kind === 'wisps') {
+      const left = this.pickups.filter((p) => p.kind === 'wisp' && !p.dead).length;
+      e.prog = 1 - left / WISPS;
+      if (left === 0) {
+        for (const h of this.heroes) if (!h.down) this.healBy(h, 0.2, 'holy', '#cfe8ff');
+        const at = this.anyStanding() ?? this.me;
+        this.reward(at.x, at.y);
+        this.endEvent(true, 'Every light gathered: a chest!');
+        return;
+      }
+    } else if (e.kind === 'hound') {
+      const hound = this.foes.find((f) => f.id === e.n && !f.dead);
+      if (hound) {
+        e.x = hound.x;
+        e.y = hound.y;
+        e.prog = 1 - hound.hp / hound.maxHp;
+        if (e.t >= e.dur) {
+          hound.dead = true;
+          this.addFx({ kind: 'summon', x: hound.x, y: hound.y, t: 0, dur: 0.6, el: 'blood', color: '#ff3a3a' });
+        }
+      }
     }
     if (e.t < e.dur || this.event !== e) return;
+    if (e.kind === 'gilded') {
+      // what is left scatters: three in four felled is enough
+      for (const f of this.foes) {
+        if (f.trait !== TRAIT.gilded || f.dead) continue;
+        f.dead = true;
+        this.addFx({ kind: 'summon', x: f.x, y: f.y, t: 0, dur: 0.5, el: 'holy', color: '#ffd257' });
+      }
+      const won = e.prog >= GILDED_SHARE;
+      this.gildLeft = 0;
+      if (won) this.reward(e.x, e.y);
+      this.endEvent(won, won ? 'Most of the Gilded Host is felled: a chest!' : 'The Gilded Host scatters');
+      return;
+    }
+    if (e.kind === 'wisps') {
+      for (const p of this.pickups) if (p.kind === 'wisp') p.dead = true;
+      this.endEvent(false, 'The lights go out');
+      return;
+    }
+    if (e.kind === 'hound') {
+      this.endEvent(false, 'The Bloodhound loses the scent');
+      return;
+    }
     if (e.kind === 'lantern') this.endEvent(false, 'The lantern gutters out');
     else if (e.kind === 'thief') this.endEvent(false, 'The thief slipped away');
     else if (e.kind === 'pack') this.endEvent(false);
@@ -1411,7 +1500,7 @@ export class Vigil {
       hp,
       maxHp: hp,
       dmg: def.dmg * (1 + (grown - 1) * 0.45) * (boss ? (first ? 1.45 : 1.8) : elite ? 1.25 : 1) * this.scale.dmg,
-      speed: trait === TRAIT.thief ? 66 : def.speed * (boss ? 0.8 : elite ? 0.92 : 1) * (trait === TRAIT.swift ? 1.45 : 1),
+      speed: trait === TRAIT.thief ? 66 : trait === TRAIT.hound ? Math.max(84, def.speed * 1.6) : def.speed * (boss ? 0.8 : elite ? 0.92 : 1) * (trait === TRAIT.swift ? 1.45 : 1),
       r: def.r * (boss ? 2 : elite ? 1.35 : 1),
       xp: def.xp * (boss ? 25 : elite ? 6 : 1),
       face: 0,
@@ -1863,6 +1952,21 @@ export class Vigil {
       this.wonLog.push('thief');
       if (this.event?.kind === 'thief') this.event = null;
       this.banner = { text: 'Caught! The thief drops a chest', t: 2.4 };
+    } else if (f.trait === TRAIT.hound) {
+      // the Bloodhound felled: its chest
+      this.pickups.push({ kind: 'chest', x: f.x, y: f.y, t: 0, dead: false });
+      this.feats.events++;
+      this.wonLog.push('hound');
+      if (this.event?.kind === 'hound') this.event = null;
+      this.banner = { text: 'The Bloodhound is felled: a chest!', t: 2.4 };
+    } else if (f.trait === TRAIT.gilded) {
+      // gold sparks, worth three of the plain
+      for (let i = 0; i < 2; i++) this.sparks.push({ x: f.x + (this.rand() - 0.5) * 16, y: f.y + (this.rand() - 0.5) * 16, xp: 3, age: 0, pulled: false, dead: false });
+      this.gildLeft = Math.max(0, this.gildLeft - 1);
+      if (this.event?.kind === 'gilded') {
+        this.event.x = f.x;
+        this.event.y = f.y;
+      }
     } else if (f.pack) {
       // the last of an Ashsworn pack leaves the chest
       if (--this.packLeft === 0) {
@@ -1976,14 +2080,34 @@ export class Vigil {
 
   /* -------------------------------------------------------------- effects */
 
+  /** Which spell is going off now, so what it makes is drawn as that spell (render/vigilLooks.ts). */
+  private tag: { spell: string; evo: boolean } | null = null;
+  private tagAs(h: Hero, spell: string): void {
+    this.tag = { spell, evo: h.evolved.has(spell) };
+  }
+
   private addFx(f: Fx): void {
+    if (this.tag && f.spell === undefined) {
+      f.spell = this.tag.spell;
+      if (this.tag.evo) f.evo = true;
+    }
     if (this.fx.length >= MAX_FX) return;
     this.fx.push(f);
     this.fxOut?.push(f);
   }
 
   private after(seconds: number, run: () => void): void {
-    this.later.push({ at: this.t + seconds, run });
+    // (what it makes later is still the spell that set it going)
+    const tag = this.tag;
+    this.later.push({
+      at: this.t + seconds,
+      run: () => {
+        const was = this.tag;
+        this.tag = tag;
+        run();
+        this.tag = was;
+      },
+    });
   }
 
   private runLater(): void {
@@ -2070,6 +2194,7 @@ export class Vigil {
     for (const id of Object.keys(h.spells)) {
       const def = SPELLS[id];
       if (!def) continue;
+      this.tagAs(h, id);
       const s = this.statsOf(h, def);
       h.built[id] = s;
       if (def.kind === 'orbit') this.castOrbit(h, def, s, dt);
@@ -2091,6 +2216,7 @@ export class Vigil {
       }
     }
     h.dashed = false;
+    this.tag = null;
   }
 
   private cast(h: Hero, def: SpellDef, s: SpellStats): boolean {
@@ -2407,6 +2533,7 @@ export class Vigil {
       const h = this.heroOf(p.owner) ?? this.me;
       const def = SPELLS[p.spell];
       if (!def) continue;
+      this.tagAs(h, p.spell);
       if (p.kind === 'mine') {
         if (p.t < 0.45) continue;
         let sprung = false;
@@ -2424,6 +2551,7 @@ export class Vigil {
         this.shoot(h, def, p.st, Math.atan2(f.y - p.y, f.x - p.x), 220, 3.5 * p.st.grow, 1, false, p.st.pierce, p);
       }
     }
+    this.tag = null;
     this.posts = this.posts.filter((p) => p.t < p.life);
   }
 
@@ -2496,12 +2624,14 @@ export class Vigil {
     const def = SPELLS[h.wardSpell];
     if (!def) return;
     const s = h.built[def.id] ?? this.statsOf(h, def);
+    this.tagAs(h, def.id);
     // (its clock starts again from when it broke, not from when it went up)
     h.cool[def.id] = s.every;
     this.shake = Math.max(this.shake, 6);
     const { x, y } = h;
     this.after(0, () => this.blast(h, s, x, y, s.size, s.dmg, def.el, def.color));
     if (s.guard) h.iframe = Math.max(h.iframe, s.guard);
+    this.tag = null;
   }
 
   private syncPets(h: Hero, def: SpellDef, n: number): void {
@@ -2554,6 +2684,7 @@ export class Vigil {
   private moveShots(dt: number): void {
     for (const s of this.shots) {
       const h = this.heroOf(s.owner) ?? this.me;
+      this.tagAs(h, s.spell);
       if (s.back) {
         // out, slowing, then home to the hero's hand
         s.spin += dt * 16;
@@ -2606,6 +2737,7 @@ export class Vigil {
         if (s.pierce-- <= 0) s.dead = true;
       });
     }
+    this.tag = null;
   }
 
   private burnFields(dt: number): void {
@@ -2656,7 +2788,7 @@ export class Vigil {
     for (const p of this.pickups) {
       p.t += dt;
       // what lies around only lies around so long, but a chest waits for you
-      if (p.kind !== 'chest' && p.t > 40) {
+      if (p.kind !== 'chest' && p.kind !== 'wisp' && p.t > 40) {
         p.dead = true;
         continue;
       }
@@ -2670,7 +2802,10 @@ export class Vigil {
   }
 
   private take(p: Pickup, h: Hero): void {
-    if (p.kind === 'meat') {
+    if (p.kind === 'wisp') {
+      // a Lost Light gathered (the event counts what is left: runEvent)
+      this.addFx({ kind: 'heal', x: p.x, y: p.y, t: 0, dur: 0.6, el: 'water', color: '#cfe8ff', r: 20 });
+    } else if (p.kind === 'meat') {
       h.venom = 0;
       this.healBy(h, 0.25, 'nature', '#b8ffb8');
     } else if (p.kind === 'magnet') {

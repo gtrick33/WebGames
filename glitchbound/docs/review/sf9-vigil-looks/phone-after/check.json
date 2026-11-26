@@ -1,0 +1,56 @@
+{
+ "report": [
+  {
+   "name": "lobby-1-mage-greyfen",
+   "note": "The lobby as in the owner’s picture: the Mage, Fireball shown, Greyfen Marsh chosen.",
+   "faults": []
+  },
+  {
+   "name": "lobby-2-week",
+   "note": "The week’s watch chosen.",
+   "faults": []
+  },
+  {
+   "name": "lobby-3-mage-spell",
+   "note": "Another spell shown.",
+   "faults": []
+  },
+  {
+   "name": "press-lobby",
+   "note": "A double click (a long press, on a phone) on a spell’s words in the lobby.",
+   "picked": "",
+   "css": "none "
+  },
+  {
+   "name": "press-night",
+   "note": "The same on the night’s clock and level, as in the owner’s picture.",
+   "picked": "",
+   "css": "none "
+  },
+  {
+   "name": "night-1-greyfen",
+   "note": "The night in Greyfen Marsh after the presses: nothing picked up."
+  },
+  {
+   "name": "event-gilded",
+   "note": "The new event: gilded."
+  },
+  {
+   "name": "event-wisps",
+   "note": "The new event: wisps."
+  },
+  {
+   "name": "event-hound",
+   "note": "The new event: hound."
+  },
+  {
+   "name": "chest-arrow-off",
+   "note": "A chest out of sight, up and to the right: the gold chevron at the edge points to it."
+  },
+  {
+   "name": "chest-arrow-on",
+   "note": "A chest in sight: a bobbing mark over it."
+  }
+ ],
+ "errors": []
+}

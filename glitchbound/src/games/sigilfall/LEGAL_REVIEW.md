@@ -3,6 +3,15 @@
 First pass 2026-10-27, fixes the same day. A working record of licenses, names and borrowed material, for the
 owner (and a lawyer, if one is asked). It is **not legal advice** and not a trademark clearance.
 
+## The Vigil's looks and three more events (2026-11-26)
+
+Every Vigil spell is now drawn its own way (`render/vigilLooks.ts`): its own two colors, its own shape for what flies
+or falls, and its own particle, and each evolution a different look again with a halo and light from above. All of it
+is the game's own shader effects (`render3d/fx3d.ts`) and the weapon models it already used (arrow, spear, axe, hammer,
+round shield, swords): no pack, icon, model or sound was added. Three event names were written new: **The Gilded
+Host**, **The Lost Lights** and **The Bloodhound**. "Bloodhound" is the name of a dog breed and an ordinary word;
+"Gilded Host" and "Lost Lights" are ordinary phrases. None was searched against trademark registers.
+
 ## The Vigil's spells and deeds (2026-11-25)
 
 Each class's Vigil kit went from six spells to ten. The 32 added are that class's own campaign skills, by name and by

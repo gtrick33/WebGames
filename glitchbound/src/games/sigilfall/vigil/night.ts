@@ -28,18 +28,18 @@ export interface LandRule {
 }
 
 export const RULES: Record<RuleId, LandRule> = {
-  glade: { id: 'glade', name: 'Whispering Glade', text: 'Now and then a glade of light opens. Stand in it and it mends you.' },
-  bramble: { id: 'bramble', name: 'Creeping Bramble', text: 'Thorns sprout where you walk. They cut and slow you, and slow the Host too.' },
-  rockfall: { id: 'rockfall', name: 'Loose Stone', text: 'Rocks fall where the ground is marked. They crush the Host as surely as you.' },
-  mire: { id: 'mire', name: 'Sucking Mire', text: 'Bog pools slow everything that wades in. A dash gets you out.' },
-  tide: { id: 'tide', name: 'The Tide', text: 'When the tide comes in, far more of them come with it. When it goes out, it carries the sparks to you.' },
-  gale: { id: 'gale', name: 'Mountain Gale', text: 'Gusts shove you across the ground. The arrow shows which way it is about to blow.' },
-  graves: { id: 'graves', name: 'Restless Graves', text: 'Some of the fallen get up again where they fell. Don’t stand on a grave.' },
-  storm: { id: 'storm', name: 'Scouring Wind', text: 'In a sandstorm the Host runs faster and sparks are harder to gather.' },
-  cold: { id: 'cold', name: 'Biting Cold', text: 'Stand still and the cold bites. Keep moving.' },
-  venom: { id: 'venom', name: 'Jungle Venom', text: 'Every wound keeps biting for a few seconds. Meat cures it.' },
-  vents: { id: 'vents', name: 'Fire Vents', text: 'Vents in the ground erupt on a rhythm. They burn the Host too: fight beside them, not on them.' },
-  fade: { id: 'fade', name: 'Hollow Light', text: 'Sparks left lying fade away. Gather them while they glow.' },
+  glade: { id: 'glade', name: 'Whispering Glade', text: 'Glades of light open now and then: stand in one to mend.' },
+  bramble: { id: 'bramble', name: 'Creeping Bramble', text: 'Thorns sprout where you walk, cutting and slowing.' },
+  rockfall: { id: 'rockfall', name: 'Loose Stone', text: 'Rocks fall on marked ground and crush the Host as well.' },
+  mire: { id: 'mire', name: 'Sucking Mire', text: 'Bog pools slow everything in them; a dash gets you out.' },
+  tide: { id: 'tide', name: 'The Tide', text: 'The tide brings a flood of the Host, then the sparks to you.' },
+  gale: { id: 'gale', name: 'Mountain Gale', text: 'Gusts shove you about, the way the arrow shows.' },
+  graves: { id: 'graves', name: 'Restless Graves', text: 'Some of the fallen get up again where they fell.' },
+  storm: { id: 'storm', name: 'Scouring Wind', text: 'Sandstorms speed the Host and scatter the sparks.' },
+  cold: { id: 'cold', name: 'Biting Cold', text: 'Stand still and the cold bites: keep moving.' },
+  venom: { id: 'venom', name: 'Jungle Venom', text: 'Wounds keep biting for a while; meat cures them.' },
+  vents: { id: 'vents', name: 'Fire Vents', text: 'Vents erupt on a rhythm and burn whatever stands on them.' },
+  fade: { id: 'fade', name: 'Hollow Light', text: 'Sparks left lying fade away: gather them while they glow.' },
 };
 export const RULE_IDS = Object.keys(RULES) as RuleId[];
 
@@ -111,7 +111,7 @@ export function spotsNear(seed: number, kind: 'mire' | 'vents', x: number, y: nu
 
 /* ---------------------------------------------------------------- what happens during a night */
 
-export type EventKind = 'pack' | 'run' | 'ring' | 'swarm' | 'lantern' | 'thief' | 'hour';
+export type EventKind = 'pack' | 'run' | 'ring' | 'swarm' | 'lantern' | 'thief' | 'hour' | 'gilded' | 'wisps' | 'hound';
 
 export interface EventDef {
   id: EventKind;
@@ -130,16 +130,26 @@ export const EVENTS: Record<EventKind, EventDef> = {
   lantern: { id: 'lantern', name: 'Dawn Lantern', text: 'Stand in its light until it catches.', secs: 30 },
   thief: { id: 'thief', name: 'Spark Thief', text: 'Catch it before it slips away. It carries a chest.', secs: 20 },
   hour: { id: 'hour', name: 'The Ember Hour', text: 'Twice the Host, and twice the sparks.', secs: 18 },
+  // (added after the owner played it: "the random events throughout the runs are what makes it alive right now, we
+  // could add couple more variations of those")
+  gilded: { id: 'gilded', name: 'The Gilded Host', text: 'Fell three in four before they scatter: they drop gold sparks.', secs: 16 },
+  wisps: { id: 'wisps', name: 'The Lost Lights', text: 'Touch every light before they go out.', secs: 24 },
+  hound: { id: 'hound', name: 'The Bloodhound', text: 'It hunts you alone. Fell it for a chest.', secs: 25 },
 };
 export const EVENT_KINDS = Object.keys(EVENTS) as EventKind[];
 
 /** What marks out an Ashsworn pack (0 is nothing; 4 is the Spark Thief's own mark). */
-export const TRAIT = { none: 0, swift: 1, stone: 2, venom: 3, thief: 4 } as const;
+export const TRAIT = { none: 0, swift: 1, stone: 2, venom: 3, thief: 4, gilded: 5, hound: 6 } as const;
 export const TRAITS: Record<number, { name: string; text: string; color: string }> = {
   [TRAIT.swift]: { name: 'Swift', text: 'They are fast.', color: '#6ae0ff' },
   [TRAIT.stone]: { name: 'Stoneskin', text: 'Nothing stops or throws them.', color: '#c8c0b0' },
   [TRAIT.venom]: { name: 'Venomous', text: 'Their wounds keep biting.', color: '#8ae85a' },
 };
+/** The marks of what an event brings that isn't a pack: the Gilded Host's gold, the Bloodhound's red. */
+export const EVENT_MARKS: Record<number, string> = { [TRAIT.gilded]: '#ffd257', [TRAIT.hound]: '#ff3a3a' };
+/** How many Lost Lights there are to touch, and how many of a Gilded Host must fall. */
+export const WISPS = 5;
+export const GILDED_SHARE = 0.75;
 
 export const LANTERN_R = 36;
 /** Seconds of standing in the lantern's light to light it. */

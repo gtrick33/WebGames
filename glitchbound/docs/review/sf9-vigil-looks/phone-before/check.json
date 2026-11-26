@@ -1,0 +1,36 @@
+{
+ "report": [
+  {
+   "name": "lobby-1-mage-greyfen",
+   "note": "The lobby as in the owner’s picture: the Mage, Fireball shown, Greyfen Marsh chosen.",
+   "faults": []
+  },
+  {
+   "name": "lobby-2-week",
+   "note": "The week’s watch chosen.",
+   "faults": []
+  },
+  {
+   "name": "lobby-3-mage-spell",
+   "note": "Another spell shown.",
+   "faults": []
+  },
+  {
+   "name": "press-lobby",
+   "note": "A double click (a long press, on a phone) on a spell’s words in the lobby.",
+   "picked": "",
+   "css": "none "
+  },
+  {
+   "name": "press-night",
+   "note": "The same on the night’s clock and level, as in the owner’s picture.",
+   "picked": "",
+   "css": "none "
+  },
+  {
+   "name": "night-1-greyfen",
+   "note": "The night in Greyfen Marsh after the presses: nothing picked up."
+  }
+ ],
+ "errors": []
+}
