@@ -1,0 +1,278 @@
+{
+ "name": "mage-thornvale",
+ "class": "mage",
+ "land": "Thornvale",
+ "seed": 11,
+ "samples": [
+  {
+   "t": 1,
+   "real": 0,
+   "hp": 100,
+   "level": 1,
+   "kills": 0,
+   "foes": 2,
+   "event": null,
+   "banner": "",
+   "tip": "Creeping Bramble: Thorns sprout where you walk. They cut and slow you, and slow the Host too."
+  },
+  {
+   "t": 20,
+   "real": 20,
+   "hp": 95,
+   "level": 2,
+   "kills": 21,
+   "foes": 31,
+   "event": null,
+   "banner": "",
+   "tip": ""
+  },
+  {
+   "t": 40,
+   "real": 41,
+   "hp": 92,
+   "level": 5,
+   "kills": 101,
+   "foes": 18,
+   "event": null,
+   "banner": "",
+   "tip": ""
+  },
+  {
+   "t": 55,
+   "real": 57,
+   "hp": 92,
+   "level": 6,
+   "kills": 145,
+   "foes": 38,
+   "event": "thief",
+   "banner": "Spark Thief",
+   "tip": ""
+  },
+  {
+   "t": 60,
+   "real": 62,
+   "hp": 92,
+   "level": 6,
+   "kills": 167,
+   "foes": 46,
+   "event": "thief",
+   "banner": "",
+   "tip": ""
+  },
+  {
+   "t": 80,
+   "real": 83,
+   "hp": 57,
+   "level": 8,
+   "kills": 308,
+   "foes": 46,
+   "event": null,
+   "banner": "",
+   "tip": ""
+  },
+  {
+   "t": 100,
+   "real": 105,
+   "hp": 91,
+   "level": 12,
+   "kills": 471,
+   "foes": 40,
+   "event": null,
+   "banner": "",
+   "tip": ""
+  },
+  {
+   "t": 113,
+   "real": 118,
+   "hp": 61,
+   "level": 13,
+   "kills": 558,
+   "foes": 55,
+   "event": "pack",
+   "banner": "Ashsworn Pack: Venomous",
+   "tip": "Cinderbloats: They burst where they die. Fell them at arm’s length."
+  },
+  {
+   "t": 120,
+   "real": 125,
+   "hp": 40,
+   "level": 13,
+   "kills": 637,
+   "foes": 50,
+   "event": "pack",
+   "banner": "",
+   "tip": ""
+  }
+ ],
+ "picks": [
+  {
+   "t": 11,
+   "level": 2,
+   "offered": [
+    "spell:arcane-ward",
+    "up:ember-bolt:4",
+    "strength:fortune"
+   ],
+   "took": 0
+  },
+  {
+   "t": 23,
+   "level": 3,
+   "offered": [
+    "spell:orbit-motes",
+    "up:ember-bolt:2",
+    "spell:ice-javelin"
+   ],
+   "took": 2
+  },
+  {
+   "t": 31,
+   "level": 4,
+   "offered": [
+    "up:arcane-ward:5",
+    "up:ember-bolt:5",
+    "strength:ghost"
+   ],
+   "took": 2
+  },
+  {
+   "t": 39,
+   "level": 5,
+   "offered": [
+    "up:ice-javelin:4",
+    "up:arcane-ward:1",
+    "strength:swift"
+   ],
+   "took": 0
+  },
+  {
+   "t": 48,
+   "level": 6,
+   "offered": [
+    "up:arcane-ward:0",
+    "strength:swift",
+    "spell:ball-lightning"
+   ],
+   "took": 0
+  },
+  {
+   "t": 61,
+   "level": 7,
+   "offered": [
+    "up:arcane-ward:3",
+    "strength:glass",
+    "strength:wind"
+   ],
+   "took": 2
+  },
+  {
+   "t": 72,
+   "level": 8,
+   "offered": [
+    "up:ice-javelin:1",
+    "up:ember-bolt:6",
+    "strength:might"
+   ],
+   "took": 1
+  },
+  {
+   "t": 81,
+   "level": 9,
+   "offered": [
+    "up:ember-bolt:2",
+    "spell:gravity-well",
+    "strength:fortune"
+   ],
+   "took": 1
+  },
+  {
+   "t": 84,
+   "level": 10,
+   "offered": [
+    "up:gravity-well:4",
+    "up:ice-javelin:3",
+    "spell:meteor"
+   ],
+   "took": 2
+  },
+  {
+   "t": 84,
+   "level": 11,
+   "offered": [
+    "up:ice-javelin:3",
+    "strength:fang",
+    "strength:coin"
+   ],
+   "took": 2
+  },
+  {
+   "t": 92,
+   "level": 12,
+   "offered": [
+    "up:arcane-ward:2",
+    "up:ice-javelin:3",
+    "strength:fang"
+   ],
+   "took": 2
+  },
+  {
+   "t": 108,
+   "level": 13,
+   "offered": [
+    "up:ember-bolt:5",
+    "strength:fortune",
+    "up:gravity-well:5"
+   ],
+   "took": 0
+  },
+  {
+   "t": 125,
+   "level": 14,
+   "offered": [
+    "up:gravity-well:3",
+    "strength:craft",
+    "strength:might"
+   ],
+   "took": 0
+  }
+ ],
+ "errors": [],
+ "held": 127,
+ "ended": "the line broke",
+ "real": 134,
+ "level": 14,
+ "kills": 697,
+ "spells": [
+  "ember-bolt:3",
+  "arcane-ward:2",
+  "ice-javelin:2",
+  "gravity-well:2",
+  "meteor:1"
+ ],
+ "relics": [
+  "ghost:1",
+  "wind:1",
+  "coin:1",
+  "fang:1"
+ ],
+ "events": [
+  "thief",
+  "pack"
+ ],
+ "won": [],
+ "felled": [],
+ "frenzies": 8,
+ "dashes": 131,
+ "overlaps": {},
+ "harm": {
+  "walk": 179,
+  "rush": 120,
+  "shot": 82,
+  "split": 57,
+  "cinderbloat": 43,
+  "marked foe": 18,
+  "bramble": 14
+ },
+ "endText": "THORNVALE\n\nThe line broke\n\nYou held for\n2:06\n\nYour longest night here is 5:00\n\n697\nfelled\n14\nlevel\n8\nfrenzies\n\n+34 motes\n2:06 held\nDeed done: Every Line Held · +30\nStill to do: Hold 5:00 as the Mage (2:06 of 5:00) · Fell The Gallows Boss and Old Greymane (0 of 2)\n\nHold again\nChoose again",
+ "kept": "{\"motes\":34,\"earned\":34,\"nights\":1,\"boons\":{},\"wilds\":[],\"wild\":null,\"weekly\":{},\"won\":{},\"felled\":[],\"deeds\":[\"lands:all\"],\"weekClass\":{}}"
+}

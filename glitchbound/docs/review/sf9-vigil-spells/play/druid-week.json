@@ -1,0 +1,187 @@
+{
+ "name": "druid-week",
+ "class": "druid",
+ "land": "the week’s watch",
+ "seed": 13,
+ "samples": [
+  {
+   "t": 1,
+   "real": 0,
+   "hp": 100,
+   "level": 1,
+   "kills": 0,
+   "foes": 2,
+   "event": null,
+   "banner": "",
+   "tip": "Whispering Glade: Now and then a glade of light opens. Stand in it and it mends you."
+  },
+  {
+   "t": 20,
+   "real": 20,
+   "hp": 95,
+   "level": 3,
+   "kills": 33,
+   "foes": 19,
+   "event": null,
+   "banner": "",
+   "tip": ""
+  },
+  {
+   "t": 40,
+   "real": 41,
+   "hp": 95,
+   "level": 5,
+   "kills": 96,
+   "foes": 23,
+   "event": null,
+   "banner": "",
+   "tip": ""
+  },
+  {
+   "t": 55,
+   "real": 56,
+   "hp": 100,
+   "level": 6,
+   "kills": 142,
+   "foes": 43,
+   "event": "thief",
+   "banner": "Spark Thief",
+   "tip": "Twinhusks: They break in two when they fall."
+  },
+  {
+   "t": 60,
+   "real": 62,
+   "hp": 86,
+   "level": 7,
+   "kills": 181,
+   "foes": 38,
+   "event": "thief",
+   "banner": "",
+   "tip": ""
+  },
+  {
+   "t": 80,
+   "real": 82,
+   "hp": 63,
+   "level": 8,
+   "kills": 288,
+   "foes": 58,
+   "event": null,
+   "banner": "",
+   "tip": ""
+  }
+ ],
+ "picks": [
+  {
+   "t": 9,
+   "level": 2,
+   "offered": [
+    "spell:thornhide",
+    "up:thorn-volley:6",
+    "spell:verdant-pulse"
+   ],
+   "took": 1
+  },
+  {
+   "t": 16,
+   "level": 3,
+   "offered": [
+    "spell:briar-burst",
+    "up:thorn-volley:4",
+    "strength:vigor"
+   ],
+   "took": 0
+  },
+  {
+   "t": 24,
+   "level": 4,
+   "offered": [
+    "spell:wild-dash",
+    "up:thorn-volley:4",
+    "spell:moonbeams"
+   ],
+   "took": 0
+  },
+  {
+   "t": 32,
+   "level": 5,
+   "offered": [
+    "up:wild-dash:4",
+    "strength:keg",
+    "strength:coin"
+   ],
+   "took": 0
+  },
+  {
+   "t": 41,
+   "level": 6,
+   "offered": [
+    "up:briar-burst:0",
+    "strength:mend",
+    "spell:verdant-pulse"
+   ],
+   "took": 2
+  },
+  {
+   "t": 58,
+   "level": 7,
+   "offered": [
+    "up:wild-dash:1",
+    "spell:moonburn",
+    "spell:spirit-stag"
+   ],
+   "took": 2
+  },
+  {
+   "t": 74,
+   "level": 8,
+   "offered": [
+    "up:thorn-volley:3",
+    "up:spirit-stag:1",
+    "up:verdant-pulse:2"
+   ],
+   "took": 0
+  },
+  {
+   "t": 87,
+   "level": 9,
+   "offered": [
+    "up:verdant-pulse:1",
+    "up:briar-burst:4",
+    "up:spirit-stag:0"
+   ],
+   "took": 1
+  }
+ ],
+ "errors": [],
+ "held": 87,
+ "ended": "the line broke",
+ "real": 91,
+ "level": 9,
+ "kills": 341,
+ "spells": [
+  "thorn-volley:3",
+  "briar-burst:2",
+  "wild-dash:2",
+  "verdant-pulse:1",
+  "spirit-stag:1"
+ ],
+ "relics": [],
+ "events": [
+  "thief"
+ ],
+ "won": [],
+ "felled": [],
+ "frenzies": 4,
+ "dashes": 58,
+ "overlaps": {},
+ "harm": {
+  "walk": 110,
+  "rush": 26,
+  "cold": 24,
+  "marked foe": 19,
+  "split": 15
+ },
+ "endText": "THE WEEK’S WATCH · WHISPERWOOD\n\nThe line broke\n\nYou held for\n1:26\n\nYour best this week!\n\n341\nfelled\n9\nlevel\n4\nfrenzies\n\n+32 motes\n1:26 held\nDeed done: Every Line Held · +30\nStill to do: Hold 5:00 as the Druid (1:26 of 5:00) · Fell The Gravewarden, The Bone Tusk, The Ash Captain (0 of 3)\n\nHold again\nChoose again",
+ "kept": "{\"motes\":32,\"earned\":32,\"nights\":1,\"boons\":{},\"wilds\":[],\"wild\":null,\"weekly\":{\"2968\":{\"best\":86,\"cls\":\"druid\",\"paid\":false}},\"won\":{},\"felled\":[],\"deeds\":[\"lands:all\"],\"weekClass\":{\"druid\":86}}"
+}

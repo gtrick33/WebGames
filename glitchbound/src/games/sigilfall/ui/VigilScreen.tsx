@@ -26,6 +26,9 @@ import { wearOf } from './wear';
 import { readBests, saveBest, VigilLobby } from './VigilLobby';
 import { part, say } from './hudWrite';
 import { addToCodex, markVigilTaught, saveClassBest, vigilTaught } from '../vigil/bests';
+import { cleanKit, EVENTS, GALE, galeAngle, inPhase, nearPhase, RULES, TIDE, TRAITS, type Weekly } from '../vigil/night';
+import { bankNight, deedState, kitOf, readReturns, type Banked } from '../vigil/returns';
+import { deedProgress, nextDeeds } from '../vigil/deeds';
 
 const clock = (t: number): string => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
@@ -47,9 +50,10 @@ const cardText = (c: Card): string => {
   return c.evolve ? SPELLS[c.id]!.evolve!.text : SPELLS[c.id]!.text;
 };
 const cardIcon = (c: Card): string => (c.kind === 'strength' ? strengthIcon(c.id) : spellIcon(c.id, c.kind === 'spell' && c.evolve));
-const cardTag = (c: Card): string => {
+const cardTag = (c: Card, cls?: ClassId): string => {
   if (c.kind === 'up') return SPELLS[c.id]!.name;
-  if (c.kind === 'spell') return c.evolve ? 'Evolves' : 'New spell';
+  // (a spell carried in from another class says so: vigil/night.ts's wild spells)
+  if (c.kind === 'spell') return c.evolve ? 'Evolves' : cls && SPELLS[c.id]!.cls !== cls ? 'Wild spell' : SPELLS[c.id]!.kind === 'dash' ? 'New spell · on your dash' : 'New spell';
   return c.level === 1 ? 'New relic' : `Level ${c.level}`;
 };
 /** A relic that a spell you hold is waiting for. */
@@ -112,6 +116,8 @@ export function fxSound(kind: Fx['kind'], el: Element): [string, number, number]
       return [el === 'nature' ? 'swing' : 'swingBig', 0.12, 0.6];
     case 'beam':
       return [el === 'nature' ? 'bow' : el === 'holy' ? 'holy' : 'beam', 0.2, 0.55];
+    case 'sweep':
+      return [el === 'blood' || el === 'shadow' ? 'swingBig' : el === 'holy' ? 'holy' : 'beam', 0.3, 0.6];
     case 'heal':
       return ['heal', 0.3, 0.6];
     case 'guard':
@@ -151,7 +157,7 @@ const faceOf = (f: RoomPick['face']): Face | undefined => (f ? { skin: Math.max(
 /** The Vigil: choosing a hero and a land, alone or with friends, then the night itself. */
 export function VigilScreen({ engine, face, body, cls, name, onBack }: { engine: SigilEngine; face?: Face; body?: 'm' | 'f'; cls?: ClassId; name?: string; onBack: () => void }) {
   usePlayedMode(engine, 'vigil');
-  const [setup, setSetup] = useState<{ cls: ClassId; map: VigilMap } | null>(null);
+  const [setup, setSetup] = useState<{ cls: ClassId; map: VigilMap; weekly?: Weekly } | null>(null);
   const [from, setFrom] = useState<{ cls: ClassId; map: VigilMap } | null>(null);
   const linkRef = useRef<Link<RoomView, RoomAction> | null>(null);
   const inbox = useRef<Inbox | null>(null);
@@ -235,7 +241,7 @@ export function VigilScreen({ engine, face, body, cls, name, onBack }: { engine:
   }
   if (setup) {
     const me: Keeper = { id: 0, cls: setup.cls, name: name?.trim() || 'You', face, body };
-    return <VigilRun engine={engine} land={setup.map} party={[me]} meId={0} seed={0} hostName="" role={{ kind: 'solo' }} onBack={() => setSetup(null)} />;
+    return <VigilRun engine={engine} land={setup.map} party={[me]} meId={0} seed={0} hostName="" role={{ kind: 'solo' }} weekly={setup.weekly} onBack={() => setSetup(null)} />;
   }
   return (
     <VigilLobby
@@ -248,9 +254,10 @@ export function VigilScreen({ engine, face, body, cls, name, onBack }: { engine:
         leaveRoom();
         onBack();
       }}
-      onBegin={(c, m) => {
-        setFrom({ cls: c, map: m });
-        setSetup({ cls: c, map: m });
+      onBegin={(c, m, weekly) => {
+        // (the week's watch is in a land of its own choosing: the lobby comes back to the land chosen before it)
+        setFrom({ cls: c, map: weekly ? (from?.map ?? m) : m });
+        setSetup({ cls: c, map: m, weekly });
       }}
       room={{ view, state: linkState, err: roomErr, open: () => void openRoom(), join: joinRoom, leave: leaveRoom, send: (a) => linkRef.current?.send(a) }}
     />
@@ -262,7 +269,9 @@ export function VigilScreen({ engine, face, body, cls, name, onBack }: { engine:
  * own renderer on the real land, thinned out for a fight: what walks behind a tree goes behind it, and neither the
  * hero nor the Host can walk through its trunk.
  */
-function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: { engine: SigilEngine; land: VigilMap; party: Keeper[]; meId: number; seed: number; hostName: string; role: Role; onBack: () => void }) {
+function VigilRun({ engine, land, party, meId, seed, hostName, role, weekly, onBack }: { engine: SigilEngine; land: VigilMap; party: Keeper[]; meId: number; seed: number; hostName: string; role: Role; weekly?: Weekly; onBack: () => void }) {
+  // the rules this night plays by: the land's own, and in the week's watch an omen borrowed from another land
+  const rules = weekly?.rules ?? [land.rule];
   const solo = role.kind === 'solo';
   const boxRef = useRef<HTMLDivElement>(null);
   const baseRef = useRef<HTMLCanvasElement>(null);
@@ -277,6 +286,7 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
   const [paused, setPaused] = useState(teach);
   const [quiet, setQuiet] = useState(false);
   const [found, setFound] = useState<string[]>([]);
+  const [banked, setBanked] = useState<(Banked & { champions: number; events: number; next: string[] }) | null>(null);
   const pausedRef = useRef(false);
   useEffect(() => {
     pausedRef.current = paused;
@@ -299,6 +309,10 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
   const hurtRef = useRef<HTMLDivElement>(null);
   const flashRef = useRef<HTMLDivElement>(null);
   const bossRef = useRef<HTMLDivElement>(null);
+  const evRef = useRef<HTMLDivElement>(null);
+  const tipRef = useRef<HTMLDivElement>(null);
+  const weatherRef = useRef<HTMLDivElement>(null);
+  const galeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const box = boxRef.current!;
@@ -341,7 +355,9 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
     world.player.y = (map.h / 2) * TILE;
     // (the land's own song from the story plays through the night)
     const nightSong = REGIONS[land.region].music as MusicId;
-    const v = new Vigil(solo ? (Math.random() * 2 ** 32) >>> 0 : seed, world.player.x, world.player.y, { map: land, bounds: { x0: TILE, y0: TILE, x1: (map.w - 1) * TILE, y1: (map.h - 1) * TILE }, party: party.map((k) => ({ id: k.id, cls: k.cls, name: k.name })) });
+    // (what this keeper carries from the nights before: their own game knows it, so a friend's game is told as the night begins)
+    const kit = kitOf(readReturns(), mine.cls);
+    const v = new Vigil(weekly ? weekly.seed : solo ? (Math.random() * 2 ** 32) >>> 0 : seed, world.player.x, world.player.y, { map: land, rules, kits: { [mine.id]: kit }, bounds: { x0: TILE, y0: TILE, x1: (map.w - 1) * TILE, y1: (map.h - 1) * TILE }, party: party.map((k) => ({ id: k.id, cls: k.cls, name: k.name })) });
     const me = v.heroOf(meId) ?? v.me;
     const painter = new VigilPainter(
       v,
@@ -377,7 +393,8 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
       if (role.kind === 'host') {
         v.fxOut = [];
         role.listen((seat, raw) => {
-          const d = raw as { i?: unknown; c?: unknown; rr?: unknown };
+          const d = raw as { i?: unknown; c?: unknown; rr?: unknown; k?: unknown };
+          if (d.k) v.equip(seat, cleanKit(d.k));
           if (Array.isArray(d.i)) {
             const mx = Number(d.i[0]);
             const my = Number(d.i[1]);
@@ -487,7 +504,8 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
         v.follow(dt, me.id, asked);
         if (now - sentAt > 66) {
           sentAt = now;
-          role.send({ i: [Math.round(asked.mx * 100) / 100, Math.round(asked.my * 100) / 100, asked.dash ? 1 : 0] });
+          // (what this keeper carries, said a few times as the night begins in case the first is lost)
+          role.send(v.t < 6 ? { i: [Math.round(asked.mx * 100) / 100, Math.round(asked.my * 100) / 100, asked.dash ? 1 : 0], k: kit } : { i: [Math.round(asked.mx * 100) / 100, Math.round(asked.my * 100) / 100, asked.dash ? 1 : 0] });
           dashAsk.current = false;
         }
       } else if (!stopped) {
@@ -543,6 +561,42 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
           bossRef.current.querySelector('i')!.style.width = part(boss.hp / boss.maxHp);
         }
       }
+      // what is happening this minute, and what the land is doing
+      const ev = v.event;
+      if (evRef.current) {
+        evRef.current.style.display = ev ? 'grid' : 'none';
+        if (ev) {
+          const def = EVENTS[ev.kind];
+          const trait = ev.kind === 'pack' ? TRAITS[ev.trait] : undefined;
+          const fills = ev.kind === 'lantern' || ev.kind === 'pack';
+          say(evRef.current.querySelector('b'), trait ? `${def.name}: ${trait.name}` : def.name);
+          say(evRef.current.querySelector('small'), trait ? `${trait.text} ${def.text}` : def.text);
+          evRef.current.querySelector('i')!.style.width = part(fills ? ev.prog : 1 - ev.t / ev.dur);
+          evRef.current.classList.toggle('is-fill', fills);
+          evRef.current.classList.toggle('is-low', !!boss);
+        }
+      }
+      say(tipRef.current, v.tip?.text ?? '');
+      if (weatherRef.current) {
+        const w = weatherRef.current;
+        w.style.setProperty('--chill', String(Math.round(me.chill * 100) / 100));
+        w.classList.toggle('is-storm', v.storming);
+        w.classList.toggle('is-tide', rules.includes('tide') && inPhase(v.t, TIDE));
+        w.classList.toggle('is-hour', ev?.kind === 'hour');
+      }
+      if (galeRef.current) {
+        const blowing = rules.includes('gale') && inPhase(v.t, GALE);
+        const coming = rules.includes('gale') && nearPhase(v.t, GALE);
+        galeRef.current.style.display = blowing || coming ? 'grid' : 'none';
+        if (blowing || coming) {
+          // (the warning points the way the gust about to come will blow: the round the clock is in is its round)
+          galeRef.current.style.setProperty('--a', `${Math.round(galeAngle(v.seed, v.t) * 100) / 100}rad`);
+          galeRef.current.classList.toggle('is-on', blowing);
+        }
+      }
+      hudHp.current?.classList.toggle('is-venom', me.venom > 0);
+      // a ward shows over the health it guards
+      hudHp.current?.parentElement?.style.setProperty('--ward', me.ward > 0 && me.wardMax > 0 ? part(me.ward / me.wardMax) : '0%');
       say(hudT.current, clock(v.t));
       say(hudK.current, String(v.kills));
       say(hudL.current, String(v.level));
@@ -586,19 +640,28 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
       if (role.kind === 'client') setQuiet(now - heardAt > 6000);
       if (v.over && !over) {
         over = true;
-        // holding long enough opens the next land
-        const before = readBests();
-        const at = VIGIL_MAPS.indexOf(land);
-        const next = VIGIL_MAPS[at + 1];
-        if (next && (before[land.id] ?? 0) < UNLOCK_HOLD && v.t >= UNLOCK_HOLD) setOpened(next.name);
-        setBest((b) => {
-          const longest = Math.max(b, Math.floor(v.t));
-          saveBest(land.id, longest);
-          return longest;
-        });
-        // kept with the class it was held with, and the evolutions found added to the codex
         const mine = v.heroOf(meId) ?? v.me;
-        saveClassBest(land.id, mine.cls, v.t);
+        // (the week's watch has an omen over it, so it keeps a best of its own and opens no land)
+        if (!weekly) {
+          // holding long enough opens the next land
+          const before = readBests();
+          const at = VIGIL_MAPS.indexOf(land);
+          const next = VIGIL_MAPS[at + 1];
+          if (next && (before[land.id] ?? 0) < UNLOCK_HOLD && v.t >= UNLOCK_HOLD) setOpened(next.name);
+          setBest((b) => {
+            const longest = Math.max(b, Math.floor(v.t));
+            saveBest(land.id, longest);
+            return longest;
+          });
+          // kept with the class it was held with
+          saveClassBest(land.id, mine.cls, v.t);
+        }
+        // what the night earned, kept for the nights after (vigil/returns.ts), and the evolutions found added to the codex
+        const bank = bankNight(v.t, v.feats, mine.cls, weekly?.week, { won: v.wonLog, felled: v.felledLog });
+        // (and what is nearest done of what is still to do, this class's and this land's first: a reason for the next night)
+        const state = deedState();
+        const next = nextDeeds(state, readReturns().deeds, 2, [`class:${mine.cls}`, `land:${land.id}`]).map((d) => `${d.text} (${deedProgress(d, state)})`);
+        setBanked({ ...bank, champions: v.feats.champions, events: v.feats.events, next });
         setFound(addToCodex(mine.evolved));
         tick((x) => x + 1);
       }
@@ -623,7 +686,8 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
 
   const v = view;
   const me = v ? (v.heroOf(meId) ?? v.me) : null;
-  const newBest = v?.over && Math.floor(v.t) >= best;
+  const newBest = v?.over && (weekly ? !!banked?.newWeekBest : Math.floor(v.t) >= best);
+  const shownBest = weekly ? (banked?.weekBest ?? 0) : best;
   const others = v?.heroes.filter((h) => h !== me) ?? [];
   const hosting = role.kind === 'host';
   return (
@@ -632,6 +696,7 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
         <div className="rb-vigil-world">
           <canvas ref={baseRef} className="rb-vigil-canvas" />
         </div>
+        <div className="rb-vigil-weather" ref={weatherRef} aria-hidden="true" />
         <div className="rb-vigil-hurt" ref={hurtRef} aria-hidden="true" />
         <div className="rb-vigil-flash" ref={flashRef} aria-hidden="true" />
         <div className="rb-vigil-xp">
@@ -644,6 +709,13 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
             </span>
             <span className="rb-dim">
               Level <b ref={hudL}>1</b> · <b ref={hudK}>0</b> felled
+            </span>
+            <span className="rb-vigil-rules" aria-label="This land’s rule">
+              {rules.map((r) => (
+                <em key={r} title={RULES[r].text}>
+                  {RULES[r].name}
+                </em>
+              ))}
             </span>
             <span className="rb-vigil-hp">
               <i ref={hudHp} />
@@ -676,6 +748,18 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
         </div>
         <div className="rb-vigil-banner" ref={banner} role="status" />
         <div className="rb-vigil-wait" ref={hudWait} role="status" />
+        <div className="rb-vigil-event" ref={evRef} style={{ display: 'none' }} role="status">
+          <b />
+          <small />
+          <span>
+            <i />
+          </span>
+        </div>
+        <div className="rb-vigil-tip" ref={tipRef} role="status" />
+        <div className="rb-vigil-gale" ref={galeRef} style={{ display: 'none' }} aria-hidden="true">
+          <i>➤</i>
+          <small>Gale</small>
+        </div>
         <div className="rb-vigil-boss" ref={bossRef} style={{ display: 'none' }}>
           <b />
           <span>
@@ -719,7 +803,7 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
                 const hint = evolvesWith(me, c);
                 return (
                   <button key={`${c.kind}-${i}`} className={`rb-vigil-card${c.kind === 'spell' && c.evolve ? ' is-evolve' : ''}${c.kind === 'strength' ? ' is-strength' : ''}${c.kind === 'up' ? ' is-up' : ''}`} style={{ ['--i' as string]: i }} onClick={() => pickRef.current(i)}>
-                    <span className="rb-vigil-tag">{cardTag(c)}</span>
+                    <span className="rb-vigil-tag">{cardTag(c, me.cls)}</span>
                     <span className="rb-vigil-icon">
                       <img src={cardIcon(c)} alt="" draggable={false} />
                     </span>
@@ -772,6 +856,9 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
               <li>
                 <b>Dash</b> {engine.touchMode ? 'with its button' : 'with Space'} through a gap. Holding {clock(UNLOCK_HOLD)} opens the next land.
               </li>
+              <li>
+                <b>Every land has a rule of its own</b>, and about once a minute something happens: a card at the top says what, and what to do.
+              </li>
             </ul>
             <div className="rb-vigil-actions">
               <button
@@ -807,13 +894,13 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
         {v?.over && (
           <div className="rb-vend" role="dialog" aria-label="The Vigil is over">
             <div className="rb-vend-body">
-              <p className="rb-vend-land">{land.name}</p>
+              <p className="rb-vend-land">{weekly ? `The week’s watch · ${land.name}` : land.name}</p>
               <h2>The line broke</h2>
               <p className="rb-vend-time">
                 <small>You held for</small>
                 <b>{clock(v.t)}</b>
               </p>
-              <p className={`rb-vend-best${newBest ? ' is-new' : ''}`}>{newBest ? 'Your longest night here!' : `Your longest night here is ${clock(best)}`}</p>
+              <p className={`rb-vend-best${newBest ? ' is-new' : ''}`}>{weekly ? (newBest ? 'Your best this week!' : `Your best this week is ${clock(shownBest)}`) : newBest ? 'Your longest night here!' : `Your longest night here is ${clock(shownBest)}`}</p>
               <div className="rb-vend-stats">
                 <span>
                   <b>{v.kills}</b>
@@ -828,6 +915,23 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
                   <small>frenzies</small>
                 </span>
               </div>
+              {banked && (
+                <p className="rb-vigil-motes">
+                  <b>+{banked.motes + banked.bounty + banked.deeds.reduce((a, d) => a + d.motes, 0)} motes</b>
+                  <small>
+                    {clock(v.t)} held
+                    {banked.champions > 0 && ` · ${banked.champions} ${banked.champions === 1 ? 'champion' : 'champions'} felled`}
+                    {banked.events > 0 && ` · ${banked.events} ${banked.events === 1 ? 'event' : 'events'} won`}
+                    {banked.bounty > 0 && ' · the week’s bounty'}
+                  </small>
+                  {banked.deeds.map((d) => (
+                    <small key={d.id} className="rb-vigil-deed">
+                      Deed done: <b>{d.name}</b> · +{d.motes}
+                    </small>
+                  ))}
+                  {banked.next.length > 0 && <small className="rb-vigil-next">Still to do: {banked.next.join(' · ')}</small>}
+                </p>
+              )}
               {opened && <p className="rb-vigil-opened">A new land opens: {opened}</p>}
               {found.length > 0 && (
                 <p className="rb-vigil-opened">
@@ -855,6 +959,7 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
                       setPaused(false);
                       setOpened(null);
                       setFound([]);
+                      setBanked(null);
                       setRun((r) => r + 1);
                     }}
                   >

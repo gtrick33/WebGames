@@ -1,0 +1,262 @@
+[
+ {
+  "name": "old-01-lobby",
+  "note": "An old device's keep ({\"whisperwood\":412}) opens the lobby: its longest night shown, no motes yet.",
+  "errors": []
+ },
+ {
+  "name": "old-02-night",
+  "note": "And its night begins as any other.",
+  "errors": []
+ },
+ {
+  "name": "lobby-01-lands",
+  "note": "The lands, each with its rule named on its card; the land chosen says what the rule does.",
+  "errors": []
+ },
+ {
+  "name": "lobby-02-rimeheld",
+  "note": "Rimeheld chosen: Biting Cold, and what it does.",
+  "errors": []
+ },
+ {
+  "name": "lobby-03-week",
+  "note": "The week’s watch chosen: its land, its omen, and the bounty.",
+  "errors": []
+ },
+ {
+  "name": "lobby-04-watchfire",
+  "note": "The Watchfire with 120 motes: boons and wild spells.",
+  "errors": []
+ },
+ {
+  "name": "lobby-05-bought",
+  "note": "After two ranks of Hearthblood, one of Second Thoughts and Call Wolf learned (and carried).",
+  "errors": []
+ },
+ {
+  "name": "lobby-06-wilds",
+  "note": "The wild spells, lower on the same page.",
+  "errors": []
+ },
+ {
+  "name": "lobby-07-after-reload",
+  "note": "After the page was loaded afresh: {\"motes\":54,\"earned\":120,\"nights\":9,\"boons\":{\"hearth\":2,\"rethink\":1},\"wilds\":[\"wolf-pack\"],\"wild\":\"wolf-pack\",\"weekly\":{}}",
+  "errors": []
+ },
+ {
+  "name": "land-01-whisperwood-a-begins",
+  "note": "Whisperwood: the night begins, its rule named under the clock and said in a line.",
+  "errors": []
+ },
+ {
+  "name": "land-01-whisperwood-b-rule",
+  "note": "Whispering Glade: a glade of light has opened near the hero",
+  "errors": []
+ },
+ {
+  "name": "land-02-thornvale-a-begins",
+  "note": "Thornvale: the night begins, its rule named under the clock and said in a line.",
+  "errors": []
+ },
+ {
+  "name": "land-02-thornvale-b-rule",
+  "note": "Creeping Bramble: thorns sprouted where the hero was heading",
+  "errors": []
+ },
+ {
+  "name": "land-03-brackenridge-a-begins",
+  "note": "Brackenridge: the night begins, its rule named under the clock and said in a line.",
+  "errors": []
+ },
+ {
+  "name": "land-03-brackenridge-b-rule",
+  "note": "Loose Stone: the marks where rocks are about to fall",
+  "errors": []
+ },
+ {
+  "name": "land-04-greyfen-a-begins",
+  "note": "Greyfen Marsh: the night begins, its rule named under the clock and said in a line.",
+  "errors": []
+ },
+ {
+  "name": "land-04-greyfen-b-rule",
+  "note": "Sucking Mire: bog pools on the ground",
+  "errors": []
+ },
+ {
+  "name": "land-05-saltmarsh-a-begins",
+  "note": "Saltmarsh Coast: the night begins, its rule named under the clock and said in a line.",
+  "errors": []
+ },
+ {
+  "name": "land-05-saltmarsh-b-rule",
+  "note": "The Tide: it has come in, and more of the Host with it",
+  "errors": []
+ },
+ {
+  "name": "land-06-ironpeak-a-begins",
+  "note": "Ironpeak: the night begins, its rule named under the clock and said in a line.",
+  "errors": []
+ },
+ {
+  "name": "land-06-ironpeak-b-rule",
+  "note": "Mountain Gale: blowing, with the arrow showing which way",
+  "errors": []
+ },
+ {
+  "name": "land-07-ashen-barrows-a-begins",
+  "note": "Ashen Barrows: the night begins, its rule named under the clock and said in a line.",
+  "errors": []
+ },
+ {
+  "name": "land-07-ashen-barrows-b-rule",
+  "note": "Restless Graves: marks where the fallen are getting up",
+  "errors": []
+ },
+ {
+  "name": "land-08-sunscorch-a-begins",
+  "note": "Sunscorch: the night begins, its rule named under the clock and said in a line.",
+  "errors": []
+ },
+ {
+  "name": "land-08-sunscorch-b-rule",
+  "note": "Scouring Wind: a sandstorm over the field",
+  "errors": []
+ },
+ {
+  "name": "land-09-rimeheld-a-begins",
+  "note": "Rimeheld: the night begins, its rule named under the clock and said in a line.",
+  "errors": []
+ },
+ {
+  "name": "land-09-rimeheld-b-rule",
+  "note": "Biting Cold: the hero has stood still, and the cold is in",
+  "errors": []
+ },
+ {
+  "name": "land-10-vinecoil-a-begins",
+  "note": "Vinecoil Jungle: the night begins, its rule named under the clock and said in a line.",
+  "errors": []
+ },
+ {
+  "name": "land-10-vinecoil-b-rule",
+  "note": "Jungle Venom: wounded by a blow, the health bar striped while the venom bites",
+  "errors": []
+ },
+ {
+  "name": "land-11-emberdeep-a-begins",
+  "note": "Emberdeep Caldera: the night begins, its rule named under the clock and said in a line.",
+  "errors": []
+ },
+ {
+  "name": "land-11-emberdeep-b-rule",
+  "note": "Fire Vents: vents on the ground, one or more about to erupt",
+  "errors": []
+ },
+ {
+  "name": "land-12-pale-reach-a-begins",
+  "note": "The Pale Reach: the night begins, its rule named under the clock and said in a line.",
+  "errors": []
+ },
+ {
+  "name": "land-12-pale-reach-b-rule",
+  "note": "Hollow Light: sparks left lying, the old ones flickering out",
+  "errors": []
+ },
+ {
+  "name": "event-1-pack",
+  "note": "Ashsworn Pack: three marked foes with a trait, and the card that says so",
+  "errors": []
+ },
+ {
+  "name": "event-2-run",
+  "note": "The Wild Run: the paths are marked",
+  "errors": []
+ },
+ {
+  "name": "event-2-run-b-herd",
+  "note": "The Wild Run: the herd comes down the first path",
+  "errors": []
+ },
+ {
+  "name": "event-3-lantern",
+  "note": "Dawn Lantern: a lantern stands a little way off",
+  "errors": []
+ },
+ {
+  "name": "event-3-lantern-b-held",
+  "note": "Dawn Lantern: stood in, its light filling",
+  "errors": []
+ },
+ {
+  "name": "event-4-thief",
+  "note": "Spark Thief: marked in gold, running",
+  "errors": []
+ },
+ {
+  "name": "event-5-hour",
+  "note": "The Ember Hour: the edge of the screen burns",
+  "errors": []
+ },
+ {
+  "name": "event-6-ring",
+  "note": "The Closing Ring: they come from every side",
+  "errors": []
+ },
+ {
+  "name": "event-7-swarm",
+  "note": "Night Swarm: a swarm from one side",
+  "errors": []
+ },
+ {
+  "name": "foes-1-kinds",
+  "note": "The four kinds: a Twinhusk (left), a Cinderbloat (below), a Wallbearer with its guard (right), a Hostcaller with those it heartens (far right)",
+  "errors": []
+ },
+ {
+  "name": "foes-2-fallen",
+  "note": "The Twinhusk has broken in two, and the mark shows where the Cinderbloat is about to go off",
+  "errors": []
+ },
+ {
+  "name": "champion-1-rake",
+  "note": "The Gravewarden’s rake: three marked lines",
+  "errors": []
+ },
+ {
+  "name": "champion-2-charge",
+  "note": "The Bone Tusk’s charge: the line it will run down",
+  "errors": []
+ },
+ {
+  "name": "champion-3-call",
+  "note": "The Ash Captain’s call: small ones run in to its side",
+  "errors": []
+ },
+ {
+  "name": "champion-4-volley",
+  "note": "The Gallows Boss’s volley: a ring of slow shots",
+  "errors": []
+ },
+ {
+  "name": "champion-5-ring",
+  "note": "Mother Mire’s ring: safe close in and far out",
+  "errors": []
+ },
+ {
+  "name": "end-1-week-begins",
+  "note": "The week’s watch begins: both its rules under the clock",
+  "errors": []
+ },
+ {
+  "name": "end-2-motes",
+  "note": "The night’s end: motes for the time held, the champion and the events, and the week’s bounty",
+  "errors": []
+ },
+ {
+  "name": "end-kept",
+  "note": "{\"motes\":33,\"earned\":33,\"nights\":10,\"boons\":{},\"wilds\":[],\"wild\":null,\"weekly\":{\"2968\":{\"best\":200,\"cls\":\"mage\",\"paid\":true}}}",
+  "errors": []
+ }
+]

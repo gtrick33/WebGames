@@ -1,5 +1,6 @@
 import type { ClassId } from '../data/types';
-import { BOSS_EVERY, CLASS_BODY, firstSpell, foesOf, landTough, MAX_SPELL, MAX_STRENGTH, partyScale, SPELL_SLOTS, SPELLS, spellsOf, STRENGTH_SLOTS, STRENGTHS, upgradesOf, VIGIL_MAPS, type Element, type FoeDef, type PartyScale, type SpellDef, type StrengthId, type VigilMap } from './kit';
+import { BOSS_EVERY, CLASS_BODY, CLASS_EDGE, classHealth, firstSpell, FOE_KINDS, foesOf, landTough, MAX_SPELL, MAX_STRENGTH, partyScale, PLAIN_AI, smallOf, SPELL_SLOTS, SPELLS, spellsOf, STRENGTH_SLOTS, STRENGTHS, upgradesOf, VIGIL_MAPS, type Element, type FoeAi, type FoeDef, type PartyScale, type RuleId, type SpellDef, type StrengthId, type VigilMap } from './kit';
+import { crossed, EVENT_KINDS, EVENTS, GALE, GALE_PUSH, galeAngle, inPhase, LANE_LEN, LANE_RUN, LANE_W, LANE_WARN, LANTERN_HOLD, LANTERN_R, MIRE_CELL, mireIn, RALLY_R, RULES, STORM, TIDE, TRAIT, TRAITS, VENT_CELL, VENT_QUIET, ventClock, ventIn, type BoonId, type EventKind, type Feats, type HeroKit, type Spot } from './night';
 
 /**
  * The Vigil's simulation, apart from all drawing so it can be tested and run fast: hundreds of foes come at the heroes
@@ -21,6 +22,7 @@ const HERO_R = 7;
 const MAX_FIELDS = 36;
 const MAX_SHOTS = 140;
 const MAX_FX = 140;
+const MAX_POSTS = 24;
 const REVIVE_REACH = 30;
 const REVIVE_SECONDS = 3;
 const DASH_SECONDS = 0.18;
@@ -63,6 +65,16 @@ export interface Foe {
   elite: boolean;
   boss: string | null;
   bossSprite: string | null;
+  /** What marks it out (night.ts's TRAIT): an Ashsworn pack's trait, or the Spark Thief. */
+  trait: number;
+  /** One of an Ashsworn pack: the last to fall leaves the chest. */
+  pack: boolean;
+  /** Heartened by a Hostcaller near it, while this lasts. */
+  rally: number;
+  /** How many times a champion has struck: it takes its slam and its own attack in turn. */
+  cast: number;
+  /** Until a Spark Thief next drops a spark when struck. */
+  shed: number;
   dead: boolean;
 }
 
@@ -100,7 +112,7 @@ export interface FoeShot {
   dead: boolean;
 }
 
-/** A champion's blow on its way: stand clear of the ring before it lands. */
+/** A blow on its way: stand clear of the mark before it lands. A ring, unless it says otherwise. */
 export interface Slam {
   x: number;
   y: number;
@@ -108,12 +120,60 @@ export interface Slam {
   dmg: number;
   t: number;
   dur: number;
+  /** Safe this close to its middle. */
+  inner?: number;
+  /** A line instead, this long from its start, this way, this far to each side. */
+  len?: number;
+  a?: number;
+  w?: number;
+  /** It strikes the Host too, for this share of their health (a rock, a vent, a Cinderbloat). */
+  both?: number;
+  /** What it is, for the drawing: a champion's blow, a falling rock, or fire. */
+  tone?: 0 | 1 | 2;
 }
+
+/** What is happening this minute (night.ts's EVENTS). */
+export interface NightEvent {
+  kind: EventKind;
+  t: number;
+  dur: number;
+  /** Where it is: the lantern, the thief. */
+  x: number;
+  y: number;
+  /** How far along: the lantern's light, the pack felled. */
+  prog: number;
+  /** An Ashsworn pack's trait. */
+  trait: number;
+  /** How many the pack had, or the thief's id. */
+  n: number;
+}
+
+/** A path the Wild Run takes: marked first, then run down. Its middle, and the way it goes. */
+export interface Lane {
+  x: number;
+  y: number;
+  a: number;
+  t: number;
+  hit: Set<number>;
+}
+
+/** A patch of ground a land's rule put there for a while (`t` counts up from below zero while it is only a warning). */
+export interface Zone {
+  kind: 'glade' | 'bramble';
+  x: number;
+  y: number;
+  r: number;
+  t: number;
+  dur: number;
+}
+export const ZONE_KINDS: Zone['kind'][] = ['glade', 'bramble'];
 
 export interface Spark {
   x: number;
   y: number;
   xp: number;
+  /** How long it has lain there. */
+  age?: number;
   pulled: boolean;
   dead: boolean;
 }
@@ -144,6 +204,32 @@ export interface Pet {
   walk: number;
 }
 
+/** Something a spell put on the ground that stays there: a trap waiting to be stepped on, a totem that shoots. */
+export interface Post {
+  kind: 'mine' | 'totem';
+  owner: number;
+  spell: string;
+  el: Element;
+  x: number;
+  y: number;
+  r: number;
+  t: number;
+  life: number;
+  /** Until a totem next shoots. */
+  fireT: number;
+  st: SpellStats;
+}
+
+/** A beam going round a hero (host only: the drawing has its own from the effect). */
+interface Sweep {
+  owner: number;
+  st: SpellStats;
+  a0: number;
+  t: number;
+  dur: number;
+  hit: Set<number>;
+}
+
 export type PickupKind = 'meat' | 'magnet' | 'bomb' | 'frenzy' | 'chest';
 
 export interface Pickup {
@@ -156,7 +242,7 @@ export interface Pickup {
 
 /** Something to draw for a moment; the drawing picks its picture from the kind and the element. */
 export interface Fx {
-  kind: 'nova' | 'chain' | 'strike' | 'drop' | 'burst' | 'hit' | 'cone' | 'beam' | 'heal' | 'guard' | 'cast' | 'dash' | 'level' | 'frenzy' | 'summon' | 'slam' | 'bomb';
+  kind: 'nova' | 'chain' | 'strike' | 'drop' | 'burst' | 'hit' | 'cone' | 'beam' | 'heal' | 'guard' | 'cast' | 'dash' | 'level' | 'frenzy' | 'summon' | 'slam' | 'bomb' | 'grave' | 'rake' | 'sweep';
   x: number;
   y: number;
   t: number;
@@ -174,6 +260,10 @@ export interface Fx {
   look?: SpellDef['look'];
   freeze?: boolean;
   pts?: [number, number][];
+  /** The hero it stays with (a sweeping beam turns about them as they move). */
+  who?: number;
+  /** How many of them: a sweep with two is a beam each way. */
+  n?: number;
 }
 
 export type Card = { kind: 'spell'; id: string; level: number; evolve?: boolean } | { kind: 'up'; id: string; up: string; level: number } | { kind: 'strength'; id: StrengthId; level: number };
@@ -211,6 +301,8 @@ export interface SpellStats {
   guard: number;
   heal: number;
   evo: boolean;
+  /** × the time between casts that its upgrades have made it, for what has no clock of its own (a dash-strike quickens the dash). */
+  rate?: number;
 }
 
 /** A blast with nothing else about it (a keg, a bomb). */
@@ -261,6 +353,23 @@ export interface Hero {
   struck: number;
   /** Goes up whenever what the hero holds changes, so a party only hears about it then. */
   rev: number;
+  /** What this keeper carries from the nights before (night.ts). */
+  boons: Partial<Record<BoonId, number>>;
+  wild: string | null;
+  kitted: boolean;
+  /** How far the cold has got in, from 0 to 1 (the Biting Cold). */
+  chill: number;
+  /** Seconds of venom left, and what it does a second. */
+  venom: number;
+  venomDps: number;
+  /** What a ward will still take before it breaks, the most it held, and the spell it is. */
+  ward: number;
+  wardMax: number;
+  wardSpell: string;
+  /** Where the dash under way began, and whether one has just ended (a dash-strike goes off then). */
+  dashFromX: number;
+  dashFromY: number;
+  dashed: boolean;
 }
 
 function rng(seed: number): () => number {
@@ -303,11 +412,15 @@ export interface VigilOptions {
   obstacles?: Obstacle[];
   /** Who keeps the watch, when it's more than one. */
   party?: { id: number; cls: ClassId; name: string }[];
+  /** The rules the night plays by: the land's own unless said (the week's watch adds an omen). */
+  rules?: RuleId[];
+  /** What each hero carries from the nights before, by their id. */
+  kits?: Record<number, HeroKit>;
 }
 
 const STILL: VigilInput = { mx: 0, my: 0 };
 
-function newHero(id: number, cls: ClassId, name: string, x: number, y: number): Hero {
+function newHero(id: number, cls: ClassId, name: string, x: number, y: number, kit?: HeroKit): Hero {
   return {
     id,
     cls,
@@ -320,7 +433,7 @@ function newHero(id: number, cls: ClassId, name: string, x: number, y: number): 
     vy: 0,
     dirX: 0,
     dirY: 1,
-    hp: CLASS_BODY[cls].hp,
+    hp: classHealth(cls) * (1 + (kit?.boons.hearth ?? 0) * 0.04),
     iframe: 0,
     spells: { [firstSpell(cls).id]: 1 },
     took: {},
@@ -328,7 +441,7 @@ function newHero(id: number, cls: ClassId, name: string, x: number, y: number): 
     strengths: {},
     cards: null,
     owed: 0,
-    rerolls: 3,
+    rerolls: 3 + (kit?.boons.rethink ?? 0),
     cardT: 0,
     cool: {},
     spin: {},
@@ -347,8 +460,24 @@ function newHero(id: number, cls: ClassId, name: string, x: number, y: number): 
     windUsed: false,
     struck: 0,
     rev: 0,
+    boons: kit?.boons ?? {},
+    wild: kit?.wild ?? null,
+    kitted: !!kit,
+    chill: 0,
+    venom: 0,
+    venomDps: 0,
+    ward: 0,
+    wardMax: 0,
+    wardSpell: '',
+    dashFromX: x,
+    dashFromY: y,
+    dashed: false,
   };
 }
+
+const TAU = Math.PI * 2;
+const CHAMP_WINDUP = 0.9;
+const FADE_AFTER = 9;
 
 export class Vigil {
   readonly map: VigilMap;
@@ -367,6 +496,8 @@ export class Vigil {
   sparks: Spark[] = [];
   fields: Field[] = [];
   pets: Pet[] = [];
+  posts: Post[] = [];
+  private sweeps: Sweep[] = [];
   pickups: Pickup[] = [];
   fx: Fx[] = [];
   /** What just happened, for a banner. */
@@ -378,13 +509,39 @@ export class Vigil {
   levelFlash = 0;
   /** The host keeps what's new here to send on. */
   fxOut: Fx[] | null = null;
+  readonly seed: number;
+  /** The rules this night plays by (night.ts's RULES). */
+  readonly rules: RuleId[];
+  /** What is happening this minute, if anything. */
+  event: NightEvent | null = null;
+  lanes: Lane[] = [];
+  zones: Zone[] = [];
+  /** Something worth knowing, said small under the clock: a land's rule turning, a new kind of foe. */
+  tip: { text: string; t: number } | null = null;
+  /** What the night has earned so far (night.ts's motesFor). */
+  feats: Feats = { champions: 0, events: 0 };
+  /** Every event this night has seen, in order; the ones won; and the champions felled, by name. */
+  eventLog: EventKind[] = [];
+  wonLog: EventKind[] = [];
+  /** What has hurt the heroes this night, by what it was (for tuning and the review's notes; not sent to a party). */
+  harm: Record<string, number> = {};
+  felledLog: string[] = [];
 
   private rand: () => number;
+  /** A second run of numbers, for what the night holds in store: the same for everyone on the same seed, however they play. */
+  private fate: () => number;
+  private bag: EventKind[] = [];
+  private packLeft = 0;
+  private met = new Set<FoeAi>();
+  private tips: string[] = [];
+  private on: Partial<Record<RuleId, true>> = {};
+  private mires = new Map<number, Spot | null>();
+  private vents = new Map<number, Spot | null>();
+  private seen = new Set<number>();
   private nextId = 1;
   private spawnT = 0;
   private bossesDone = 0;
-  private nextEvent = 60;
-  private events = 0;
+  private nextEvent = 55;
   private grid = new Map<number, Foe[]>();
   private obstacles = new Map<number, Obstacle[]>();
   private beamHit = new Set<number>();
@@ -394,13 +551,20 @@ export class Vigil {
   private readonly bounds: { x0: number; y0: number; x1: number; y1: number };
 
   constructor(seed: number, x: number, y: number, o: VigilOptions = {}) {
+    this.seed = seed >>> 0 || 1;
     this.rand = rng(seed);
+    this.fate = rng((this.seed ^ 0x9e3779b9) >>> 0);
     this.map = o.map ?? VIGIL_MAPS[0]!;
+    this.rules = o.rules ?? [this.map.rule];
+    for (const r of this.rules) {
+      this.on[r] = true;
+      this.tips.push(`${RULES[r].name}: ${RULES[r].text}`);
+    }
     this.solid = o.solid ?? (() => false);
     this.bounds = o.bounds ?? { x0: 0, y0: 0, x1: 4000, y1: 4000 };
     this.waves = foesOf(this.map);
     const party = o.party?.length ? o.party : [{ id: 0, cls: o.cls ?? ('mage' as ClassId), name: 'You' }];
-    this.heroes = party.map((p, i) => newHero(p.id, p.cls, p.name, x + (i - (party.length - 1) / 2) * 22, y));
+    this.heroes = party.map((p, i) => newHero(p.id, p.cls, p.name, x + (i - (party.length - 1) / 2) * 22, y, o.kits?.[p.id]));
     this.scale = partyScale(party.length);
     this.maxFoes = party.length > 1 ? MAX_FOES_PARTY : MAX_FOES;
     for (const ob of o.obstacles ?? []) this.addObstacle(ob);
@@ -463,10 +627,10 @@ export class Vigil {
     return h.strengths[id] ?? 0;
   }
   maxHpOf(h: Hero): number {
-    return CLASS_BODY[h.cls].hp * (1 + this.str(h, 'vigor') * 0.2) * (this.str(h, 'glass') ? 0.75 : 1);
+    return classHealth(h.cls) * (1 + this.str(h, 'vigor') * 0.2) * (this.str(h, 'glass') ? 0.75 : 1) * (1 + (h.boons.hearth ?? 0) * 0.04);
   }
   private powerOf(h: Hero): number {
-    return 1 + this.str(h, 'might') * 0.15 + this.str(h, 'glass') * 0.4;
+    return (1 + this.str(h, 'might') * 0.15 + this.str(h, 'glass') * 0.4 + (h.boons.edge ?? 0) * 0.03) * CLASS_EDGE[h.cls];
   }
   private paceOf(h: Hero): number {
     return Math.max(0.45, 1 - this.str(h, 'haste') * 0.1);
@@ -475,14 +639,29 @@ export class Vigil {
     return 1 + this.str(h, 'reach') * 0.12;
   }
   private speedOf(h: Hero): number {
-    return CLASS_BODY[h.cls].speed * (1 + this.str(h, 'swift') * 0.08) * (h.frenzyT > 0 ? 1.15 : 1);
+    return CLASS_BODY[h.cls].speed * (1 + this.str(h, 'swift') * 0.08) * (h.frenzyT > 0 ? 1.15 : 1) * (1 + (h.boons.stride ?? 0) * 0.02);
   }
   private pickupOf(h: Hero): number {
-    return 46 + this.str(h, 'magnet') * 18;
+    return (46 + this.str(h, 'magnet') * 18 + (h.boons.lode ?? 0) * 8) * (this.storming ? 0.5 : 1);
+  }
+  /** What a friend carries into the night, said by their own game as it begins: the host's can't know it otherwise. */
+  equip(id: number, kit: HeroKit): void {
+    const h = this.heroOf(id);
+    if (!h || h.kitted || this.t > 15) return;
+    h.kitted = true;
+    const before = this.maxHpOf(h);
+    h.boons = kit.boons;
+    h.wild = kit.wild;
+    h.hp += this.maxHpOf(h) - before;
+    h.rerolls += kit.boons.rethink ?? 0;
+    h.rev++;
   }
   /** How long until a dash, from empty. */
   dashEvery(h: Hero): number {
-    return Math.max(1, DASH_EVERY * 0.75 ** this.str(h, 'ghost'));
+    let k = 0.75 ** this.str(h, 'ghost');
+    // (a dash-strike quickened by its upgrades quickens the dash it rides on)
+    for (const id of Object.keys(h.spells)) if (SPELLS[id]?.kind === 'dash') k *= h.built[id]?.rate ?? 1;
+    return Math.max(1, DASH_EVERY * k);
   }
   /** How many kills fill the frenzy meter: it never gets too easy, however fast they fall. */
   private frenzyNeed(h: Hero): number {
@@ -513,7 +692,7 @@ export class Vigil {
     let dmg = 0;
     let every = 0;
     let size = 0;
-    const s: SpellStats = { ...PLAIN, l, slow: !!def.slow, pierce: def.pierce ?? 0 };
+    const s: SpellStats = { ...PLAIN, l, slow: !!def.slow, pierce: def.pierce ?? 0, stun: def.stun ?? 0, pull: !!def.pull, leech: def.leech ?? 0 };
     const add = (m: (typeof upgradesOf extends (d: SpellDef) => (infer U)[] ? U : never) | NonNullable<SpellDef['evolve']>): void => {
       dmg += m.dmg ?? 0;
       every += m.every ?? 0;
@@ -558,6 +737,14 @@ export class Vigil {
     s.burst *= area;
     s.crit += this.str(h, 'coin') * 0.08;
     s.heal = def.heal ? ((def.heal[0] + l * def.heal[1]) / 100) * (1 + dmg) : 0;
+    s.rate = Math.max(0.4, 1 + every);
+    // what is put on the ground stays longer and stands bigger with Fieldcraft; a ward holds more with Stout Heart
+    if (def.kind === 'mine' || def.kind === 'totem' || def.kind === 'field') {
+      const craft = this.str(h, 'craft');
+      s.last += craft * (def.kind === 'field' ? 0.5 : 1.5);
+      s.size *= 1 + craft * 0.06;
+    }
+    if (def.kind === 'ward') s.heal *= 1 + this.str(h, 'stout') * 0.2;
     return s;
   }
 
@@ -589,6 +776,9 @@ export class Vigil {
     }
     this.spawn(dt);
     this.buildGrid();
+    this.runEvent(dt);
+    this.runLanes(dt);
+    this.runRules(dt);
     this.moveFoes(dt);
     this.moveFoeShots(dt);
     this.landSlams(dt);
@@ -596,6 +786,8 @@ export class Vigil {
     this.runLater();
     this.moveShots(dt);
     this.burnFields(dt);
+    this.runPosts(dt);
+    this.runSweeps(dt);
     this.movePets(dt);
     this.moveSparks(dt);
     this.takePickups(dt);
@@ -604,6 +796,8 @@ export class Vigil {
     this.shake = Math.max(0, this.shake - dt * 32);
     this.levelFlash = Math.max(0, this.levelFlash - dt * 1.2);
     if (this.banner && (this.banner.t -= dt) <= 0) this.banner = null;
+    if (this.tip && (this.tip.t -= dt) <= 0) this.tip = null;
+    if (!this.tip && this.tips.length) this.tip = { text: this.tips.shift()!, t: 6 };
     if (this.foes.some((f) => f.dead)) this.foes = this.foes.filter((f) => !f.dead);
     if (this.shots.some((s) => s.dead)) this.shots = this.shots.filter((s) => !s.dead);
     if (this.foeShots.some((s) => s.dead)) this.foeShots = this.foeShots.filter((s) => !s.dead);
@@ -642,6 +836,8 @@ export class Vigil {
       h.dashX = h.dirX / dl;
       h.dashY = h.dirY / dl;
       h.dashT = DASH_SECONDS;
+      h.dashFromX = h.x;
+      h.dashFromY = h.y;
       h.dashCd = this.dashEvery(h);
       h.iframe = Math.max(h.iframe, DASH_SECONDS + 0.08);
       h.dashHit.clear();
@@ -650,6 +846,7 @@ export class Vigil {
     const speed = this.speedOf(h);
     if (h.dashT > 0) {
       h.dashT -= dt;
+      if (h.dashT <= 0) h.dashed = true;
       h.vx = h.dashX * speed * DASH_SPEED;
       h.vy = h.dashY * speed * DASH_SPEED;
       const ghost = this.str(h, 'ghost');
@@ -662,11 +859,18 @@ export class Vigil {
         });
       }
     } else {
-      h.vx = i.mx * k * speed;
-      h.vy = i.my * k * speed;
+      const foot = this.footing(h);
+      h.vx = i.mx * k * speed * foot;
+      h.vy = i.my * k * speed * foot;
     }
-    const nx = h.x + h.vx * dt;
-    const ny = h.y + h.vy * dt;
+    let nx = h.x + h.vx * dt;
+    let ny = h.y + h.vy * dt;
+    // the gale shoves whoever isn't in the middle of a dash
+    const gale = h.dashT > 0 ? null : this.gale();
+    if (gale) {
+      nx += gale.x * dt;
+      ny += gale.y * dt;
+    }
     if (!this.solid(nx, h.y)) h.x = nx;
     if (!this.solid(h.x, ny)) h.y = ny;
     this.avoid(h, HERO_R * 0.8, 0);
@@ -733,6 +937,10 @@ export class Vigil {
       s.y += s.vy * dt;
     }
     for (const s of this.slams) s.t += dt;
+    for (const l of this.lanes) l.t += dt;
+    for (const z of this.zones) z.t += dt;
+    for (const p of this.posts) p.t += dt;
+    if (this.event) this.event.t += dt;
     for (const f of this.fields) f.life = Math.max(0, f.life - dt);
     for (const p of this.pickups) p.t += dt;
     this.t += dt;
@@ -814,6 +1022,11 @@ export class Vigil {
     return this.waves.filter((f) => this.t >= f.from && this.t < f.to);
   }
 
+  /** The plain Host that is in season: what a champion is made of, and what an event brings in a crowd. */
+  private plainSeason(): FoeDef[] {
+    return this.waves.filter((f) => this.t >= f.from && this.t < f.to && PLAIN_AI.includes(f.ai));
+  }
+
   private spawn(dt: number): void {
     // a champion on the hour
     const due = Math.floor(this.t / BOSS_EVERY);
@@ -821,16 +1034,22 @@ export class Vigil {
       this.bossesDone = due;
       const list = this.map.champions;
       const b = list[(due - 1) % list.length]!;
-      const season = this.inSeason();
+      const season = this.plainSeason();
       this.addFoe(season[season.length - 1] ?? this.waves[0]!, b.name, b.sprite);
       this.banner = { text: `${b.name} comes`, t: 3 };
     }
-    if (this.t >= this.nextEvent) {
-      this.nextEvent += 75;
-      this.wave();
+    // something happens about once a minute, but never on top of a champion's coming
+    if (!this.event && this.t >= this.nextEvent) {
+      const into = this.t % BOSS_EVERY;
+      if (BOSS_EVERY - into > 8 && (into > 18 || this.t < BOSS_EVERY)) {
+        this.nextEvent = this.t + 48 + this.fate() * 16;
+        this.beginEvent();
+      }
     }
     // the tide: a crowd from the first seconds, then a flood
-    const rate = tideAt(this.t) * this.scale.count;
+    let rate = tideAt(this.t) * this.scale.count;
+    if (this.on.tide && inPhase(this.t, TIDE)) rate *= 1.7;
+    if (this.event?.kind === 'hour') rate *= 2;
     this.spawnT += dt * rate;
     const pool = this.inSeason();
     const total = pool.reduce((a, f) => a + f.weight, 0);
@@ -838,39 +1057,339 @@ export class Vigil {
       this.spawnT -= 1;
       let n = this.rand() * total;
       const def = pool.find((f) => (n -= f.weight) < 0) ?? pool[0]!;
+      // the first of a kind that asks for a different answer is named, once
+      const kind = FOE_KINDS[def.ai];
+      if (kind && !this.met.has(def.ai)) {
+        this.met.add(def.ai);
+        this.tips.push(`${kind.name}: ${kind.text}`);
+      }
       // from a while in, one now and then stands out from the crowd: big, tough, and worth stopping for
       this.addFoe(def, null, null, undefined, this.t > 45 && this.rand() < 0.03);
     }
     if (this.spawnT > 1) this.spawnT = 1;
   }
 
-  /** Every so often the tide changes its mind: the Host closes in all around, or pours in from one side. */
-  private wave(): void {
-    const h = this.anyStanding();
-    const pool = this.inSeason();
-    if (!h || !pool.length) return;
-    const cheap = pool.reduce((a, f) => (f.hp < a.hp ? f : a));
-    const room = this.maxFoes - this.foes.length;
-    const n = Math.min(room, Math.round((6 + this.t / 8) * this.scale.count));
-    if (this.events++ % 2 === 0) {
-      for (let i = 0; i < n; i++) {
-        const a = (i / n) * Math.PI * 2;
+  /* -------------------------------------------------------------- what happens during a night */
+
+  /** Room for what an event must bring, however full the night is: the newest of the plain Host step back into the dark. */
+  private makeRoom(n: number): void {
+    let over = this.foes.length + n - this.maxFoes;
+    for (let i = this.foes.length - 1; i >= 0 && over > 0; i--) {
+      const f = this.foes[i]!;
+      if (f.dead || f.boss || f.elite) continue;
+      f.dead = true;
+      over--;
+    }
+  }
+
+  private within(x: number, y: number): { x: number; y: number } {
+    const b = this.bounds;
+    return { x: Math.max(b.x0 + 20, Math.min(b.x1 - 20, x)), y: Math.max(b.y0 + 20, Math.min(b.y1 - 20, y)) };
+  }
+
+  /** The next thing from the night's bag: every kind comes once before any comes again. */
+  private beginEvent(): void {
+    const up = this.standing();
+    const h = up[Math.floor(this.fate() * up.length)];
+    const plain = this.plainSeason();
+    if (!h || !plain.length) return;
+    if (!this.bag.length) {
+      this.bag = [...EVENT_KINDS];
+      for (let i = this.bag.length - 1; i > 0; i--) {
+        const j = Math.floor(this.fate() * (i + 1));
+        [this.bag[i], this.bag[j]] = [this.bag[j]!, this.bag[i]!];
+      }
+    }
+    // (the night's first is never the hardest two: a pack or a ring in the first minute ended nights played by hand)
+    if (!this.eventLog.length && (this.bag[this.bag.length - 1] === 'pack' || this.bag[this.bag.length - 1] === 'ring')) {
+      const at = this.bag.findIndex((k) => k !== 'pack' && k !== 'ring');
+      const top = this.bag.length - 1;
+      if (at >= 0) [this.bag[at], this.bag[top]] = [this.bag[top]!, this.bag[at]!];
+    }
+    const kind = this.bag.pop()!;
+    const e: NightEvent = { kind, t: 0, dur: EVENTS[kind].secs, x: h.x, y: h.y, prog: 0, trait: 0, n: 0 };
+    const cheap = plain.reduce((a, f) => (f.hp < a.hp ? f : a));
+    const asked = Math.round((6 + this.t / 8) * this.scale.count);
+    let crowd = Math.min(Math.max(0, this.maxFoes - this.foes.length), asked);
+    // (a ring or a swarm is still one when the night is full: some of the crowd gives way to it)
+    const least = Math.min(asked, 30);
+    if ((kind === 'ring' || kind === 'swarm') && crowd < least) {
+      this.makeRoom(least);
+      crowd = least;
+    }
+    let name = EVENTS[kind].name;
+    if (kind === 'pack') {
+      e.trait = 1 + Math.floor(this.fate() * 3);
+      e.n = 2 + this.heroes.length;
+      this.makeRoom(e.n);
+      const a = this.fate() * TAU;
+      for (let i = 0; i < e.n; i++) {
+        const b = a + (i - (e.n - 1) / 2) * 0.2;
+        this.addFoe(plain[plain.length - 1]!, null, null, { x: h.x + Math.cos(b) * 205, y: h.y + Math.sin(b) * 205 }, true, e.trait, true);
+      }
+      this.packLeft += e.n;
+      name = `${name}: ${TRAITS[e.trait]!.name}`;
+    } else if (kind === 'run') {
+      // three paths, one after another, each through where a hero stands now
+      for (let i = 0; i < 3; i++) {
+        const a = this.fate() * Math.PI;
+        const off = (this.fate() - 0.5) * 44;
+        this.lanes.push({ x: h.x - Math.sin(a) * off, y: h.y + Math.cos(a) * off, a, t: -i * 1.3, hit: new Set() });
+      }
+    } else if (kind === 'ring') {
+      for (let i = 0; i < crowd; i++) {
+        const a = (i / crowd) * TAU;
         this.addFoe(cheap, null, null, { x: h.x + Math.cos(a) * 190, y: h.y + Math.sin(a) * 150 });
       }
-      this.banner = { text: 'They’re closing in!', t: 2.4 };
-    } else {
-      const rush = pool.find((f) => f.ai === 'rush') ?? cheap;
-      const a0 = this.rand() * Math.PI * 2;
-      for (let i = 0; i < n; i++) {
+    } else if (kind === 'swarm') {
+      const rush = plain.find((f) => f.ai === 'rush') ?? cheap;
+      const a0 = this.fate() * TAU;
+      for (let i = 0; i < crowd; i++) {
         const a = a0 + (this.rand() - 0.5) * 0.9;
         const d = 215 + this.rand() * 60;
         this.addFoe(rush, null, null, { x: h.x + Math.cos(a) * d, y: h.y + Math.sin(a) * d });
       }
-      this.banner = { text: 'A swarm, out of the dark!', t: 2.4 };
+    } else if (kind === 'lantern') {
+      const a = this.fate() * TAU;
+      const d = 100 + this.fate() * 50;
+      const at = this.within(h.x + Math.cos(a) * d, h.y + Math.sin(a) * d);
+      this.avoid(at, LANTERN_R * 0.5, 0);
+      e.x = at.x;
+      e.y = at.y;
+    } else if (kind === 'thief') {
+      const a = this.fate() * TAU;
+      this.makeRoom(1);
+      this.addFoe(plain.find((f) => f.ai === 'rush') ?? cheap, null, null, this.within(h.x + Math.cos(a) * 150, h.y + Math.sin(a) * 150), true, TRAIT.thief);
+      e.n = this.nextId - 1;
+    }
+    this.event = e;
+    this.eventLog.push(kind);
+    this.banner = { text: name, t: 2.8 };
+  }
+
+  private endEvent(won: boolean, say?: string): void {
+    if (won) {
+      this.feats.events++;
+      if (this.event) this.wonLog.push(this.event.kind);
+    }
+    this.event = null;
+    if (say) this.banner = { text: say, t: 2.4 };
+  }
+
+  private runEvent(dt: number): void {
+    const e = this.event;
+    if (!e) return;
+    e.t += dt;
+    if (e.kind === 'lantern') {
+      const lit = this.heroes.some((h) => !h.down && Math.hypot(h.x - e.x, h.y - e.y) < LANTERN_R);
+      e.prog = lit ? e.prog + dt / LANTERN_HOLD : Math.max(0, e.prog - dt * 0.12);
+      if (e.prog >= 1) {
+        // lit: everyone is mended a good deal and gets a choice, as from a chest
+        for (const h of this.heroes) {
+          if (!h.down) this.healBy(h, 0.35, 'holy', '#fff0a8');
+          h.owed++;
+        }
+        this.addFx({ kind: 'level', x: e.x, y: e.y, t: 0, dur: 0.8, el: 'holy', color: '#ffe39a' });
+        this.endEvent(true, 'The lantern is lit! Everyone chooses');
+        return;
+      }
+    } else if (e.kind === 'thief') {
+      const thief = this.foes.find((f) => f.id === e.n && !f.dead);
+      if (thief) {
+        e.x = thief.x;
+        e.y = thief.y;
+        if (e.t >= e.dur) {
+          thief.dead = true;
+          this.addFx({ kind: 'summon', x: thief.x, y: thief.y, t: 0, dur: 0.6, el: 'shadow', color: '#b080ff' });
+        }
+      }
+    } else if (e.kind === 'pack') {
+      e.prog = e.n ? 1 - Math.min(e.n, this.packLeft) / e.n : 0;
+    }
+    if (e.t < e.dur || this.event !== e) return;
+    if (e.kind === 'lantern') this.endEvent(false, 'The lantern gutters out');
+    else if (e.kind === 'thief') this.endEvent(false, 'The thief slipped away');
+    else if (e.kind === 'pack') this.endEvent(false);
+    // the rest are won by still being on your feet when they pass
+    else this.endEvent(this.heroes.every((h) => !h.down));
+  }
+
+  /** The Wild Run's paths: marked, then run down by a herd that tramples the Host and the heroes alike. */
+  private runLanes(dt: number): void {
+    if (!this.lanes.length) return;
+    for (const l of this.lanes) {
+      const was = l.t;
+      l.t += dt;
+      if (l.t < LANE_WARN) continue;
+      const c = Math.cos(l.a);
+      const n = Math.sin(l.a);
+      const inLane = (x: number, y: number, r: number): boolean => Math.abs((x - l.x) * n - (y - l.y) * c) < LANE_W + r && Math.abs((x - l.x) * c + (y - l.y) * n) < LANE_LEN / 2;
+      if (was < LANE_WARN) {
+        this.shake = Math.max(this.shake, 6);
+        for (const f of this.foes) if (!f.dead && inLane(f.x, f.y, f.r)) this.hurt(f, f.maxHp * (f.boss ? 0.04 : 0.6), this.me);
+      }
+      for (const h of this.heroes) {
+        if (h.down || l.hit.has(h.id) || !inLane(h.x, h.y, HERO_R)) continue;
+        // (a dash through it is a dash through it: only a blow that lands counts)
+        if (h.iframe > 0) continue;
+        l.hit.add(h.id);
+        this.wound(h, 20 * this.bite, undefined, 'the Wild Run');
+      }
+    }
+    this.lanes = this.lanes.filter((l) => l.t < LANE_WARN + LANE_RUN);
+  }
+
+  /* -------------------------------------------------------------- the land's rule */
+
+  /** How hard the land itself hits, this far into the night: as the Host's blows grow. */
+  private get bite(): number {
+    return (1 + (this.grown - 1) * 0.45) * this.scale.dmg;
+  }
+
+  /** Whether a sandstorm is blowing. */
+  get storming(): boolean {
+    return !!this.on.storm && inPhase(this.t, STORM);
+  }
+
+  /** The push of the wind right now, if it is blowing. */
+  gale(): { x: number; y: number } | null {
+    if (!this.on.gale || !inPhase(this.t, GALE)) return null;
+    const a = galeAngle(this.seed, this.t);
+    return { x: Math.cos(a) * GALE_PUSH, y: Math.sin(a) * GALE_PUSH };
+  }
+
+  private spotAt(cache: Map<number, Spot | null>, of: (seed: number, cx: number, cy: number) => Spot | null, cx: number, cy: number): Spot | null {
+    const k = this.obKey(cx, cy);
+    let s = cache.get(k);
+    if (s === undefined) {
+      s = of(this.seed, cx, cy);
+      cache.set(k, s);
+    }
+    return s;
+  }
+
+  /** Standing in a bog pool. */
+  inMire(x: number, y: number): boolean {
+    const s = this.spotAt(this.mires, mireIn, Math.floor(x / MIRE_CELL), Math.floor(y / MIRE_CELL));
+    return !!s && Math.hypot(x - s.x, y - s.y) < s.r;
+  }
+
+  /** How fast the ground lets a hero go: bog and bramble hold the feet. */
+  private footing(h: Hero): number {
+    let k = 1;
+    if (this.on.mire && this.inMire(h.x, h.y)) k *= 0.55;
+    if (this.on.bramble && this.zones.some((z) => z.kind === 'bramble' && z.t > 0 && Math.hypot(h.x - z.x, h.y - z.y) < z.r)) k *= 0.65;
+    return k;
+  }
+
+  /** What wears a hero down without striking them: cold, venom, thorns. Not through a dash. */
+  private sap(h: Hero, dmg: number, why = 'the land'): void {
+    if (h.down || h.dashT > 0) return;
+    this.harm[why] = (this.harm[why] ?? 0) + dmg;
+    h.hp -= dmg;
+    if (h.hp <= 0) this.fall(h);
+  }
+
+  private runRules(dt: number): void {
+    const t = this.t;
+    const was = t - dt;
+    const on = this.on;
+    if (this.zones.length) {
+      for (const z of this.zones) z.t += dt;
+      this.zones = this.zones.filter((z) => z.t < z.dur);
+    }
+    for (const h of this.heroes) {
+      if (h.venom > 0 && !h.down) {
+        h.venom -= dt;
+        this.sap(h, h.venomDps * dt, 'venom');
+      }
+    }
+    if (on.glade) {
+      if (crossed(was, t, 36, 10)) {
+        const h = this.anyStanding();
+        if (h) {
+          const a = this.rand() * TAU;
+          const at = this.within(h.x + Math.cos(a) * 90, h.y + Math.sin(a) * 90);
+          this.zones.push({ kind: 'glade', ...at, r: 36, t: 0, dur: 14 });
+          this.tips.push('A glade opens: stand in its light');
+        }
+      }
+      for (const z of this.zones) {
+        if (z.kind !== 'glade') continue;
+        for (const h of this.heroes) if (!h.down && Math.hypot(h.x - z.x, h.y - z.y) < z.r) this.heal(h, this.maxHpOf(h) * 0.05 * dt);
+      }
+    }
+    if (on.bramble) {
+      if (crossed(was, t, 13, 6)) {
+        for (const h of this.standing()) {
+          // a little ahead of where they are going
+          const d = Math.hypot(h.dirX, h.dirY) || 1;
+          if (this.zones.length >= 10) this.zones.shift();
+          this.zones.push({ kind: 'bramble', x: h.x + (h.dirX / d) * 34, y: h.y + (h.dirY / d) * 34, r: 30, t: -1.4, dur: 24 });
+        }
+      }
+      for (const z of this.zones) {
+        if (z.kind !== 'bramble' || z.t <= 0) continue;
+        for (const h of this.heroes) if (Math.hypot(h.x - z.x, h.y - z.y) < z.r) this.sap(h, 7 * this.bite * dt, 'bramble');
+        this.around(z.x, z.y, z.r + 12, (f) => {
+          if (Math.hypot(f.x - z.x, f.y - z.y) < z.r + f.r) f.slow = Math.max(f.slow, 0.3);
+        });
+      }
+    }
+    if (on.rockfall && crossed(was, t, 10, 7)) {
+      for (let i = 0; i < 2 + this.heroes.length; i++) {
+        const h = this.anyStanding();
+        if (h) this.slams.push({ x: h.x + (this.rand() - 0.5) * 130, y: h.y + (this.rand() - 0.5) * 130, r: 30, dmg: 16 * this.bite, t: 0, dur: 1.5, both: 0.6, tone: 1 });
+      }
+    }
+    if (on.tide) {
+      if (crossed(was, t, TIDE.every, TIDE.from - TIDE.warn)) this.tips.push('The tide is coming in');
+      if (crossed(was, t, TIDE.every, TIDE.to)) {
+        for (const g of this.sparks) g.pulled = true;
+        this.tips.push('The tide goes out, and brings the sparks to you');
+      }
+    }
+    if (on.gale && crossed(was, t, GALE.every, GALE.from - GALE.warn)) this.tips.push('The gale is rising');
+    if (on.storm && crossed(was, t, STORM.every, STORM.from - STORM.warn)) this.tips.push('A sandstorm is coming');
+    if (on.cold) {
+      for (const h of this.heroes) {
+        if (h.down) continue;
+        const still = Math.hypot(h.vx, h.vy) < 12;
+        h.chill = Math.max(0, Math.min(1, h.chill + (still ? dt / 2.5 : -dt / 1.2)));
+        if (h.chill >= 1) this.sap(h, this.maxHpOf(h) * 0.06 * dt, 'cold');
+      }
+    }
+    if (on.vents && t > VENT_QUIET) {
+      this.seen.clear();
+      for (const h of this.heroes) {
+        if (h.down) continue;
+        for (let cx = Math.floor((h.x - 360) / VENT_CELL); cx <= Math.floor((h.x + 360) / VENT_CELL); cx++) {
+          for (let cy = Math.floor((h.y - 360) / VENT_CELL); cy <= Math.floor((h.y + 360) / VENT_CELL); cy++) {
+            const k = this.obKey(cx, cy);
+            if (this.seen.has(k)) continue;
+            this.seen.add(k);
+            const s = this.spotAt(this.vents, ventIn, cx, cy);
+            if (s && ventClock(s, t) < ventClock(s, was)) this.erupt(s);
+          }
+        }
+      }
     }
   }
 
-  private addFoe(def: FoeDef, boss: string | null, bossSprite: string | null, at?: { x: number; y: number }, elite = false): void {
+  /** A vent goes off: it burns whoever stands on it, the Host worst of all. */
+  private erupt(s: Spot): void {
+    this.addFx({ kind: 'burst', x: s.x, y: s.y, t: 0, dur: 0.5, el: 'fire', color: '#ff7a1e', r: s.r });
+    for (const h of this.heroes) {
+      const d = Math.hypot(h.x - s.x, h.y - s.y);
+      if (d < s.r) this.wound(h, 16 * this.bite, undefined, 'vent');
+      if (d < 120) this.shake = Math.max(this.shake, 5);
+    }
+    this.around(s.x, s.y, s.r + 12, (f) => {
+      if (Math.hypot(f.x - s.x, f.y - s.y) < s.r + f.r) this.hurt(f, f.maxHp * (f.boss ? 0.03 : 0.5), this.me);
+    });
+  }
+
+  private addFoe(def: FoeDef, boss: string | null, bossSprite: string | null, at?: { x: number; y: number }, elite = false, trait = 0, pack = false): void {
     const anchor = this.anyStanding() ?? this.me;
     const a = this.rand() * Math.PI * 2;
     const d = 210 + this.rand() * 50;
@@ -883,6 +1402,7 @@ export class Vigil {
     const first = !!boss && this.bossesDone <= 1;
     let hp = (boss ? Math.max(def.hp, 90) * tough * (first ? 30 : 38) * this.scale.boss : def.hp * tough) * this.scale.hp;
     if (elite) hp *= 5;
+    if (trait === TRAIT.stone || trait === TRAIT.thief) hp *= 1.6;
     this.foes.push({
       id: this.nextId++,
       def,
@@ -891,7 +1411,7 @@ export class Vigil {
       hp,
       maxHp: hp,
       dmg: def.dmg * (1 + (grown - 1) * 0.45) * (boss ? (first ? 1.45 : 1.8) : elite ? 1.25 : 1) * this.scale.dmg,
-      speed: def.speed * (boss ? 0.8 : elite ? 0.92 : 1),
+      speed: trait === TRAIT.thief ? 66 : def.speed * (boss ? 0.8 : elite ? 0.92 : 1) * (trait === TRAIT.swift ? 1.45 : 1),
       r: def.r * (boss ? 2 : elite ? 1.35 : 1),
       xp: def.xp * (boss ? 25 : elite ? 6 : 1),
       face: 0,
@@ -913,6 +1433,11 @@ export class Vigil {
       elite,
       boss,
       bossSprite,
+      trait,
+      pack,
+      rally: 0,
+      cast: 0,
+      shed: 0,
       dead: false,
     });
   }
@@ -948,11 +1473,16 @@ export class Vigil {
 
   private moveFoes(dt: number): void {
     const settle = Math.exp(-7 * dt);
+    const haste = this.storming ? 1.25 : 1;
+    const mire = !!this.on.mire;
+    const gale = this.gale();
     for (const f of this.foes) {
       if (f.dead) continue;
       f.flash = Math.max(0, f.flash - dt);
       f.slow = Math.max(0, f.slow - dt);
       f.immune = Math.max(0, f.immune - dt);
+      f.rally = Math.max(0, f.rally - dt);
+      f.shed = Math.max(0, f.shed - dt);
       if (f.kx || f.ky) {
         f.x += f.kx * dt;
         f.y += f.ky * dt;
@@ -978,22 +1508,59 @@ export class Vigil {
       const d = Math.hypot(dx, dy) || 1;
       const ux = dx / d;
       const uy = dy / d;
-      const sp = f.speed * (f.slow > 0 ? 0.55 : 1);
+      let sp = f.speed * (f.slow > 0 ? 0.55 : 1) * haste;
+      if (f.rally > 0) sp *= 1.3;
+      if (mire && this.inMire(f.x, f.y)) sp *= 0.6;
       let mx = ux * sp;
       let my = uy * sp;
       let hits = f.dmg;
+      const ai = f.def.ai;
       if (f.boss) {
-        // a champion walks and slams: the ring shows where, and there is time to leave it
-        if ((f.fireT -= dt) <= 0 && d < 170) {
-          f.fireT = 5.5;
-          this.slams.push({ x: h.x, y: h.y, r: 46 + f.r, dmg: f.dmg * 1.3, t: 0, dur: 1.1 });
+        // a champion walks, slams, and has an attack of its own: each shows where before it lands
+        if (f.mode === 1) {
+          mx = 0;
+          my = 0;
+          if ((f.modeT -= dt) <= 0) {
+            f.mode = 2;
+            f.modeT = 0.6;
+          }
+        } else if (f.mode === 2) {
+          mx = f.aimX * sp * 4.2;
+          my = f.aimY * sp * 4.2;
+          hits = f.dmg * 1.3;
+          if ((f.modeT -= dt) <= 0) {
+            f.mode = 3;
+            f.modeT = 1;
+          }
+        } else if (f.mode === 3) {
+          mx *= 0.3;
+          my *= 0.3;
+          if ((f.modeT -= dt) <= 0) f.mode = 0;
+        } else if (f.mode === 4) {
+          mx = 0;
+          my = 0;
+          if ((f.modeT -= dt) <= 0) {
+            f.mode = 0;
+            this.champCast(f);
+          }
+        } else if ((f.fireT -= dt) <= 0 && d < 190) {
+          f.fireT = 4.4;
+          if (f.cast++ % 2 === 0) this.slams.push({ x: h.x, y: h.y, r: 46 + f.r, dmg: f.dmg * 1.3, t: 0, dur: 1.1 });
+          else this.champMove(f, ux, uy);
         }
-      } else if (f.def.ai === 'rush') {
+      } else if (f.trait === TRAIT.thief) {
+        // runs from whoever is near, never far out of reach, and never bites
+        const flee = d < 150 ? -1 : d > 230 ? 0.6 : 0;
+        const weave = Math.sin(this.t * 3 + f.id) * 0.7 * sp;
+        mx = ux * sp * flee - uy * weave;
+        my = uy * sp * flee + ux * weave;
+        hits = 0;
+      } else if (ai === 'rush') {
         // low and weaving
         const weave = Math.sin(this.t * 7 + f.id) * 0.45 * sp;
         mx += -uy * weave;
         my += ux * weave;
-      } else if (f.def.ai === 'shoot') {
+      } else if (ai === 'shoot') {
         // keeps its distance and throws
         if (d < 80) {
           mx *= -0.5;
@@ -1006,7 +1573,7 @@ export class Vigil {
           f.fireT = 2.4 + this.rand() * 1.2;
           this.foeShots.push({ x: f.x, y: f.y - f.r, vx: ux * 72, vy: uy * 72, r: 3.5, dmg: f.dmg * 0.8, life: 3.6, dead: false });
         }
-      } else if (f.def.ai === 'charge') {
+      } else if (ai === 'charge') {
         // stops, lowers its head (the drawing shows which way) and comes, fast, in a straight line
         f.modeT -= dt;
         if (f.mode === 0 && f.modeT <= 0 && d < 130) {
@@ -1037,6 +1604,25 @@ export class Vigil {
             f.modeT = 1.5;
           }
         }
+      } else if (ai === 'rally') {
+        // hangs back, and its voice carries: those near it come on faster and shrug off more
+        if (d < 96) {
+          mx *= -0.6;
+          my *= -0.6;
+        } else if (d < 132) {
+          mx = 0;
+          my = 0;
+        }
+        this.around(f.x, f.y, RALLY_R, (o) => {
+          if (o !== f && !o.boss && o.def.ai !== 'rally') o.rally = 0.4;
+        });
+      } else if (ai === 'burst') {
+        // it doesn't bite: it gets to you and goes off (kill() leaves the blast)
+        hits = 0;
+        if (d < f.r + HERO_R + 9) {
+          this.kill(f, h);
+          continue;
+        }
       }
       // shoulder apart from neighbors, so the Host spreads into a crowd rather than a stack
       this.around(f.x, f.y, f.r + 10, (o) => {
@@ -1051,6 +1637,10 @@ export class Vigil {
           my += (oy / od) * push;
         }
       });
+      if (gale) {
+        f.x += gale.x * 0.55 * dt;
+        f.y += gale.y * 0.55 * dt;
+      }
       f.x += mx * dt;
       f.y += my * dt;
       // around a tree, not through it: odd ones go left of it and even ones right, so a crowd splits
@@ -1059,14 +1649,63 @@ export class Vigil {
         f.face = Math.atan2(my, mx);
         f.walk += dt;
       }
+      if (f.trait === TRAIT.thief) {
+        // (it stays on the ground a hero can reach)
+        const at = this.within(f.x, f.y);
+        f.x = at.x;
+        f.y = at.y;
+        continue;
+      }
       // the hero far outrun: it comes around again on the near side instead of trailing forever
       if (d > 430 && !f.boss) {
         const a = this.rand() * Math.PI * 2;
         f.x = h.x + Math.cos(a) * 240;
         f.y = h.y + Math.sin(a) * 240;
       }
-      if (d < f.r + HERO_R) this.wound(h, hits, f);
+      if (hits > 0 && d < f.r + HERO_R) this.wound(h, hits, f);
     }
+  }
+
+  /** A champion's own attack begins: what it is comes from the land's list (kit.ts). */
+  private champMove(f: Foe, ux: number, uy: number): void {
+    const move = this.map.champions.find((c) => c.name === f.boss)?.move ?? 'ring';
+    if (move === 'charge') {
+      f.mode = 1;
+      f.modeT = CHAMP_WINDUP;
+      f.aimX = ux;
+      f.aimY = uy;
+    } else if (move === 'ring') {
+      // safe close in: run to it, or well away
+      this.slams.push({ x: f.x, y: f.y, r: 150, inner: f.r + 46, dmg: f.dmg * 1.2, t: 0, dur: 1.5 });
+    } else if (move === 'rake') {
+      const a0 = Math.atan2(uy, ux);
+      for (let i = -1; i <= 1; i++) this.slams.push({ x: f.x, y: f.y, r: 0, a: a0 + i * 0.6, len: 230, w: 14, dmg: f.dmg * 1.2, t: 0, dur: 1.05 + Math.abs(i) * 0.3 });
+    } else {
+      f.mode = 4;
+      f.modeT = CHAMP_WINDUP;
+      this.addFx({ kind: 'cast', x: f.x, y: f.y, t: 0, dur: CHAMP_WINDUP, el: 'shadow', color: '#ff6a4a' });
+    }
+  }
+
+  /** What a champion was gathering itself for. */
+  private champCast(f: Foe): void {
+    const move = this.map.champions.find((c) => c.name === f.boss)?.move;
+    if (move === 'volley') {
+      const a0 = this.rand() * TAU;
+      for (let i = 0; i < 12; i++) {
+        const a = a0 + (i / 12) * TAU;
+        this.foeShots.push({ x: f.x, y: f.y - f.r * 0.4, vx: Math.cos(a) * 62, vy: Math.sin(a) * 62, r: 3.5, dmg: f.dmg * 0.7, life: 4, dead: false });
+      }
+      return;
+    }
+    // a call: small quick ones run in to its side
+    const small = smallOf(this.plainSeason()[0] ?? this.waves[0]!);
+    const n = Math.min(Math.max(0, this.maxFoes - this.foes.length), 4 + this.heroes.length * 2);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU;
+      this.addFoe(small, null, null, { x: f.x + Math.cos(a) * (f.r + 16), y: f.y + Math.sin(a) * (f.r + 16) });
+    }
+    this.addFx({ kind: 'summon', x: f.x, y: f.y, t: 0, dur: 0.7, el: 'shadow', color: '#ff6a4a' });
   }
 
   private moveFoeShots(dt: number): void {
@@ -1080,10 +1719,24 @@ export class Vigil {
       for (const h of this.heroes) {
         if (h.down || Math.hypot(h.x - s.x, h.y - 5 - s.y) > HERO_R + s.r) continue;
         s.dead = true;
-        this.wound(h, s.dmg);
+        this.wound(h, s.dmg, undefined, 'shot');
         break;
       }
     }
+  }
+
+  /** Whether a point (as wide as `r`) is under a blow. */
+  inSlam(s: Slam, x: number, y: number, r = 0): boolean {
+    const dx = x - s.x;
+    const dy = y - s.y;
+    if (s.len) {
+      const c = Math.cos(s.a ?? 0);
+      const n = Math.sin(s.a ?? 0);
+      const along = dx * c + dy * n;
+      return along > -r && along < s.len + r && Math.abs(dx * n - dy * c) < (s.w ?? 12) + r;
+    }
+    const d = Math.hypot(dx, dy);
+    return d < s.r + r && d >= (s.inner ?? 0) - r;
   }
 
   private landSlams(dt: number): void {
@@ -1091,24 +1744,50 @@ export class Vigil {
     for (const s of this.slams) {
       s.t += dt;
       if (s.t < s.dur) continue;
-      this.addFx({ kind: 'slam', x: s.x, y: s.y, t: 0, dur: 0.45, el: 'shadow', color: '#ff6a4a', r: s.r });
-      this.shake = Math.max(this.shake, 8);
+      if (s.len) this.addFx({ kind: 'rake', x: s.x, y: s.y, t: 0, dur: 0.4, el: 'shadow', color: '#ff6a4a', a: s.a ?? 0, len: s.len, w: s.w ?? 12 });
+      else if (s.tone === 2) this.addFx({ kind: 'burst', x: s.x, y: s.y, t: 0, dur: 0.42, el: 'fire', color: '#ff7a1e', r: s.r });
+      else this.addFx({ kind: 'slam', x: s.x, y: s.y, t: 0, dur: 0.45, el: 'shadow', color: '#ff6a4a', r: s.r });
+      if (!s.tone) this.shake = Math.max(this.shake, 8);
       for (const h of this.heroes) {
-        if (Math.hypot(h.x - s.x, h.y - s.y) < s.r) this.wound(h, s.dmg);
+        if (this.inSlam(s, h.x, h.y)) this.wound(h, s.dmg, undefined, s.tone === 2 ? 'cinderbloat' : s.tone === 1 ? 'rockfall' : 'champion’s blow');
+      }
+      const both = s.both;
+      if (both) {
+        this.around(s.x, s.y, s.r + 12, (f) => {
+          if (this.inSlam(s, f.x, f.y, f.r)) this.hurt(f, f.maxHp * both * (f.boss ? 0.06 : 1), this.me);
+        });
       }
     }
     this.slams = this.slams.filter((s) => s.t < s.dur);
   }
 
   /** A foe (or what it threw) reaches a hero. */
-  private wound(h: Hero, dmg: number, f?: Foe): void {
+  private wound(h: Hero, dmg: number, f?: Foe, why = f ? (f.boss ? 'champion' : f.elite ? 'marked foe' : f.def.ai) : 'blow'): void {
     if (h.down || h.iframe > 0) return;
+    this.harm[why] = (this.harm[why] ?? 0) + dmg;
+    dmg *= 1 - this.str(h, 'stout') * 0.04;
+    if (h.ward > 0) {
+      // a ward takes the blow, and what is left of it if it breaks
+      const took = Math.min(h.ward, dmg);
+      h.ward -= took;
+      dmg -= took;
+      if (h.ward <= 0) this.breakWard(h);
+      if (dmg <= 0) {
+        h.iframe = 0.6;
+        return;
+      }
+    }
     h.hp -= dmg;
     h.iframe = 0.6;
     h.struck = 1;
     this.shake = Math.max(this.shake, 4);
     const thorns = this.str(h, 'thorns');
     if (f && thorns) this.hurt(f, 40 * thorns, h);
+    // a venomed wound keeps biting for a while
+    if (this.on.venom || f?.trait === TRAIT.venom) {
+      h.venom = 4;
+      h.venomDps = dmg * 0.1;
+    }
     if (h.hp <= 0) this.fall(h);
   }
 
@@ -1123,6 +1802,9 @@ export class Vigil {
     }
     h.hp = 0;
     h.down = true;
+    h.venom = 0;
+    h.chill = 0;
+    h.ward = 0;
     h.reviveT = 0;
     h.dashT = 0;
     if (this.heroes.length > 1 && this.standing().length) this.banner = { text: `${h.name} is down!`, t: 2.4 };
@@ -1152,6 +1834,11 @@ export class Vigil {
     if (!trickle) {
       f.flash = 0.08;
       if (dmg >= 6 && this.pops.length < 60) this.pops.push({ x: f.x, y: f.y - f.r - 6, n: Math.round(dmg), big: dmg >= 40 || crit, crit });
+      // a Spark Thief spills what it carries when it is struck
+      if (f.trait === TRAIT.thief && f.shed <= 0) {
+        f.shed = 0.35;
+        this.sparks.push({ x: f.x, y: f.y, xp: 2, age: 0, pulled: false, dead: false });
+      }
     }
     if (f.hp <= 0) this.kill(f, by ?? this.me);
   }
@@ -1161,13 +1848,65 @@ export class Vigil {
     this.kills++;
     if (this.falls.length < 60) this.falls.push({ x: f.x, y: f.y - f.r * 0.6, boss: !!f.boss, elite: f.elite });
     if (f.boss) this.shake = Math.max(this.shake, 14);
-    this.sparks.push({ x: f.x, y: f.y, xp: f.xp, pulled: false, dead: false });
+    this.sparks.push({ x: f.x, y: f.y, xp: f.xp, age: 0, pulled: false, dead: false });
     // a champion leaves a chest, for whoever gets to it first and everyone with them; a marked foe always leaves
     // something, and the crowd only now and then
-    if (f.boss) this.pickups.push({ kind: 'chest', x: f.x, y: f.y, t: 0, dead: false });
-    else if (f.elite || this.rand() < 0.005) this.drop(f.x, f.y);
+    if (f.boss) {
+      this.feats.champions++;
+      this.felledLog.push(f.boss);
+      this.pickups.push({ kind: 'chest', x: f.x, y: f.y, t: 0, dead: false });
+    } else if (f.trait === TRAIT.thief) {
+      // caught: its chest, and the sparks it stole
+      this.pickups.push({ kind: 'chest', x: f.x, y: f.y, t: 0, dead: false });
+      for (let i = 0; i < 6; i++) this.sparks.push({ x: f.x + (this.rand() - 0.5) * 30, y: f.y + (this.rand() - 0.5) * 30, xp: 3, age: 0, pulled: false, dead: false });
+      this.feats.events++;
+      this.wonLog.push('thief');
+      if (this.event?.kind === 'thief') this.event = null;
+      this.banner = { text: 'Caught! The thief drops a chest', t: 2.4 };
+    } else if (f.pack) {
+      // the last of an Ashsworn pack leaves the chest
+      if (--this.packLeft === 0) {
+        this.pickups.push({ kind: 'chest', x: f.x, y: f.y, t: 0, dead: false });
+        this.feats.events++;
+        this.wonLog.push('pack');
+        if (this.event?.kind === 'pack') this.event = null;
+        this.banner = { text: 'The pack is broken: a chest!', t: 2.4 };
+      } else this.drop(f.x, f.y);
+    } else if (f.elite || this.rand() < 0.005) this.drop(f.x, f.y);
+    const kind = f.boss ? undefined : (f.def as FoeDef | undefined);
+    if (kind) {
+      const ai = kind.ai;
+      if (ai === 'split') {
+        // a Twinhusk breaks in two: small, quick, and thrown apart
+        const small = smallOf(f.def);
+        for (let i = 0; i < 2 && this.foes.length < this.maxFoes + 2; i++) {
+          const a = this.rand() * TAU;
+          this.addFoe(small, null, null, { x: f.x + Math.cos(a) * 7, y: f.y + Math.sin(a) * 7 });
+          const c = this.foes[this.foes.length - 1]!;
+          c.kx = Math.cos(a) * 70;
+          c.ky = Math.sin(a) * 70;
+        }
+      } else if (ai === 'burst' && this.slams.length < 40) {
+        // a Cinderbloat goes off where it died, a moment later: on the Host around it as much as on you
+        this.slams.push({ x: f.x, y: f.y, r: 22 + f.r, dmg: f.dmg * 1.5, t: 0, dur: 0.75, both: 0.35, tone: 2 });
+      }
+      // in the barrows, some of the fallen get up again
+      if (this.on.graves && !f.elite && !kind.base && this.rand() < 0.14) {
+        const { x, y, def } = f;
+        this.addFx({ kind: 'grave', x, y, t: 0, dur: 2.4, el: 'shadow', color: '#b8b0d8', r: 12 });
+        this.after(2.4, () => {
+          if (this.foes.length < this.maxFoes) this.addFoe(smallOf(def), null, null, { x, y });
+        });
+      }
+    }
+    // (a kill feeds a hero with the Fang only as fast as anything else does: when the Host fell by the hundred, a kill
+    // each gave back more than it could ever take, and a night past its fifth minute could not be lost)
     const fang = this.str(by, 'fang');
-    if (fang) this.heal(by, fang * 0.5);
+    if (fang) {
+      const take = Math.min(by.leechLeft, fang * 0.5);
+      by.leechLeft -= take;
+      this.heal(by, take);
+    }
     const keg = this.str(by, 'keg');
     if (keg && this.rand() < keg * 0.08) {
       const dmg = f.maxHp * 0.6 + 15;
@@ -1270,18 +2009,30 @@ export class Vigil {
   private land(h: Hero, f: Foe, st: SpellStats, dmg: number, fromX: number, fromY: number, dt = 0): void {
     if (f.dead) return;
     const crit = st.crit > 0 && this.rand() < st.crit;
-    this.hurt(f, dmg * (h.frenzyT > 0 ? 1.2 : 1) * (crit ? 2 : 1), h, crit, dt > 0);
+    let turned = 1;
+    if (!f.boss) {
+      // heartened by a Hostcaller, it shrugs off a third
+      if (f.rally > 0) turned *= 0.65;
+      // a Wallbearer on its feet turns most of what comes at its front
+      if (f.def.ai === 'guard' && f.frozen <= 0 && f.stun <= 0) {
+        const sx = fromX - f.x;
+        const sy = fromY - f.y;
+        if (sx * Math.cos(f.face) + sy * Math.sin(f.face) > 0.35 * (Math.hypot(sx, sy) || 1)) turned *= 0.4;
+      }
+    }
+    this.hurt(f, dmg * turned * (h.frenzyT > 0 ? 1.2 : 1) * (crit ? 2 : 1), h, crit, dt > 0);
     if (st.slow) f.slow = Math.max(f.slow, dt ? 0.5 : 2);
-    if (st.freeze && !f.boss && f.immune <= 0) {
+    const stone = f.trait === TRAIT.stone;
+    if (st.freeze && !f.boss && !stone && f.immune <= 0) {
       f.frozen = 1.6;
       f.immune = 2.8;
     }
-    if (st.stun && f.immune <= 0) {
+    if (st.stun && !stone && f.immune <= 0) {
       const d = st.stun * (f.boss ? 0.3 : 1);
       f.stun = d;
       f.immune = d + 1.2;
     }
-    const heavy = f.boss ? 0.15 : f.elite ? 0.5 : 1;
+    const heavy = f.boss ? 0.15 : stone ? 0 : f.elite ? 0.5 : 1;
     const away = st.pull ? -90 : st.knock || (dt ? 0 : 16);
     if (away) {
       const dx = f.x - fromX;
@@ -1324,6 +2075,7 @@ export class Vigil {
       if (def.kind === 'orbit') this.castOrbit(h, def, s, dt);
       else if (def.kind === 'aura') this.castAura(h, s, dt);
       else if (def.kind === 'pet') this.syncPets(h, def, s.n);
+      else if (def.kind === 'dash') this.castDash(h, def, s);
       // the rest come round on a clock, and wait for something to hit
       else {
         const left = (h.cool[id] ?? 0) - dt * pace;
@@ -1338,6 +2090,7 @@ export class Vigil {
         }
       }
     }
+    h.dashed = false;
   }
 
   private cast(h: Hero, def: SpellDef, s: SpellStats): boolean {
@@ -1362,14 +2115,22 @@ export class Vigil {
         return this.castPulse(h, def, s);
       case 'boomerang':
         return this.castBoomerang(h, def, s);
+      case 'mine':
+        return this.castMine(h, def, s);
+      case 'totem':
+        return this.castTotem(h, def, s);
+      case 'sweep':
+        return this.castSweep(h, def, s);
+      case 'ward':
+        return this.castWard(h, def, s);
       default:
         return false;
     }
   }
 
-  private shoot(h: Hero, def: SpellDef, s: SpellStats, ang: number, speed: number, r: number, life: number, back: boolean, pierce: number): void {
+  private shoot(h: Hero, def: SpellDef, s: SpellStats, ang: number, speed: number, r: number, life: number, back: boolean, pierce: number, from: { x: number; y: number } = h): void {
     if (this.shots.length >= MAX_SHOTS) return;
-    this.shots.push({ owner: h.id, spell: def.id, el: def.el, x: h.x, y: h.y - 6, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r, dmg: s.dmg, life, pierce, bounce: s.bounce, color: def.color, back, spin: 0, st: s, hit: new Set(), dead: false });
+    this.shots.push({ owner: h.id, spell: def.id, el: def.el, x: from.x, y: from.y - 6, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r, dmg: s.dmg, life, pierce, bounce: s.bounce, color: def.color, back, spin: 0, st: s, hit: new Set(), dead: false });
   }
 
   private castBolt(h: Hero, def: SpellDef, s: SpellStats): boolean {
@@ -1381,7 +2142,9 @@ export class Vigil {
       any = true;
       taken.add(t.id);
       const ang = Math.atan2(t.y - h.y, t.x - h.x) + (i ? (this.rand() - 0.5) * 0.25 : 0);
-      this.shoot(h, def, s, ang, 210, 4 * s.grow, 1.5, false, s.pierce);
+      // (a slow heavy one rolls on through the crowd: Ball Lightning)
+      if (def.orb) this.shoot(h, def, s, ang, 70, 7 * s.grow, 3.4, false, 99);
+      else this.shoot(h, def, s, ang, 210, 4 * s.grow, 1.5, false, s.pierce);
     }
     return any;
   }
@@ -1479,9 +2242,11 @@ export class Vigil {
   }
 
   private castField(h: Hero, def: SpellDef, s: SpellStats): boolean {
-    if (!this.nearest(h, 150)) return false;
+    if (!this.nearest(h, def.far ? 200 : 150)) return false;
     const life = 2.4 + s.l * 0.4 + s.last;
-    this.scorch(h, def, s, h.x, h.y, s.size, s.dmg, life);
+    // underfoot, or (a Gravity Well) out where the Host is thickest
+    const at = (def.far ? this.thickest(h) : null) ?? h;
+    this.scorch(h, def, s, at.x, at.y, s.size, s.dmg, life);
     return true;
   }
 
@@ -1601,6 +2366,144 @@ export class Vigil {
     return true;
   }
 
+  /* -------------------------------------------------------------- traps, totems, dash-strikes, sweeps, wards */
+
+  private addPost(p: Post): void {
+    if (this.posts.length >= MAX_POSTS) this.posts.shift();
+    this.posts.push(p);
+  }
+
+  /** Traps thrown down between the hero and the Host: the first foe to step on one sets it off. */
+  private castMine(h: Hero, def: SpellDef, s: SpellStats): boolean {
+    const t = this.nearest(h, 200);
+    if (!t) return false;
+    const a0 = Math.atan2(t.y - h.y, t.x - h.x);
+    for (let i = 0; i < s.n; i++) {
+      const a = a0 + (i ? (this.rand() - 0.5) * 1.6 : 0);
+      const d = 34 + this.rand() * 26;
+      this.addPost({ kind: 'mine', owner: h.id, spell: def.id, el: def.el, x: h.x + Math.cos(a) * d, y: h.y + Math.sin(a) * d, r: s.size, t: 0, life: 14 + s.last, fireT: 0, st: s });
+    }
+    return true;
+  }
+
+  /** A totem planted where the hero stands: it stays, and shoots at whatever comes near it. */
+  private castTotem(h: Hero, def: SpellDef, s: SpellStats): boolean {
+    if (!this.nearest(h, 220)) return false;
+    for (let i = 0; i < s.n; i++) {
+      const a = (i / s.n) * TAU + this.t;
+      const d = i ? 26 : 0;
+      const x = h.x + Math.cos(a) * d;
+      const y = h.y + Math.sin(a) * d;
+      this.addPost({ kind: 'totem', owner: h.id, spell: def.id, el: def.el, x, y, r: 150 * (1 + (s.grow - 1) * 0.5), t: 0, life: 9 + s.last, fireT: 0.3, st: s });
+      this.addFx({ kind: 'summon', x, y, t: 0, dur: 0.6, el: def.el, color: def.color });
+    }
+    return true;
+  }
+
+  private runPosts(dt: number): void {
+    if (!this.posts.length) return;
+    for (const p of this.posts) {
+      p.t += dt;
+      const h = this.heroOf(p.owner) ?? this.me;
+      const def = SPELLS[p.spell];
+      if (!def) continue;
+      if (p.kind === 'mine') {
+        if (p.t < 0.45) continue;
+        let sprung = false;
+        this.around(p.x, p.y, p.r * 0.5 + 12, (f) => {
+          if (!sprung && Math.hypot(f.x - p.x, f.y - p.y) < p.r * 0.45 + f.r) sprung = true;
+        });
+        if (!sprung) continue;
+        p.t = p.life;
+        this.blast(h, p.st, p.x, p.y, p.r, p.st.dmg, p.el, def.color);
+        if (p.st.trail) this.scorch(h, def, p.st, p.x, p.y, p.r * 0.8, p.st.dmg * 0.25, 3);
+      } else if ((p.fireT -= dt) <= 0) {
+        const f = this.closest(p.x, p.y, p.r);
+        if (!f) continue;
+        p.fireT = 0.72 / (1 + p.st.speed);
+        this.shoot(h, def, p.st, Math.atan2(f.y - p.y, f.x - p.x), 220, 3.5 * p.st.grow, 1, false, p.st.pierce, p);
+      }
+    }
+    this.posts = this.posts.filter((p) => p.t < p.life);
+  }
+
+  /** A dash-strike has no clock: it goes off where a dash ends (and, echoed, where it began). */
+  private castDash(h: Hero, def: SpellDef, s: SpellStats): void {
+    if (!h.dashed) return;
+    this.shake = Math.max(this.shake, 5);
+    this.blast(h, s, h.x, h.y, s.size, s.dmg, def.el, def.color);
+    if (s.echo) this.blast(h, s, h.dashFromX, h.dashFromY, s.size * 0.8, s.dmg * 0.6, def.el, def.color);
+    if (s.trail) this.scorch(h, def, s, (h.x + h.dashFromX) / 2, (h.y + h.dashFromY) / 2, s.size * 0.7, s.dmg * 0.3, 3);
+    if (s.guard) h.iframe = Math.max(h.iframe, s.guard);
+  }
+
+  /** A beam that goes all the way round the hero: whatever it passes over is struck once. */
+  private castSweep(h: Hero, def: SpellDef, s: SpellStats): boolean {
+    const a0 = this.aimAt(h, s.size);
+    if (a0 === null) return false;
+    const dur = 0.85;
+    this.sweeps.push({ owner: h.id, st: s, a0, t: 0, dur, hit: new Set() });
+    this.addFx({ kind: 'sweep', x: h.x, y: h.y - 4, t: 0, dur, el: def.el, color: def.color, a: a0, len: s.size, w: 7 * s.grow, who: h.id, n: s.n });
+    return true;
+  }
+
+  private runSweeps(dt: number): void {
+    if (!this.sweeps.length) return;
+    for (const w of this.sweeps) {
+      const h = this.heroOf(w.owner);
+      const was = w.t;
+      w.t += dt;
+      if (!h || h.down) {
+        w.t = w.dur;
+        continue;
+      }
+      const s = w.st;
+      // the wedge the beam crossed this frame (and, with two beams, the one opposite it)
+      const from = (was / w.dur) * TAU;
+      const span = ((Math.min(w.t, w.dur) - was) / w.dur) * TAU;
+      const arms = s.n > 1 ? 2 : 1;
+      this.around(h.x, h.y, s.size + 12, (f) => {
+        if (w.hit.has(f.id)) return;
+        const d = Math.hypot(f.x - h.x, f.y - h.y);
+        if (d > s.size + f.r) return;
+        const rel = Math.atan2(f.y - h.y, f.x - h.x) - w.a0;
+        const wide = Math.atan2(7 * s.grow + f.r, Math.max(8, d));
+        for (let k = 0; k < arms; k++) {
+          const at = (((rel - k * Math.PI - from + wide) % TAU) + TAU) % TAU;
+          if (at <= span + wide * 2) {
+            w.hit.add(f.id);
+            this.land(h, f, s, s.dmg, h.x, h.y);
+            return;
+          }
+        }
+      });
+    }
+    this.sweeps = this.sweeps.filter((w) => w.t < w.dur);
+  }
+
+  /** A ward goes up when there is none: it holds a share of the hero's health, and bursts when it breaks. */
+  private castWard(h: Hero, def: SpellDef, s: SpellStats): boolean {
+    if (h.ward > 0) return false;
+    h.wardMax = this.maxHpOf(h) * s.heal;
+    h.ward = h.wardMax;
+    h.wardSpell = def.id;
+    this.addFx({ kind: 'guard', x: h.x, y: h.y, t: 0, dur: 0.6, el: def.el, color: def.color, r: 22 });
+    return true;
+  }
+
+  private breakWard(h: Hero): void {
+    h.ward = 0;
+    const def = SPELLS[h.wardSpell];
+    if (!def) return;
+    const s = h.built[def.id] ?? this.statsOf(h, def);
+    // (its clock starts again from when it broke, not from when it went up)
+    h.cool[def.id] = s.every;
+    this.shake = Math.max(this.shake, 6);
+    const { x, y } = h;
+    this.after(0, () => this.blast(h, s, x, y, s.size, s.dmg, def.el, def.color));
+    if (s.guard) h.iframe = Math.max(h.iframe, s.guard);
+  }
+
   private syncPets(h: Hero, def: SpellDef, n: number): void {
     let have = 0;
     for (const p of this.pets) if (p.owner === h.id && p.spell === def.id) have++;
@@ -1717,7 +2620,14 @@ export class Vigil {
   }
 
   private moveSparks(dt: number): void {
+    const fade = !!this.on.fade;
     for (const g of this.sparks) {
+      // under the Hollow Light, what is left lying fades
+      g.age = (g.age ?? 0) + dt;
+      if (fade && g.age > FADE_AFTER && !g.pulled) {
+        g.dead = true;
+        continue;
+      }
       const h = this.nearestHero(g.x, g.y);
       if (!h) break;
       const d = Math.hypot(h.x - g.x, h.y - g.y) || 1;
@@ -1761,6 +2671,7 @@ export class Vigil {
 
   private take(p: Pickup, h: Hero): void {
     if (p.kind === 'meat') {
+      h.venom = 0;
       this.healBy(h, 0.25, 'nature', '#b8ffb8');
     } else if (p.kind === 'magnet') {
       for (const g of this.sparks) g.pulled = true;
@@ -1785,7 +2696,7 @@ export class Vigil {
   }
 
   private gain(xp: number, h: Hero): void {
-    this.xp += xp * (1 + this.str(h, 'fortune') * 0.1) * this.scale.xp;
+    this.xp += xp * (1 + this.str(h, 'fortune') * 0.1) * this.scale.xp * (this.event?.kind === 'hour' ? 2 : 1);
     while (this.xp >= this.xpNext) {
       this.xp -= this.xpNext;
       this.level++;
@@ -1803,7 +2714,10 @@ export class Vigil {
   private pool(h: Hero): Card[] {
     const out: Card[] = [];
     const held = Object.keys(h.spells).length;
-    for (const def of spellsOf(h.cls)) {
+    // the class's own, and the wild spell this keeper carries from another class, if any
+    const wild = h.wild ? SPELLS[h.wild] : undefined;
+    const kit = wild && wild.cls !== h.cls ? [...spellsOf(h.cls), wild] : spellsOf(h.cls);
+    for (const def of kit) {
       const l = h.spells[def.id] ?? 0;
       if (h.evolved.has(def.id)) continue;
       if (l === 0) {
@@ -1861,7 +2775,7 @@ export class Vigil {
     }
     // nothing left to take: it isn't worth stopping the night for
     h.owed = Math.max(0, h.owed - 1);
-    this.healBy(h, 0.3, 'nature', '#b8ffb8');
+    this.healBy(h, 0.15, 'nature', '#b8ffb8');
   }
 
   reroll(id = this.me.id): void {

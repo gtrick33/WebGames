@@ -17602,3 +17602,445 @@ button.rb-scard:not(:disabled):hover {
   max-height: calc(100% - 12px);
   overflow-y: auto;
 }
+
+/* ------------------------------------------------------------------ The Vigil's return: the land's rule, what
+   happens during a night, and the Watchfire (ui/VigilScreen.tsx, ui/VigilLobby.tsx, ui/VigilWatchfire.tsx) */
+.rb-vigil-rules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.rb-vigil-rules em {
+  padding: 1px 6px;
+  border: 1px solid #6e5526;
+  border-radius: 9px;
+  color: #ffe39a;
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.3;
+  background: rgb(255 227 154 / 0.08);
+}
+.rb-vigil-event {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  width: min(46%, 360px);
+  padding: 4px 10px 6px;
+  transform: translateX(-50%);
+  border: 1px solid #a8863a;
+  border-radius: 8px;
+  text-align: center;
+  background: rgb(10 6 24 / 0.86);
+  pointer-events: none;
+}
+/* (under a champion's bar while one is about) */
+.rb-vigil-event.is-low {
+  top: 48px;
+}
+.rb-vigil-event b {
+  color: #ffd257;
+  font: 700 14px Georgia, 'Times New Roman', serif;
+}
+.rb-vigil-event small {
+  color: #e9dfc6;
+  font-size: 11.5px;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+.rb-vigil-event span {
+  display: block;
+  width: 100%;
+  height: 4px;
+  margin-top: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #1c1208;
+}
+.rb-vigil-event i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #ff9a3d, #ffd257);
+}
+.rb-vigil-event.is-fill i {
+  background: linear-gradient(90deg, #7fe06a, #d8ffb0);
+}
+.rb-vigil-tip {
+  position: absolute;
+  left: 50%;
+  bottom: 62px;
+  max-width: min(62%, 520px);
+  padding: 3px 10px;
+  transform: translateX(-50%);
+  border-radius: 10px;
+  color: #e9f2ff;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  text-wrap: balance;
+  text-shadow: 0 1px 0 #000;
+  background: rgb(10 6 24 / 0.72);
+  pointer-events: none;
+}
+.rb-vigil-tip:empty {
+  display: none;
+}
+.rb-vigil-gale {
+  position: absolute;
+  right: 14px;
+  top: 64px;
+  justify-items: center;
+  padding: 4px 8px;
+  border: 1px solid #7a8a9a;
+  border-radius: 8px;
+  color: #cfe0f2;
+  background: rgb(10 6 24 / 0.8);
+  opacity: 0.8;
+  pointer-events: none;
+}
+.rb-vigil-gale i {
+  display: block;
+  font-size: 20px;
+  font-style: normal;
+  line-height: 1;
+  transform: rotate(var(--a, 0rad));
+}
+.rb-vigil-gale small {
+  font-size: 10px;
+  font-weight: 700;
+}
+.rb-vigil-gale.is-on {
+  border-color: #fff;
+  color: #fff;
+  opacity: 1;
+}
+.rb-vigil-weather {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* the cold closing in from the edges, as far as it has got */
+.rb-vigil-weather::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: var(--chill, 0);
+  background: radial-gradient(ellipse at center, rgb(160 220 255 / 0) 38%, rgb(200 238 255 / 0.9) 100%);
+}
+.rb-vigil-weather::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.8s;
+}
+/* (dark against the sand it blows over: as a paler haze it could not be seen on Sunscorch's own ground. Streaks of
+   grit go by across it) */
+.rb-vigil-weather.is-storm::after {
+  opacity: 1;
+  background:
+    repeating-linear-gradient(98deg, rgb(70 42 16 / 0) 0 34px, rgb(70 42 16 / 0.2) 34px 40px, rgb(70 42 16 / 0) 40px 88px, rgb(255 236 200 / 0.14) 88px 91px),
+    radial-gradient(ellipse at center, rgb(120 78 34 / 0.3) 10%, rgb(84 52 22 / 0.92) 92%);
+  background-size: 182px 100%, 100% 100%;
+  animation: rb-vigil-grit 0.9s linear infinite;
+}
+@keyframes rb-vigil-grit {
+  to {
+    background-position: 182px 0, 0 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-vigil-weather.is-storm::after {
+    animation: none;
+  }
+}
+.rb-vigil-hp {
+  position: relative;
+}
+.rb-vigil-hp::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--ward, 0%);
+  background: linear-gradient(180deg, rgb(200 232 255 / 0.95), rgb(120 180 255 / 0.8));
+}
+.rb-vigil-weather.is-tide::after {
+  opacity: 1;
+  background: linear-gradient(0deg, rgb(40 130 190 / 0.5), rgb(40 130 190 / 0) 55%);
+}
+.rb-vigil-weather.is-hour::after {
+  opacity: 1;
+  background: radial-gradient(ellipse at center, rgb(255 90 30 / 0) 45%, rgb(255 90 30 / 0.5) 100%);
+}
+.rb-vigil-hp i.is-venom {
+  background: repeating-linear-gradient(90deg, #b8d83a 0 6px, #6a9a1e 6px 9px);
+}
+.rb-vigil-motes {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  color: #b8afc8;
+}
+.rb-vigil-motes b {
+  color: #ffd257;
+  font: 700 18px Georgia, 'Times New Roman', serif;
+}
+.rb-vigil-motes small {
+  font-size: 12px;
+}
+.rb-vlobby-fire {
+  flex: none;
+  white-space: nowrap;
+}
+.rb-vlobby-fire b {
+  color: #ffd257;
+}
+.rb-vlobby-rule {
+  justify-self: start;
+  margin-top: 1px;
+  padding: 0 6px;
+  border: 1px solid color-mix(in srgb, var(--c) 60%, #000);
+  border-radius: 8px;
+  color: #ffe39a;
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.4;
+  background: rgb(0 0 0 / 0.25);
+}
+.rb-vlobby-land small.rb-vlobby-rule-text {
+  margin-top: 2px;
+  color: #efe6d4;
+}
+/* (each card as tall as what it says: left to the grid's own sizing, a card with a third line kept the height of two
+   and its words ran over the next card) */
+.rb-vlobby-lands.is-ruled {
+  grid-auto-rows: max-content;
+}
+/* a phone on its side: a land not chosen says its name and its rule, and the chosen one the rest */
+@container (max-height: 430px) {
+  .rb-vlobby-land:not(.is-on) .rb-vlobby-blurb {
+    display: none;
+  }
+}
+.rb-vlobby-land.is-week {
+  border-color: #a8863a;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 30%, #1c1408), #1c1408 80%);
+}
+.rb-vfire {
+  z-index: 5;
+  align-content: start;
+  gap: 6px;
+  padding-top: calc(14px + var(--sa-t, 0px));
+  background: #07050d;
+}
+.rb-vfire h3 {
+  margin: 6px 0 0;
+  color: #ffe39a;
+  font: 700 16px Georgia, 'Times New Roman', serif;
+}
+.rb-vfire-how {
+  max-width: 560px;
+  margin: 0;
+  font-size: 12.5px;
+}
+.rb-vfire-motes {
+  margin: 0;
+  color: #efe6d4;
+}
+.rb-vfire-motes b {
+  color: #ffd257;
+  font: 700 22px Georgia, 'Times New Roman', serif;
+}
+.rb-vfire-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 5px;
+  width: min(100%, 780px);
+}
+.rb-vfire-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 4px 8px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 8px;
+  color: #efe6d4;
+  text-align: left;
+  background: #0e091c;
+  cursor: pointer;
+}
+.rb-vfire-item img {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 5px;
+}
+.rb-vfire-item > span:first-of-type {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+.rb-vfire-item strong {
+  font: 700 13.5px Georgia, 'Times New Roman', serif;
+}
+.rb-vfire-item small {
+  color: #b8afc8;
+  font-size: 11px;
+  line-height: 1.15;
+}
+.rb-vfire-item > b {
+  flex: none;
+  max-width: 92px;
+  color: #ffd257;
+  font-size: 12px;
+  text-align: right;
+}
+.rb-vfire-item:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.rb-vfire-item.is-have {
+  border-color: #6e5526;
+}
+.rb-vfire-item.is-on {
+  border-color: #ffe39a;
+  box-shadow: inset 0 0 0 1px #ffe39a;
+}
+.rb-vfire-pips {
+  display: flex;
+  flex: none;
+  gap: 3px;
+}
+.rb-vfire-pips i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #2a2238;
+}
+.rb-vfire-pips i.is-on {
+  background: #ffd257;
+}
+
+/* the Watchfire's tabs, deeds and codex */
+.rb-vfire-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 12px;
+  width: 100%;
+  padding: 4px 0;
+  background: #07050d;
+}
+.rb-vfire-head h2 {
+  font-size: clamp(18px, 3cqw, 28px);
+}
+.rb-vfire-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.rb-vfire-deeds,
+.rb-vfire-codex {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 100%;
+}
+.rb-vfire-item.is-deed {
+  cursor: default;
+}
+.rb-vfire-item.is-done {
+  border-color: #a8863a;
+  background: linear-gradient(90deg, rgb(255 210 87 / 0.12), #0e091c 70%);
+}
+.rb-vfire-item.is-done > b {
+  color: #9fe86a;
+}
+.rb-vfire-item.is-unknown img {
+  filter: grayscale(1) brightness(0.45);
+}
+.rb-vfire-item.is-full:disabled {
+  opacity: 1;
+  border-color: #a8863a;
+}
+.rb-vfire-bar {
+  display: block;
+  height: 3px;
+  margin-top: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #241c34;
+}
+.rb-vfire-bar u {
+  display: block;
+  height: 100%;
+  background: #ffd257;
+}
+.rb-vlobby-fire small {
+  display: block;
+  color: #b8afc8;
+  font-size: 10px;
+  line-height: 1;
+}
+.rb-vigil-motes .rb-vigil-deed {
+  color: #9fe86a;
+}
+.rb-vigil-motes .rb-vigil-deed b {
+  font: inherit;
+  font-weight: 700;
+  color: #d8ffb0;
+}
+.rb-vigil-motes .rb-vigil-next {
+  color: #e9dfc6;
+}
+
+/* the Vigil's ten spells a class: two rows of five, each big enough for a thumb (one row of ten was twenty points a
+   spell on a phone) */
+.rb-vlobby-spells.is-ten {
+  display: grid;
+  grid-template-columns: repeat(5, 40px);
+  justify-content: center;
+  gap: 4px;
+}
+.rb-vlobby-spells.is-ten .rb-vlobby-spell {
+  width: 40px;
+  max-width: none;
+  height: 40px;
+}
+@container (max-height: 430px) {
+  .rb-vlobby-spells.is-ten {
+    grid-template-columns: repeat(5, 32px);
+    gap: 3px;
+  }
+  .rb-vlobby-spells.is-ten .rb-vlobby-spell {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* what the screen check of a played night found (scripts/sigilfall-vigil-play.mjs): with five spells and six relics
+   the row at the foot ran under the dash button on a phone, and a banner sat under the event's card while a champion
+   was about. The row keeps clear of the corners (and wraps upward when it is long), and the banner sits lower on a
+   short screen. */
+.rb-vigil-loadout {
+  width: min(94%, calc(100% - 230px - var(--sa-r, 0px) - var(--sa-l, 0px)));
+}
+@container (max-height: 430px) {
+  .rb-vigil-banner {
+    top: 30%;
+  }
+  .rb-vigil-wait {
+    top: 40%;
+  }
+}

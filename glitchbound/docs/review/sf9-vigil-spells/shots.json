@@ -1,0 +1,67 @@
+[
+ {
+  "name": "lobby-01-lands",
+  "note": "The lands, each with its rule named on its card; the land chosen says what the rule does.",
+  "errors": []
+ },
+ {
+  "name": "lobby-02-rimeheld",
+  "note": "Rimeheld chosen: Biting Cold, and what it does.",
+  "errors": []
+ },
+ {
+  "name": "lobby-03-week",
+  "note": "The week’s watch chosen: its land, its omen, and the bounty.",
+  "errors": []
+ },
+ {
+  "name": "lobby-04-watchfire",
+  "note": "The Watchfire with 120 motes: boons and wild spells.",
+  "errors": []
+ },
+ {
+  "name": "lobby-05-bought",
+  "note": "After two ranks of Hearthblood, one of Second Thoughts and Call Wolf learned (and carried).",
+  "errors": []
+ },
+ {
+  "name": "lobby-08-deeds",
+  "note": "The Watchfire’s deeds: what there is to have done, how far along each is, and what it pays.",
+  "errors": []
+ },
+ {
+  "name": "lobby-09-codex",
+  "note": "The codex: every evolution there is, the ones found lit.",
+  "errors": []
+ },
+ {
+  "name": "lobby-06-wilds",
+  "note": "The wild spells, lower on the same page.",
+  "errors": []
+ },
+ {
+  "name": "lobby-07-after-reload",
+  "note": "After the page was loaded afresh: {\"motes\":54,\"earned\":120,\"nights\":9,\"boons\":{\"hearth\":2,\"rethink\":1},\"wilds\":[\"wolf-pack\"],\"wild\":\"wolf-pack\",\"weekly\":{},\"won\":{},\"felled\":[],\"deeds\":[],\"weekClass\":{}}",
+  "errors": []
+ },
+ {
+  "name": "foes-1-kinds",
+  "note": "The four kinds: a Twinhusk (left), a Cinderbloat (below), a Wallbearer with its guard (right), a Hostcaller with those it heartens (far right)",
+  "errors": []
+ },
+ {
+  "name": "foes-2-fallen",
+  "note": "The Twinhusk has broken in two, and the mark shows where the Cinderbloat is about to go off",
+  "errors": []
+ },
+ {
+  "name": "land-08-sunscorch-a-begins",
+  "note": "Sunscorch: the night begins, its rule named under the clock and said in a line.",
+  "errors": []
+ },
+ {
+  "name": "land-08-sunscorch-b-rule",
+  "note": "Scouring Wind: a sandstorm over the field",
+  "errors": []
+ }
+]

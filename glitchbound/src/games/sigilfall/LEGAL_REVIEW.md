@@ -3,6 +3,53 @@
 First pass 2026-10-27, fixes the same day. A working record of licenses, names and borrowed material, for the
 owner (and a lawyer, if one is asked). It is **not legal advice** and not a trademark clearance.
 
+## The Vigil's spells and deeds (2026-11-25)
+
+Each class's Vigil kit went from six spells to ten. The 32 added are that class's own campaign skills, by name and by
+icon (Ice Javelin, Ball Lightning, Arcane Ward, Gravity Well; Charge, Shield Wall, Ground Breaker, Thousand Cuts;
+Poison Trap, Tumble, Viper Arrow, Blast Arrow; Thrown Aegis, Bulwark, Lance of Noon, Halting Word; Ward of Grace,
+Searing Hymn, Thought Lash, Seraph Lance; Drain Life, Hellbrand, Demonic Step, Rotting Curse; Moonburn, Briar Burst,
+Thornhide, Wild Dash; Hollow Ward, Shadow Lunge, Mourning Arc, Night Tether), names this file already covers. Their
+evolutions are named after other campaign skills of the same class, apart from three written new: Iron Legion, Vigil
+Candles and Night Mantle. What is taken from the genre is **rules only**: a trap that waits, a turret that stays, a
+blast on a dash, a beam that sweeps, a shield that bursts. No other game's weapon, upgrade or evolution list, text or
+numbers are used.
+
+Written new: the signature upgrades (Shatterpoint, Live Wire, Backlash, Crushing Depth, Unstoppable, Shield Slam,
+Fault Line, Bleed Out, Lingering Cloud, Caltrops, Neurotoxin, Scorched Earth, Ringing Blow, Martyr's Light, High Sun,
+Kneel, Grace Under Fire, Choir, Frayed Thought, Wings of Mercy, Deep Draught, Brimstone Spit, Left Behind, Feast of Rot,
+Cold Light, Taproot, Briar Coat, Overgrown Path, Debt Repaid, Afterimage, Wake, Dragged Down), the relics Fieldcraft
+and Stout Heart, and the deeds (each class's Watch, Bane of each land, Every Line Held, Nothing New Under the Moon,
+Apprentice of the Codex, Keeper of the Codex, The Whole Codex). One name first written was changed before it shipped
+because another game's priest has a spell of that name (it is Frayed Thought now). "Caltrops", "Backlash" and
+"Unstoppable" are ordinary words that other games have also used for abilities; here they are one-line upgrade names
+with their own text. If any is wanted gone, it is one string in `vigil/kit.ts`. No pack, icon or sound
+was added: every picture is already in the icon atlas the game ships (a test checks it).
+
+## The Vigil's return (2026-11-25)
+
+The owner asked for the Vigil to be "as fun as vampire survivors" and less repetitive. What is taken from that genre
+is **rules only**, and rules many games share: things that interrupt the waves on a timer (a marked elite pack that
+drops a chest, a herd crossing along a warned line, an encirclement, a place to stand in for a reward, a fleeing
+treasure carrier, a spell of double spawns and double experience), foes that split, burst, guard their front or
+strengthen their neighbors, a rule per map, a currency earned each run and spent on small permanent upgrades, and a
+weekly seeded run. No other game's names, art, characters, stage layouts, item or upgrade lists, card text or numbers
+are used: every name and every line of text below was written for Sigilfall, and the pictures are the game's own
+models and the effects it already had (the bought Magic Spells VFX pack through the 3D effects layer; no new pack, no
+new icon, no new sound).
+
+- **Events** (`vigil/night.ts`): Ashsworn Pack (with the traits Swift, Stoneskin, Venomous), The Wild Run, The Closing
+  Ring, Night Swarm, Dawn Lantern, Spark Thief, The Ember Hour.
+- **Kinds of foe** (`vigil/kit.ts`): Twinhusks, Cinderbloats, Wallbearers, Hostcallers. They wear the faces the lands
+  already had.
+- **Land rules**: Whispering Glade, Creeping Bramble, Loose Stone, Sucking Mire, The Tide, Mountain Gale, Restless
+  Graves, Scouring Wind, Biting Cold, Jungle Venom, Fire Vents, Hollow Light.
+- **What lasts**: motes, the Watchfire, the boons Hearthblood, Whetted Edge, Sure Stride, Sparkcall and Second
+  Thoughts, wild spells (seven of the game's own spells, one from each free class; none from the Gloamknight, which is
+  sold), the week's watch and its omen.
+
+These are ordinary words and compounds; none was searched against trademark registers. A web search before release is
+still worth doing, as for the other names in this file.
 ## Every quest given something to do (2026-11-26)
 
 The quest pass (NINE_PLAN.md, piece 4b) added no item, no keepsake, no place and no creature: the things a quest now
