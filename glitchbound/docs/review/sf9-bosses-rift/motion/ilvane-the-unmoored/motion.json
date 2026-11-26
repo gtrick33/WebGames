@@ -1,0 +1,121 @@
+{
+  "boss": "ilvane-the-unmoored",
+  "file": "boss_ilvane",
+  "form": "ilvane",
+  "float": 0.7,
+  "walked": {
+    "samples": 183,
+    "moving": 53,
+    "walking": 51,
+    "clips": {
+      "walk": 50,
+      "run": 1,
+      "slice": 2
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "spell:meteors",
+      "clips": [
+        "summon",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 73
+    },
+    {
+      "phase": 1,
+      "id": "spell:constellation",
+      "clips": [
+        "cast",
+        "idle",
+        "walk"
+      ],
+      "readings": 46
+    },
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "run",
+        "slice",
+        "idle",
+        "walk"
+      ],
+      "readings": 58
+    },
+    {
+      "phase": 1,
+      "id": "spire:unmoor",
+      "clips": [
+        "cheer",
+        "walk",
+        "idle",
+        "slice"
+      ],
+      "readings": 39
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "cheer",
+        "summon",
+        "cast",
+        "slice"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "spell:meteors",
+      "clips": [
+        "summon",
+        "idle",
+        "walk"
+      ],
+      "readings": 56
+    },
+    {
+      "phase": 2,
+      "id": "spell:constellation",
+      "clips": [
+        "cast",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 49
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle"
+      ],
+      "readings": 54
+    },
+    {
+      "phase": 2,
+      "id": "spire:unmoor",
+      "clips": [],
+      "note": "never began"
+    },
+    {
+      "phase": 2,
+      "id": "roar",
+      "clips": [
+        "taunt",
+        "idle"
+      ],
+      "readings": 44
+    }
+  ],
+  "found": [],
+  "errors": []
+}

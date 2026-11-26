@@ -1,0 +1,116 @@
+{
+  "boss": "old-sluicegut",
+  "file": "boss_sluicegut",
+  "form": "sluicegut",
+  "float": 0,
+  "walked": {
+    "samples": 183,
+    "moving": 81,
+    "walking": 75,
+    "clips": {
+      "walk": 75,
+      "chop2": 2,
+      "smash": 3,
+      "cast": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "slam",
+      "clips": [
+        "smash",
+        "idle",
+        "walk"
+      ],
+      "readings": 66
+    },
+    {
+      "phase": 1,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle",
+        "walk",
+        "smash",
+        "taunt"
+      ],
+      "readings": 68
+    },
+    {
+      "phase": 1,
+      "id": "rot:sluices",
+      "clips": [
+        "cast",
+        "walk",
+        "idle",
+        "smash"
+      ],
+      "readings": 48
+    },
+    {
+      "phase": 1,
+      "id": "summon",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "smash"
+      ],
+      "readings": 48
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "cast",
+        "kick",
+        "chop2"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "slamRings",
+      "clips": [
+        "kick",
+        "idle",
+        "walk"
+      ],
+      "readings": 67
+    },
+    {
+      "phase": 2,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle",
+        "walk"
+      ],
+      "readings": 57
+    },
+    {
+      "phase": 2,
+      "id": "rot:sluices",
+      "clips": [
+        "idle",
+        "walk",
+        "cast"
+      ],
+      "readings": 46
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk"
+      ],
+      "readings": 45
+    }
+  ],
+  "found": [],
+  "errors": []
+}

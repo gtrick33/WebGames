@@ -1,0 +1,163 @@
+{
+  "boss": "veil-sentinel",
+  "file": "boss_veilsentinel",
+  "form": "veilsentinel",
+  "float": 0,
+  "walked": {
+    "samples": 183,
+    "moving": 67,
+    "walking": 61,
+    "clips": {
+      "walk": 61,
+      "block": 1,
+      "chop2": 1,
+      "bash": 1,
+      "taunt": 2,
+      "cast": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "spire:prism",
+      "clips": [
+        "block",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 46
+    },
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "run",
+        "slice",
+        "idle",
+        "walk"
+      ],
+      "readings": 47
+    },
+    {
+      "phase": 1,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle",
+        "walk"
+      ],
+      "readings": 43
+    },
+    {
+      "phase": 1,
+      "id": "spire:gravity",
+      "clips": [
+        "cast",
+        "idle",
+        "block"
+      ],
+      "readings": 53
+    },
+    {
+      "phase": 1,
+      "id": "charge",
+      "clips": [
+        "idle",
+        "bash",
+        "block",
+        "slice",
+        "cast"
+      ],
+      "readings": 53
+    },
+    {
+      "phase": 1,
+      "id": "summon",
+      "clips": [
+        "taunt",
+        "idle"
+      ],
+      "readings": 44
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "cast",
+        "punch",
+        "walk",
+        "slice"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "spire:prism",
+      "clips": [
+        "idle",
+        "block"
+      ],
+      "readings": 48
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle"
+      ],
+      "readings": 52
+    },
+    {
+      "phase": 2,
+      "id": "spire:gravity",
+      "clips": [
+        "cast",
+        "idle"
+      ],
+      "readings": 51
+    },
+    {
+      "phase": 2,
+      "id": "spell:crossfire",
+      "clips": [
+        "punch",
+        "idle"
+      ],
+      "readings": 46
+    },
+    {
+      "phase": 2,
+      "id": "charge",
+      "clips": [
+        "bash",
+        "block",
+        "idle",
+        "slice"
+      ],
+      "readings": 45
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "taunt",
+        "idle"
+      ],
+      "readings": 30
+    },
+    {
+      "phase": 2,
+      "id": "roar",
+      "clips": [
+        "taunt",
+        "idle"
+      ],
+      "readings": 37
+    }
+  ],
+  "found": [],
+  "errors": []
+}

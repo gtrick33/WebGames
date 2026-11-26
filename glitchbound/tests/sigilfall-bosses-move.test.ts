@@ -15,9 +15,12 @@ import { readPack } from './sigilfall-packs';
  */
 
 /** The bosses that have been through the pass: add each one here as it is done. */
-const DONE = ['coffin-matron', 'ossric', 'morgrave', 'grimtusk', 'hangman', 'gnasher', 'varric', 'king-hrodric', 'sir-corvane', 'silas-vey', 'the-royal-auditor', 'the-sun-king', 'vizier-khepset', 'the-sand-warden', 'jarl-hrimfang', 'hallvor-the-unthawed'];
-/** The ones whose story has them off the ground (Morgrave drifts over his page: data/bosses.ts). */
-const DRIFTS = new Set(['morgrave']);
+const DONE = ['coffin-matron', 'ossric', 'morgrave', 'grimtusk', 'hangman', 'gnasher', 'varric', 'king-hrodric', 'sir-corvane', 'silas-vey', 'the-royal-auditor', 'the-sun-king', 'vizier-khepset', 'the-sand-warden', 'jarl-hrimfang', 'hallvor-the-unthawed', 'prior-vessant', 'general-morvain', 'magma-warden', 'ossa-the-founder', 'ashkar-the-bound', 'lady-cendre', 'hollow-guard', 'the-drowned', 'saltbeard', 'brother-pustule', 'old-sluicegut', 'the-rot-mother', 'the-runewarden', 'slag-colossus', 'forgemaster-grold', 'rotwood-colossus', 'elowen-of-the-dawn', 'the-withered-queen', 'veil-sentinel', 'ilvane-the-unmoored', 'herald-in-the-spire'];
+/**
+ * The ones whose story has them off the ground (Morgrave drifts over his page: data/bosses.ts; Ilvane and the Herald
+ * are among those ALOFT below names, for the reasons it gives).
+ */
+const DRIFTS = new Set(['morgrave', 'ilvane-the-unmoored', 'herald-in-the-spire']);
 /**
  * The ones that are off the ground because of what they are: Morgrave over his page, the wyrm on the wing, Ilvane
  * unmoored from the world (her name and her fight), the Herald who is not wholly here. Everyone else walks.

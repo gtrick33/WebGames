@@ -31,10 +31,11 @@ requests open.**
 | 2c | Bosses: Act I (Gallows Keep): the Hangman and Harlan Blackglove; Gnasher's moves; a move for every attack of all 43 bosses | `claude/sf9-bosses-act1` | #363 | merged 2026-11-25 | 2b (#357) |
 | 2d | Bosses: Act II (the Barrow of Kings, the Crown Catacombs): Hrodric, Corvane, Silas Vey, the Royal Auditor | `claude/sf9-bosses-act2` | #371 | open | 2c (#363, merged) |
 | 2e | Bosses: Act III (the Tomb of the Sun King, the Vault of Rime): the Sun King, Khepset, the Sand Warden, Hrimfang, Hallvor | `claude/sf9-bosses-act3` | #372 | open | 2d (#371) |
-| 2f | Bosses: Act IV (the Siege of Highwall) | `claude/sf9-bosses-act4` | | not started | 2a |
-| 2g | Bosses: Act V (the Molten Throne) | `claude/sf9-bosses-act5` | | not started | 2a |
-| 2h | Bosses: the finale (Duskspire) | `claude/sf9-bosses-finale` | | not started | 2a |
-| 2i | Bosses: the rest (the Rift's five other dungeons, the lands' named foes) | `claude/sf9-bosses-rest` | | not started | 2a |
+| 2f | Bosses: Act IV (the Siege of Highwall): Prior Vessant, General Morvain | `claude/sf9-bosses-late` | #373 | open | 2e (#372) |
+| 2g | Bosses: Act V (the Molten Throne): the Magma Warden, Ossa, Ashkar | `claude/sf9-bosses-late` | #373 | open | 2e (#372) |
+| 2h | Bosses: the finale (Duskspire): Lady Cendre, Ser Maltheus | `claude/sf9-bosses-late` | #373 | open | 2e (#372) |
+| 2i | Bosses: the Rift's fourteen (the Drowned, Saltbeard, Brother Pustule, Old Sluicegut, the Rot-Mother, the Runewarden, Slag Colossus, Forgemaster Grold, Rotwood Colossus, Elowen, the Withered Queen, Veil Sentinel, Ilvane, the Herald). The lands' named foes are not part of it | `claude/sf9-bosses-rift` | #374 | open | 2h (#373) |
+| 2j | The story's seven named foes of the lands: the Grey Lady, Prince Thistlemourn, the Tearborn, the Gatewarden, the Weeping Lord, the Lich of Hollowmere, Vosk the Hollowed. The other 63 named foes keep shared models (the owner, 2026-11-25) | `claude/sf9-bosses-named` | #376 | open | 2i (#374) |
 | 3 | The signature system in the first twenty minutes | `claude/sf9-first-epic` | #358 | merged 2026-11-25 | 1 (#355) |
 | 4 | Quests up to the Prologue's standard, one pull request per act | `claude/sf9-quests-act1` (Act I); `-act2` … `-act6` not started | #364 | Act I merged 2026-11-25; Act II read and left as it is; Acts III to VI not started | 1 |
 | 4b | Every quest given something to do (the owner, 2026-11-25: "every quest to be meaningful, not just walk kill ... interactive"): five new kinds of step (things to use, something to carry, a place to hold, a trail, a foe taken alive) and every quest of Acts I to VI and the Crown City reworked with them | `claude/sf9-quests-live` | #378 | open | 4's Acts III and VI (#368, #369) |
@@ -46,6 +47,42 @@ requests open.**
 | 9b | The page no longer reloads itself when an API call fails during loading (found in piece 7; the site's, not only Sigilfall's) | `claude/sf9-reload-fix` | #362 | merged 2026-11-25 | nothing |
 | 10 | The release bar | `claude/sf9-release` | this one | measured 2026-11-25 on everything merged: see "The release bar, measured" | all of them, merged |
 | 11 | What would make it more fun (added by the owner: see its own section) | 11a and 11e in pieces 8 and 9; `claude/sf9-open-world`, `-vigil-return`, `-fewer-legends` | | not started | the playtest (11b); the owner's go-ahead (11c, 11d) |
+
+## Where the pass stands now (2026-11-25, evening)
+
+The table above is per piece. This is the whole picture in one place, for the owner to read while the last checks run.
+
+**Open, waiting for the owner to review and merge (none merged). Merge in this order:**
+
+| Order | Pull request | What it is |
+| --- | --- | --- |
+| 1 | #368 | Quests of Act III |
+| 2 | #369 | Quests of Acts IV to VI (built on #368) |
+| 3 | #370 | Acts II to VI against the Prologue's standard, and the speech-overlap fix (on its own) |
+| 4 | #371 | Bosses of Act II: Hrodric, Corvane, Silas Vey, the Royal Auditor |
+| 5 | #372 | Bosses of Act III: the Sun King, Khepset, the Sand Warden, Hrimfang, Hallvor (built on #371) |
+| 6 | #373 | Bosses of Acts IV and V and the finale: Vessant, Morvain, the Magma Warden, Ossa, Ashkar, Cendre, Maltheus (built on #372) |
+| 7 | #374 | The Rift's fourteen bosses (built on #373) |
+| 8 | #376 | The story's seven named foes (built on #374) |
+| any | #375 | The Vigil: events, new foes, a rule per land, champion attacks, motes and a weekly watch (on its own) |
+
+**Still running:** a second Vigil pass in its own session (more spells for each class, polish, whole nights played),
+to be a pull request on top of #375.
+
+**Left after that:**
+
+- **The lands' named foes:** the story's seven have figures of their own (2j). The other 63 keep shared models, by the
+  owner's choice (2026-11-25).
+- **Gloomwing, the Rime Wyrm, the Siege-Breaker, Maelis Crane:** left as they are on purpose. The first three are
+  already one-off builds; Crane keeps the look the player has known him by as a person of the city.
+- **Music and voices** (5): skipped for now by the owner (2026-11-25). No source is approved, and nothing was
+  downloaded.
+- **Piece 11:** 11c (the Vigil) is #375. 11d (fewer legendaries): the owner chose to keep all 419, so nothing is to be
+  done. 11b (the open-world penalty) waits for the playtest.
+- **A second quest pass** with a harder bar, to be gone through with the owner.
+
+**Only the owner can do:** review and merge the seven pull requests; play on a real phone; judge the sound by ear;
+approve a source for music and voices; decide piece 11's larger items.
 
 Every branch is cut from `origin/pre-release` in its own worktree. A piece that needs an earlier one that hasn't merged
 yet is built on that branch instead, and its pull request says which to merge first.

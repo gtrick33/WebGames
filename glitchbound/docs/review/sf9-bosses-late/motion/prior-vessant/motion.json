@@ -1,0 +1,132 @@
+{
+  "boss": "prior-vessant",
+  "file": "boss_vessant",
+  "form": "vessant",
+  "float": 0,
+  "walked": {
+    "samples": 184,
+    "moving": 20,
+    "walking": 19,
+    "clips": {
+      "walk": 19,
+      "slice": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "spell:drain",
+      "clips": [
+        "channel",
+        "idle",
+        "walk"
+      ],
+      "readings": 47
+    },
+    {
+      "phase": 1,
+      "id": "spell:mines",
+      "clips": [
+        "throw",
+        "idle",
+        "walk"
+      ],
+      "readings": 32
+    },
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "walk",
+        "slice",
+        "idle",
+        "wave"
+      ],
+      "readings": 54
+    },
+    {
+      "phase": 1,
+      "id": "summon",
+      "clips": [
+        "wave",
+        "idle",
+        "walk"
+      ],
+      "readings": 31
+    },
+    {
+      "phase": 1,
+      "id": "siege:dirge",
+      "clips": [
+        "cheer",
+        "idle"
+      ],
+      "readings": 64
+    },
+    {
+      "phase": 1,
+      "id": "siege:fallen",
+      "clips": [],
+      "note": "never began"
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "wave",
+        "cheer",
+        "throw",
+        "channel"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "spell:drain",
+      "clips": [
+        "idle",
+        "channel"
+      ],
+      "readings": 42
+    },
+    {
+      "phase": 2,
+      "id": "spell:mines",
+      "clips": [
+        "throw",
+        "idle"
+      ],
+      "readings": 33
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "idle",
+        "slice"
+      ],
+      "readings": 27
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "wave",
+        "idle"
+      ],
+      "readings": 28
+    },
+    {
+      "phase": 2,
+      "id": "siege:dirge",
+      "clips": [
+        "cheer",
+        "idle"
+      ],
+      "readings": 50
+    }
+  ],
+  "found": [],
+  "errors": []
+}

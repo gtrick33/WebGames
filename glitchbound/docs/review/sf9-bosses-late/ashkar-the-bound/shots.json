@@ -1,0 +1,314 @@
+{
+ "boss": "ashkar-the-bound",
+ "shots": [
+  {
+   "state": "entrance",
+   "close": "01-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "02-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "03-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "04-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "05-entrance-close.jpg"
+  },
+  {
+   "state": "line-up",
+   "file": "06-line-up.jpg",
+   "close": "06-line-up-close.jpg"
+  },
+  {
+   "state": "portrait",
+   "file": "07-portrait.jpg"
+  },
+  {
+   "state": "phase-1-cleave-windup",
+   "file": "08-phase-1-cleave-windup.jpg",
+   "close": "08-phase-1-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-cleave-strike",
+   "file": "09-phase-1-cleave-strike.jpg",
+   "close": "09-phase-1-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-volley-windup",
+   "file": "10-phase-1-volley-windup.jpg",
+   "close": "10-phase-1-volley-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-volley-strike",
+   "file": "11-phase-1-volley-strike.jpg",
+   "close": "11-phase-1-volley-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-barrage-windup",
+   "file": "12-phase-1-barrage-windup.jpg",
+   "close": "12-phase-1-barrage-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-barrage-strike",
+   "file": "13-phase-1-barrage-strike.jpg",
+   "close": "13-phase-1-barrage-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-throne-forge-windup",
+   "file": "14-phase-1-throne-forge-windup.jpg",
+   "close": "14-phase-1-throne-forge-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-throne-forge-strike",
+   "file": "15-phase-1-throne-forge-strike.jpg",
+   "close": "15-phase-1-throne-forge-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-change",
+   "file": "16-phase-2-change.jpg",
+   "close": "16-phase-2-change-close.jpg"
+  },
+  {
+   "state": "phase-2-cleave-windup",
+   "file": "17-phase-2-cleave-windup.jpg",
+   "close": "17-phase-2-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-cleave-strike",
+   "file": "18-phase-2-cleave-strike.jpg",
+   "close": "18-phase-2-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-throne-flail-windup",
+   "file": "19-phase-2-throne-flail-windup.jpg",
+   "close": "19-phase-2-throne-flail-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-throne-flail-strike",
+   "file": "20-phase-2-throne-flail-strike.jpg",
+   "close": "20-phase-2-throne-flail-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-hook-windup",
+   "file": "21-phase-2-hook-windup.jpg",
+   "close": "21-phase-2-hook-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-hook-strike",
+   "file": "22-phase-2-hook-strike.jpg",
+   "close": "22-phase-2-hook-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-throne-eruption-windup",
+   "file": "23-phase-2-throne-eruption-windup.jpg",
+   "close": "23-phase-2-throne-eruption-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-throne-eruption-strike",
+   "file": "24-phase-2-throne-eruption-strike.jpg",
+   "close": "24-phase-2-throne-eruption-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-throne-forge-windup",
+   "file": "25-phase-2-throne-forge-windup.jpg",
+   "close": "25-phase-2-throne-forge-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-throne-forge-strike",
+   "file": "26-phase-2-throne-forge-strike.jpg",
+   "close": "26-phase-2-throne-forge-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-barrage-windup",
+   "file": "27-phase-2-barrage-windup.jpg",
+   "close": "27-phase-2-barrage-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-barrage-strike",
+   "file": "28-phase-2-barrage-strike.jpg",
+   "close": "28-phase-2-barrage-strike-close.jpg"
+  },
+  {
+   "state": "phase-3-change",
+   "file": "29-phase-3-change.jpg",
+   "close": "29-phase-3-change-close.jpg"
+  },
+  {
+   "state": "phase-3-cleave-windup",
+   "file": "30-phase-3-cleave-windup.jpg",
+   "close": "30-phase-3-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-3-cleave-strike",
+   "file": "31-phase-3-cleave-strike.jpg",
+   "close": "31-phase-3-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-3-throne-flail-windup",
+   "file": "32-phase-3-throne-flail-windup.jpg",
+   "close": "32-phase-3-throne-flail-windup-close.jpg"
+  },
+  {
+   "state": "phase-3-throne-flail-strike",
+   "file": "33-phase-3-throne-flail-strike.jpg",
+   "close": "33-phase-3-throne-flail-strike-close.jpg"
+  },
+  {
+   "state": "phase-3-hook-windup",
+   "file": "34-phase-3-hook-windup.jpg",
+   "close": "34-phase-3-hook-windup-close.jpg"
+  },
+  {
+   "state": "phase-3-hook-strike",
+   "file": "35-phase-3-hook-strike.jpg",
+   "close": "35-phase-3-hook-strike-close.jpg"
+  },
+  {
+   "state": "phase-3-throne-eruption-windup",
+   "file": "36-phase-3-throne-eruption-windup.jpg",
+   "close": "36-phase-3-throne-eruption-windup-close.jpg"
+  },
+  {
+   "state": "phase-3-throne-eruption-strike",
+   "file": "37-phase-3-throne-eruption-strike.jpg",
+   "close": "37-phase-3-throne-eruption-strike-close.jpg"
+  },
+  {
+   "state": "phase-3-volley-windup",
+   "file": "38-phase-3-volley-windup.jpg",
+   "close": "38-phase-3-volley-windup-close.jpg"
+  },
+  {
+   "state": "phase-3-volley-strike",
+   "file": "39-phase-3-volley-strike.jpg",
+   "close": "39-phase-3-volley-strike-close.jpg"
+  },
+  {
+   "state": "phase-4-change",
+   "file": "40-phase-4-change.jpg",
+   "close": "40-phase-4-change-close.jpg"
+  },
+  {
+   "state": "phase-4-cleave-windup",
+   "file": "41-phase-4-cleave-windup.jpg",
+   "close": "41-phase-4-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-4-cleave-strike",
+   "file": "42-phase-4-cleave-strike.jpg",
+   "close": "42-phase-4-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-4-throne-flail-windup",
+   "file": "43-phase-4-throne-flail-windup.jpg",
+   "close": "43-phase-4-throne-flail-windup-close.jpg"
+  },
+  {
+   "state": "phase-4-throne-flail-strike",
+   "file": "44-phase-4-throne-flail-strike.jpg",
+   "close": "44-phase-4-throne-flail-strike-close.jpg"
+  },
+  {
+   "state": "phase-4-hook-windup",
+   "file": "45-phase-4-hook-windup.jpg",
+   "close": "45-phase-4-hook-windup-close.jpg"
+  },
+  {
+   "state": "phase-4-hook-strike",
+   "file": "46-phase-4-hook-strike.jpg",
+   "close": "46-phase-4-hook-strike-close.jpg"
+  },
+  {
+   "state": "phase-4-throne-eruption-windup",
+   "file": "47-phase-4-throne-eruption-windup.jpg",
+   "close": "47-phase-4-throne-eruption-windup-close.jpg"
+  },
+  {
+   "state": "phase-4-throne-eruption-strike",
+   "file": "48-phase-4-throne-eruption-strike.jpg",
+   "close": "48-phase-4-throne-eruption-strike-close.jpg"
+  },
+  {
+   "state": "phase-4-throne-inferno-windup",
+   "file": "49-phase-4-throne-inferno-windup.jpg",
+   "close": "49-phase-4-throne-inferno-windup-close.jpg"
+  },
+  {
+   "state": "phase-4-throne-inferno-strike",
+   "file": "50-phase-4-throne-inferno-strike.jpg",
+   "close": "50-phase-4-throne-inferno-strike-close.jpg"
+  },
+  {
+   "state": "phase-4-barrage-windup",
+   "file": "51-phase-4-barrage-windup.jpg",
+   "close": "51-phase-4-barrage-windup-close.jpg"
+  },
+  {
+   "state": "phase-4-barrage-strike",
+   "file": "52-phase-4-barrage-strike.jpg",
+   "close": "52-phase-4-barrage-strike-close.jpg"
+  },
+  {
+   "state": "dazed",
+   "close": "53-dazed-close.jpg"
+  },
+  {
+   "state": "struck",
+   "file": "54-struck.jpg",
+   "close": "54-struck-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "55-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "56-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "57-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "58-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "59-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "60-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "61-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "62-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "63-death-close.jpg"
+  }
+ ],
+ "errors": [],
+ "cost": {
+  "file": "boss_ashkar",
+  "tris": 10434,
+  "frame": {
+   "calls": 34,
+   "tris": 127888,
+   "quality": 0.7
+  }
+ }
+}

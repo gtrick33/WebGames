@@ -1,0 +1,200 @@
+{
+  "boss": "the-rot-mother",
+  "file": "boss_rotmother",
+  "form": "rotmother",
+  "float": 0,
+  "walked": {
+    "samples": 183,
+    "moving": 0,
+    "walking": 0,
+    "clips": {}
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "rot:bile",
+      "clips": [
+        "idle",
+        "slice",
+        "cast",
+        "punch"
+      ],
+      "readings": 67
+    },
+    {
+      "phase": 1,
+      "id": "rot:breath",
+      "clips": [
+        "cast",
+        "idle"
+      ],
+      "readings": 71
+    },
+    {
+      "phase": 1,
+      "id": "rot:pour",
+      "clips": [
+        "idle",
+        "smash",
+        "cast"
+      ],
+      "readings": 68
+    },
+    {
+      "phase": 1,
+      "id": "spell:bouncers",
+      "clips": [
+        "punch",
+        "idle",
+        "cast"
+      ],
+      "readings": 60
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "block",
+        "smash",
+        "slice",
+        "cast"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "rot:bile",
+      "clips": [
+        "slice",
+        "idle",
+        "cast"
+      ],
+      "readings": 67
+    },
+    {
+      "phase": 2,
+      "id": "rot:swell",
+      "clips": [
+        "block",
+        "idle"
+      ],
+      "readings": 56
+    },
+    {
+      "phase": 2,
+      "id": "rot:pour",
+      "clips": [
+        "smash",
+        "idle"
+      ],
+      "readings": 62
+    },
+    {
+      "phase": 2,
+      "id": "rot:breath",
+      "clips": [
+        "idle",
+        "cast"
+      ],
+      "readings": 51
+    },
+    {
+      "phase": 2,
+      "id": "tide",
+      "clips": [
+        "spin",
+        "idle"
+      ],
+      "readings": 56
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "taunt",
+        "idle"
+      ],
+      "readings": 45
+    },
+    {
+      "phase": 3,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "stab",
+        "run"
+      ]
+    },
+    {
+      "phase": 3,
+      "id": "rot:drag",
+      "clips": [
+        "idle",
+        "stab",
+        "walk",
+        "run"
+      ],
+      "readings": 80
+    },
+    {
+      "phase": 3,
+      "id": "rot:breath",
+      "clips": [
+        "cast",
+        "idle",
+        "walk"
+      ],
+      "readings": 52
+    },
+    {
+      "phase": 3,
+      "id": "rot:bile",
+      "clips": [
+        "slice",
+        "idle",
+        "walk",
+        "stab"
+      ],
+      "readings": 48
+    },
+    {
+      "phase": 3,
+      "id": "rot:swell",
+      "clips": [
+        "block",
+        "idle",
+        "walk",
+        "stab"
+      ],
+      "readings": 37
+    },
+    {
+      "phase": 3,
+      "id": "summon",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk"
+      ],
+      "readings": 47
+    },
+    {
+      "phase": 3,
+      "id": "roar",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "stab"
+      ],
+      "readings": 36
+    }
+  ],
+  "found": [
+    "it was never seen moving (0 of 183 readings)"
+  ],
+  "errors": []
+}

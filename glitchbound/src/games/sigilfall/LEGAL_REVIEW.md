@@ -92,6 +92,40 @@ pack already credited. Their names and titles are unchanged. A sun-crowned dead 
 a stone tomb guardian, a frost-giant jarl and a frozen shield-bearer are stock figures of the genre; none copies a
 named character of another game.
 
+The seven of Acts IV, V and the finale (pieces 2f to 2h, 2026-11-25) take nothing new. **Prior Vessant** is the
+Druid's robes with the Cleric's head, a book and the skeletons' staff. **General Morvain** is the Black Knight with
+his sword and a red banner from the Dungeon Pack. **The Magma Warden** is the Frost Golem's body with the Skeleton
+Golem's head and a great hammer. **Ossa the Founder** is the Skeleton Golem with the Engineer's goggles and pack and
+a great hammer. **Ashkar the Bound** is the Frost Golem with shackles and chain links from the Dungeon Pack. **Lady
+Cendre** is the Witch's dress with the Vampire's head, the Mage's cape, a triple candle and a staff. **Captain Ser
+Maltheus** is the Black Knight without his cape, with a spear and his shield. All of the same KayKit collection
+(CC0), each pack already credited. Their names and titles are unchanged, and none copies a named character of
+another game.
+
+The Rift's fourteen (piece 2i, 2026-11-25) take nothing new. The Drowned Priestess: the Cleric's robes, the Witch's
+head, a druid's staff, a bell and an anchor. Captain Saltbeard: the Survivalist, the Hoarder's pouches, the
+Tiefling's sword, a lantern and a keg. Brother Pustule: the Cleric, the Hoarder's mask, the skeletons' staff, a
+bottle and a barrel. Old Sluicegut: the Frost Golem, the Monstrosity's pitchfork, a barrel and a mushroom. The
+Rot-Mother: the Monstrosity with the skeletons' staff. The Runewarden: the Frost Golem's body, the Black Knight's
+helm and shoulders, a great hammer and an anvil. The Slag Colossus: the Skeleton Golem's body, the Frost Golem's head
+and a cauldron. Forgemaster Grold: the Barbarian, the Engineer's goggles and pack, a hammer and a pickaxe. The
+Rotwood Colossus: the Frost Golem, a bare tree and mushrooms from the Forest Nature Pack. Elowen of the Dawn: the
+Paladin's coat and cape, the Witch's head, a staff and a lantern. The Withered Queen: the Vampire, the Necromancer's
+crown, the Mage's cape and the skeletons' scythe. The Veil Sentinel: the Black Knight's plate and shield, the
+Skeleton Golem's head and axe. Ilvane the Unmoored: the Mage's robes, the Witch's head and glasses, the Lorekeeper's
+staff and an open book. The Pale Herald: the Vampire, the Mage's cape, a staff, a bell and a white banner. All of the
+same KayKit collection (CC0), each pack already credited. No name or title changed, and none copies a named
+character of another game.
+
+The story's seven named foes of the lands (the rest of piece 2i that was done, 2026-11-25) take nothing new either,
+and no new name: each keeps the name it had. The Grey Lady: the Druid's robes, the Witch's head, the Mage's cape and a
+decorated lantern. Prince Thistlemourn: the Rogue's coat and cape, the Vampire's head, the Necromancer's crown, a
+druid's staff and a bare tree from the Forest Nature Pack. The Tearborn: the Monstrosity with lengths of chain. The
+Gatewarden: the Black Knight, his great shield, and the Dungeon Pack's key. The Weeping Lord: the helmed Paladin, a
+two-handed sword and a white banner. The Lich of Hollowmere: the Necromancer's robes and crown, the Skeleton Mage's
+head, a staff, a shackle and an anchor. Vosk the Hollowed: the Knight's plate and cape, the Skeleton Warrior's head
+and a spear, on the horse he already rode.
+
 ## A Rift legendary on every place (2026-11-24)
 
 The owner asked for "a legendary for each spec and 3 legendaries common for the class" on every item slot. What is taken

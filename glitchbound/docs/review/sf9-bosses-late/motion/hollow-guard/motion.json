@@ -1,0 +1,131 @@
+{
+  "boss": "hollow-guard",
+  "file": "boss_maltheus",
+  "form": "maltheus",
+  "float": 0,
+  "walked": {
+    "samples": 183,
+    "moving": 49,
+    "walking": 47,
+    "clips": {
+      "walk": 46,
+      "run": 1,
+      "slice": 2
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "run",
+        "slice",
+        "idle"
+      ],
+      "readings": 62
+    },
+    {
+      "phase": 1,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle",
+        "walk"
+      ],
+      "readings": 76
+    },
+    {
+      "phase": 1,
+      "id": "hook",
+      "clips": [
+        "stab",
+        "idle",
+        "walk"
+      ],
+      "readings": 50
+    },
+    {
+      "phase": 1,
+      "id": "dusk:oath",
+      "clips": [
+        "block",
+        "idle",
+        "walk"
+      ],
+      "readings": 52
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "block",
+        "chop2",
+        "slice",
+        "bash",
+        "run"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "tripleCharge",
+      "clips": [
+        "bash",
+        "walk",
+        "run",
+        "idle"
+      ],
+      "readings": 44
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle"
+      ],
+      "readings": 64
+    },
+    {
+      "phase": 2,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle",
+        "walk"
+      ],
+      "readings": 53
+    },
+    {
+      "phase": 2,
+      "id": "hook",
+      "clips": [
+        "stab",
+        "idle"
+      ],
+      "readings": 39
+    },
+    {
+      "phase": 2,
+      "id": "dusk:oath",
+      "clips": [
+        "block",
+        "idle"
+      ],
+      "readings": 28
+    },
+    {
+      "phase": 2,
+      "id": "roar",
+      "clips": [
+        "taunt",
+        "idle"
+      ],
+      "readings": 41
+    }
+  ],
+  "found": [],
+  "errors": []
+}

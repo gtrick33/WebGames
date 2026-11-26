@@ -1,0 +1,168 @@
+{
+  "boss": "rotwood-colossus",
+  "file": "boss_rotwood",
+  "form": "rotwood",
+  "float": 0,
+  "walked": {
+    "samples": 188,
+    "moving": 70,
+    "walking": 68,
+    "clips": {
+      "walk": 67,
+      "run": 1,
+      "slice": 1,
+      "kick": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "walk",
+        "slice",
+        "idle",
+        "chop2"
+      ],
+      "readings": 61
+    },
+    {
+      "phase": 1,
+      "id": "blight:topple",
+      "clips": [
+        "idle",
+        "smash",
+        "hit"
+      ],
+      "readings": 68
+    },
+    {
+      "phase": 1,
+      "id": "blight:pods",
+      "clips": [
+        "spin",
+        "idle",
+        "walk",
+        "hit"
+      ],
+      "readings": 60
+    },
+    {
+      "phase": 1,
+      "id": "slamRings",
+      "clips": [
+        "idle",
+        "kick",
+        "walk",
+        "slice"
+      ],
+      "readings": 58
+    },
+    {
+      "phase": 1,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 47
+    },
+    {
+      "phase": 1,
+      "id": "summon",
+      "clips": [
+        "cast",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 38
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "punch",
+        "cast"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "blight:taproot",
+      "clips": [
+        "punch",
+        "idle",
+        "walk"
+      ],
+      "readings": 60
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle",
+        "hit"
+      ],
+      "readings": 68
+    },
+    {
+      "phase": 2,
+      "id": "blight:topple",
+      "clips": [
+        "smash",
+        "idle",
+        "hit",
+        "slice"
+      ],
+      "readings": 54
+    },
+    {
+      "phase": 2,
+      "id": "blight:pods",
+      "clips": [
+        "spin",
+        "idle"
+      ],
+      "readings": 20
+    },
+    {
+      "phase": 2,
+      "id": "slamRings",
+      "clips": [
+        "kick",
+        "idle",
+        "hit"
+      ],
+      "readings": 39
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "cast",
+        "idle",
+        "hit"
+      ],
+      "readings": 32
+    },
+    {
+      "phase": 2,
+      "id": "roar",
+      "clips": [
+        "taunt",
+        "idle",
+        "slice",
+        "hit"
+      ],
+      "readings": 48
+    }
+  ],
+  "found": [],
+  "errors": []
+}
