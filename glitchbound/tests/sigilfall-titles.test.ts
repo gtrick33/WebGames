@@ -3,7 +3,7 @@
  * lights that are allowed, taken back for good, written to the change log, admins only, and carried with the member's
  * account (Me.sigilTitles) while they're held.
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { onRequestDelete as deleteMe, onRequestGet as getMe } from '../functions/api/me';
 import { onRequestGet as titlesGet, onRequestPost as titlesPost } from '../functions/api/admin/sigilfall/titles';
 import type { Env } from '../server/http';
@@ -69,6 +69,20 @@ describe('giving and taking back', () => {
       ['Blooded', null, 'boss@example.com'],
       ['the Kingslayer', 3000, 'boss@example.com'],
     ]);
+  });
+
+  it('keeps two given in the same millisecond in the order they were given, whatever their ids', async () => {
+    const { env, ash } = await setup();
+    // (ids that sort the other way round from the order they're given in)
+    const ids = vi.spyOn(crypto, 'randomUUID').mockReturnValueOnce('ffffffff-ffff-4fff-bfff-ffffffffffff').mockReturnValueOnce('00000000-0000-4000-8000-000000000000');
+    try {
+      await grantTitle(env, ash.id, { name: 'Blooded', fx: 'blood' }, 'b', 5000);
+      await grantTitle(env, ash.id, { name: 'Champion of the Ring', fx: 'ashfire' }, 'b', 5000);
+    } finally {
+      ids.mockRestore();
+    }
+    expect((await liveTitles(env, ash.id)).map((t) => t.name)).toEqual(['Blooded', 'Champion of the Ring']);
+    expect((await titlesFor(env, ash.id)).map((t) => t.name)).toEqual(['Champion of the Ring', 'Blooded']);
   });
 
   it('won’t give the same words twice while they’re held (in any case), nor more than the most a member holds', async () => {
