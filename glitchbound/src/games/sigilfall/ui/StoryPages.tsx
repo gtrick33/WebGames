@@ -5,7 +5,8 @@ import { QUEST_DEFS } from '../data/quests';
 import { SKILLS } from '../data/skills';
 import type { Item, Keepsake, SigilId } from '../data/types';
 import type { SigilEngine, StoryPage } from '../engine';
-import { allItems, currentObjective, SIGIL_BONUS, sigilCount, trackedQuest, type Character } from '../progress/character';
+import { allItems, currentObjective, questState, SIGIL_BONUS, sigilCount, trackedQuest, type Character } from '../progress/character';
+import { offerStep } from '../progress/waiting';
 import { modLines } from '../progress/describe';
 import { isMainQuest } from '../progress/handin';
 import { itemMods, itemName } from '../progress/items';
@@ -190,7 +191,9 @@ function DeedView({ engine, hero, page, onClose }: { engine: SigilEngine; hero: 
   const main = isMainQuest(q.id);
   const rewards = questRewards(hero, q);
   const next = trackedQuest(hero, engine.world?.region.id);
-  const nextLine = next && next.id !== q.id && isMainQuest(next.id) ? `${next.name}: ${currentObjective(hero, next).label}` : null;
+  // (the story's next quest may still be waiting to be taken: then whom to see about it)
+  const nextStep = next && questState(hero, next.id) === 'offered' ? offerStep(hero, next, engine.world?.region.id) : next ? currentObjective(hero, next).label : '';
+  const nextLine = next && next.id !== q.id && isMainQuest(next.id) ? `${next.name}: ${nextStep}` : null;
   return (
     <div className="rb-story is-deed" role="dialog" aria-modal="true" aria-label={`${q.name}: complete`}>
       <div className={`rb-deed${main ? ' is-main' : ''}`}>

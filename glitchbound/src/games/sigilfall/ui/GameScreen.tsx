@@ -22,7 +22,7 @@ import { SPEC_LEVEL } from '../data/talents';
 import { modLines } from '../progress/describe';
 import { isMainQuest, questSteps, turnInNpc } from '../progress/handin';
 import { questRewards } from '../progress/rewards';
-import { meanwhile } from '../progress/waiting';
+import { meanwhile, offerStep } from '../progress/waiting';
 import { wornLooks } from '../progress/wardrobe';
 import { paragonFree, paragonXp } from '../progress/paragon';
 import { itemMods, itemName, usableBy } from '../progress/items';
@@ -963,10 +963,12 @@ function Tracker({ engine }: { engine: SigilEngine }) {
   }
   const pr = questProgress(h, q);
   const ready = questState(h, q.id) === 'ready';
+  // (the story's next quest, still to be taken: who to see about it, progress/character.ts storyOffer)
+  const offer = questState(h, q.id) === 'offered';
   const who = ready ? turnInNpc(q) : null;
   const step = currentObjective(h, q);
   // (a boss in the way to the one the quest names is the one to get past: the Coffin Matron, before Warden Ossric)
-  const inWay = !ready && engine.world ? bossInTheWay(engine.world, step) : null;
+  const inWay = !ready && !offer && engine.world ? bossInTheWay(engine.world, step) : null;
   const main = isMainQuest(q.id);
   const icon = mapIconUrl(ready ? (main ? 'handin' : 'handinSide') : main ? 'offer' : 'offerSide', 2);
   // on touch a tap folds it to its mark (the quest stays on the map), and a tap opens it again
@@ -983,8 +985,8 @@ function Tracker({ engine }: { engine: SigilEngine }) {
         {q.name}
       </strong>
       <span>
-        {ready ? `Return to ${who ? NPCS[who]?.name : 'them'}` : inWay ? `Get past ${(BOSSES[inWay]?.name ?? 'the guardian').replace(/^The /, 'the ')}` : step.label}
-        {!ready && !inWay && pr.of > 1 ? ` ${pr.n}/${pr.of}` : ''}
+        {ready ? `Return to ${who ? NPCS[who]?.name : 'them'}` : offer ? offerStep(h, q, engine.world?.region.id) : inWay ? `Get past ${(BOSSES[inWay]?.name ?? 'the guardian').replace(/^The /, 'the ')}` : step.label}
+        {!ready && !offer && !inWay && pr.of > 1 ? ` ${pr.n}/${pr.of}` : ''}
       </span>
       {gate && <em className="rb-tracker-gate">Next story quest opens at level {gate.level}</em>}
       {waitLine}

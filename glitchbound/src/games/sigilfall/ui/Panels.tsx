@@ -12,6 +12,7 @@ import type { Item, ItemDef, QuestDef, RegionDef, RegionId, SkillIndex, SkillSpe
 import { SLOTS } from '../data/types';
 import type { PanelId, SigilEngine } from '../engine';
 import { SLOT_LEVELS, slotOpen, potionCap, bagSize, cantAbandon, cantEquip, cantLearn, cantSpec, currentObjective, pickOptions, pickTaken, freePoints, learnedSkills, levelGated, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character, HOME } from '../progress/character';
+import { offerStep } from '../progress/waiting';
 import { ZOOM_MAX, ZOOM_MIN } from '../progress/save';
 import { buildHero, heroUlt, typeBonus } from '../progress/build';
 import { comboVsText, DMG_NAME, fmtStat, modLines, STAT_LABEL, costText } from '../progress/describe';
@@ -1169,7 +1170,8 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
             <span>
               <strong>{goal.name}</strong>
               <span className="rb-small">
-                {ready ? `Return to ${giver ? NPCS[giver]?.name : 'them'}` : currentObjective(h, goal).label}
+                {/* (the story's next quest still to be taken: who gives it; the land is said after it) */}
+                {ready ? `Return to ${giver ? NPCS[giver]?.name : 'them'}` : questState(h, goal.id) === 'offered' ? offerStep(h, goal, shown?.land ?? w.region.id) : currentObjective(h, goal).label}
                 {where}
               </span>
             </span>

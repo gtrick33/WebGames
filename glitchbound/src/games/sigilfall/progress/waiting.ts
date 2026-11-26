@@ -6,6 +6,17 @@ import { isReplay, levelGated, questRegion, questState, type Character } from '.
 import { isMainQuest } from './handin';
 import { QUESTS } from '../data/quests';
 
+/**
+ * What the tracker says to do for the story's next quest while it waits to be taken (progress/character.ts storyOffer):
+ * see whoever gives it, and in which land when it isn't this one.
+ */
+export function offerStep(c: Character, q: QuestDef, here?: RegionId): string {
+  const who = NPCS[q.giver]?.name ?? 'whoever gives it';
+  const where = npcRegion(q.giver, c) ?? npcRegion(q.giver);
+  const land = where && where !== here ? REGIONS[where]?.name : undefined;
+  return land ? `Talk to ${who} in ${land}` : `Talk to ${who}`;
+}
+
 /** What the tracker suggests while the main story waits for a level: a side quest, and where to go for it. */
 export interface Meanwhile {
   q: QuestDef;

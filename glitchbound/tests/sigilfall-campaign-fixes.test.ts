@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { abandonQuest, cantAbandon, newCharacter, questState, trackedQuest } from '../src/games/sigilfall/progress/character';
+import { abandonQuest, cantAbandon, newCharacter, questState, storyOffer, trackedQuest } from '../src/games/sigilfall/progress/character';
+import { offerStep } from '../src/games/sigilfall/progress/waiting';
+import { questWhere } from '../src/games/sigilfall/sim/objective';
 import { letOut, updateCritters } from '../src/games/sigilfall/sim/critters';
 import { K, TILE, type TileMap } from '../src/games/sigilfall/sim/map';
 import { PETS } from '../src/games/sigilfall/data/pets';
@@ -128,5 +130,27 @@ describe('Sigilfall: the tracker follows the story', () => {
     // ...unless the hero chose to follow the side quest
     h.tracked = 'stormhoof';
     expect(trackedQuest(h, 'amberfield')?.id).toBe('stormhoof');
+  });
+
+  // the owner, 2026-11-26: after Rangers for Briarhollow "i get lost ... what to do and couldnt see it"
+  it('follows the story’s next quest to whoever gives it while it waits to be taken', () => {
+    const h = hero();
+    h.quests = { 'camp-scouts': { state: 'done', n: 1 }, 'south-road': { state: 'offered', n: 0 }, 'russet-hides': { state: 'active', n: 0 } };
+    expect(storyOffer(h)?.id).toBe('south-road');
+    // before a side quest under way, wherever the hero is
+    expect(trackedQuest(h, 'brackenridge')?.id).toBe('south-road');
+    // its place is its giver's: Maren, in Briarhollow
+    expect(questWhere(h, storyOffer(h)!)).toBe('briarhollow');
+    expect(offerStep(h, storyOffer(h)!, 'briarhollow')).toBe('Talk to Elder Maren');
+    expect(offerStep(h, storyOffer(h)!, 'brackenridge')).toBe('Talk to Elder Maren in Briarhollow');
+    // a side quest the hero chose still comes first
+    h.tracked = 'russet-hides';
+    expect(trackedQuest(h, 'brackenridge')?.id).toBe('russet-hides');
+    // and once taken, the quest's own steps lead
+    delete h.tracked;
+    h.quests['south-road'] = { state: 'active', n: 0 };
+    expect(storyOffer(h)).toBeUndefined();
+    expect(trackedQuest(h, 'briarhollow')?.id).toBe('south-road');
+    expect(questWhere(h, storyOffer(h) ?? trackedQuest(h)!)).toBe('thornvale');
   });
 });

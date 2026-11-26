@@ -747,7 +747,8 @@ export function questRegion(q: QuestDef): RegionId | undefined {
  * The quest to point at when the hero hasn't chosen one: the main story's, here and then anywhere, before a side
  * quest. It took the first quest done where the hero stood, and a side quest listed before the story's next beat (a
  * war-chief offered by the same marshal in the same breath) took the tracker from it: the owner saw the main quest
- * "blue for whatever reason".
+ * "blue for whatever reason". The story's next quest still waiting to be taken (storyOffer) comes after the story's
+ * quests under way and before a side quest: the one to see about it is where the story goes on.
  */
 export function trackedQuest(c: Character, here?: RegionId): QuestDef | undefined {
   // the one the hero chose to follow, while it lasts
@@ -758,7 +759,17 @@ export function trackedQuest(c: Character, here?: RegionId): QuestDef | undefine
   // (a dungeon again on a harder tier comes last: it took the tracker while the story waited for a level)
   const plain = list.filter((q) => !isReplay(q));
   const at = (l: QuestDef[]): QuestDef | undefined => (here ? l.find((q) => questRegion(q) === here) : undefined);
-  return at(main) ?? main[0] ?? at(plain) ?? plain[0] ?? at(list) ?? list[0];
+  return at(main) ?? main[0] ?? storyOffer(c) ?? at(plain) ?? plain[0] ?? at(list) ?? list[0];
+}
+
+/**
+ * The story's next quest while it waits to be taken from whoever gives it. Nothing followed it: after Rangers for
+ * Briarhollow, The South Road waited at Maren with no line in the tracker, no arrow and no mark on the maps (the owner,
+ * 2026-11-26: "i get lost after rangers to briarhollow quest what to do and couldnt see it"). The tracker, the arrow
+ * and the maps take it to its giver (sim/objective.ts questTarget).
+ */
+export function storyOffer(c: Character): QuestDef | undefined {
+  return QUESTS.find((q) => questState(c, q.id) === 'offered' && isMainQuest(q.id));
 }
 
 /** A quest that sends the hero through a dungeon they have done again, on a harder tier (Heroic Deeds). */
