@@ -15,6 +15,7 @@ import { FIELD, FX, WARN, type Fx3D } from '../render3d/fx3d';
 import type { Held } from '../render3d/dress';
 import type { LandObject } from '../render3d/land';
 import { flyer, grandeur, lookOf, motif, rim, strew, type Look } from './vigilLooks';
+import { drawScar, evolvedAura, evolvedEffect, evolvedOrbit, evolvedOverHero, evolvedPet, evolvedPetLook, evolvedPost, evolvedShot, evolvedWard, impactLayers, scarOf, type Scar } from './vigilEvolved';
 import { shieldOf, turnOf } from '../render3d/worldCast';
 
 /**
@@ -87,6 +88,16 @@ export function trunksOf(objects: LandObject[]): Obstacle[] {
 /** More than this many little hits at once would only hide what they hit. */
 const MAX_HITS = 30;
 const MAX_FULL_BURSTS = 12;
+/** At most this many evolved marks on the ground at once: each is a few quads every frame. */
+const MAX_SCARS = 10;
+/** On the dev server only: a family of evolved drawing left out, to see what it costs (scripts/sigilfall-vigil-bench.mjs). */
+const off = (part: string): boolean => import.meta.env.DEV && ((globalThis as { __vigilOff?: string }).__vigilOff ?? '').split(',').includes(part);
+/** Whole models (shades, stags) evolved spells may add a frame, on top of the Host's own. */
+const MAX_EVOLVED_MODELS = 4;
+/** Evolved shots drawn in their full form a frame; the rest are a streak and a core in their colors. */
+const MAX_EVOLVED_SHOTS = 24;
+/** At most this many evolved landings a frame get their flash and shockwave: past that, each is only its own form. */
+const MAX_LAYERED = 6;
 
 const toneOfEl = (el: Element): Tone => EL_TONES[el];
 const EL_TONES: Record<Element, Tone> = {
@@ -164,6 +175,13 @@ export class VigilPainter implements LandLayer {
   private readonly bits: Bit[] = [];
   private dt = 0;
   private readonly foeTurn = new Map<number, number>();
+  /** What evolved spells left on the ground, and the effects already seen (each leaves one mark). */
+  private readonly scars: Scar[] = [];
+  private readonly scarred = new WeakSet<Fx>();
+  private layered = 0;
+  /** The whole models evolved spells may still draw this frame (render/vigilEvolved.ts). */
+  private readonly models = { left: 0 };
+  private readonly shotsLeft = { left: 0 };
 
   constructor(v: Vigil, meId: number, party: Record<number, PartyLook> = {}) {
     this.v = v;
@@ -243,7 +261,9 @@ export class VigilPainter implements LandLayer {
     }
     for (const p of v.pets) {
       cast.shadow(p.x, p.y, 7);
-      cast.creature(p.sprite, p.x, p.y, turnOf(p.face), PERSON_H * 0.8, 'walk', p.walk, true);
+      // (an evolved companion is its kind made spectral or burning: render/vigilEvolved.ts)
+      const evo = v.heroOf(p.owner)?.evolved.has(p.spell) ? evolvedPetLook(p.spell) : null;
+      cast.creature(p.sprite, p.x, p.y, turnOf(p.face), PERSON_H * (evo ? 0.9 : 0.8), 'walk', p.walk, true, evo ?? undefined);
     }
     // the Wild Run: a herd of the land's own beasts down each marked path
     const herd = v.waves[4]?.sprite;
@@ -287,6 +307,8 @@ export class VigilPainter implements LandLayer {
   fx(fx: Fx3D, cast: Cast, time: number): void {
     const v = this.v;
     const dt = this.dt;
+    this.models.left = MAX_EVOLVED_MODELS;
+    this.shotsLeft.left = MAX_EVOLVED_SHOTS;
     for (const f of v.fields) this.field(fx, cast, f, time);
     for (const h of v.heroes) {
       if (h.down) {
@@ -294,13 +316,22 @@ export class VigilPainter implements LandLayer {
         continue;
       }
       this.auras(fx, cast, h, time);
+      // what an evolved spell keeps over its hero while it is held (the full moon)
+      if (!off('over')) for (const id of h.evolved) evolvedOverHero({ fx, cast, time, models: this.models }, id, lookOf(id, true), h.x, h.y);
     }
     this.land(fx, time);
+    // what evolved spells left on the ground, fading
+    for (const sc of this.scars) {
+      sc.t += dt;
+      drawScar({ fx, cast, time, models: this.models }, sc, (sc.x * 0.07 + sc.y * 0.11) % 9);
+    }
+    for (let i = this.scars.length - 1; i >= 0; i--) if (this.scars[i]!.t >= this.scars[i]!.dur) this.scars.splice(i, 1);
     // what the spells left standing: traps waiting, totems burning, each its spell's own
     for (const p of v.posts) {
       const look = lookOf(p.spell, !!v.heroOf(p.owner)?.evolved.has(p.spell));
       const seed = (p.x * 0.11 + p.y * 0.07) % 9;
       const fade = Math.min(1, (p.life - p.t) / 0.6, p.t / 0.25 + 0.2);
+      if (look.grand && !off('posts') && evolvedPost({ fx, cast, time, models: this.models }, p.spell, look, p.x, p.y, fade, p.t >= 0.45, seed)) continue;
       if (p.kind === 'mine') {
         // (armed once it has settled: its ring closes in and then beats)
         const armed = p.t >= 0.45;
@@ -323,6 +354,7 @@ export class VigilPainter implements LandLayer {
       if (h.down || h.ward <= 0) continue;
       const look = lookOf(h.wardSpell, h.evolved.has(h.wardSpell));
       const left = h.wardMax > 0 ? Math.min(1, h.ward / h.wardMax) : 1;
+      if (look.grand && !off('wards') && evolvedWard({ fx, cast, time, models: this.models }, h.wardSpell, look, h.x, h.y, left, h.id)) continue;
       fx.put({ kind: FX.bubble, x: h.x, y: h.y, up: 16, w: 46, a: look.a, alpha: 0.3 + left * 0.45 });
       motif(fx, look.motif, h.x + Math.cos(time * 2) * 18, h.y + Math.sin(time * 2) * 10, 18, 9, look.a, look.b, h.id, (time * 0.6) % 1, 0.4 + left * 0.5);
       if (look.grand) grandeur(fx, look, h.x, h.y, 16, 20, time, h.id, 0.6);
@@ -397,11 +429,13 @@ export class VigilPainter implements LandLayer {
       const owner = v.heroOf(p.owner);
       const look = lookOf(p.spell, !!owner?.evolved.has(p.spell));
       const seed = (p.x * 0.07) % 5;
+      if (look.grand && !off('pets') && evolvedPet({ fx, cast, time, models: this.models }, p.spell, look, p.x, p.y, seed)) continue;
       fx.put({ kind: FX.mark, x: p.x, y: p.y, flat: true, w: 16, a: look.a, alpha: 0.55 });
       if (look.grand) grandeur(fx, look, p.x, p.y, 10, 12, time, seed);
     }
     let hits = 0;
     let bursts = 0;
+    this.layered = 0;
     for (const f of v.fx) {
       if (f.kind === 'hit' && ++hits > MAX_HITS) continue;
       const u = Math.min(0.999, f.t / f.dur);
@@ -521,6 +555,7 @@ export class VigilPainter implements LandLayer {
       const pulse = 1 + Math.sin(time * 7) * 0.03;
       const look = lookOf(au.spell, h.evolved.has(au.spell));
       const seed = h.id * 1.3 + au.r * 0.1;
+      if (look.grand && !off('auras') && evolvedAura({ fx, cast, time, models: this.models }, au.spell, look, h.x, h.y, au.r, seed)) continue;
       const ground = look.ground ? FIELD[look.ground] : FIELD_OF[au.el][0];
       fx.put({ kind: FX.field, x: h.x, y: h.y, flat: true, w: au.r * 2 * pulse, a: look.a, b: look.b, t: 1, seed, p1: ground, alpha: 0.62 });
       fx.put({ kind: FX.rune, x: h.x, y: h.y, flat: true, w: au.r * 2.05 * pulse, a: look.a, b: look.b, t: 0.5, seed, alpha: 0.85 });
@@ -548,7 +583,9 @@ export class VigilPainter implements LandLayer {
 
   private shot(fx: Fx3D, cast: Cast, s: Vigil['shots'][number], time: number): void {
     const seed = (s.x * 0.05 + s.y * 0.03) % 13;
-    const look = lookOf(s.spell, !!this.v.heroOf(s.owner)?.evolved.has(s.spell));
+    const evolved = !!this.v.heroOf(s.owner)?.evolved.has(s.spell);
+    const look = lookOf(s.spell, evolved);
+    if (evolved && !off('shots') && evolvedShot({ fx, cast, time, models: this.models, shots: this.shotsLeft }, s.spell, look, s.x, s.y, s.vx, s.vy, s.r, s.spin, seed)) return;
     flyer(fx, cast, look, s.x, s.y, s.vx, s.vy, s.r, s.spin, time, seed);
   }
 
@@ -558,6 +595,7 @@ export class VigilPainter implements LandLayer {
     // (smaller than they were: what circles a hero is a little thing round them, not a crowd of its own)
     const size = Math.max(5, o.r * 1.5);
     const up = 13;
+    if (look.grand && !off('orbits') && evolvedOrbit({ fx, cast, time, models: this.models }, o.spell, look, h.x, h.y, o.x, o.y, size, seed)) return;
     if (look.body === 'hawk') {
       cast.creature('griffon', o.x, o.y, Math.atan2(h.y - o.y, o.x - h.x), size * 1.15, 'walk', time * 1.4 + o.y * 0.01, true, { lift: 0.5 });
     } else if (look.body === 'halo') {
@@ -584,6 +622,21 @@ export class VigilPainter implements LandLayer {
     const grand = !!look?.grand;
     // (what lands is drawn a little past its reach, and an evolution's further: "the effects should be bigger")
     const big = grand ? 1.3 : 1.12;
+    if (grand && look && !off('effects')) {
+      // an evolution lands in layers: a flash, a shockwave, a kick of the screen for the biggest, and a mark that stays
+      const kick = this.layered++ < MAX_LAYERED && !off('layers') ? impactLayers({ fx, cast, time, models: this.models }, f, look, u, seed) : 0;
+      if (kick) this.v.shake = Math.max(this.v.shake, kick * (1 - u));
+      if (!this.scarred.has(f)) {
+        this.scarred.add(f);
+        const scar = scarOf(f, look);
+        if (scar && !off('scars')) {
+          if (this.scars.length >= MAX_SCARS) this.scars.shift();
+          this.scars.push(scar);
+        }
+      }
+      const hero = f.who !== undefined ? this.v.heroOf(f.who) : undefined;
+      if (evolvedEffect({ fx, cast, time, models: this.models }, f, look, u, seed, hero?.x ?? f.x, hero?.y ?? f.y)) return;
+    }
     switch (f.kind) {
       case 'hit':
         spell(fx, 'impact', tone, f.x, f.y, u, Math.max(12, r * 1.05), seed);
