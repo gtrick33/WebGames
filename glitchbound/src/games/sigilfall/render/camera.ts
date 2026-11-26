@@ -83,6 +83,36 @@ export function placeCamera(
  */
 export const edgeArrowAngle = (hx: number, hy: number, tx: number, ty: number): number => Math.atan2(ty - hy, tx - hx);
 
+/** What the screen keeps for itself at each edge, in CSS pixels: a phone's island, its rounded corners, its home bar. */
+export interface Insets {
+  t: number;
+  r: number;
+  b: number;
+  l: number;
+}
+export const NO_INSETS: Insets = { t: 0, r: 0, b: 0, l: 0 };
+
+/** Is (x, y) inside a W by H view, `m` in from each edge and in from the screen's own edges (`safe`)? */
+export const inArrowView = (x: number, y: number, W: number, H: number, m: number, safe: Insets = NO_INSETS): boolean =>
+  x > m + safe.l && x < W - m - safe.r && y > m + safe.t && y < H - m - safe.b;
+
+/**
+ * Where the quest's arrow stands at the edge of a W by H view, out from the middle at angle `a`: `m` in from each edge,
+ * and in from what the screen keeps for itself (`safe`). At 28 px from the very edge, on an iPhone on its side (62 px
+ * at each side for the island and the corners) the arrow pointing left or right stood under the corner or the island,
+ * cut off and hard to make out (the owner, on an iPhone 17 Pro: "the quest arrow is barely visible").
+ */
+export function edgeArrowPoint(W: number, H: number, a: number, m: number, safe: Insets = NO_INSETS): { x: number; y: number } {
+  const cx = W / 2;
+  const cy = H / 2;
+  const c = Math.cos(a);
+  const s = Math.sin(a);
+  const tx = c > 1e-6 ? (W - m - safe.r - cx) / c : c < -1e-6 ? (m + safe.l - cx) / c : Infinity;
+  const ty = s > 1e-6 ? (H - m - safe.b - cy) / s : s < -1e-6 ? (m + safe.t - cy) / s : Infinity;
+  const t = Math.max(0, Math.min(tx, ty));
+  return { x: cx + c * t, y: cy + s * t };
+}
+
 /**
  * How big the HUD is drawn on a stage of this size (CSS pixels): 1 up to a desk screen of 1366 by 768, then growing
  * with whichever of the stage's sides has grown less, in steps of a twentieth, to at most 2.25 (a 4K screen). Touch

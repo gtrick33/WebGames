@@ -495,12 +495,15 @@ function QuestArrow({ engine }: { engine: SigilEngine }) {
   });
   return (
     <div className="rb-qarrow" ref={ref} hidden aria-hidden="true">
+      {/* (a dark rim, a gold head lit along its upper half: it reads on pale ground and on dark) */}
       <svg className="rb-qarrow-way" viewBox="-12 -14 28 28">
-        <path d="M15 0 L-11 -13 L-5 0 L-11 13 Z" fill="#1b1428" />
-        <path d="M11 0 L-8 -9 L-2.5 0 L-8 9 Z" fill="#ffe066" />
+        <path d="M15 0 L-11 -13 L-5 0 L-11 13 Z" fill="#1b1428" stroke="#1b1428" strokeWidth="1.2" strokeLinejoin="round" />
+        <path d="M11 0 L-8 -9 L-2.5 0 L-8 9 Z" fill="#ffc61a" />
+        <path d="M11 0 L-8 -9 L-2.5 0 Z" fill="#fff1a6" />
       </svg>
       <svg className="rb-qarrow-here" viewBox="-8 -7 16 14">
-        <path d="M-5.5 -4.5 L5.5 -4.5 L0 4.5 Z" fill="#ffe066" stroke="rgba(20,12,32,0.92)" strokeWidth="2.4" strokeLinejoin="round" paintOrder="stroke" />
+        <path d="M-5.5 -4.5 L5.5 -4.5 L0 4.5 Z" fill="#ffc61a" stroke="rgba(20,12,32,0.92)" strokeWidth="2.4" strokeLinejoin="round" paintOrder="stroke" />
+        <path d="M-4 -3.4 L4 -3.4 L0 -0.6 Z" fill="#fff1a6" />
       </svg>
     </div>
   );
