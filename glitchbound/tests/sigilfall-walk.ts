@@ -67,6 +67,8 @@ function talk(walk: Walk, npc: string): void {
 function walkTo(w: World, x: number, y: number, far: number): void {
   const p = w.player;
   const f = flowField(w.map, Math.floor(x / TILE), Math.floor(y / TILE), 600);
+  let prevX = NaN;
+  let prevY = NaN;
   for (let i = 0; i < far / 8; i++) {
     if (Math.hypot(x - p.x, y - p.y) < 8) {
       p.x = x;
@@ -81,8 +83,37 @@ function walkTo(w: World, x: number, y: number, far: number): void {
       p.y = y;
       return;
     }
-    p.x += s.x * 8;
-    p.y += s.y * 8;
+    // (among rubble the flow can send a walker one step on and the next step back, for good: the dungeon's own
+    // people jitter there, a person walks through. A step that would undo the last one goes to the middle of the
+    // nearest tile that is nearer the goal instead)
+    const nx = p.x + s.x * 8;
+    const ny = p.y + s.y * 8;
+    if (Math.hypot(nx - prevX, ny - prevY) < 1) {
+      const tx = Math.floor(p.x / TILE);
+      const ty = Math.floor(p.y / TILE);
+      let best = f[ty * w.map.w + tx] ?? -1;
+      let bx = -1;
+      let by = -1;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const v = f[(ty + dy) * w.map.w + tx + dx] ?? -1;
+        if (v >= 0 && (best < 0 || v < best)) {
+          best = v;
+          bx = tx + dx;
+          by = ty + dy;
+        }
+      }
+      if (bx >= 0) {
+        prevX = p.x;
+        prevY = p.y;
+        p.x = (bx + 0.5) * TILE;
+        p.y = (by + 0.5) * TILE;
+        continue;
+      }
+    }
+    prevX = p.x;
+    prevY = p.y;
+    p.x = nx;
+    p.y = ny;
   }
 }
 
