@@ -3,6 +3,7 @@ import { damp } from '../core/math';
 import { mountDef, riddenMount } from '../progress/wardrobe';
 import { NPCS } from '../data/quests';
 import { passerbyLook, TOWNSFOLK_LOOKS } from '../render/art/townsfolk';
+import { THINGS } from '../data/things';
 import type { HeroLook } from '../render/art/hero';
 import { npcLookOf } from '../render/sprites';
 import { bossHidden } from '../sim/boss';
@@ -312,6 +313,30 @@ export class WorldCast {
       const rare = c.tier === 'epic';
       cast.shadow(c.x, c.y, 8);
       cast.prop(rare ? 'chest_large_gold' : 'chest', c.x, c.y, rare ? 15 : 13, 0, 0, c.open ? [0.55, 0.5, 0.5] : undefined);
+    }
+    // a quest's things (sim/tasks.ts): what is to be burnt, searched, freed or lit, as it is and as the hero leaves it
+    for (const t of w.tasks.things) {
+      const def = THINGS[t.look];
+      if (t.role === 'goal') continue;
+      if (def.person) {
+        // someone bound: sitting until freed, then on their feet for a breath and gone
+        if (t.used && t.usedT > 2.2) continue;
+        const alpha = t.used ? Math.max(0, 1 - Math.max(0, t.usedT - 1.4) / 0.8) : 1;
+        cast.person(passerbyLook(t.id * 7 + t.idx, w.region.theme), null, false, t.x, t.y, 0, { clip: t.used ? 'cheer' : 'sit', t: t.used ? t.usedT : time + t.idx, loop: !t.used }, { alpha });
+        continue;
+      }
+      if (t.used && def.after === 'gone') continue;
+      const burnt = t.used && def.after === 'burnt';
+      const lit = t.used && def.after === 'lit';
+      const base = def.tint ?? [1, 1, 1];
+      const tint: [number, number, number] = burnt ? [0.22, 0.2, 0.2] : lit ? [1.5, 1.3, 0.9] : t.used && def.after === 'opened' ? [base[0] * 0.6, base[1] * 0.6, base[2] * 0.6] : [base[0], base[1], base[2]];
+      cast.shadow(t.x, t.y, Math.max(5, def.h * 0.5));
+      cast.prop(def.model, t.x, t.y, def.h, (t.id * 1.7) % 6.28, 0, tint);
+    }
+    // what the hero carries for a quest: held up over them
+    if (w.tasks.carrying && !w.player.dead) {
+      const def = THINGS[w.tasks.carrying.look];
+      cast.prop(def.model, w.player.x, w.player.y, Math.min(11, def.h), time * 0.6, 1.25, def.tint);
     }
     for (const s of w.spores) cast.prop('mushroom_redGroup', s.x, s.y, s.ripe ? 13 : 7, 0, 0, s.fuse > 0 && Math.floor(time * 10) % 2 === 0 ? [1.6, 1.3, 1.3] : undefined);
     for (const d of w.drops) {

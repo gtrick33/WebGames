@@ -80,7 +80,7 @@ export function mainStory(defs: Record<string, QuestDef>): Set<string> {
  */
 export function questBand(q: QuestDef, defs: Record<string, QuestDef>, regions: Record<string, RegionDef>, npcRegion: Record<string, RegionId>, events: Record<string, StoryEventDef>, depth = 0): RegionId {
   const o = q.objective;
-  const played = o.kind === 'kill' || o.kind === 'loot' || o.kind === 'clear' ? o.region : o.kind === 'event' ? events[o.event]?.region : o.kind === 'talk' ? (npcRegion[o.npc] ?? q.zone) : (q.zone ?? npcRegion[q.giver]);
+  const played = 'region' in o ? o.region : o.kind === 'event' ? events[o.event]?.region : o.kind === 'talk' ? (npcRegion[o.npc] ?? q.zone) : (q.zone ?? npcRegion[q.giver]);
   const r = played ? regions[played] : undefined;
   if (r && r.kind !== 'town' && r.levels[0] > 1) return r.id;
   const before = q.after?.[0];

@@ -1,3 +1,5 @@
+import { THINGS } from '../data/things';
+import { channelOf } from '../sim/tasks';
 import { drawReach, drawReticle } from './reticle';
 import { clamp, damp, TAU } from '../core/math';
 import { zoneLight } from './zoneLight';
@@ -834,6 +836,18 @@ export class Renderer {
         if (gh.cast && !gh.dead) this.bar(s.x, s.y + 8, 34, gh.cast.k, '#ffd36a');
       }
       for (const n of w.npcs) if (near(n.x, n.y)) this.drawNpcSigns(w, n, st);
+      // a quest's thing within reach of a walk: what to do to it, over it; and the work under way, as a bar over the hero
+      for (const t of w.tasks.things) {
+        if (t.used || !t.verb || !near(t.x, t.y) || Math.hypot(t.x - w.player.x, t.y - w.player.y) > 150) continue;
+        const s = st.project(t.x, t.y, THINGS[t.look].h + 8);
+        this.label(t.verb, s.x, s.y - 6, 10, '#ffe066');
+      }
+      const work = channelOf(w);
+      if (work) {
+        const s = st.project(w.player.x, w.player.y, PERSON_H + 10);
+        this.label(work.verb, s.x, s.y - 10, 10, '#ffe066');
+        this.bar(s.x, s.y, 40, work.k, '#ffd36a');
+      }
       // what a quest asks for, lying on the ground: its name over it
       for (const d of w.drops) {
         if (d.kind !== 'quest' || !d.label || !near(d.x, d.y)) continue;
@@ -1164,7 +1178,7 @@ export class Renderer {
     const it = w.interactable;
     // on touch the Talk button itself stands beside the hero (ui/Touch.tsx)
     if (!it || this.touchMode) return;
-    const word = it.kind === 'npc' ? 'TALK' : it.kind === 'waystone' ? 'TRAVEL' : it.kind === 'exit' && it.door ? 'ENTER' : 'E';
+    const word = it.kind === 'thing' || it.kind === 'yield' ? it.label.toUpperCase() : it.kind === 'npc' ? 'TALK' : it.kind === 'waystone' ? 'TRAVEL' : it.kind === 'exit' && it.door ? 'ENTER' : 'E';
     const s = st.project(it.x, it.y, PERSON_H + 8);
     this.label(word, s.x, s.y + Math.sin(time * 4) * 1.5, 13, '#ffe066');
   }

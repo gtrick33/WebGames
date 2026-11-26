@@ -27,7 +27,13 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
       'And his orders say someone in Aster paid for the roads. Somebody in our own kingdom is selling us.',
       'Follow him north into the Ashen Barrows. Find Lamplighter Ivo on Lantern Hill. Travelers say its lamps are going out.',
     ],
-    objective: { kind: 'talk', npc: 'lamplighter-ivo', label: 'Talk to Lamplighter Ivo on Lantern Hill, in the Ashen Barrows' },
+    // (it was a walk and a talk. The lamps going out is seen on the way up: three of the road's are relit, each with
+    // what put it out still standing by it)
+    objective: {
+      kind: 'use', region: 'ashen-barrows', at: 'lantern-hill', count: 3, thing: 'lantern', verb: 'Relight', label: 'Relight the road-lamps below Lantern Hill', secs: 1.1, spread: 11, guards: ['corpse-candle'],
+      notes: ['The wick is cut, not burnt out. Something snuffed it.', 'Hoofprints by the post. Unshod. Dead horses.', 'Lit. Far off on the downs, another lamp goes dark.'],
+    },
+    then: [{ kind: 'talk', npc: 'lamplighter-ivo', label: 'Talk to Lamplighter Ivo on Lantern Hill' }],
     // Act II opens once Act I is done: Hearthstead held, its riders in the camp
     after: ['camp-riders'],
     level: 22,
@@ -39,7 +45,13 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
     auto: true,
     giver: 'lamplighter-ivo',
     text: 'Only one lamp on the downs has never gone out. It burns in Brother Orren’s chapel, at the top of Lantern Hill. Orren is the last priest of the Lantern order, which buried Aster’s kings for six hundred years. You already know the Hallow King’s name from Morgrave’s journal. Ask Orren what crown the Hallow King wears, and what he wants with the sigils.',
-    objective: { kind: 'talk', npc: 'brother-orren', label: 'Talk to Brother Orren at the top of Lantern Hill' },
+    // (it was one talk. The order buried Aster's kings for six hundred years and wrote each on its chapel's wall: the
+    // hero reads the wall before asking, and the last name on it is the question)
+    objective: {
+      kind: 'use', region: 'ashen-barrows', at: 'brother-orren', count: 3, thing: 'books', verb: 'Read', label: 'Read the kings’ roll in Orren’s chapel', secs: 1.1, spread: 4,
+      notes: ['“Hrodric, first king laid in the downs.”', 'Six hundred years of kings. The last line is scratched out.', 'Under the scratches: “Vaelor, who would not be buried.”'],
+    },
+    then: [{ kind: 'talk', npc: 'brother-orren', label: 'Ask Brother Orren about the name scratched out' }],
     after: ['the-lanterns-dim'],
     zone: 'ashen-barrows',
     level: 23,
@@ -52,14 +64,16 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
     name: 'The Vigil',
     giver: 'brother-orren',
     auto: true,
-    text: 'The dead are putting out the lamps so the Host’s riders can cross the downs unseen. Tonight Orren will light the great lamp at the top of Lantern Hill and keep vigil beside it. If it burns until dawn, every lamp on the downs will light again. Keep the dead off the lamp until morning.',
+    text: 'The dead are putting out the lamps so the Host’s riders can cross the downs unseen. Tonight Orren will light the great lamp at the top of Lantern Hill and keep vigil beside it. If it burns until dawn, every lamp on the downs will light again. Carry the night’s oil up from Ivo, and keep the dead off the lamp until morning.',
     find: {
       name: 'A Black-Rose Shield-Boss',
       kind: 'relic',
       about: 'The iron boss of a shield, torn from one of the dead who came for the great lamp. A black rose is painted on it, fresh paint over old scratches. A name is scratched small inside the rim.',
       body: ['B. Hollin. Ninefold Watch.'],
     },
-    objective: { kind: 'event', event: 'lantern-vigil', label: 'Keep the dead away from the great lamp' },
+    // (the great lamp burns oil, and a night's worth of it is at the foot of the hill: it goes up in the hero's arms)
+    objective: { kind: 'carry', region: 'ashen-barrows', from: 'lamplighter-ivo', to: 'lantern-hill', thing: 'barrel', verb: 'Take the lamp oil', label: 'Carry Ivo’s lamp oil up to the great lamp', ambush: [['corpse-candle'], ['barrow-hound', 'barrow-hound']] },
+    then: [{ kind: 'event', event: 'lantern-vigil', label: 'Keep the dead away from the great lamp' }],
     after: ['orren-the-last-chapel'],
     zone: 'ashen-barrows',
     level: 24,
@@ -72,7 +86,19 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
     giver: 'brother-orren',
     auto: true,
     text: 'The black rose was the badge of Sir Corvane, who commanded the Ninefold Watch, the knights who kept these downs. Ten years ago the Watch died here and Corvane vanished. Orren thinks Corvane is the knight of the barrows in Vosk’s orders. One of his captains lived. Cael Varrow drinks at the bottom of Lantern Hill, on its south-west side, and calls himself Wat.',
-    objective: { kind: 'talk', npc: 'cael-varrow', label: 'Talk to “Wat” at the bottom of Lantern Hill' },
+    // (it was one talk, and he owned up in it. He doesn't, the first time: the hero goes to the Watch's own graves, reads
+    // what is cut there, and comes back knowing whose is empty)
+    objective: {
+      kind: 'talk', npc: 'cael-varrow', label: 'Talk to “Wat” at the bottom of Lantern Hill',
+      lines: ['Wat. The name’s Wat. I mend harness, when there’s harness.', 'Ninefold Watch? Dead men. All nine. Go and count the stones if you like, out at the Ninefold Barrows.', 'And then leave me be.'],
+    },
+    then: [
+      {
+        kind: 'use', region: 'ashen-barrows', at: 'ninefold-barrows', count: 3, thing: 'grave', verb: 'Read', label: 'Count the Watch’s graves at the Ninefold Barrows', secs: 1, spread: 6, guards: ['barrow-wight'],
+        notes: ['“Sir Bram Hollin. He held the left.”', 'Nine stones in a ring. Black roses, cut and recut.', '“Cael Varrow, Captain.” This grave was never dug.'],
+      },
+      { kind: 'talk', npc: 'cael-varrow', label: 'Tell “Wat” whose grave is empty' },
+    ],
     after: ['the-last-lamp'],
     zone: 'ashen-barrows',
     level: 25,
@@ -86,6 +112,7 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
     giver: 'brother-orren',
     text: 'The Kings’ Mound is the oldest barrow on the downs, at their far western end, south-west of Lantern Hill. Corvane rode into it alone the night the Watch fell, and the black-rose dead come out of it now. Go there with Cael and find its door.',
     find: {
+      step: 1,
       name: 'The Roll of the Ninefold Watch',
       kind: 'page',
       about: 'A page of the Watch’s roll, left under a stone on the threshold of the Kings’ Mound ten winters ago. Every name is struck through with one hard line, Corvane’s own among them. Only Cael’s is left, and the last line is in Corvane’s hand.',
@@ -97,6 +124,14 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
       ],
     },
     objective: { kind: 'explore', spot: 'kings-mound', label: 'Find the Kings’ Mound, south-west of Lantern Hill' },
+    // (it was a walk to the mound. Its door is found by hand, stone by stone, with the black-rose dead coming out to
+    // see who is at it)
+    then: [
+      {
+        kind: 'use', region: 'ashen-barrows', at: 'kings-mound', count: 3, thing: 'runestone', verb: 'Clear the stone', label: 'Find the Mound’s door under the fallen stones', secs: 1.3, spread: 5, ambush: ['barrow-wight', 'wight-archer'],
+        notes: ['Black roses cut into the lintel, under the moss.', 'The door-stone was rolled back from the inside.', 'A page under a stone on the threshold. A roll of names.'],
+      },
+    ],
     after: ['cael-the-hostel'],
     zone: 'ashen-barrows',
     level: 25,
@@ -108,7 +143,9 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
     auto: true,
     giver: 'lamplighter-ivo',
     text: 'The Kings’ Mound stands open, and the dead inside are kneeling. Corvane has woken King Hrodric, the first king buried on the downs, to guard the way down to him. Go into the Barrow of Kings, down the Processional Way and through the Treasury, and defeat Hrodric in the Court of the Kings.',
-    objective: { kind: 'boss', boss: 'king-hrodric', label: 'Defeat King Hrodric in the Barrow of Kings' },
+    // (the way in is held first: Cael wedges the door-stone while the hero keeps what comes out of it off him)
+    objective: { kind: 'hold', region: 'ashen-barrows', at: 'kings-mound', secs: 25, waves: [['barrow-wight', 'barrow-wight'], ['wight-archer', 'barrow-wight'], ['wight-knight']], label: 'Hold the Mound’s door while Cael wedges it open' },
+    then: [{ kind: 'boss', boss: 'king-hrodric', label: 'Defeat King Hrodric in the Barrow of Kings' }],
     after: ['the-kings-mound'],
     zone: 'ashen-barrows',
     level: 25,
@@ -132,7 +169,10 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
       ],
       sign: 'Maelis Crane, Lord Chancellor of Aster',
     },
-    objective: { kind: 'boss', boss: 'sir-corvane', label: 'Defeat Sir Corvane in the Barrow of Kings' },
+    // (Cael will not go down to his commander empty-handed: the Watch's banner still hangs in the Broken Chapel, and is
+    // brought across the downs to the Mound)
+    objective: { kind: 'carry', region: 'ashen-barrows', from: 'broken-chapel', to: 'kings-mound', thing: 'banner', verb: 'Take down the banner', label: 'Carry the Watch’s banner from the Broken Chapel to the Mound', ambush: [['wight-archer', 'barrow-wight'], ['wight-knight']] },
+    then: [{ kind: 'boss', boss: 'sir-corvane', label: 'Defeat Sir Corvane in the Barrow of Kings' }],
     after: ['the-barrow-king'],
     zone: 'ashen-barrows',
     level: 26,
@@ -151,12 +191,21 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
     giver: 'gravedigger-kell',
     text: 'Gravedigger Kell digs Lantern Hill’s graves, and every night something digs them up again. The tracks lead south-east, past the Ninefold Barrows, to Houndsmound, where the old kings buried their hounds. Go and see whether the hounds are still in their graves.',
     find: {
+      step: 2,
       name: 'A Hound’s Collar',
       kind: 'relic',
       about: 'A bronze collar, green with age, dropped beside an empty grave at Houndsmound. Every grave there has been dug open from the inside. The hounds are out, and they are looking for someone.',
       body: ['Tally. She belongs to the Lord of the Downs. If she strays, she will go home to him.'],
     },
-    objective: { kind: 'explore', spot: 'houndsmound', label: 'Follow the tracks to Houndsmound' },
+    // (the quest says to follow the tracks, and now there are tracks to follow)
+    objective: {
+      kind: 'trail', region: 'ashen-barrows', from: 'lantern-hill', to: 'houndsmound', marks: 3, label: 'Follow the tracks from Kell’s graveyard',
+      notes: ['A grave dug open with paws, not spades.', 'A scrap of grave-cloth caught on the thorns.', 'The tracks go into a mound. Many more come out.'],
+    },
+    then: [
+      { kind: 'explore', spot: 'houndsmound', label: 'Find Houndsmound' },
+      { kind: 'use', region: 'ashen-barrows', at: 'houndsmound', count: 1, thing: 'bones', verb: 'Search', label: 'Search the hounds’ graves', secs: 1.2, spread: 3, notes: ['Every grave opened from the inside. And a collar.'] },
+    ],
     after: ['the-lanterns-dim'],
     zone: 'ashen-barrows',
     level: 24,
@@ -167,8 +216,11 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
     id: 'hounds-of-the-barrow',
     name: 'Hounds of the Barrow',
     giver: 'gravedigger-kell',
-    text: 'The old kings’ hounds are out of Houndsmound and roaming the downs, and every night they dig in Kell’s graveyard on Lantern Hill. Put down ten of them, so Kell can fill in his graves for good.',
-    objective: { kind: 'kill', region: 'ashen-barrows', count: 10, enemies: ['barrow-hound'], label: 'Put down barrow hounds' },
+    text: 'The old kings’ hounds are out of Houndsmound and roaming the downs, and every night they dig in Kell’s graveyard on Lantern Hill. Put down six of them, and fill in his graves with him, for good.',
+    objective: { kind: 'kill', region: 'ashen-barrows', count: 6, enemies: ['barrow-hound'], label: 'Put down barrow hounds' },
+    // (it was ten kills. What Kell asked for is his graves filled in for good: the hero takes the spade, and the hounds
+    // come to dig once more)
+    then: [{ kind: 'use', region: 'ashen-barrows', at: 'gravedigger-kell', count: 3, thing: 'grave', verb: 'Fill in', label: 'Fill in the opened graves on Lantern Hill', secs: 1.3, spread: 8, ambush: ['barrow-hound', 'barrow-hound'] }],
     after: ['houndsmound'],
     zone: 'ashen-barrows',
     reward: { xp: 800, gold: 220, text: 'Kell fills in his graves, and for the first night in a month they stay filled. The hounds were never digging for bones. They were digging for their master.' },
@@ -178,7 +230,9 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
     name: 'The Headless Lord',
     giver: 'gravedigger-kell',
     text: 'The hounds’ master is the Headless Lord, the Lord of the Downs named on the collar. He rides around the Ninefold Barrows every night, south-east of Lantern Hill, looking for his head. Kell found the lord’s helm years ago and kept it. Put the Headless Lord down, and Kell will give you the helm.',
-    objective: { kind: 'kill', region: 'ashen-barrows', count: 1, enemies: ['the-headless-lord'], label: 'Defeat the Headless Lord at the Ninefold Barrows' },
+    // (it was one kill. He rides at night: the hero waits for him among the nine barrows, and his hounds come first)
+    objective: { kind: 'hold', region: 'ashen-barrows', at: 'ninefold-barrows', secs: 20, waves: [['barrow-hound', 'barrow-hound'], ['barrow-hound', 'barrow-hound', 'barrow-wight']], label: 'Wait at the Ninefold Barrows for his hounds to find you' },
+    then: [{ kind: 'kill', region: 'ashen-barrows', count: 1, enemies: ['the-headless-lord'], label: 'Defeat the Headless Lord', lair: { at: 'ninefold-barrows', enemies: ['the-headless-lord'] } }],
     after: ['hounds-of-the-barrow'],
     zone: 'ashen-barrows',
     level: 25,
@@ -248,7 +302,7 @@ export const ASHEN_BARROWS_NPCS: Record<string, NpcDef> = {
         when: { quest: 'hunt-headless-lord', state: 'active' },
         lines: ['The hounds were digging for their master, the Headless Lord. He rides around the Ninefold Barrows at night, looking for his head.', 'I’ve kept his old helm in my shed for years. Put him to rest, and it’s yours.'],
       },
-      { when: { quest: 'hounds-of-the-barrow', state: 'active' }, lines: ['They’re out, all of them. I can see it on your face.', 'Put down ten of them, and I can finally fill my graves for good.'] },
+      { when: { quest: 'hounds-of-the-barrow', state: 'active' }, lines: ['They’re out, all of them. I can see it on your face.', 'Put down six of them, and I can finally fill my graves for good.'] },
       {
         when: { quest: 'houndsmound', state: 'active' },
         lines: ['Every morning I fill in a grave. Every night something digs it up again.', 'The tracks go south-east, past the Ninefold Barrows, to Houndsmound.', 'The old kings buried their hounds there. Go and see if they’re still buried.'],
@@ -300,7 +354,7 @@ export const ASHEN_BARROWS_NPCS: Record<string, NpcDef> = {
       {
         when: { quest: 'cael-the-hostel', state: 'active' },
         lines: [
-          'All right. I’m Cael Varrow. I was a captain of the Ninefold Watch, nine knights who kept these downs.',
+          'You counted them. All right. I’m Cael Varrow. I was a captain of the Ninefold Watch, nine knights who kept these downs.',
           'Ten winters ago the barrows opened under us. We held the Watch-house for nine days and waited for the relief.',
           'On the sixth day Corvane sent me south to hurry them. I rode two days. The road was empty all the way.',
           'When I got back, the Watch-house was burned and the others were dead. Corvane was gone. The city said I ran.',

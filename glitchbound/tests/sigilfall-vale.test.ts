@@ -9,7 +9,7 @@ import { questState, type Character } from '../src/games/sigilfall/progress/char
 import { migrate } from '../src/games/sigilfall/progress/save';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import type { World } from '../src/games/sigilfall/sim/world';
-import { newWorld, readyHero } from './sigilfall-bot';
+import { doSteps, newWorld, readyHero } from './sigilfall-bot';
 
 /**
  * Act I in the world (STORY_BIBLE.md §3, §4): each village of the Vale changes when it is saved, its
@@ -47,12 +47,16 @@ function beat(w: World, quest: string, rounds = 40): void {
   for (let i = 0; i < rounds && questState(w.hero, quest) === 'active'; i++) {
     run(w, 2.5);
     smite(w);
+    // (what a quest asks before or after its fight, a thing carried there or burnt after, is done as it comes up: those
+    // steps have their own test)
+    doSteps(w, quest);
   }
 }
 
 describe('Sigilfall: the Vale (Act I)', () => {
   it('every event names places, people and foes that exist, and a quest that plays it', () => {
-    const asked = new Set(Object.values(QUEST_DEFS).flatMap((q) => (q.objective.kind === 'event' ? [q.objective.event] : [])));
+    // (as a quest's first step or a later one)
+    const asked = new Set(Object.values(QUEST_DEFS).flatMap((q) => [q.objective, ...(q.then ?? [])].flatMap((o) => (o.kind === 'event' ? [o.event] : []))));
     for (const def of Object.values(EVENTS)) {
       expect(asked.has(def.id), def.id).toBe(true);
       const region = REGIONS[def.region];
@@ -78,6 +82,8 @@ describe('Sigilfall: the Vale (Act I)', () => {
     const before = newWorld('brackenridge', heroAt('the-harvest-stones'));
     expect(before.wisps.length).toBeGreaterThan(0);
     const w = before;
+    // (Alsa's candles are carried up first: that step's own test plays it)
+    doSteps(w, 'the-harvest-stones');
     goTo(w, 'fern-stones');
     run(w, 0.3);
     expect(w.story.run?.def.id).toBe('fern-stones');
@@ -117,6 +123,8 @@ describe('Sigilfall: the Vale (Act I)', () => {
     const w = newWorld('briarhollow', heroAt('camp-scouts'));
     // (after the first dawn's scene in the square: the rangers' arrival waits for it to be over)
     w.hero.opened.push('scene:briar-dawn');
+    // (their watch-posts are marked before they come in: that step's own test plays it)
+    doSteps(w, 'camp-scouts');
     goTo(w, 'briar-square');
     run(w, 0.3);
     expect(w.story.run?.def.id).toBe('camp-scouts');
@@ -162,6 +170,8 @@ describe('Sigilfall: the Vale (Act I)', () => {
     expect(questState(w.hero, 'hearth-hold-the-wall')).toBe('active');
     // (the next fight waits until the last one's closing words are said: story.ts finish)
     run(w, 8);
+    // (Wynn's arrows are carried up to the gate first: that step's own test plays it)
+    doSteps(w, 'hearth-hold-the-wall');
     goTo(w, 'hearth-gate');
     run(w, 0.3);
     expect(w.story.run?.def.id).toBe('hearth-wall');
@@ -192,9 +202,11 @@ describe('Sigilfall: the Vale (Act I)', () => {
     expect(w.storyState?.id).toBe('morning-after');
     goTo(w, 'hearth-shrine');
     run(w, 0.5);
+    // (found, the shrine is searched, and Vosk's tracks followed, before the orders go to Gaius)
+    doSteps(w, 'hearth-the-shrine');
     expect(questState(w.hero, 'hearth-the-shrine')).toBe('done');
     expect(questState(w.hero, 'orders-from-the-north')).toBe('active');
-    expect(QUEST_DEFS['orders-from-the-north']!.objective).toMatchObject({ kind: 'talk', npc: 'old-gaius' });
+    expect(QUEST_DEFS['orders-from-the-north']!.then?.at(-1)).toMatchObject({ kind: 'talk', npc: 'old-gaius' });
   });
 
   it('an old save already past a new beat counts it as played', () => {

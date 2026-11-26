@@ -1060,16 +1060,43 @@ export type MusicTrack =
 
 export type Objective =
   | { kind: 'tutorial'; step: 'attack' | 'skill' | 'dodge'; count: number; label: string }
-  | { kind: 'kill'; region: RegionId; count: number; label: string; enemies?: string[] }
+  | { kind: 'kill'; region: RegionId; count: number; label: string; enemies?: string[]; lair?: Lair }
   /** Things carried by some enemies: each kill of one of `from` has `chance` to give one. */
   | { kind: 'loot'; region: RegionId; item: string; from: string[]; chance: number; count: number; label: string }
-  | { kind: 'talk'; npc: string; label: string }
+  /** `lines`: what they say at this step, where that is not what they say all through the quest. */
+  | { kind: 'talk'; npc: string; label: string; lines?: string[] }
   | { kind: 'boss'; boss: string; label: string }
   | { kind: 'collect'; item: 'shard'; count: number; label: string }
   | { kind: 'explore'; spot: string; label: string }
   | { kind: 'clear'; region: RegionId; tier: number; label: string }
   /** A story event (raid, defense, rescue) the hero plays through. */
-  | { kind: 'event'; event: string; label: string };
+  | { kind: 'event'; event: string; label: string }
+  /**
+   * Things in the world to act on (sim/tasks.ts): nests to burn, captives to free, wagons to search, beacons to light.
+   * `count` of them stand within `spread` tiles of the place `at` while the step is the hero's; each takes `secs` of
+   * standing at it (a blow taken breaks it off). `guards` stand by each one; `ambush` springs when the middle one and
+   * the last are done; `notes` are what the hero finds at each, in turn.
+   */
+  | { kind: 'use'; region: RegionId; at: string; count: number; thing: ThingLook; verb: string; label: string; secs?: number; spread?: number; guards?: string[]; ambush?: string[]; notes?: string[] }
+  /** Something taken up at one place and brought to another, with whoever `ambush` names coming for it on the way. */
+  | { kind: 'carry'; region: RegionId; from: string; to: string; thing: ThingLook; verb: string; label: string; ambush?: string[][] }
+  /** A place held for `secs` seconds (the clock runs only while the hero stands in it) against `waves`. */
+  | { kind: 'hold'; region: RegionId; at: string; secs: number; waves: string[][]; label: string; radius?: number }
+  /** Marks followed one after another from one place toward another: `notes` are what each tells the hero. */
+  | { kind: 'trail'; region: RegionId; from: string; to: string; marks: number; notes: string[]; label: string; thing?: ThingLook }
+  /** Foes beaten low and then bound (or branded, or taken alive) rather than killed. */
+  | { kind: 'subdue'; region: RegionId; enemies: string[]; count: number; verb: string; label: string; lair?: Lair };
+
+/** Foes a step puts down at a place while it is the hero's and none of them stand there (a quarry at a trail's end). */
+export interface Lair {
+  at: string;
+  enemies: string[];
+}
+
+/** What a quest's thing in the world is (data/things.ts has each one's model). */
+export type ThingLook =
+  | 'nest' | 'crate' | 'barrel' | 'sack' | 'cart' | 'brazier' | 'campfire' | 'banner' | 'grave' | 'runestone' | 'altar' | 'shrine' | 'tent' | 'boat'
+  | 'weapons' | 'bones' | 'tracks' | 'herb' | 'mushroom' | 'ore' | 'coffin' | 'books' | 'well' | 'lantern' | 'totem' | 'captive' | 'statue' | 'log' | 'anvil' | 'chest' | 'notice' | 'gibbet' | 'candle' | 'spear' | 'shelter' | 'rod';
 
 /** Lasting gifts from the ends of quest chains; the seven sigils are the main story's. */
 export type PerkId = 'mount' | 'satchel' | 'flask' | 'hearth' | SigilId;

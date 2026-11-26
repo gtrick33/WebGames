@@ -1,0 +1,135 @@
+{
+  "boss": "hallvor-the-unthawed",
+  "file": "boss_hallvor",
+  "form": "hallvor",
+  "float": 0,
+  "walked": {
+    "samples": 184,
+    "moving": 46,
+    "walking": 44,
+    "clips": {
+      "walk": 44,
+      "slice": 2
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "run",
+        "slice",
+        "idle",
+        "walk",
+        "block"
+      ],
+      "readings": 70
+    },
+    {
+      "phase": 1,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 57
+    },
+    {
+      "phase": 1,
+      "id": "spell:pin",
+      "clips": [
+        "stab",
+        "idle",
+        "walk",
+        "block",
+        "slice"
+      ],
+      "readings": 80
+    },
+    {
+      "phase": 1,
+      "id": "rime:orders",
+      "clips": [
+        "wave",
+        "idle"
+      ],
+      "readings": 47
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "summon",
+        "wave",
+        "slice"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle"
+      ],
+      "readings": 43
+    },
+    {
+      "phase": 2,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle",
+        "slice"
+      ],
+      "readings": 35
+    },
+    {
+      "phase": 2,
+      "id": "spell:pin",
+      "clips": [
+        "stab",
+        "idle"
+      ],
+      "readings": 50
+    },
+    {
+      "phase": 2,
+      "id": "tripleCharge",
+      "clips": [
+        "bash",
+        "block",
+        "idle"
+      ],
+      "readings": 56
+    },
+    {
+      "phase": 2,
+      "id": "rime:orders",
+      "clips": [
+        "wave",
+        "idle",
+        "chop2",
+        "block",
+        "stab"
+      ],
+      "readings": 62
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "summon",
+        "idle",
+        "block",
+        "slice"
+      ],
+      "readings": 39
+    }
+  ],
+  "found": [],
+  "errors": []
+}

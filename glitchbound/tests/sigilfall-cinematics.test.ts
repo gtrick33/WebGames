@@ -80,13 +80,14 @@ describe('Sigilfall: cinematics', () => {
     w.player.y = at.y + 8;
     let slowed = 0;
     let was = 0;
-    for (let f = 0; f < 120 / DT && questState(c, 'mill-the-bridge') === 'active'; f++) {
+    for (let f = 0; f < 120 / DT && questState(c, 'mill-the-bridge') === 'active' && (c.quests['mill-the-bridge']?.step ?? 0) === 0; f++) {
       if (f % 60 === 30) for (const e of w.enemies) if (!e.dead && !e.held && e.state !== 'spawn') hitEnemy(w, e, 1e7, 'physical', { depth: 0 });
       run(w, DT);
       if (w.slowT > was) slowed++;
       was = w.slowT;
     }
-    expect(questState(c, 'mill-the-bridge')).not.toBe('active');
+    // (the fight is over when the quest goes on to its next step, the barricade to burn: the fight is what is watched here)
+    expect(c.quests['mill-the-bridge']?.step ?? 0).toBeGreaterThan(0);
     expect(slowed).toBe(1);
   });
 

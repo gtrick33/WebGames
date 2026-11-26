@@ -23,7 +23,12 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     giver: 'orren-in-vaelmoor',
     auto: true,
     text: 'Candlewick’s people are the families of Aster’s knights, who died holding this wood against the Hallow King three hundred years ago. The families stayed to tend the graves, and the Gates shut them in. Candlewife Hesper keeps the candles and the names of the dead. She wants to meet you in Candlewick’s square.',
-    objective: { kind: 'talk', npc: 'candlewife-hesper', label: 'Talk to Candlewife Hesper in Candlewick' },
+    // (it was a walk and a talk. She keeps a candle for every name: a guest lights three, and reads who they were)
+    objective: {
+      kind: 'use', region: 'weeping-woods', at: 'candlewife-hesper', count: 3, thing: 'candle', verb: 'Light a candle', label: 'Light three candles at Hesper’s wall of names', secs: 1, spread: 5,
+      notes: ['“Ser Aldric of the Vale. He held the east road.”', '“Dame Ysolt. She sent her squire home first.”', 'A blank candle. For whoever comes next, Hesper says.'],
+    },
+    then: [{ kind: 'talk', npc: 'candlewife-hesper', label: 'Talk to Candlewife Hesper in Candlewick' }],
     after: ['into-vaelmoor'],
     zone: 'weeping-woods',
     level: 48,
@@ -36,8 +41,16 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     auto: true,
     giver: 'candlewife-hesper',
     text: 'Lord Halvard’s knights died holding this wood for Aster, and their ghosts have guarded Candlewick ever since. This month their eyes turned violet, and now they attack anyone on the roads. Hesper fears the Hallow King is calling them north to join his Host. Go to their hall, the Wardens’ Rest, north-west of Candlewick, and find out.',
-    objective: { kind: 'explore', spot: 'wardens-rest', label: 'Go to the Wardens’ Rest north-west of Candlewick' },
+    objective: { kind: 'explore', spot: 'wardens-rest', label: 'Find the Wardens’ Rest, north-west of Candlewick' },
+    // (it was a walk to the hall. Whether its knights have gone over is read inside it, with them still walking its floor)
+    then: [
+      {
+        kind: 'use', region: 'weeping-woods', at: 'wardens-rest', count: 3, thing: 'banner', verb: 'Look closer', label: 'Look round the knights’ hall', secs: 1, spread: 6, guards: ['revenant-knight'],
+        notes: ['The hall’s banners still hang. Not one is the Host’s.', 'A table laid for forty. The dust is not disturbed.', 'Cut over the hearth: an oath, and a name under it.'],
+      },
+    ],
     find: {
+      step: 1,
       name: 'Lord Halvard’s Oath',
       kind: 'page',
       about: 'The first page of the Watch’s muster book, still open on the table in the Wardens’ Rest. Lord Halvard wrote his oath to Aster’s queen at the top, the year the Hallow King rose. Forty knights signed under it.',
@@ -56,7 +69,12 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     giver: 'orren-in-vaelmoor',
     auto: true,
     text: 'Lark’s Hollow is the royal lodge where Queen Ysane, the Hallow King’s wife, took their children, Lark and Edda, the winter the plague came. Orren went as far as the trees around it and heard children playing in the snow. He won’t go in alone, so he is coming with you. Go to Lark’s Hollow, south-east of the Wardens’ Rest.',
-    objective: { kind: 'explore', spot: 'larks-hollow', label: 'Go to Lark’s Hollow south-east of the Wardens’ Rest' },
+    // (Orren heard children playing in the snow. Their footprints are there to follow)
+    objective: {
+      kind: 'trail', region: 'weeping-woods', from: 'wardens-rest', to: 'larks-hollow', marks: 3, label: 'Follow the children’s footprints in the snow',
+      notes: ['Small footprints. Two children, running.', 'A lantern, child-sized, frozen where it fell.', 'Laughter, ahead, behind the trees.'],
+    },
+    then: [{ kind: 'explore', spot: 'larks-hollow', label: 'Find Lark’s Hollow' }],
     find: {
       name: 'A Letter to Papa',
       kind: 'letter',
@@ -91,8 +109,12 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     auto: true,
     giver: 'candlewife-hesper',
     text: 'Lord Halvard still holds out against the Hallow King’s call at the Weeping Tree, in the far north-west of the wood. If he gives in, every dead knight in the wood will follow him north to the Host. Orren is carrying Chandler Miro’s candle, the one flame that stays lit near Halvard, and the paper where Hesper wrote out Halvard’s name. Take them to the Weeping Tree.',
-    objective: { kind: 'explore', spot: 'the-weeping-tree', label: 'Find the Weeping Tree in the far north-west' },
+    // (Orren carried the candle. The hero does: the one flame that stays lit near Halvard goes up through his wood in
+    // their hands)
+    objective: { kind: 'carry', region: 'weeping-woods', from: 'chandler-miro', to: 'the-weeping-tree', thing: 'candle', verb: 'Take Miro’s candle', label: 'Carry Miro’s candle to the Weeping Tree', ambush: [['weeping-specter'], ['revenant-knight', 'candle-wraith']] },
+    then: [{ kind: 'use', region: 'weeping-woods', at: 'the-weeping-tree', count: 1, thing: 'herb', verb: 'Untie a ribbon', label: 'Take a ribbon from the Weeping Tree', secs: 1.3, spread: 3, notes: ['A ribbon for everyone who waited. You untie one.'] }],
     find: {
+      step: 1,
       name: 'A Ribbon from the Weeping Tree',
       kind: 'relic',
       about: 'The Weeping Tree is hung with hundreds of faded ribbons. The knights’ wives tied them there, one for each man who did not come home. This one has Halvard’s name stitched on it.',
@@ -110,7 +132,10 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     auto: true,
     giver: 'candlewife-hesper',
     text: 'Halvard is the Weeping Lord now, and he will fight anyone who comes near his tree. He can’t hear his own name while he is still fighting. Beat him down, then read him his name by the light of Miro’s candle, at the Weeping Tree.',
-    objective: { kind: 'kill', region: 'weeping-woods', count: 1, enemies: ['the-weeping-lord'], label: 'Defeat the Weeping Lord at the Weeping Tree' },
+    // (it was a kill, with the reading in a line of talk. The candles are set round his tree; he is beaten down, not
+    // killed; and his name is read to him by the hero)
+    objective: { kind: 'use', region: 'weeping-woods', at: 'the-weeping-tree', count: 3, thing: 'candle', verb: 'Set a candle', label: 'Set Miro’s candles round the Weeping Tree', secs: 1.1, spread: 5, ambush: ['revenant-knight'] },
+    then: [{ kind: 'subdue', region: 'weeping-woods', enemies: ['the-weeping-lord'], count: 1, verb: 'Read him his name', label: 'Beat the Weeping Lord down, and read him his name', lair: { at: 'the-weeping-tree', enemies: ['the-weeping-lord'] } }],
     find: {
       name: 'The Herald’s Forge-Order',
       kind: 'orders',
@@ -134,10 +159,18 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     name: 'The Hanging Oaks',
     giver: 'sexton-abel',
     text: 'Sexton Abel has dug Candlewick’s graves for forty years. Thirty graves still wait for their dead, the deserters Lord Halvard hanged from the oaks before his last battle. They are still on their ropes, and they attack anyone who comes near. Go to the Hanging Oaks, west of Candlewick, and see.',
-    objective: { kind: 'explore', spot: 'the-hanging-oaks', label: 'Find the Hanging Oaks west of Candlewick' },
+    objective: { kind: 'explore', spot: 'the-hanging-oaks', label: 'Find the Hanging Oaks, west of Candlewick' },
+    // (it was a walk to see. What was done here, and why, is read under the ropes)
+    then: [
+      {
+        kind: 'use', region: 'weeping-woods', at: 'the-hanging-oaks', count: 3, thing: 'gibbet', verb: 'Look closer', label: 'Look under the Hanging Oaks', secs: 1, spread: 6, guards: ['hanged-man'],
+        notes: ['Thirty ropes. Thirty men, in Aster’s colors.', 'A drumhead court sat here. Its table still stands.', 'A letter in a dead man’s boot. It was never sent.'],
+      },
+    ],
     // (pays out at the oaks: the cutting down starts there, with no walk back to Abel between)
     turnIn: false,
     find: {
+      step: 1,
       name: 'A Deserter’s Letter',
       kind: 'letter',
       about: 'Found in the coat of a hanged man at the Hanging Oaks, folded small and never sent. He wrote it the night he ran from Halvard’s line.',
@@ -153,8 +186,10 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     id: 'cut-them-down',
     name: 'Cut Them Down',
     giver: 'sexton-abel',
-    text: 'The hanged men swing down at anyone who walks under them. Abel has their graves dug and waiting. Cut down eight of them, here at the Hanging Oaks or on the roads.',
-    objective: { kind: 'kill', region: 'weeping-woods', count: 8, enemies: ['hanged-man'], label: 'Cut down hanged men' },
+    text: 'The hanged men swing down at anyone who walks under them. Abel has their graves dug and waiting. Cut down five of them, here at the Hanging Oaks or on the roads, and lay them in the graves by Candlewick.',
+    objective: { kind: 'kill', region: 'weeping-woods', count: 5, enemies: ['hanged-man'], label: 'Cut down hanged men' },
+    // (it was eight kills. Abel has their graves dug and waiting: the hero lays them in)
+    then: [{ kind: 'use', region: 'weeping-woods', at: 'sexton-abel', count: 3, thing: 'grave', verb: 'Lay him in', label: 'Lay the hanged men in the graves Abel dug', secs: 1.3, spread: 8 }],
     // (pays out where the work is: the letters are taken from the same men)
     turnIn: false,
     after: ['the-hanging-oaks'],
@@ -166,8 +201,16 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     id: 'letters-never-sent',
     name: 'Letters Never Sent',
     giver: 'sexton-abel',
-    text: 'The hanged men’s pockets hold letters, to wives, to mothers and one to a dog. None were ever sent. The men ran because they had seen the Host coming and wanted to warn their families. Take five more letters from the hanged men and bring them to Abel in Candlewick, so he can bury each man with his own.',
-    objective: { kind: 'loot', region: 'weeping-woods', item: 'Deserter’s Letter', from: ['hanged-man'], chance: 0.4, count: 5, label: 'Take Deserter’s Letters from hanged men' },
+    text: 'The hanged men’s pockets hold letters, to wives, to mothers and one to a dog. None were ever sent. The men ran because they had seen the Host coming and wanted to warn their families. Take three more letters from the hanged men, and read them aloud at Hesper’s wall of names, so that what the men ran to say is said. Then bring them to Abel in Candlewick, so he can bury each man with his own.',
+    objective: { kind: 'loot', region: 'weeping-woods', item: 'Deserter’s Letter', from: ['hanged-man'], chance: 0.4, count: 3, label: 'Take Deserter’s Letters from hanged men' },
+    // (it was five letters handed over. They were never sent, and never read: the hero reads them out at the wall of
+    // names, so that what the men ran to say is said at last)
+    then: [
+      {
+        kind: 'use', region: 'weeping-woods', at: 'candlewife-hesper', count: 3, thing: 'candle', verb: 'Read it aloud', label: 'Read the letters aloud at Hesper’s wall of names', secs: 1.4, spread: 5,
+        notes: ['“Mother. The east road is lost. Go to Aunt Wyn.”', '“My Ysolt. Take the children south tonight.”', '“To Bramble, a good dog. Stay. I’ll come back.”'],
+      },
+    ],
     after: ['cut-them-down'],
     zone: 'weeping-woods',
     level: 49,
@@ -179,8 +222,15 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     id: 'hounds-of-the-wolf-barrow',
     name: 'Hounds of the Barrow',
     giver: 'woodward-fenn',
-    text: 'The knights’ wolfhounds were buried with them in the Wolf Barrow, north of Candlewick, and for three hundred years they stayed there. Now they hunt the roads in pairs, and Woodward Fenn’s own dog, Bramble, hasn’t come home. Put down eight grave wolves around the Wolf Barrow.',
-    objective: { kind: 'kill', region: 'weeping-woods', count: 8, enemies: ['grave-wolf'], label: 'Put down grave wolves' },
+    text: 'The knights’ wolfhounds were buried with them in the Wolf Barrow, north of Candlewick, and for three hundred years they stayed there. Now they hunt the roads in pairs, and Woodward Fenn’s own dog, Bramble, hasn’t come home. Put down five grave wolves around the Wolf Barrow, and follow Bramble’s tracks from Fenn’s door.',
+    objective: { kind: 'kill', region: 'weeping-woods', count: 5, enemies: ['grave-wolf'], label: 'Put down grave wolves' },
+    // (it was eight kills, and Fenn's dog was only spoken of. She is tracked)
+    then: [
+      {
+        kind: 'trail', region: 'weeping-woods', from: 'woodward-fenn', to: 'wolf-barrow', marks: 3, label: 'Follow Bramble’s tracks from Fenn’s door',
+        notes: ['A dog’s prints, small, running hard.', 'A scrap of red collar on a thorn.', 'Claw marks up an oak. A dog is in it, alive.'],
+      },
+    ],
     // (pays out at the barrow, where Bramble is found: the old hound's quest goes on from there, no walk back to Fenn)
     turnIn: false,
     after: ['the-candle-road'],
@@ -193,7 +243,9 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     name: 'Old Vigil',
     giver: 'woodward-fenn',
     text: 'What chased Bramble up the tree was Old Vigil, Lord Halvard’s wolfhound. He guards his master’s empty grave in the Wolf Barrow, because Halvard never came home to fill it, and now he attacks everyone who passes. Lay the old hound to rest at the Wolf Barrow, then bring Bramble home to Fenn.',
-    objective: { kind: 'kill', region: 'weeping-woods', count: 1, enemies: ['old-vigil'], label: 'Lay Old Vigil to rest at the Wolf Barrow' },
+    objective: { kind: 'kill', region: 'weeping-woods', count: 1, enemies: ['old-vigil'], label: 'Lay Old Vigil to rest at the Wolf Barrow', lair: { at: 'wolf-barrow', enemies: ['old-vigil'] } },
+    // (Bramble came home in a line of talk. She is still up her tree, and has to be talked down)
+    then: [{ kind: 'use', region: 'weeping-woods', at: 'wolf-barrow', count: 1, thing: 'log', verb: 'Coax her down', label: 'Coax Bramble down out of the oak', secs: 2, spread: 3, notes: ['She comes down into your arms, shaking.'] }],
     after: ['hounds-of-the-wolf-barrow'],
     zone: 'weeping-woods',
     level: 50,
@@ -296,11 +348,11 @@ export const WEEPING_WOODS_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'cut-them-down', state: 'active' },
-        lines: ['They swing down at anyone who walks under them. They’ve hung there for three hundred years.', 'Their graves are dug. Cut eight of them down, and I’ll do the rest.'],
+        lines: ['They swing down at anyone who walks under them. They’ve hung there for three hundred years.', 'Their graves are dug. Cut five of them down, and help me lay them in. Forty years I’ve dug alone.'],
       },
       {
         when: { quest: 'letters-never-sent', state: 'active' },
-        lines: ['Letters in their pockets? To wives, to mothers, one to a dog. None of them were ever sent.', 'They ran home to warn their families. Bring me five more letters, so every man is buried with his own.'],
+        lines: ['Letters in their pockets? To wives, to mothers, one to a dog. None of them were ever sent.', 'They ran home to warn their families. Find three more letters. Read them out at Hesper’s wall before you bring them: a letter should be heard once. Then every man is buried with his own.'],
       },
       { when: { quest: 'letters-never-sent', state: 'done' }, lines: ['I read every letter at the graves, even the one to the dog.', 'Keep the cloak. Those men weren’t cowards. They were trying to save their families.'] },
       { when: { quest: 'the-weeping-lord', state: 'done' }, lines: ['The dead in the wood have all lain down. For the first time in my life, there’s nobody left to bury.'] },

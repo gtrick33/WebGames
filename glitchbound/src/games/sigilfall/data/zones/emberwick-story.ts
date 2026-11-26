@@ -21,7 +21,12 @@ export const EMBERWICK_QUESTS: QuestDef[] = [
     giver: 'regent-elowen',
     zone: 'emberwick',
     text: 'The war is over, and Maelis Crane is still hiding somewhere under the city. The Regent has opened the stair under his house and the barred door at the bottom. She wants to know what he found down there that was worth betraying Aster. Go down the stair, find Crane, and end it.',
-    objective: { kind: 'boss', boss: 'maelis-crane', label: 'Find Maelis Crane in the catacombs' },
+    // (the stair was opened for the hero. His sealed house is gone through first, and says he has been back)
+    objective: {
+      kind: 'use', region: 'emberwick', at: 'crane-door', count: 3, thing: 'crate', verb: 'Search', label: 'Search the Chancellor’s sealed house', secs: 1.1, spread: 5,
+      notes: ['Ledgers, burnt in the grate. Not all of them.', 'A second set of seals. The Regent’s, forged.', 'The stair. It has been used since the house was sealed.'],
+    },
+    then: [{ kind: 'boss', boss: 'maelis-crane', label: 'Find Maelis Crane under his house' }],
     after: ['epilogue-the-bell'],
     level: 60,
     reward: { xp: 9000, gold: 4000, item: { rarity: 'legendary' }, text: 'Crane falls among his ash-gold, and the coins make no sound. “Every one of these was made from someone’s grief,” he says. “I knew that, and I took them anyway.” The Regent has the stair bricked up behind you. That night, for the first time since the Night of Knives, she sleeps until morning.' },
@@ -37,7 +42,12 @@ export const EMBERWICK_QUESTS: QuestDef[] = [
       'Ten years ago my treasury paid for the Watch’s relief. That money went somewhere.',
       'Clerk Amsel keeps the treasury ledgers, in the north-east of the city. Ask him quietly where it went.',
     ],
-    objective: { kind: 'talk', npc: 'clerk-amsel', label: 'Ask Clerk Amsel at the Treasury where the money went' },
+    // (it was one talk. The proof is in the ledgers, and the hero goes through them with him, entry by entry)
+    objective: {
+      kind: 'use', region: 'emberwick', at: 'clerk-amsel', count: 3, thing: 'books', verb: 'Read the ledger', label: 'Go through the treasury ledgers with Clerk Amsel', secs: 1.2, spread: 4,
+      notes: ['Ten years back: four thousand crowns, “relief”.', 'Paid out the same week. Not to any captain.', '“To the Roads Office. By the Chancellor’s seal.”'],
+    },
+    then: [{ kind: 'talk', npc: 'clerk-amsel', label: 'Ask Clerk Amsel where the money went' }],
     after: ['the-kings-design'],
     zone: 'emberwick',
     level: 28,
@@ -48,7 +58,12 @@ export const EMBERWICK_QUESTS: QuestDef[] = [
     name: 'Repairs Nobody Made',
     giver: 'clerk-amsel',
     text: 'The Watch’s relief money went to the roads office, for repairs nobody made. The same office closed the King’s Road to refugees this spring, on the Lord Chancellor’s seal. Roadwarden Hesk keeps it, in the Roads Office at the south end of the tavern quarter, in the south-west of the city. Ask him for his ledgers from that winter.',
-    objective: { kind: 'talk', npc: 'roadwarden-hesk', label: 'Ask Roadwarden Hesk at the Roads Office for the ledgers' },
+    // (it was one talk. What the office did is nailed to its own wall)
+    objective: {
+      kind: 'use', region: 'emberwick', at: 'roadwarden-hesk', count: 3, thing: 'notice', verb: 'Read', label: 'Read the notices posted at the Roads Office', secs: 1, spread: 5,
+      notes: ['“King’s Road closed for repairs.” No repairs.', '“Closed to refugees.” The seal is the Chancellor’s.', 'The same clerk’s hand as the last line of Vosk’s orders.'],
+    },
+    then: [{ kind: 'talk', npc: 'roadwarden-hesk', label: 'Ask Roadwarden Hesk who gave the orders' }],
     after: ['city-the-treasury'],
     zone: 'emberwick',
     level: 28,
@@ -101,7 +116,15 @@ export const EMBERWICK_QUESTS: QuestDef[] = [
       body: ['I wish Papa’s cough gets better, and our dog comes home, and nobody has to go north anymore.'],
       sign: 'Lissa, seven',
     },
-    objective: { kind: 'explore', spot: 'festival-parade', label: 'Watch the Starfall Parade on the south avenue' },
+    objective: { kind: 'explore', spot: 'festival-parade', label: 'Join the Starfall Festival on the main avenue' },
+    // (it was a walk into the crowd. The festival is kept the way the city keeps it: the hero lights lanterns, and by
+    // the third sees what the crowd does not)
+    then: [
+      {
+        kind: 'use', region: 'emberwick', at: 'festival-parade', count: 3, thing: 'lantern', verb: 'Light a lantern', label: 'Light three festival lanterns along the avenue', secs: 0.9, spread: 7,
+        notes: ['A child hands you the taper. “For the star.”', 'The whole avenue is lit. Nobody watches the roofs.', 'A masked man steps back out of your light.'],
+      },
+    ],
     after: ['city-the-cellar'],
     zone: 'emberwick',
     level: 29,
@@ -136,7 +159,12 @@ export const EMBERWICK_QUESTS: QuestDef[] = [
         'The seventh name was written in the bottom corner. Only the black edge of the burn is left.',
       ],
     },
-    objective: { kind: 'explore', spot: 'crane-catacombs', label: 'Search the stair under the Chancellor’s House' },
+    // (he ran, and bled as he ran: the way to his house is followed from the square)
+    objective: {
+      kind: 'trail', region: 'emberwick', from: 'ember-dais', to: 'crane-door', marks: 3, label: 'Follow Crane from the square',
+      notes: ['Blood on the cobbles. He was cut getting away.', 'A festival mask, thrown down in a doorway.', 'His cellar door, open. A shelf stands out from the wall.'],
+    },
+    then: [{ kind: 'explore', spot: 'crane-catacombs', label: 'Go down the hidden stair after him' }],
     after: ['festival-the-knives'],
     zone: 'emberwick',
     level: 30,
@@ -148,7 +176,12 @@ export const EMBERWICK_QUESTS: QuestDef[] = [
     giver: 'regent-elowen',
     auto: true,
     text: 'The city is locked down and the Chancellor’s House is sealed. The Regent has the wardens’ map spread on a table in the Ember Keep’s forecourt, at the head of the main avenue. Every place on it is one the Host already knows. Go to her.',
-    objective: { kind: 'talk', npc: 'regent-elowen', label: 'Talk to Regent Elowen at the Ember Keep' },
+    // (the map was looked at. The hero marks on it the four places the wardens hid a sigil, and so knows the road ahead)
+    objective: {
+      kind: 'use', region: 'emberwick', at: 'regent-elowen', count: 4, thing: 'books', verb: 'Mark the place', label: 'Mark the wardens’ four hiding places on the Regent’s map', secs: 1, spread: 4,
+      notes: ['The Sun King’s tomb, in the Sunscorch.', 'The Thorn Court, in the Glimmerwood.', 'The Rimeheld Vault, under the ice.', 'The Tear, over the Shattered Vale.'],
+    },
+    then: [{ kind: 'talk', npc: 'regent-elowen', label: 'Talk to the Regent at the map table' }],
     after: ['festival-the-catacombs'],
     zone: 'emberwick',
     level: 30,

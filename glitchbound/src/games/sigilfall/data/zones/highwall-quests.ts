@@ -21,7 +21,13 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     giver: 'warden-hollis',
     auto: true,
     text: 'At the Tear the Pale Herald took Elyra and her five sigils, so with the Stone the Host now holds six of the seven. Elyra is alive, because her sigils answer only to her. To reach her, you must break the siege of Highwall and then take the Gloam Gate, where she is kept. Ride ahead of Mara’s army to Highwall March, east of the Shattered Vale, and report to Lord-Commander Varn.',
-    objective: { kind: 'talk', npc: 'lord-commander-varn', label: 'Report to Lord-Commander Varn at the relief camp' },
+    // (it was a ride and a report. The relief road is choked with what the siege has wrecked, and an army is an hour
+    // behind the hero: it is cleared, under the ghouls that feed on it)
+    objective: {
+      kind: 'use', region: 'highwall', at: 'relief-road', count: 3, thing: 'cart', verb: 'Drag it clear', label: 'Clear the wrecked wagons off the relief road', secs: 1.2, spread: 8, ambush: ['ghoul-swarm'],
+      notes: ['Bread for a siege that began at midsummer. Mouldy.', 'Bolts in the wagon-bed. The Host’s crossbows reach here.', 'The road is clear. Mara’s army is an hour behind you.'],
+    },
+    then: [{ kind: 'talk', npc: 'lord-commander-varn', label: 'Report to Lord-Commander Varn at the relief camp' }],
     after: ['fern-retaken'],
     level: 40,
     reward: { xp: 1500, gold: 450, text: 'Varn has held this camp all summer with what is left of Highwall’s field army, and he can’t break the siege alone. He has read the Regent’s order. He has never met Mara Venn, but he will serve under her.' },
@@ -32,7 +38,10 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     giver: 'lord-commander-varn',
     auto: true,
     text: 'Mara reached the relief camp an hour after you, with every banner the Vale could send. By the Regent’s order she commands the whole relief now, Varn’s soldiers too. She has already moved half the tents out of range of the Host’s catapults. Go and hear her plan to break the siege.',
-    objective: { kind: 'talk', npc: 'captain-mara', label: 'Report to Mara Venn at the relief camp' },
+    // (her first order was already carried out when the hero heard it. The hero carries the last of it: the wounded's
+    // stores, out of the catapults' reach)
+    objective: { kind: 'use', region: 'highwall', at: 'relief-tents', count: 3, thing: 'sack', verb: 'Carry it back', label: 'Carry the wounded’s stores out of the catapults’ range', secs: 1, spread: 7 },
+    then: [{ kind: 'talk', npc: 'captain-mara', label: 'Hear Mara Venn’s plan to break the siege' }],
     after: ['the-wall-burns'],
     zone: 'highwall',
     level: 41,
@@ -58,7 +67,9 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     giver: 'captain-mara',
     auto: true,
     text: 'Nyx is in a tent under guard. She says her map shows where the Herald keeps Elyra, and she wants to explain it to you. Mara is too angry to listen to her. Go to Nyx’s tent at the relief camp and talk to her.',
-    objective: { kind: 'talk', npc: 'nyx-returned', label: 'Talk to Nyx in the relief camp' },
+    // (her map was told of. It is in her pack, which the guards took: the hero fetches it, and sees what else she carries)
+    objective: { kind: 'use', region: 'highwall', at: 'relief-camp', count: 1, thing: 'chest', verb: 'Open her pack', label: 'Fetch Nyx’s map from the pack the guards took', secs: 1.4, spread: 4, notes: ['A map on grey vellum. And a boy’s knife, too small for her.'] },
+    then: [{ kind: 'talk', npc: 'nyx-returned', label: 'Take the map to Nyx and hear her out' }],
     after: ['gate-nyx-returns'],
     zone: 'highwall',
     level: 44,
@@ -89,10 +100,18 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     auto: true,
     giver: 'lord-commander-varn',
     text: 'Ashby, a farming village south-west of the camp, burned last night. Varn’s lookouts saw people walking into the smoke, and nobody came out. Go to Burned Ashby and search it for survivors.',
-    objective: { kind: 'explore', spot: 'burned-village', label: 'Search Burned Ashby' },
+    objective: { kind: 'explore', spot: 'burned-village', label: 'Find Burned Ashby' },
+    // (it was a walk into the smoke. The village is searched house by house, with what feeds on the dead still in it)
+    then: [
+      {
+        kind: 'use', region: 'highwall', at: 'burned-village', count: 3, thing: 'crate', verb: 'Search', label: 'Search Ashby for anyone left alive', secs: 1, spread: 6, ambush: ['ghoul-swarm'],
+        notes: ['A cellar door, clawed at from outside. Empty.', 'The whole village’s footprints, walking west.', 'A child’s drawing, pinned inside a cupboard door.'],
+      },
+    ],
     after: ['mara-commands'],
     zone: 'highwall',
     find: {
+      step: 1,
       name: 'A Child’s Drawing',
       kind: 'page',
       about: 'Found pinned inside the door of an empty root cellar in Burned Ashby. A child hid down there and drew what she saw through the slats. Whoever drew it is gone too.',
@@ -113,7 +132,12 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     // was nothing to hear but the order again)
     auto: true,
     text: 'Ashby’s footprints lead west to the Host Lines, the trench Captain Hollowbane holds in the far west of the March. His crossbows cover every road to the Breach. While he holds the trench, the relief army can’t reach Highwall’s wall. Follow the tracks west from Ashby and defeat him.',
-    objective: { kind: 'kill', region: 'highwall', count: 1, enemies: ['captain-hollowbane'], label: 'Defeat Captain Hollowbane at the Host Lines' },
+    // (the quest says to follow the tracks west, and now they are followed)
+    objective: {
+      kind: 'trail', region: 'highwall', from: 'burned-village', to: 'legion-lines', marks: 3, label: 'Follow Ashby’s footprints west',
+      notes: ['They walked in a column. No one ran.', 'A shoe. A doll. A wedding ring. Set down in a row.', 'The tracks end at a trench lined with Highwall tabards.'],
+    },
+    then: [{ kind: 'kill', region: 'highwall', count: 1, enemies: ['captain-hollowbane'], label: 'Defeat Captain Hollowbane at the Host Lines', lair: { at: 'legion-lines', enemies: ['captain-hollowbane'] } }],
     after: ['ashes-of-ashby'],
     zone: 'highwall',
     level: 42,
@@ -125,7 +149,9 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     giver: 'captain-mara',
     auto: true,
     text: 'Hollowbane is dead and his trench is broken. Mara won’t give the Host a night to dig a new one. Cael is leading the riders out at the Host’s lines in front of the Breach, north-west of the camp, with Hearthstead’s riders and Fernstead’s rangers. Ride at his side and open the way to Highwall’s wall.',
-    objective: { kind: 'event', event: 'highwall-sortie', label: 'Ride out with Cael and break the lines before the Breach' },
+    // (the riders were mounted and waiting. The hero is the one who hands them their lances)
+    objective: { kind: 'use', region: 'highwall', at: 'relief-camp', count: 3, thing: 'spear', verb: 'Hand out lances', label: 'Hand out lances to Cael’s riders', secs: 0.9, spread: 6 },
+    then: [{ kind: 'event', event: 'highwall-sortie', label: 'Ride out with Cael and break the lines before the Breach' }],
     // (after Hollowbane: its text and the next quest's begin with his trench broken)
     after: ['captain-hollowbane'],
     zone: 'highwall',
@@ -139,7 +165,10 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     auto: true,
     giver: 'lord-commander-varn',
     text: 'Cael’s riders broke the Host’s lines, so the way to Highwall’s wall is open. The Breach is the hole the Siege-Breaker smashed in the outer wall, north-west of the camp. It is the only way into the city. Go up to it and see what waits on the other side.',
-    objective: { kind: 'explore', spot: 'the-breach', label: 'Go to the Breach, north-west of the camp' },
+    objective: { kind: 'explore', spot: 'the-breach', label: 'Go up to the Breach, north-west of the camp' },
+    // (it was a look. What waits on the other side comes out to meet whoever looks, and the gap is held until Varn's
+    // soldiers are up)
+    then: [{ kind: 'hold', region: 'highwall', at: 'the-breach', secs: 25, waves: [['legion-soldier', 'legion-soldier'], ['legion-crossbowman', 'legion-soldier'], ['death-knight-initiate', 'legion-soldier']], label: 'Hold the Breach until Varn’s soldiers come up' }],
     after: ['gate-the-prison-map'],
     zone: 'highwall',
     level: 42,
@@ -163,7 +192,9 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     auto: true,
     giver: 'lord-commander-varn',
     text: 'The booming is the Siege-Breaker, the ram of bone and iron that made the Breach. Now it is battering the gate of Highwall’s inner ward, where the last of the garrison is holding out. Go in through the Breach and destroy it before that gate falls.',
-    objective: { kind: 'boss', boss: 'the-siege-breaker', label: 'Go through the Breach and defeat the Siege-Breaker' },
+    // (the Breach is under the Host's catapults for as long as they stand: they are broken before anyone goes through)
+    objective: { kind: 'use', region: 'highwall', at: 'bone-batteries', count: 3, thing: 'totem', verb: 'Break it', label: 'Break the bone catapults that cover the Breach', secs: 1.2, spread: 6, guards: ['legion-crossbowman'] },
+    then: [{ kind: 'boss', boss: 'the-siege-breaker', label: 'Go through the Breach and destroy the Siege-Breaker' }],
     after: ['the-breach'],
     zone: 'highwall',
     level: 42,
@@ -175,7 +206,10 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     auto: true,
     giver: 'lord-commander-varn',
     text: 'General Morvain has led the siege for the Hallow King since midsummer. Now he has come down from the walls to finish it himself. He waits under his banner in the Inner Ward, past the Chapel of the Wardens. Defeat him. Varn is following with every soldier who can still hold a sword.',
-    objective: { kind: 'boss', boss: 'general-morvain', label: 'Defeat General Morvain in the Inner Ward' },
+    // (he waits under his banner. The garrison has not seen its own since midsummer: Highwall's colors go up to the Breach
+    // in the hero's hands, through what is left of his lines)
+    objective: { kind: 'carry', region: 'highwall', from: 'relief-camp', to: 'the-breach', thing: 'banner', verb: 'Take the colors', label: 'Carry Highwall’s colors up to the Breach', ambush: [['legion-soldier', 'legion-crossbowman'], ['death-knight-initiate']] },
+    then: [{ kind: 'boss', boss: 'general-morvain', label: 'Defeat General Morvain in the Inner Ward' }],
     after: ['the-siege-breaker'],
     zone: 'highwall',
     level: 43,
@@ -192,8 +226,15 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     id: 'names-of-the-fallen',
     name: 'Names of the Fallen',
     giver: 'chaplain-ottis',
-    text: 'The Host’s soldiers on the March wear Highwall’s tabards. They are the garrison’s own dead, raised to attack their city. Every Highwall soldier wore a tin tag with their name on it. Chaplain Ottis wants six tags back, so their families can stop waiting for news.',
-    objective: { kind: 'loot', region: 'highwall', item: 'Garrison Tag', from: ['legion-soldier'], chance: 0.35, count: 6, label: 'Recover Garrison Tags from Ashen soldiers' },
+    text: 'The Host’s soldiers on the March wear Highwall’s tabards. They are the garrison’s own dead, raised to attack their city. Every Highwall soldier wore a tin tag with their name on it. Chaplain Ottis wants four tags back, hung on his wall of the fallen, so their families can stop waiting for news.',
+    objective: { kind: 'loot', region: 'highwall', item: 'Garrison Tag', from: ['legion-soldier'], chance: 0.35, count: 4, label: 'Recover Garrison Tags from Ashen soldiers' },
+    // (it was six tags handed over. Ottis keeps a wall of the fallen: each tag is hung there, and read)
+    then: [
+      {
+        kind: 'use', region: 'highwall', at: 'chaplain-ottis', count: 3, thing: 'grave', verb: 'Hang the tag', label: 'Hang the tags on Ottis’s wall of the fallen', secs: 1, spread: 4,
+        notes: ['“Pte. Wil Tanner.” His mother asks Ottis every day.', '“Sgt. Ilse Marrow.” Her tag is bent round a bolt.', '“Sir Aldo.” A knight. Ottis buried him himself.'],
+      },
+    ],
     after: ['the-wall-burns'],
     zone: 'highwall',
     level: 41,
@@ -204,7 +245,14 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     name: 'The Knights’ Chapel',
     giver: 'chaplain-ottis',
     text: 'One of the tags belongs to Sir Aldo. Ottis buried him at the Knights’ Chapel, north-east of the camp, early in the siege, and the chapel bell hasn’t rung since. Go and check the knights’ graves.',
-    objective: { kind: 'explore', spot: 'knights-chapel', label: 'Visit the Knights’ Chapel north-east of the camp' },
+    objective: { kind: 'explore', spot: 'knights-chapel', label: 'Find the Knights’ Chapel, north-east of the camp' },
+    // (it was a visit. The graves are checked one by one, with what came out of them still about)
+    then: [
+      {
+        kind: 'use', region: 'highwall', at: 'knights-chapel', count: 3, thing: 'grave', verb: 'Check the grave', label: 'Check the knights’ graves', secs: 1, spread: 6, guards: ['death-knight-initiate'],
+        notes: ['Opened from below. The earth is thrown outward.', 'Sir Aldo’s. Empty, like the rest.', 'In the chapel: the burial hymn, with a line struck out.'],
+      },
+    ],
     after: ['names-of-the-fallen'],
     zone: 'highwall',
     level: 41,
@@ -212,6 +260,7 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     // when they are laid down)
     turnIn: false,
     find: {
+      step: 1,
       name: 'The Burial Hymn, Changed',
       kind: 'page',
       about: 'Left on the altar of the Knights’ Chapel, beside the open graves. It is Highwall’s old burial hymn in Prior Vessant’s hand, with one word changed in every verse. Vessant was the city’s prior before the siege.',
@@ -227,8 +276,11 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     id: 'last-rites',
     name: 'Last Rites',
     giver: 'chaplain-ottis',
-    text: 'Highwall’s dead knights walk the March now, as death knights of the Host. Ottis can’t bury a knight who won’t stay down. Defeat five death knight initiates around the Knights’ Chapel or anywhere on the March, then go back to Ottis at the relief camp so he can read the true rites.',
-    objective: { kind: 'kill', region: 'highwall', count: 5, enemies: ['death-knight-initiate'], label: 'Defeat death knight initiates' },
+    text: 'Highwall’s dead knights walk the March now, as death knights of the Host. Ottis can’t bury a knight who won’t stay down. Defeat three death knight initiates around the Knights’ Chapel or anywhere on the March, and read his true rite over the knights’ graves yourself. Then go back to Ottis at the relief camp so he can read the true rites.',
+    objective: { kind: 'kill', region: 'highwall', count: 3, enemies: ['death-knight-initiate'], label: 'Defeat death knight initiates' },
+    // (it was five kills, and the rites were read off-stage. Ottis has written them out: the hero reads them over the
+    // graves, and what was in the graves comes to hear)
+    then: [{ kind: 'use', region: 'highwall', at: 'knights-chapel', count: 3, thing: 'grave', verb: 'Read the rite', label: 'Read Ottis’s true rite over the knights’ graves', secs: 1.4, spread: 6, ambush: ['death-knight-initiate'] }],
     after: ['the-knights-chapel'],
     zone: 'highwall',
     level: 42,
@@ -304,7 +356,7 @@ export const HIGHWALL_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'names-of-the-fallen', state: 'active' },
-        lines: ['Have you looked at the Host’s soldiers? Under the rot, they wear our tabards. They’re Highwall’s own dead.', 'Every soldier here wore a tin tag with their name on it. Bring me six, and I can tell their families.'],
+        lines: ['Have you looked at the Host’s soldiers? Under the rot, they wear our tabards. They’re Highwall’s own dead.', 'Every soldier here wore a tin tag with their name on it. Bring me four, and hang them on my wall with me. I read each name aloud. Someone should hear it.'],
       },
       {
         when: { quest: 'the-knights-chapel', state: 'active' },
@@ -312,7 +364,7 @@ export const HIGHWALL_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'last-rites', state: 'active' },
-        lines: ['Empty graves, and Vessant’s hymn on the altar? He was Highwall’s prior before the siege. He said the rites over every grave in that yard.', 'I can’t read the rites over a knight who won’t stay down. Defeat five of them, and I’ll do the rest.'],
+        lines: ['Empty graves, and Vessant’s hymn on the altar? He was Highwall’s prior before the siege. He said the rites over every grave in that yard.', 'I can’t read the rites over a knight who won’t stay down. Defeat three of them, and read the true rite over their graves at the chapel: I’ve written it out for you. Then I’ll do the rest.'],
       },
       { when: { quest: 'general-morvain', state: 'done' }, lines: ['The siege is over. Everyone in these beds is going to live.'] },
       { when: { quest: 'last-rites', state: 'done' }, lines: ['I rang the chapel bell. The soldiers in the camp heard it and took off their helmets.'] },
