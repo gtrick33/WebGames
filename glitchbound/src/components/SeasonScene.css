@@ -79,6 +79,14 @@
   filter: drop-shadow(0 -2px 3px rgb(80 130 200 / 0.25));
   opacity: 0.9;
 }
+/* Phones: the floating tabs cover the bottom of the screen, so the drift only peeked out at their two ends, a white
+   line cut off flat (iPhone Safari stops this layer above its own bar). The owner, 2026-11-26: "white line is still
+   present". */
+@media (max-width: 900px) {
+  .sc-drift {
+    display: none;
+  }
+}
 
 /* Lunar New Year: red lanterns hanging under the header, swaying */
 .sc-lantern {
