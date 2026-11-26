@@ -150,6 +150,19 @@ function openAt(w: World, x: number, y: number, reach: Int16Array | null): boole
   return !reach || reach[i]! >= 0;
 }
 
+/** Open ground with nothing standing on any tile next to it: room to walk up to a thing from any side. */
+function roomyAt(w: World, x: number, y: number, reach: Int16Array | null): boolean {
+  if (!openAt(w, x, y, reach)) return false;
+  const m = w.map;
+  const tx = Math.floor(x / TILE);
+  const ty = Math.floor(y / TILE);
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    const i = (ty + dy) * m.w + tx + dx;
+    if (m.solid[i] || m.thicket[i] || m.bodies[i]?.length) return false;
+  }
+  return true;
+}
+
 /** Whether a spot is open ground on the land's routes from a place (what the steps' test asks of every thing). */
 export const standsOpen = (w: World, at: { x: number; y: number }, x: number, y: number): boolean => openAt(w, x, y, reachFrom(w, at.x, at.y));
 
@@ -165,8 +178,9 @@ function placeNear(w: World, ax: number, ay: number, rnd: () => number, spread: 
     const d = (least + (1 - least) * rnd()) * spread * TILE * (k < 40 ? 1 : 0.5);
     const x = ax + Math.cos(a) * d;
     const y = ay + Math.sin(a) * d;
-    // (open ground on the land's routes for as long as there is some to be found; then any clear ground)
-    if (k < 48 ? !openAt(w, x, y, reach) : !clearAt(w, x, y)) continue;
+    // (ground with nothing standing on the tiles round it for as long as there is some to be found, so that a thing is
+    // not at the edge of a wood with trunks in the way; then open ground on the land's routes; then any clear ground)
+    if (k < 30 ? !roomyAt(w, x, y, reach) : k < 48 ? !openAt(w, x, y, reach) : !clearAt(w, x, y)) continue;
     if (apart.some((o) => dist(o.x, o.y, x, y) < 34)) continue;
     if (w.npcs.some((n) => dist(n.x, n.y, x, y) < 24)) continue;
     return { x, y };
