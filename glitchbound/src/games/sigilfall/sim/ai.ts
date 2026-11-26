@@ -5,7 +5,7 @@ import { castRay, circleHitsWall, flowField, flowStep, lineOfSight, moveCircle, 
 import { updateBoss } from './boss';
 import { hardening } from '../data/classes';
 import type { StatusId } from '../data/types';
-import type { Enemy, Ghost, Pet } from './types';
+import type { Enemy, Ghost, HitShape, Pet } from './types';
 import type { World } from './world';
 
 /**
@@ -263,7 +263,7 @@ export function updateEnemy(w: World, e: Enemy, dt: number): void {
       e.rushLeft -= step;
       if (!e.rushHit && !p.dead && dist(e.x, e.y, p.x, p.y) < e.r + p.r + 2) {
         e.rushHit = true;
-        hurtVictim(w, p, e.dmg * (e.def.ai === 'hopper' ? 1 : 1.25 * spike(w, e)), { fromX: e.x, fromY: e.y, knock: 130, source: e });
+        hurtVictim(w, p, e.dmg * (e.def.ai === 'hopper' ? 1 : 1.25 * spike(w, e)), { fromX: e.x, fromY: e.y, knock: 130, source: e }, ['m', r1(e.x), r1(e.y), r1(e.r + 2), 0, 0, 1]);
       }
       if (e.def.ai === 'charger' && (w.rand() < 0.5)) w.addFx({ kind: 'smoke', x: e.x, y: e.y + e.r * 0.6, life: 0.3, size: 3, color: '#b9a58a' });
       if (res.bx || res.by) {
@@ -416,9 +416,12 @@ export const SPIKE = 1.8;
 /** SPIKE at this foe's level, as far into the harder game as it is (data/classes.ts hardening); a Riftstone run keeps its own. */
 const spike = (w: World, e: Enemy): number => (w.ownMeasure ? 1 : 1 + (SPIKE - 1) * hardening(e.level));
 
-/** An enemy's blow lands on whoever it was after. */
-function hurtVictim(w: World, v: Victim, dmg: number, o: Parameters<typeof hurtPlayer>[2]): void {
-  if (v.ghost) w.ghostHit(v.ghost, dmg, { fromX: o?.fromX, fromY: o?.fromY, knock: o?.knock, ...(o?.status ? { status: o.status } : {}), ...(o?.source ? { src: o.source.id } : {}) });
+const r1 = (v: number): number => Math.round(v * 10) / 10;
+const r2 = (v: number): number => Math.round(v * 100) / 100;
+
+/** An enemy's blow lands on whoever it was after (`at`: the blow's reach, for another hero's game to check). */
+function hurtVictim(w: World, v: Victim, dmg: number, o: Parameters<typeof hurtPlayer>[2], at?: HitShape): void {
+  if (v.ghost) w.ghostHit(v.ghost, dmg, { fromX: o?.fromX, fromY: o?.fromY, knock: o?.knock, ...(o?.status ? { status: o.status } : {}), ...(o?.source ? { src: o.source.id } : {}), ...(at ? { at } : {}) });
   else if (v.pet) hurtPet(w, v.pet, dmg);
   else hurtPlayer(w, dmg, o);
 }
@@ -619,7 +622,7 @@ function act(w: World, e: Enemy): void {
   switch (e.def.ai) {
     case 'melee': {
       w.addFx({ kind: 'slash', x: e.x, y: e.y, a: e.aimA, a2: 1.8, life: 0.15, size: e.def.reach + 6, color: '#ff8a8a', r2: 0 });
-      if (!p.dead && dist(e.x, e.y, p.x, p.y) <= e.def.reach + p.r + e.r + 4 && Math.abs(angleDiff(e.aimA, Math.atan2(p.y - e.y, p.x - e.x))) < 1.1) hurtVictim(w, p, e.dmg, { fromX: e.x, fromY: e.y, knock: 80, source: e });
+      if (!p.dead && dist(e.x, e.y, p.x, p.y) <= e.def.reach + p.r + e.r + 4 && Math.abs(angleDiff(e.aimA, Math.atan2(p.y - e.y, p.x - e.x))) < 1.1) hurtVictim(w, p, e.dmg, { fromX: e.x, fromY: e.y, knock: 80, source: e }, ['m', r1(e.x), r1(e.y), r1(e.def.reach + e.r + 4), r2(e.aimA), 1.1, 1]);
       w.sfx('enemySwing', 0.5);
       e.state = 'recover';
       e.t = e.def.recover;
@@ -637,7 +640,7 @@ function act(w: World, e: Enemy): void {
       w.fxBurst(e.x, e.y + 4, '#a89070', 10, r);
       w.shake(2);
       w.sfx('slam', 0.6);
-      if (!p.dead && dist(e.x, e.y, p.x, p.y) <= r + p.r * 0.5) hurtVictim(w, p, e.dmg * 1.2 * spike(w, e), { fromX: e.x, fromY: e.y, knock: 120, source: e });
+      if (!p.dead && dist(e.x, e.y, p.x, p.y) <= r + p.r * 0.5) hurtVictim(w, p, e.dmg * 1.2 * spike(w, e), { fromX: e.x, fromY: e.y, knock: 120, source: e }, ['m', r1(e.x), r1(e.y), r1(r), 0, 0, 0.5]);
       // a slam also catches companions standing in it
       for (const pet of w.pets) if (!pet.dead && pet !== p.pet && dist(e.x, e.y, pet.x, pet.y) <= r + pet.r * 0.5) hurtPet(w, pet, e.dmg * 1.2);
       e.state = 'recover';

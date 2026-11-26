@@ -1080,6 +1080,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
   }
   if (roomFight) {
     const relay = (d: unknown): void => linkRef.current?.relay(d);
+    const rtt = (): number => linkRef.current?.rtt ?? 0;
     const live = roomFight.live;
     const listen = (fn: RingInbox | null): void => {
       inbox.current = fn;
@@ -1095,7 +1096,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
         worn={worn}
         title={myTitle}
         body={body}
-        role={roomFight.host ? { kind: 'host', skill: 0.6, send: relay, listen } : { kind: 'client', send: relay, listen }}
+        role={roomFight.host ? { kind: 'host', skill: 0.6, send: relay, listen, rtt } : { kind: 'client', send: relay, listen, rtt }}
         sets={sets}
         stakes={live?.stakes ?? null}
         hints={hints}

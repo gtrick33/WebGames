@@ -695,6 +695,7 @@ export class SigilEngine {
         this.greetIn -= dt;
         if (this.greetIn <= 0 && this.hero && questState(this.hero, 'briar-dusk') === 'active' && w.region.id === HOME) this.talk('mara-venn');
       }
+      if (this.coop && this.party) this.coop.setRtt(this.party.link.rtt);
       this.coop?.frame(dt * 1000);
       this.noteLeaderScene();
       if (this.leadAwayAt && performance.now() - this.leadAwayAt > LEAD_WAIT_MS) {

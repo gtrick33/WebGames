@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { showPing } from '../net/ping';
 import { procsNow } from './comboMark';
 import { bossPips, phaseTicks, sixWords, windingUp } from './bossbar';
 import { PerfMeter, perfAsked } from './PerfMeter';
@@ -408,10 +409,11 @@ function Hud({ engine }: { engine: SigilEngine }) {
   );
 }
 
-/** The party's other heroes: a name and a health bar each, under the hero's own. */
+/** The party's other heroes: a name and a health bar each, under the hero's own; and the ping to the host's game. */
 function PartyFrames({ engine }: { engine: SigilEngine }) {
   const bars = useRef<(HTMLElement | null)[]>([]);
   const list = useRef<HTMLUListElement>(null);
+  const ping = useRef<HTMLLIElement>(null);
   useHudBox(engine, 'party', list);
   useFrame(engine, (w) => {
     const list = w.coop?.ghosts ?? [];
@@ -419,6 +421,7 @@ function PartyFrames({ engine }: { engine: SigilEngine }) {
       const b = bars.current[i];
       if (b) b.style.width = `${g.dead ? 0 : Math.max(0, Math.min(1, g.hp / g.maxHp)) * 100}%`;
     });
+    showPing(ping.current, engine.coop?.ping ?? 0);
   });
   const ghosts = engine.world?.coop?.ghosts ?? [];
   return (
@@ -435,6 +438,7 @@ function PartyFrames({ engine }: { engine: SigilEngine }) {
           </span>
         </li>
       ))}
+      <li className="rb-ping" ref={ping} hidden />
     </ul>
   );
 }

@@ -5484,6 +5484,22 @@ html.rb-touch-playing textarea {
   height: 100%;
   background: #6ad06a;
 }
+/* the round trip to the host's game in a party fight (net/ping.ts): green, amber, red */
+.rb-ping {
+  font: 700 10px var(--font);
+  color: #8fe08f;
+  text-shadow: 1px 1px 0 var(--rb-ink);
+  white-space: nowrap;
+}
+.rb-ping[data-tone='fair'] {
+  color: #ffd27a;
+}
+.rb-ping[data-tone='poor'] {
+  color: #ff8a7a;
+}
+.rb-ping[hidden] {
+  display: none;
+}
 
 /* ------------------------------------------------------- epic chrome */
 /*

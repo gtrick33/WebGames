@@ -30,8 +30,12 @@ import { addToCodex, markVigilTaught, saveClassBest, vigilTaught } from '../vigi
 import { cleanKit, EVENTS, GALE, galeAngle, inPhase, nearPhase, RULES, TIDE, TRAITS, type Weekly } from '../vigil/night';
 import { bankNight, deedState, kitOf, readReturns, type Banked } from '../vigil/returns';
 import { deedProgress, nextDeeds } from '../vigil/deeds';
+import { ackFor, SeatInputs, SelfSync } from '../net/selfSync';
+import { showPing } from '../net/ping';
 
 const clock = (t: number): string => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+/** How often a host's game says how the night stands (ms). */
+const SNAP_MS = 166;
 
 const spellIcon = (id: string, evolved = false): string => {
   const def = SPELLS[id]!;
@@ -141,7 +145,8 @@ export function fxSound(kind: Fx['kind'], el: Element): [string, number, number]
 }
 
 type Inbox = (seat: number, d: unknown) => void;
-type Role = { kind: 'solo' } | { kind: 'host' | 'client'; send: (d: unknown) => void; listen: (fn: Inbox | null) => void };
+/** `rtt`: this player's own round trip to the room, in ms (net/link.ts), for the night's ping. */
+type Role = { kind: 'solo' } | { kind: 'host' | 'client'; send: (d: unknown) => void; listen: (fn: Inbox | null) => void; rtt?: () => number };
 
 interface Keeper extends PartyLook {
   id: number;
@@ -232,6 +237,7 @@ export function VigilScreen({ engine, face, body, cls, name, onBack }: { engine:
           listen: (fn) => {
             inbox.current = fn;
           },
+          rtt: () => linkRef.current?.rtt ?? 0,
         }}
         onBack={() => {
           // the host's game is the night, so leaving it ends it for everyone
@@ -298,6 +304,7 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, weekly, onB
   const pickRef = useRef<(i: number) => void>(() => undefined);
   const rerollRef = useRef<() => void>(() => undefined);
   const hudT = useRef<HTMLSpanElement>(null);
+  const hudPing = useRef<HTMLElement>(null);
   const hudK = useRef<HTMLSpanElement>(null);
   const hudL = useRef<HTMLSpanElement>(null);
   const hudXp = useRef<HTMLElement>(null);
@@ -391,26 +398,53 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, weekly, onB
     const writer = new SnapWriter();
     let heardAt = performance.now();
     let picking = false;
+    // a guest's own keeper: moved at once on its own screen, set right only where the host's game really differs (its
+    // word is a round trip old: net/selfSync.ts); the host says which of each guest's moves it last had
+    const sync = role.kind === 'client' ? new SelfSync() : null;
+    const seatMoves = role.kind === 'host' ? new SeatInputs() : null;
+    /** Whether the host says which moves it had (a host from before this doesn't: its place for us is eased toward). */
+    let synced = false;
+    // each player's round trip to the room, as they said (ms), by seat: the night's ping
+    const rtts = new Map<number, number>();
+    const ownRtt = (): number => (role.kind === 'solo' ? 0 : (role.rtt?.() ?? 0));
+    const pingNow = (): number => {
+      const own = ownRtt();
+      if (!own) return 0;
+      if (role.kind === 'client') return own + (rtts.get(-1) || own);
+      let worst = 0;
+      for (const ms of rtts.values()) worst = Math.max(worst, ms);
+      return worst ? own + worst : 0;
+    };
+    const saidRtt = (raw: unknown, seat: number): void => {
+      if (typeof raw === 'number' && Number.isFinite(raw)) rtts.set(seat, Math.max(0, Math.min(10_000, raw)));
+    };
     if (role.kind !== 'solo') {
       if (role.kind === 'host') {
         v.fxOut = [];
         role.listen((seat, raw) => {
-          const d = raw as { i?: unknown; c?: unknown; rr?: unknown; k?: unknown };
+          const d = raw as { i?: unknown; c?: unknown; rr?: unknown; k?: unknown; q?: unknown; rt?: unknown };
           if (d.k) v.equip(seat, cleanKit(d.k));
+          saidRtt(d.rt, seat);
           if (Array.isArray(d.i)) {
             const mx = Number(d.i[0]);
             const my = Number(d.i[1]);
             inputs[seat] = { mx: Number.isFinite(mx) ? Math.max(-1, Math.min(1, mx)) : 0, my: Number.isFinite(my) ? Math.max(-1, Math.min(1, my)) : 0, dash: d.i[2] === 1 || inputs[seat]?.dash };
+            seatMoves!.heard(seat, d.q, performance.now());
           }
           if (typeof d.c === 'number') v.choose(d.c, seat);
           if (d.rr) v.reroll(seat);
         });
       } else {
         role.listen((_seat, raw) => {
-          const d = raw as { s?: Snap };
+          const d = raw as { s?: Snap; ak?: unknown; rt?: unknown };
           if (!d?.s) return;
           heardAt = performance.now();
+          saidRtt(d.rt, -1);
           applySnap(v, d.s, me.id);
+          const ack = ackFor(d.ak, me.id);
+          synced = !!ack;
+          // (not while down or choosing: the host's place for the keeper is followed then, as it was)
+          if (ack && !me.down && !v.choosing && !v.over) sync!.correct(ack[1], ack[2], me.tx, me.ty, me);
         });
       }
     }
@@ -486,6 +520,7 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, weekly, onB
     let struck = 0;
     let wasDown = false;
     let sentAt = 0;
+    let lastSaid = '';
     let trees = false;
     const frame = (now: number): void => {
       raf = requestAnimationFrame(frame);
@@ -503,11 +538,18 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, weekly, onB
       const stopped = solo && pausedRef.current;
       const asked = inputNow();
       if (role.kind === 'client') {
-        v.follow(dt, me.id, asked);
-        if (now - sentAt > 66) {
+        v.follow(dt, me.id, asked, synced);
+        if (me.down || v.choosing || v.over) sync!.reset();
+        else sync!.frame(now, dt, me);
+        // said the moment it changes (at most thirty times a second), and fifteen times a second besides
+        const i = [Math.round(asked.mx * 100) / 100, Math.round(asked.my * 100) / 100, asked.dash ? 1 : 0];
+        const said = i.join(',');
+        if ((now - sentAt > 33 && said !== lastSaid) || now - sentAt > 66) {
           sentAt = now;
+          lastSaid = said;
+          const own = ownRtt();
           // (what this keeper carries, said a few times as the night begins in case the first is lost)
-          role.send(v.t < 6 ? { i: [Math.round(asked.mx * 100) / 100, Math.round(asked.my * 100) / 100, asked.dash ? 1 : 0], k: kit } : { i: [Math.round(asked.mx * 100) / 100, Math.round(asked.my * 100) / 100, asked.dash ? 1 : 0] });
+          role.send({ i, q: sync!.stamp(now), ...(v.t < 6 ? { k: kit } : {}), ...(own ? { rt: Math.round(own) } : {}) });
           dashAsk.current = false;
         }
       } else if (!stopped) {
@@ -515,10 +557,11 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, weekly, onB
         dashAsk.current = false;
         for (const id of Object.keys(inputs)) inputs[Number(id)]!.dash = false;
       }
-      if (role.kind === 'host' && now - sentAt > 166) {
+      if (role.kind === 'host' && now - sentAt > SNAP_MS) {
         const since = sentAt ? (now - sentAt) / 1000 : 0;
         sentAt = now;
-        role.send({ s: writer.write(v, since) });
+        const own = ownRtt();
+        role.send({ s: writer.write(v, since), ak: seatMoves!.acks(performance.now()), ...(own ? { rt: Math.round(own) } : {}) });
       }
       painter.frame(stopped || v.choosing ? 0 : dt);
       const p = world.player;
@@ -600,6 +643,7 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, weekly, onB
       // a ward shows over the health it guards
       hudHp.current?.parentElement?.style.setProperty('--ward', me.ward > 0 && me.wardMax > 0 ? part(me.ward / me.wardMax) : '0%');
       say(hudT.current, clock(v.t));
+      if (role.kind !== 'solo') showPing(hudPing.current, pingNow());
       say(hudK.current, String(v.kills));
       say(hudL.current, String(v.level));
       if (hudXp.current) hudXp.current.style.width = part(v.xp / v.xpNext);
@@ -712,6 +756,7 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, weekly, onB
             <span className="rb-dim">
               Level <b ref={hudL}>1</b> · <b ref={hudK}>0</b> felled
             </span>
+            {role.kind !== 'solo' && <small className="rb-ping" ref={hudPing} hidden />}
             <span className="rb-vigil-rules" aria-label="This land’s rule">
               {rules.map((r) => (
                 <em key={r} title={RULES[r].text}>

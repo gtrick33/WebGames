@@ -1,3 +1,4 @@
+import { angleDiff, dist, inCone, inLine, segDist } from '../core/math';
 import { applyStatus, hurtPlayer, remoteHit } from '../sim/combat';
 import { circleHitsWall } from '../sim/map';
 import { bringFor } from '../sim/tasks';
@@ -6,7 +7,7 @@ import { SKILLS } from '../data/skills';
 import type { EliteAffix, StatusId } from '../data/types';
 import type { Character } from '../progress/character';
 import { packQuest, unpackQuest } from '../progress/save';
-import type { CoopOut, Enemy, Field, Ghost, Projectile, Telegraph, Wave } from '../sim/types';
+import type { CoopOut, Enemy, Field, Ghost, HitShape, Projectile, Telegraph, Wave } from '../sim/types';
 import type { World } from '../sim/world';
 import type { Card } from './room';
 
@@ -19,23 +20,39 @@ import type { Card } from './room';
  * rooms, the clock, and what happened since (kills, a boss's fall, an attack that struck someone).
  *
  * Every player's game runs its own hero, so moving and casting answer at once. It sends where the hero
- * is ten times a second, and its hits on the host's enemies (worked out in full on its side: crit, armor,
- * resistances) twenty times a second; the host's game takes them off the real enemy. A guest's world
+ * is twenty times a second, and its hits on the host's enemies (worked out in full on its side: crit, armor,
+ * resistances) as often; the host's game takes them off the real enemy. A guest's world
  * holds copies of the host's enemies and attacks: drawn, struck at, never striking (World.puppet). What
  * strikes a guest's hero comes from the host's game and is taken by the guest's: its own armor, dodge and
  * health. Every kill gives every hero its experience and its own loot, rolled on its own game.
+ *
+ * The host's copy of a guest's hero is a round trip behind it (from Bulgaria to Portugal and back, 100 ms and more,
+ * with the time a place waits to be sent and to be eased in). Struck where the host saw them, a guest who stepped out
+ * of a circle on their own screen was hit all the same. So what lands on a guest comes with what struck (a HitShape),
+ * and the guest's game takes it only if its hero really was there, or dodging a moment ago (`confirms`). The host's
+ * game reaches a little further for those heroes (GHOST_SLACK) so that a blow the guest did walk into is still sent.
  *
  * Messages go through the room's relay (rooms/worker.ts), which keeps their order, so a kill, a boss's
  * fall or the clock stopping is never lost. `send` is that relay (a test wires two worlds together).
  */
 
-/** Frames and hero places per second; hits go out twice as often. */
-const FRAME_MS = 100;
+/** Hero places and the guest's hits go out twenty times a second; the host's frames fifteen (they are the big ones). */
+const HERO_MS = 50;
+const FRAME_MS = 66;
 const HIT_MS = 50;
 /** A hero not heard from in this long has left the fight (the enemies forget them). */
 const LOST_S = 6;
-/** How fast drawn places catch up with the last one sent (per second). */
-const EASE = 14;
+/** How fast drawn places catch up with the last one sent (per second): quick, for places that come often. */
+const EASE = 20;
+/** A guest dodging (a roll's moment of grace, a dash) this recently isn't struck by what the host's game sends. */
+const SAFE_GRACE = 0.2;
+/**
+ * A shot or a shockwave the host saw strike a guest is checked over this much of its flight either side (s): their
+ * game sees it a round trip later, so it has flown on by then, and it is the way it went that counts.
+ */
+const PATH_S = 0.25;
+/** A guest's hit not yet seen in the host's frames counts this long at most (s), then the host's word stands. */
+const OWED_MAX_S = 2;
 
 export type Role = 'host' | 'guest';
 
@@ -62,6 +79,10 @@ interface HeroMsg {
   c?: [string, number, number];
   /** The last skill made: the hero's count of them, its id, where it went, its kind and whether it was a big swing. */
   a?: [number, string, number, string, 0 | 1];
+  /** This game checks what the host's game says struck its hero (Ghost.confirms). */
+  lh?: 1;
+  /** This player's round trip to the room, in ms (for the party's ping). */
+  rt?: number;
 }
 
 const ACT_KINDS = new Set(['swing', 'cast', 'shoot', 'heavy', 'spin']);
@@ -74,6 +95,8 @@ interface GuestMsg {
   died: number;
   /** Foes a quest step of theirs asks the host's game to put down: their ids, where, and whether they come at once. */
   br?: [string[], number, number, 0 | 1][];
+  /** Counts this guest's messages: the host's frames say the last one taken (FrameMsg.ak). */
+  q?: number;
 }
 
 type EnemyRow = [id: number, def: string, x: number, y: number, hp: number, mh: number, flags: number, level: number, face: number, state: string, name: string, elite: string, room: number];
@@ -81,7 +104,7 @@ type ShotRow = [x: number, y: number, vx: number, vy: number, r: number, look: s
 type TeleRow = [id: number, shape: Telegraph['shape'], x: number, y: number, r: number, r2: number, angle: number, len: number, dur: number, t: number, tone: Telegraph['tone'], linger: number];
 type FieldRow = [x: number, y: number, r: number, look: Field['look'], t: number, dur: number];
 type WaveRow = [x: number, y: number, r: number, speed: number, max: number, width: number];
-type Event = ['h', number, number, number, number, number, StatusId | '', number, number, number] | ['k', number] | ['b', number] | ['end', number, number] | ['ev', string];
+type Event = ['h', number, number, number, number, number, StatusId | '', number, number, number, HitShape | 0] | ['k', number] | ['b', number] | ['end', number, number] | ['ev', string];
 
 /** Questing together: the leader's story (packed quests, progress/save packQuest), which the others' worlds show. */
 interface StoryMsg {
@@ -105,6 +128,8 @@ interface FrameMsg {
   ev: Event[];
   /** The leader is watching a story scene (questing together: only the leader's game plays them). */
   sc?: 0 | 1;
+  /** The last of each guest's messages taken (seat, GuestMsg.q): its hits are in this frame's health (missing from a host from before it). */
+  ak?: [number, number][];
 }
 
 const r1 = (v: number): number => Math.round(v * 10) / 10;
@@ -152,6 +177,18 @@ export class CoopSession {
   private targets = new Map<number, { x: number; y: number }>();
   /** Members by seat: their ghosts are made when a world is attached. */
   private members = new Map<number, Member>();
+  private heroT = 0;
+  /** Guest: the world time this hero was last dodging (SAFE_GRACE). */
+  private safeAt = -99;
+  /** Guest: hits sent (or about to be) that the host's frames don't show yet, by enemy: which message and how much. */
+  private owed = new Map<number, { q: number; dmg: number; at: number }[]>();
+  /** Guest: counts its hit messages (GuestMsg.q). */
+  private hitSeq = 0;
+  /** Host: the last message taken from each guest (FrameMsg.ak). */
+  private acked = new Map<number, number>();
+  /** This player's own round trip to the room (ms), and each other player's as they last said. */
+  private ownRtt = 0;
+  private rtts = new Map<number, number>();
 
   constructor(
     readonly role: Role,
@@ -160,6 +197,23 @@ export class CoopSession {
     readonly host: number,
     private readonly send: (d: unknown) => void,
   ) {}
+
+  /** This player's own round trip to the room, in ms (net/link.ts measures it): said with the hero's place. */
+  setRtt(ms: number): void {
+    this.ownRtt = ms;
+  }
+
+  /**
+   * The round trip between this player's game and the host's, in ms (each leg goes through the room): for a guest, its
+   * own and the host's; for the host, its slowest guest's. 0 while nobody has measured.
+   */
+  get ping(): number {
+    if (!this.ownRtt) return 0;
+    if (this.role === 'guest') return Math.round(this.ownRtt + (this.rtts.get(this.host) ?? this.ownRtt));
+    let worst = 0;
+    for (const n of this.members.keys()) worst = Math.max(worst, this.rtts.get(n) ?? 0);
+    return worst ? Math.round(this.ownRtt + worst) : 0;
+  }
 
   /** The party's other heroes (from the room's cards). */
   setMembers(list: Member[]): void {
@@ -179,6 +233,7 @@ export class CoopSession {
     this.targets.clear();
     this.events = [];
     this.hits = { t: 'g', h: [], st: [], died: 0, br: [] };
+    this.owed.clear();
     this.spread(w);
     this.setMembers([...this.members.values()]);
     this.storySent = '';
@@ -277,19 +332,26 @@ export class CoopSession {
           e.y += (t.y - e.y) * k;
         }
       }
+    if (this.role === 'guest' && (w.player.iframe > 0 || w.player.dash)) this.safeAt = w.time;
     this.drain(w);
     if (this.role === 'host' && this.members.size) this.shareStory(w, dtMs);
+    this.heroT -= dtMs;
     this.frameT -= dtMs;
     this.hitT -= dtMs;
-    if (this.frameT <= 0) {
+    if (this.heroT <= 0) {
+      this.heroT += HERO_MS;
+      if (this.heroT < 0) this.heroT = HERO_MS;
+      this.send(this.heroMsg(w));
+    }
+    if (this.role === 'host' && this.frameT <= 0) {
       this.frameT += FRAME_MS;
       if (this.frameT < 0) this.frameT = FRAME_MS;
-      this.send(this.heroMsg(w));
-      if (this.role === 'host') this.sendFrame(w);
+      this.sendFrame(w);
     }
     if (this.role === 'guest' && this.hitT <= 0) {
       this.hitT = HIT_MS;
       if (this.hits.h.length || this.hits.st.length || this.hits.died || this.hits.br?.length) {
+        this.hits.q = ++this.hitSeq;
         this.send(this.hits);
         this.hits = { t: 'g', h: [], st: [], died: 0, br: [] };
       }
@@ -302,12 +364,18 @@ export class CoopSession {
     if (!out.length) return;
     for (const o of out) {
       if (this.role === 'host') {
-        if (o.t === 'hit') this.events.push(['h', o.n, o.dmg, r1(o.fromX ?? NaN), r1(o.fromY ?? NaN), o.knock ?? 0, o.status?.status ?? '', o.status?.dur ?? 0, o.status?.power ?? 0, o.src ?? -1]);
+        if (o.t === 'hit') this.events.push(['h', o.n, o.dmg, r1(o.fromX ?? NaN), r1(o.fromY ?? NaN), o.knock ?? 0, o.status?.status ?? '', o.status?.dur ?? 0, o.status?.power ?? 0, o.src ?? -1, o.at ?? 0]);
         else if (o.t === 'kill') this.events.push(['k', o.id]);
         else if (o.t === 'bossDone') this.events.push(['b', o.id]);
         else if (o.t === 'end') this.events.push(['end', r1(o.time), o.up]);
         else if (o.t === 'event') this.events.push(['ev', o.id]);
-      } else if (o.t === 'dmg') this.hits.h.push([o.id, o.dmg, o.kx, o.ky]);
+      } else if (o.t === 'dmg') {
+        this.hits.h.push([o.id, o.dmg, o.kx, o.ky]);
+        // (in the message about to go out: the host's frames show it once they say that message was taken)
+        const list = this.owed.get(o.id) ?? [];
+        list.push({ q: this.hitSeq + 1, dmg: o.dmg, at: w.time });
+        this.owed.set(o.id, list);
+      }
       else if (o.t === 'st') this.hits.st.push([o.id, o.status, r1(o.dur), r1(o.power)]);
       else if (o.t === 'died') this.hits.died += 1;
       else if (o.t === 'bring') (this.hits.br ??= []).push([o.ids, Math.round(o.x), Math.round(o.y), o.hunt ? 1 : 0]);
@@ -319,7 +387,8 @@ export class CoopSession {
     const p = w.player;
     const sh: HeroMsg['sh'] = [];
     for (const pr of w.projectiles) if (!pr.hostile && !pr.dead && sh.length < 24) sh.push([Math.round(pr.x), Math.round(pr.y), Math.round(pr.vx), Math.round(pr.vy), pr.r, pr.color]);
-    const msg: HeroMsg = { t: 'p', x: r1(p.x), y: r1(p.y), vx: Math.round(p.vx), vy: Math.round(p.vy), dir: p.dir, hp: Math.round(p.hp), mh: Math.round(p.maxHp), dead: p.dead ? 1 : 0, u: p.iframe > 0 || !!p.dash ? 1 : 0, sh };
+    const msg: HeroMsg = { t: 'p', x: r1(p.x), y: r1(p.y), vx: Math.round(p.vx), vy: Math.round(p.vy), dir: p.dir, hp: Math.round(p.hp), mh: Math.round(p.maxHp), dead: p.dead ? 1 : 0, u: p.iframe > 0 || !!p.dash ? 1 : 0, sh, lh: 1 };
+    if (this.ownRtt > 0) msg.rt = Math.round(this.ownRtt);
     if (p.casting) msg.c = [p.casting.spec.id, Math.round((p.casting.t / p.casting.total) * 100) / 100, r1(p.casting.angle)];
     // the skill they last made, kept from the moment it happened (its kind is gone from the hero a moment later)
     if (p.actN !== this.myAct?.[0] && p.actSkill && p.actKind) this.myAct = [p.actN, p.actSkill, Math.round(p.actAngle * 100) / 100, p.actKind, p.actBig ? 1 : 0];
@@ -349,7 +418,7 @@ export class CoopSession {
     const wv: WaveRow[] = [];
     for (const v of w.waves) if (!v.dead) wv.push([r1(v.x), r1(v.y), r1(v.r), v.speed, v.max, v.width]);
     const k = w.keyRun ? ([r1(w.keyRun.t), w.keyRun.deaths] as [number, number]) : null;
-    const msg: FrameMsg = { t: 's', e, pr, tg, fd, wv, en: w.encounterCode(), k, ev: this.events, sc: w.scene ? 1 : 0 };
+    const msg: FrameMsg = { t: 's', e, pr, tg, fd, wv, en: w.encounterCode(), k, ev: this.events, sc: w.scene ? 1 : 0, ak: [...this.acked] };
     this.events = [];
     this.send(msg);
   }
@@ -362,7 +431,7 @@ export class CoopSession {
     try {
       if (m.t === 'p') this.onHero(w, n, m as HeroMsg);
       else if (m.t === 's' && this.role === 'guest' && n === this.host) this.onFrame(w, m as FrameMsg);
-      else if (m.t === 'g' && this.role === 'host' && n !== this.me) this.onHits(w, m as GuestMsg);
+      else if (m.t === 'g' && this.role === 'host' && n !== this.me) this.onHits(w, m as GuestMsg, n);
       else if (m.t === 'q' && this.role === 'guest' && n === this.host) this.onStory(w, m as StoryMsg);
     } catch {
       /* a malformed message: dropped (the next one carries the state again) */
@@ -388,6 +457,8 @@ export class CoopSession {
     g.hp = num(m.hp, 0, g.maxHp);
     g.dead = m.dead === 1;
     g.untouchable = m.u === 1;
+    g.confirms = m.lh === 1;
+    if (typeof m.rt === 'number' && Number.isFinite(m.rt)) this.rtts.set(n, num(m.rt, 0, 10_000));
     g.shots = [];
     for (const row of list(m.sh, 24)) {
       if (!Array.isArray(row)) continue;
@@ -406,7 +477,9 @@ export class CoopSession {
   }
 
   /** Host: a guest's hits land on the real enemies; its falls cost the clock. */
-  private onHits(w: World, m: GuestMsg): void {
+  private onHits(w: World, m: GuestMsg, n: number): void {
+    const q = num(m.q, 0, 1e12, -1);
+    if (q >= 0) this.acked.set(n, Math.max(q, this.acked.get(n) ?? 0));
     // a hit never takes more than the enemy has, and one message never more than a share of a boss
     const boss = new Map<number, number>();
     for (const row of list(m.h, 64)) {
@@ -441,6 +514,15 @@ export class CoopSession {
   /** Guest: the host's frame. */
   private onFrame(w: World, m: FrameMsg): void {
     this.leaderScene = m.sc === 1;
+    // the hits this frame already holds: owed no more (a host from before `ak` never says: none are kept)
+    const acks = Array.isArray(m.ak) ? (list(m.ak, 8) as unknown[]) : null;
+    const mine = acks?.find((x): x is [number, number] => Array.isArray(x) && x[0] === this.me && typeof x[1] === 'number');
+    const ack = acks ? (mine?.[1] ?? 0) : Infinity;
+    for (const [id, owed] of this.owed) {
+      const left = owed.filter((o) => o.q > ack && w.time - o.at < OWED_MAX_S);
+      if (left.length) this.owed.set(id, left);
+      else this.owed.delete(id);
+    }
     // what happened first (a kill needs the enemy still here), then where everything is now
     this.kills = 0;
     for (const ev of list(m.ev, 200)) if (Array.isArray(ev)) this.onEvent(w, ev as Event);
@@ -470,7 +552,10 @@ export class CoopSession {
       if (e.dead) continue;
       this.targets.set(id, { x, y });
       e.maxHp = mh;
-      e.hp = Math.max(1, hp);
+      // (less what this hero has dealt that the host hasn't taken yet: the bar never climbs back between hits)
+      let owed = 0;
+      for (const o of this.owed.get(id) ?? []) owed += o.dmg;
+      e.hp = Math.max(1, hp - owed);
       e.face = face;
       e.state = state as Enemy['state'];
       e.room = room;
@@ -495,10 +580,17 @@ export class CoopSession {
 
   private onEvent(w: World, ev: Event): void {
     if (ev[0] === 'h') {
-      const [, n, rawDmg, fx, fy, knock, status, dur, power, src] = ev;
+      const [, n, rawDmg, fx, fy, knock, status, dur, power, src, at] = ev;
       if (n !== this.me) return;
       const dmg = num(rawDmg, 0, 1e9);
       if (dmg <= 0) return;
+      // what struck, checked against where this hero really is: out of it, or dodging a moment ago, it missed (a host
+      // from before HitShape sends none: its word stands)
+      if (at) {
+        const p = w.player;
+        if (w.time - this.safeAt < SAFE_GRACE) return w.dodgedSomething();
+        if (struckAt(at, p.x, p.y, p.r) === false) return;
+      }
       const source = typeof src === 'number' && src >= 0 ? w.enemyById(src) : undefined;
       const st = typeof status === 'string' && STATUS_IDS.has(status) ? { status: { status: status as StatusId, dur: num(dur, 0, STATUS_DUR), power: num(power, 0, 1e6) } } : {};
       hurtPlayer(w, dmg, { ...(Number.isFinite(fx) && Number.isFinite(fy) ? { fromX: fx, fromY: fy } : {}), knock: num(knock, 0, 2000), ...st, ...(source ? { source } : {}) });
@@ -541,6 +633,57 @@ export class CoopSession {
     for (const [x, y, r, look, t, dur] of list(m.fd, 100) as FrameMsg['fd']) w.fields.push({ id: -1, x, y, r, t, dur, tick: 1, tickT: 1, dmg: 0, type: 'physical', look, hostile: true, depth: 0, spec: null, onHit: false, remote: true });
     w.waves = (list(m.wv, 50) as FrameMsg['wv']).map(([x, y, r, speed, max, width]): Wave => ({ id: -1, x, y, r, speed, max, width, dmg: 0, hitPlayer: true, remote: true, dead: false }));
   }
+}
+
+/**
+ * Whether a hero (at x, y, of radius r) is inside what struck them on the host's side, by the same measure the host's
+ * game uses for its own hero (sim/world.ts `inside`, updateWaves, sim/cast.ts, sim/ai.ts). A shot or a shockwave counts
+ * over a little of its flight either side (PATH_S). Null when the shape can't be read: the host's word stands.
+ */
+export function struckAt(at: unknown, x: number, y: number, r: number): boolean | null {
+  if (!Array.isArray(at) || typeof at[0] !== 'string') return null;
+  const n = (i: number): number => (typeof at[i] === 'number' && Number.isFinite(at[i]) ? (at[i] as number) : NaN);
+  switch (at[0]) {
+    case 't': {
+      const [cx, cy, rr, r2, angle, length] = [n(2), n(3), n(4), n(5), n(6), n(7)];
+      if (![cx, cy, rr, r2, angle, length].every(Number.isFinite)) return null;
+      const d = dist(x, y, cx, cy);
+      switch (at[1]) {
+        case 'circle':
+          return d <= rr + r * 0.5;
+        case 'ring':
+        case 'donut':
+          return d >= r2 - r * 0.3 && d <= rr + r * 0.5;
+        case 'line':
+          return inLine(x, y, r * 0.5, cx, cy, angle, length, r2);
+        case 'cone':
+          return inCone(x, y, cx, cy, angle, r2, rr + r * 0.5);
+      }
+      return null;
+    }
+    case 'w': {
+      const [cx, cy, rr, width, speed] = [n(1), n(2), n(3), n(4), n(5)];
+      if (![cx, cy, rr, width, speed].every(Number.isFinite)) return null;
+      return Math.abs(dist(x, y, cx, cy) - rr) < width / 2 + r * 0.6 + Math.abs(speed) * PATH_S;
+    }
+    case 's': {
+      const [sx, sy, vx, vy, sr] = [n(1), n(2), n(3), n(4), n(5)];
+      if (![sx, sy, vx, vy, sr].every(Number.isFinite)) return null;
+      return segDist(x, y, sx - vx * PATH_S, sy - vy * PATH_S, sx + vx * PATH_S, sy + vy * PATH_S) < sr + r;
+    }
+    case 'f': {
+      const [cx, cy, rr] = [n(1), n(2), n(3)];
+      if (![cx, cy, rr].every(Number.isFinite)) return null;
+      return dist(x, y, cx, cy) < rr + r * 0.5;
+    }
+    case 'm': {
+      const [cx, cy, reach, aim, half, k] = [n(1), n(2), n(3), n(4), n(5), n(6)];
+      if (![cx, cy, reach, aim, half, k].every(Number.isFinite)) return null;
+      if (dist(x, y, cx, cy) > reach + r * k) return false;
+      return half <= 0 || Math.abs(angleDiff(aim, Math.atan2(y - cy, x - cx))) < half;
+    }
+  }
+  return null;
 }
 
 const STATUS_IDS = new Set<string>(['burn', 'poison', 'chill', 'freeze', 'shock', 'stun', 'root', 'armorBreak', 'mark', 'weaken', 'bleed', 'curse', 'fear'] satisfies StatusId[]);
