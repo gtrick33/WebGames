@@ -68,9 +68,9 @@ not dodge, and it fights whatever is near: it is a poor fighter.
 
 | | |
 | --- | --- |
-| Played | 45 of 48 (the last three of Hollowmere and the Pale Reach were not reached: the machine was too loaded) |
+| Played | 44 of 48 (one of Hollowmere's and the Pale Reach's three were not reached: the machine was too loaded) |
 | Finished | 41, most in one to two minutes of the game's time |
-| Not finished | 4, all by dying over and over in a late land |
+| Not finished | 3, all by dying over and over in a late land |
 
 **What it found, and what was done:**
 
@@ -94,7 +94,7 @@ not dodge, and it fights whatever is near: it is a poor fighter.
 
 ## What was not checked
 
-- **No person has played a quest.** A script played 45 by key and mouse (above), which shows they can be walked
+- **No person has played a quest.** A script played 44 by key and mouse (above), which shows they can be walked
   to and done, not that a step is fun or well judged.
 - **Where things land.** They are put on clear ground near a named place; some will stand behind a tree or a house.
   Their light shows over it, and the arrow leads to them, but each of the 147 was not looked at.
