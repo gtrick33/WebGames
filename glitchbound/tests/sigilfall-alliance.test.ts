@@ -7,7 +7,7 @@ import { migrate } from '../src/games/sigilfall/progress/save';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { holds } from '../src/games/sigilfall/sim/story';
 import type { World } from '../src/games/sigilfall/sim/world';
-import { newWorld, readyHero } from './sigilfall-bot';
+import { doSteps, newWorld, readyHero } from './sigilfall-bot';
 
 /**
  * Act III on the simulation (STORY_BIBLE.md §3, "The Broken Alliance"): choices that close the other path,
@@ -64,6 +64,8 @@ describe('Sigilfall: the broken alliance (Act III)', () => {
     expect(acceptQuests(c, 'old-root').some((q) => q.id === 'the-thorn-court')).toBe(false);
     // the song: hold the knights off Silvaine
     const w = newWorld('glimmerwood', c);
+    // (their mother's lamp is carried to the hall first: that step's own test plays it)
+    doSteps(w, 'silvaines-song');
     goTo(w, 'thorn-hall');
     run(w, 0.3);
     expect(w.story.run?.def.id).toBe('thorn-song');
@@ -162,6 +164,8 @@ describe('Sigilfall: the broken alliance (Act III)', () => {
     for (let i = 0; i < 40 && questState(w.hero, 'fern-retaken') === 'active'; i++) {
       run(w, 2.5);
       smite(w);
+      // (the square won, the people the Host kept are cut loose: the quest's last step, its own test plays it)
+      doSteps(w, 'fern-retaken');
     }
     expect(questState(w.hero, 'fern-retaken')).toBe('done');
     run(w, 0.6);
@@ -173,6 +177,8 @@ describe('Sigilfall: the broken alliance (Act III)', () => {
   it('Highwall: Mara commands the relief and Cael’s sortie brings the relief camp its white rag', () => {
     const w = newWorld('highwall', heroAt('cael-the-sortie', 44));
     expect(w.npcs.some((n) => n.id === 'captain-mara')).toBe(true);
+    // (the riders are handed their lances first: that step's own test plays it)
+    doSteps(w, 'cael-the-sortie');
     goTo(w, 'sortie-ground');
     run(w, 0.3);
     expect(w.story.run?.def.id).toBe('highwall-sortie');

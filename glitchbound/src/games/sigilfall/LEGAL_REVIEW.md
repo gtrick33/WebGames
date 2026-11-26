@@ -50,6 +50,25 @@ new icon, no new sound).
 
 These are ordinary words and compounds; none was searched against trademark registers. A web search before release is
 still worth doing, as for the other names in this file.
+## Every quest given something to do (2026-11-26)
+
+The quest pass (NINE_PLAN.md, piece 4b) added no item, no keepsake, no place and no creature: the things a quest now
+has the hero burn, search, carry or light are drawn with models already in the game's packs (`data/things.ts`), each
+already credited in CREDITS_AND_LICENSES.md. What it added is words: the steps' labels, what the hero finds at each
+thing, and new lines for the people who give the quests.
+
+A few of those words are names of the dead, read off a tag, a grave or a letter: Wil Tanner, Ilse Marrow, Old Harl,
+Ser Aldric of the Vale, Dame Ysolt, Aunt Wyn, Bram Hollin (already on the Watch's roll). They are plain invented
+names of nobody in particular, not characters of another work. The mechanics are the genre's common ones (things to
+use, something to carry, a place to hold, a trail, a foe taken alive) under Sigilfall's own names and telling; no
+quest, line or name was taken from another game. Not searched on the web.
+
+## The keepsakes of Acts III and VI (2026-11-25)
+
+Four keepsakes written for side stories of Acts III and VI (NINE_PLAN.md, piece 4): **A Spearhead with the
+Well-Mark**, **A Notched Stick from the Mead-Hall**, **A Shard That Hums a Cradle Song** and **A Plate with Aster's
+Armory Stamp**. Each is a plain description of a thing found in this game's own story, not a named item of another
+game. Not searched on the web: worth doing with the other item names before release.
 
 ## Act I's keepsakes and the bosses' new moves (2026-11-25)
 
@@ -99,6 +118,60 @@ Blackglove** is the Rogue with the Survivalist's head (Mystery Monthly Series 4)
 daggers from the Fantasy Weapons Bits and a keyring from the Dungeon Pack; his crown is built in code. All of the
 same KayKit collection (CC0), each pack already credited. Their names and titles are unchanged. A headsman's hood and
 a self-crowned bandit are stock figures of the genre, and neither copies a named character of another game.
+
+Act II's four (piece 2d, 2026-11-25) take nothing new. **King Hrodric** is the large Barbarian's body with the
+Skeleton Warrior's skull, the Adventurers pack's two-handed sword and the Barbarian's round shield; his crown is built
+in code. **Sir Corvane** is the Black Knight with his own sword and shield and a banner from the Dungeon Pack. **Silas
+Vey** is the hooded Rogue with the Hoarder's pouches (Mystery Monthly), a dagger from the Fantasy Weapons Bits and a
+coin stack from the Dungeon Pack. **The Royal Auditor** is the Cleric's robes with the Skeleton Mage's skull, the
+Lorekeeper's spectacles, an open spellbook, a wand and a candle. All of the same KayKit collection (CC0), each pack
+already credited. Their names and titles are unchanged. A crowned dead king, a fallen knight under his banner, a
+hooded paymaster and a skeletal clerk are stock figures, and none copies a named character of another game.
+
+Act III's five (piece 2e, 2026-11-25) take nothing new. **The Sun King** is the Vampire's coat with the Skeleton
+Mage's skull, a staff from the Fantasy Weapons Bits and a round shield as the sun-disc behind his head; his crown and
+halo are built in code. **Vizier Khepset** is the Mage's robes and cape with the hooded Skeleton Rogue's head and a
+staff; his sand-glass is built in code. **The Sand Warden** is the Skeleton Golem with the large Barbarian's
+shoulder plates, the skeletons' great mace and the same round shield on its back. **Jarl Hrimfang** is the large
+Barbarian whole in his bear's head and pelt, with a great hammer from the Platformer Pack (newly named in the credits) and a coin stack from the Dungeon Pack. **Hallvor**
+is the helmed Paladin with a halberd and the skeletons' great shield. All of the same KayKit collection (CC0), each
+pack already credited. Their names and titles are unchanged. A sun-crowned dead king, his vizier with an hourglass,
+a stone tomb guardian, a frost-giant jarl and a frozen shield-bearer are stock figures of the genre; none copies a
+named character of another game.
+
+The seven of Acts IV, V and the finale (pieces 2f to 2h, 2026-11-25) take nothing new. **Prior Vessant** is the
+Druid's robes with the Cleric's head, a book and the skeletons' staff. **General Morvain** is the Black Knight with
+his sword and a red banner from the Dungeon Pack. **The Magma Warden** is the Frost Golem's body with the Skeleton
+Golem's head and a great hammer. **Ossa the Founder** is the Skeleton Golem with the Engineer's goggles and pack and
+a great hammer. **Ashkar the Bound** is the Frost Golem with shackles and chain links from the Dungeon Pack. **Lady
+Cendre** is the Witch's dress with the Vampire's head, the Mage's cape, a triple candle and a staff. **Captain Ser
+Maltheus** is the Black Knight without his cape, with a spear and his shield. All of the same KayKit collection
+(CC0), each pack already credited. Their names and titles are unchanged, and none copies a named character of
+another game.
+
+The Rift's fourteen (piece 2i, 2026-11-25) take nothing new. The Drowned Priestess: the Cleric's robes, the Witch's
+head, a druid's staff, a bell and an anchor. Captain Saltbeard: the Survivalist, the Hoarder's pouches, the
+Tiefling's sword, a lantern and a keg. Brother Pustule: the Cleric, the Hoarder's mask, the skeletons' staff, a
+bottle and a barrel. Old Sluicegut: the Frost Golem, the Monstrosity's pitchfork, a barrel and a mushroom. The
+Rot-Mother: the Monstrosity with the skeletons' staff. The Runewarden: the Frost Golem's body, the Black Knight's
+helm and shoulders, a great hammer and an anvil. The Slag Colossus: the Skeleton Golem's body, the Frost Golem's head
+and a cauldron. Forgemaster Grold: the Barbarian, the Engineer's goggles and pack, a hammer and a pickaxe. The
+Rotwood Colossus: the Frost Golem, a bare tree and mushrooms from the Forest Nature Pack. Elowen of the Dawn: the
+Paladin's coat and cape, the Witch's head, a staff and a lantern. The Withered Queen: the Vampire, the Necromancer's
+crown, the Mage's cape and the skeletons' scythe. The Veil Sentinel: the Black Knight's plate and shield, the
+Skeleton Golem's head and axe. Ilvane the Unmoored: the Mage's robes, the Witch's head and glasses, the Lorekeeper's
+staff and an open book. The Pale Herald: the Vampire, the Mage's cape, a staff, a bell and a white banner. All of the
+same KayKit collection (CC0), each pack already credited. No name or title changed, and none copies a named
+character of another game.
+
+The story's seven named foes of the lands (the rest of piece 2i that was done, 2026-11-25) take nothing new either,
+and no new name: each keeps the name it had. The Grey Lady: the Druid's robes, the Witch's head, the Mage's cape and a
+decorated lantern. Prince Thistlemourn: the Rogue's coat and cape, the Vampire's head, the Necromancer's crown, a
+druid's staff and a bare tree from the Forest Nature Pack. The Tearborn: the Monstrosity with lengths of chain. The
+Gatewarden: the Black Knight, his great shield, and the Dungeon Pack's key. The Weeping Lord: the helmed Paladin, a
+two-handed sword and a white banner. The Lich of Hollowmere: the Necromancer's robes and crown, the Skeleton Mage's
+head, a staff, a shackle and an anchor. Vosk the Hollowed: the Knight's plate and cape, the Skeleton Warrior's head
+and a spear, on the horse he already rode.
 
 ## A Rift legendary on every place (2026-11-24)
 

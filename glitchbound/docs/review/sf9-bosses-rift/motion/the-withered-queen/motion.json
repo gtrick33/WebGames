@@ -1,0 +1,350 @@
+{
+  "boss": "the-withered-queen",
+  "file": "boss_witheredqueen",
+  "form": "witheredqueen",
+  "float": 0,
+  "walked": {
+    "samples": 186,
+    "moving": 79,
+    "walking": 76,
+    "clips": {
+      "walk": 76,
+      "slice": 2,
+      "summon": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "blight:briar",
+      "clips": [
+        "summon",
+        "idle",
+        "walk",
+        "slice",
+        "throw"
+      ],
+      "readings": 59
+    },
+    {
+      "phase": 1,
+      "id": "blight:kiss",
+      "clips": [
+        "throw",
+        "idle",
+        "walk",
+        "slice",
+        "wave"
+      ],
+      "readings": 48
+    },
+    {
+      "phase": 1,
+      "id": "volley",
+      "clips": [
+        "throw",
+        "idle",
+        "walk"
+      ],
+      "readings": 66
+    },
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "run",
+        "slice",
+        "idle",
+        "walk",
+        "throw"
+      ],
+      "readings": 43
+    },
+    {
+      "phase": 1,
+      "id": "summon",
+      "clips": [
+        "wave",
+        "idle",
+        "walk"
+      ],
+      "readings": 39
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "cheer",
+        "summon",
+        "cast",
+        "wave"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "blight:briar",
+      "clips": [
+        "summon",
+        "idle",
+        "walk",
+        "throw"
+      ],
+      "readings": 64
+    },
+    {
+      "phase": 2,
+      "id": "blight:kiss",
+      "clips": [
+        "throw",
+        "idle",
+        "walk"
+      ],
+      "readings": 30
+    },
+    {
+      "phase": 2,
+      "id": "blight:spores",
+      "clips": [
+        "cast",
+        "walk",
+        "idle"
+      ],
+      "readings": 32
+    },
+    {
+      "phase": 2,
+      "id": "blight:garden",
+      "clips": [
+        "cheer",
+        "walk",
+        "idle",
+        "slice"
+      ],
+      "readings": 36
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle",
+        "walk"
+      ],
+      "readings": 64
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "wave",
+        "idle",
+        "throw"
+      ],
+      "readings": 51
+    },
+    {
+      "phase": 2,
+      "id": "roar",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "slice",
+        "throw"
+      ],
+      "readings": 44
+    },
+    {
+      "phase": 3,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "channel",
+        "cheer",
+        "wave",
+        "slice",
+        "cast",
+        "throw"
+      ]
+    },
+    {
+      "phase": 3,
+      "id": "blight:briar",
+      "clips": [
+        "idle",
+        "summon",
+        "slice"
+      ],
+      "readings": 50
+    },
+    {
+      "phase": 3,
+      "id": "blight:kiss",
+      "clips": [
+        "throw",
+        "idle",
+        "slice"
+      ],
+      "readings": 41
+    },
+    {
+      "phase": 3,
+      "id": "blight:spores",
+      "clips": [
+        "cast",
+        "idle",
+        "throw"
+      ],
+      "readings": 41
+    },
+    {
+      "phase": 3,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle"
+      ],
+      "readings": 29
+    },
+    {
+      "phase": 3,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle",
+        "throw"
+      ],
+      "readings": 46
+    },
+    {
+      "phase": 3,
+      "id": "blight:garden",
+      "clips": [
+        "cheer",
+        "idle",
+        "slice"
+      ],
+      "readings": 34
+    },
+    {
+      "phase": 3,
+      "id": "summon",
+      "clips": [
+        "wave",
+        "idle",
+        "chop2",
+        "slice"
+      ],
+      "readings": 33
+    },
+    {
+      "phase": 3,
+      "id": "blight:wither",
+      "clips": [
+        "channel",
+        "idle",
+        "throw",
+        "wave"
+      ],
+      "readings": 30
+    },
+    {
+      "phase": 4,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "channel",
+        "wave",
+        "slice",
+        "throw",
+        "chop2"
+      ]
+    },
+    {
+      "phase": 4,
+      "id": "blight:kiss",
+      "clips": [
+        "throw",
+        "idle"
+      ],
+      "readings": 38
+    },
+    {
+      "phase": 4,
+      "id": "blight:briar",
+      "clips": [
+        "summon",
+        "idle",
+        "throw",
+        "wave"
+      ],
+      "readings": 33
+    },
+    {
+      "phase": 4,
+      "id": "blight:spores",
+      "clips": [
+        "idle",
+        "cast"
+      ],
+      "readings": 29
+    },
+    {
+      "phase": 4,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle",
+        "throw"
+      ],
+      "readings": 49
+    },
+    {
+      "phase": 4,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle",
+        "throw"
+      ],
+      "readings": 34
+    },
+    {
+      "phase": 4,
+      "id": "summon",
+      "clips": [
+        "wave",
+        "idle"
+      ],
+      "readings": 37
+    },
+    {
+      "phase": 4,
+      "id": "roar",
+      "clips": [
+        "taunt",
+        "idle",
+        "throw"
+      ],
+      "readings": 19
+    },
+    {
+      "phase": 4,
+      "id": "blight:wither",
+      "clips": [
+        "channel",
+        "idle",
+        "throw"
+      ],
+      "readings": 30
+    }
+  ],
+  "found": [],
+  "errors": []
+}

@@ -1,0 +1,249 @@
+{
+ "boss": "the-sun-king",
+ "shots": [
+  {
+   "state": "entrance",
+   "close": "01-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "02-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "03-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "04-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "05-entrance-close.jpg"
+  },
+  {
+   "state": "line-up",
+   "file": "06-line-up.jpg",
+   "close": "06-line-up-close.jpg"
+  },
+  {
+   "state": "portrait",
+   "file": "07-portrait.jpg"
+  },
+  {
+   "state": "phase-1-cleave-windup",
+   "file": "08-phase-1-cleave-windup.jpg",
+   "close": "08-phase-1-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-cleave-strike",
+   "file": "09-phase-1-cleave-strike.jpg",
+   "close": "09-phase-1-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-tomb-sunbeam-windup",
+   "file": "10-phase-1-tomb-sunbeam-windup.jpg",
+   "close": "10-phase-1-tomb-sunbeam-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-tomb-sunbeam-strike",
+   "file": "11-phase-1-tomb-sunbeam-strike.jpg",
+   "close": "11-phase-1-tomb-sunbeam-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-tomb-sun-disc-windup",
+   "file": "12-phase-1-tomb-sun-disc-windup.jpg",
+   "close": "12-phase-1-tomb-sun-disc-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-tomb-sun-disc-strike",
+   "file": "13-phase-1-tomb-sun-disc-strike.jpg",
+   "close": "13-phase-1-tomb-sun-disc-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-volley-windup",
+   "file": "14-phase-1-volley-windup.jpg",
+   "close": "14-phase-1-volley-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-volley-strike",
+   "file": "15-phase-1-volley-strike.jpg",
+   "close": "15-phase-1-volley-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-tomb-scarabs-windup",
+   "file": "16-phase-1-tomb-scarabs-windup.jpg",
+   "close": "16-phase-1-tomb-scarabs-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-tomb-scarabs-strike",
+   "file": "17-phase-1-tomb-scarabs-strike.jpg",
+   "close": "17-phase-1-tomb-scarabs-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-change",
+   "file": "18-phase-2-change.jpg",
+   "close": "18-phase-2-change-close.jpg"
+  },
+  {
+   "state": "phase-2-cleave-windup",
+   "file": "19-phase-2-cleave-windup.jpg",
+   "close": "19-phase-2-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-cleave-strike",
+   "file": "20-phase-2-cleave-strike.jpg",
+   "close": "20-phase-2-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-tomb-sunbeam-windup",
+   "file": "21-phase-2-tomb-sunbeam-windup.jpg",
+   "close": "21-phase-2-tomb-sunbeam-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-tomb-sunbeam-strike",
+   "file": "22-phase-2-tomb-sunbeam-strike.jpg",
+   "close": "22-phase-2-tomb-sunbeam-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-tomb-sun-disc-windup",
+   "file": "23-phase-2-tomb-sun-disc-windup.jpg",
+   "close": "23-phase-2-tomb-sun-disc-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-tomb-sun-disc-strike",
+   "file": "24-phase-2-tomb-sun-disc-strike.jpg",
+   "close": "24-phase-2-tomb-sun-disc-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-tomb-scarabs-windup",
+   "file": "25-phase-2-tomb-scarabs-windup.jpg",
+   "close": "25-phase-2-tomb-scarabs-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-tomb-scarabs-strike",
+   "file": "26-phase-2-tomb-scarabs-strike.jpg",
+   "close": "26-phase-2-tomb-scarabs-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-orbit-windup",
+   "file": "27-phase-2-spell-orbit-windup.jpg",
+   "close": "27-phase-2-spell-orbit-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-orbit-strike",
+   "file": "28-phase-2-spell-orbit-strike.jpg",
+   "close": "28-phase-2-spell-orbit-strike-close.jpg"
+  },
+  {
+   "state": "phase-3-change",
+   "file": "29-phase-3-change.jpg",
+   "close": "29-phase-3-change-close.jpg"
+  },
+  {
+   "state": "phase-3-cleave-windup",
+   "file": "30-phase-3-cleave-windup.jpg",
+   "close": "30-phase-3-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-3-cleave-strike",
+   "file": "31-phase-3-cleave-strike.jpg",
+   "close": "31-phase-3-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-3-tomb-sunbeam-windup",
+   "file": "32-phase-3-tomb-sunbeam-windup.jpg",
+   "close": "32-phase-3-tomb-sunbeam-windup-close.jpg"
+  },
+  {
+   "state": "phase-3-tomb-sunbeam-strike",
+   "file": "33-phase-3-tomb-sunbeam-strike.jpg",
+   "close": "33-phase-3-tomb-sunbeam-strike-close.jpg"
+  },
+  {
+   "state": "phase-3-tomb-sun-disc-windup",
+   "file": "34-phase-3-tomb-sun-disc-windup.jpg",
+   "close": "34-phase-3-tomb-sun-disc-windup-close.jpg"
+  },
+  {
+   "state": "phase-3-tomb-sun-disc-strike",
+   "file": "35-phase-3-tomb-sun-disc-strike.jpg",
+   "close": "35-phase-3-tomb-sun-disc-strike-close.jpg"
+  },
+  {
+   "state": "phase-3-spell-sunspot-windup",
+   "file": "36-phase-3-spell-sunspot-windup.jpg",
+   "close": "36-phase-3-spell-sunspot-windup-close.jpg"
+  },
+  {
+   "state": "phase-3-spell-sunspot-strike",
+   "file": "37-phase-3-spell-sunspot-strike.jpg",
+   "close": "37-phase-3-spell-sunspot-strike-close.jpg"
+  },
+  {
+   "state": "phase-3-tomb-scarabs-windup",
+   "file": "38-phase-3-tomb-scarabs-windup.jpg",
+   "close": "38-phase-3-tomb-scarabs-windup-close.jpg"
+  },
+  {
+   "state": "phase-3-tomb-scarabs-strike",
+   "file": "39-phase-3-tomb-scarabs-strike.jpg",
+   "close": "39-phase-3-tomb-scarabs-strike-close.jpg"
+  },
+  {
+   "state": "dazed",
+   "close": "40-dazed-close.jpg"
+  },
+  {
+   "state": "struck",
+   "file": "41-struck.jpg",
+   "close": "41-struck-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "42-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "43-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "44-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "45-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "46-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "47-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "48-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "49-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "50-death-close.jpg"
+  }
+ ],
+ "errors": [],
+ "cost": {
+  "file": "boss_sunking",
+  "tris": 6868,
+  "frame": {
+   "calls": 39,
+   "tris": 308103,
+   "quality": 0.7
+  }
+ }
+}

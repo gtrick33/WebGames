@@ -1,0 +1,18 @@
+{
+  "foe": "the-tearborn",
+  "errors": [],
+  "found": [],
+  "kit": {
+    "k": "boss_tearborn",
+    "top": null,
+    "float": 0
+  },
+  "readings": 133,
+  "moving": 64,
+  "walking": 62,
+  "clips": {
+    "cast": 63,
+    "idle": 4,
+    "walk": 66
+  }
+}

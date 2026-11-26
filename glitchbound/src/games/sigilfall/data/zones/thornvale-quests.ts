@@ -16,9 +16,15 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     id: 'south-road',
     name: 'The South Road',
     giver: 'maren',
-    text: 'The camp that guards Elyra and her sigil is growing, and it needs grain before winter. Millbrook, south in Thornvale, grows the Vale’s grain. But a gang called the Gallows Gang has taken its mill, and no grain can leave. Take the south road and find Reeve Aldous in Millbrook.',
+    text: 'The camp that guards Elyra and her sigil is growing, and it needs grain before winter. Millbrook, south in Thornvale, grows the Vale’s grain. But a gang called the Gallows Gang has taken its mill, and no grain can leave. The gang nails its notices to every post in the village: tear them down as you go in, and find Reeve Aldous.',
     offer: ['Fernstead’s rangers are watching our roads now. Thank you.', 'Next we need food. Sixty mouths in the camp, more every week, and winter is coming.', 'Millbrook grows the Vale’s grain, but a gang has taken its mill. Take the south road and find Reeve Aldous.'],
-    objective: { kind: 'talk', npc: 'reeve-aldous', label: 'Talk to Reeve Aldous in Millbrook' },
+    // (it was a walk and a talk. The gang's notices are the first thing a stranger sees of Millbrook, and tearing them
+    // down is the first thing Millbrook sees of the stranger)
+    objective: {
+      kind: 'use', region: 'thornvale', at: 'reeve-aldous', count: 3, thing: 'notice', verb: 'Tear down', label: 'Tear down the gang’s notices in Millbrook', secs: 0.8, spread: 9,
+      notes: ['“ROPE TAX. Three silver a head, or the hill.”', 'Millbrook’s names under a drawn noose. Four are crossed out.', '“NO GRAIN LEAVES THE VALE. By order of H. Blackglove.”'],
+    },
+    then: [{ kind: 'talk', npc: 'reeve-aldous', label: 'Talk to Reeve Aldous' }],
     // Act I goes village by village: Fernstead first, then Millbrook
     after: ['camp-scouts'],
     level: 7,
@@ -34,7 +40,14 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     objective: { kind: 'explore', spot: 'east-farm', label: 'Look around the Burnt Farm' },
     // (it was a walk to a spot: the gang's men stood at the farm and nothing asked the hero to deal with them. Now
     // they have come back for what their dead man carries, and the orders are won from them)
-    then: [{ kind: 'kill', region: 'thornvale', count: 2, enemies: ['bandit-cutthroat'], label: 'Drive off the Red Caps searching the farm' }],
+    then: [
+      // what happened here is read from what is left; the gang's men come back while the hero is at it
+      {
+        kind: 'use', region: 'thornvale', at: 'east-farm', count: 3, thing: 'crate', verb: 'Search', label: 'Search what is left of the farm', spread: 5, ambush: ['bandit-cutthroat'],
+        notes: ['The barn door was barred from outside before it was lit.', 'A pitchfork in the ash, bloody to the tines.', 'A dead Red Cap by the well. There are papers in his coat.'],
+      },
+      { kind: 'kill', region: 'thornvale', count: 2, enemies: ['bandit-cutthroat'], label: 'Drive off the Red Caps who came back for the papers', lair: { at: 'east-farm', enemies: ['bandit-cutthroat', 'bandit-cutthroat'] } },
+    ],
     after: ['south-road'],
     zone: 'thornvale',
     find: {
@@ -50,8 +63,20 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     name: 'Thieves’ Cant',
     giver: 'reeve-aldous',
     auto: true,
-    text: 'Nobody in Millbrook can read the orders from the Burnt Farm. Pim the peddler says his friend Nyx can read any code, for a fee. She is somewhere near the well in Millbrook. Find Nyx and have her read the orders.',
-    objective: { kind: 'talk', npc: 'nyx', label: 'Have Nyx read the gang’s orders' },
+    text: 'Nobody in Millbrook can read the orders from the Burnt Farm. Pim the peddler says his friend Nyx can read any code, for a fee. She is somewhere near the well in Millbrook. The code under the cant needs the gang’s own count-word: a Red Cap taken alive can be made to give it.',
+    // (it was one talk. Nyx reads the cant at a glance, but the numbers under it turn on a word only the gang's own men
+    // carry: one of them is taken alive and asked)
+    objective: {
+      kind: 'talk', npc: 'nyx', label: 'Show Nyx the gang’s orders',
+      lines: ['I’m Nyx, Pim’s friend. Thieves’ cant on top: that part I can read standing on my head.', 'The numbers under it are another matter. They turn on a count-word, and every Red Cap carries it in his head.', 'Their camp is east of here. Beat one of them down and ask him. He has to be able to answer, so don’t kill him first.'],
+    },
+    then: [
+      { kind: 'subdue', region: 'thornvale', enemies: ['bandit-cutthroat'], count: 1, verb: 'Question', label: 'Beat a Red Cap down and make him give the count-word', lair: { at: 'bandit-camp', enemies: ['bandit-cutthroat', 'bandit-archer'] } },
+      {
+        kind: 'talk', npc: 'nyx', label: 'Give Nyx the count-word',
+        lines: ['“Hemp.” Of course it’s hemp. Hold the page still.', 'These went to Harlan Blackglove. He runs the Gallows Gang from Gallows Keep, dug into Gallows Hill.', 'My fee is two silver. Keep it. I want to know who pays in grey wax and grey coin.', 'I’ve been asking that since last winter. Men who paid in grey took my little brother, and nobody will tell me where he is.'],
+      },
+    ],
     after: ['kettle-farm'],
     zone: 'thornvale',
     find: {
@@ -68,8 +93,13 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     name: 'The Bandit King',
     giver: 'reeve-aldous',
     auto: true,
-    text: 'The orders were sent to Harlan Blackglove, the leader of the Gallows Gang. He rules from Gallows Keep, a fort dug into Gallows Hill, south-east of Millbrook. Defeat him. That ends the rope tax and the gang’s hunt for sigils.',
-    objective: { kind: 'boss', boss: 'varric', label: 'Defeat Harlan Blackglove in Gallows Keep' },
+    text: 'The orders were sent to Harlan Blackglove, the leader of the Gallows Gang. He rules from Gallows Keep, a fort dug into Gallows Hill, south-east of Millbrook. Those who could not pay still hang on the hill above it: cut them down, then go in and defeat him. That ends the rope tax and the gang’s hunt for sigils.',
+    // (the rope tax is seen before its master is: the hill's dead are cut down on the way in, and Nyx has been here)
+    objective: {
+      kind: 'use', region: 'thornvale', at: 'thornvale-gallows-hill', count: 3, thing: 'gibbet', verb: 'Cut down', label: 'Cut down the rope-tax dead on Gallows Hill', spread: 5, guards: ['bandit-archer'],
+      notes: ['A farmhand. “Three silver” is chalked on the post.', 'A tinker. His pack still lies at the foot of the post.', 'This rope is cut already, and fresh. Nyx was here first.'],
+    },
+    then: [{ kind: 'boss', boss: 'varric', label: 'Defeat Harlan Blackglove in Gallows Keep' }],
     after: ['thieves-cant'],
     zone: 'thornvale',
     level: 11,
@@ -85,8 +115,14 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     name: 'The Mill Road',
     auto: true,
     giver: 'reeve-aldous',
-    text: 'Harlan is dead, but his hired fighters still hold the mill on Miller’s Pond behind a barricade of carts. No grain can leave Millbrook. Sefa, Millbrook’s warden, has gathered the village lads. Break the blockade with them and burn the barricade.',
+    text: 'Harlan is dead, but his hired fighters still hold the mill on Miller’s Pond behind a barricade of carts. No grain can leave Millbrook. Sefa, Millbrook’s warden, has gathered the village lads. Break the blockade with them, burn the barricade, and carry the mill’s first flour home to the Reeve.',
     objective: { kind: 'event', event: 'mill-the-mill', label: 'Break the blockade at the mill on Miller’s Pond' },
+    // (the fight was the whole of it. Sefa's last word is to burn the barricade, and the hero does; then the mill's first
+    // flour since spring goes up the road on the hero's shoulder, with what is left of the gang after it)
+    then: [
+      { kind: 'use', region: 'thornvale', at: 'mill-pond', count: 3, thing: 'cart', verb: 'Burn', label: 'Burn the gang’s barricade', secs: 1.2, spread: 5 },
+      { kind: 'carry', region: 'thornvale', from: 'mill-pond', to: 'reeve-aldous', thing: 'sack', verb: 'Shoulder the flour', label: 'Carry the mill’s first flour to Reeve Aldous', ambush: [['bandit-cutthroat', 'bandit-archer']] },
+    ],
     after: ['the-bandit-king'],
     zone: 'thornvale',
     level: 12,
@@ -97,11 +133,24 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     id: 'tobins-fields',
     name: 'Tobin’s Farm',
     giver: 'tobin',
-    text: 'Wolves came down from the hills and killed Tobin’s sheep. He hasn’t been home since. His farm is west of Millbrook. Go and see if anything is left.',
+    text: 'Wolves came down from the hills and killed Tobin’s sheep. He hasn’t been home since. His farm is west of Millbrook. Go and see if anything is left, and where the pack went.',
     objective: { kind: 'explore', spot: 'tobins-farm', label: 'Check on Tobin’s Farm' },
+    // (it was a walk to the farm. What happened is read there, and the pack's tracks are followed to where they den:
+    // the first sign that these wolves had company)
+    then: [
+      {
+        kind: 'use', region: 'thornvale', at: 'tobins-farm', count: 3, thing: 'bones', verb: 'Look closer', label: 'Search what is left of the fold', spread: 5,
+        notes: ['The gate was lifted off its pins. Wolves don’t do that.', 'Every ewe killed, and hardly one eaten.', 'The lead ewe’s bell, its strap bitten through.'],
+      },
+      {
+        kind: 'trail', region: 'thornvale', from: 'tobins-farm', to: 'wolfrun', marks: 3, label: 'Follow the pack’s tracks south',
+        notes: ['Wolf tracks, dozens of them, all going south.', 'Among the paw prints: boots, walking with the pack.', 'The tracks run up into the Wolfrun Hills.'],
+      },
+    ],
     after: ['south-road'],
     zone: 'thornvale',
     find: {
+      step: 1,
       name: 'The Flock’s Bell',
       kind: 'token',
       about: 'The bell from the lead ewe’s collar, found in the trampled grass at Tobin’s Farm with its strap bitten through. Nothing in the fold is left alive. The tracks are wolf, dozens of them, and they lead south into the hills.',
@@ -112,8 +161,14 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     id: 'wolf-pelts',
     name: 'Pelts for Winter',
     giver: 'tobin',
-    text: 'Tobin wants six pelts from the hill wolves that killed his flock. He will use them to keep his new lambs warm next spring.',
-    objective: { kind: 'loot', region: 'thornvale', item: 'Wolf Pelt', from: ['hill-wolf'], chance: 0.5, count: 6, label: 'Collect Wolf Pelts from hill wolves' },
+    text: 'Tobin wants four pelts from the hill wolves that killed his flock, to keep his new lambs warm next spring. And he wants a fold he can bring lambs home to: light its watch-fires, and stand there when the pack comes down at the light.',
+    objective: { kind: 'loot', region: 'thornvale', item: 'Wolf Pelt', from: ['hill-wolf'], chance: 0.5, count: 4, label: 'Collect Wolf Pelts from hill wolves' },
+    // (it was six pelts and no more. Tobin means to bring lambs home, so the fold is made safe: its watch-fires lit, and
+    // held when the pack comes down at the light)
+    then: [
+      { kind: 'use', region: 'thornvale', at: 'tobins-farm', count: 3, thing: 'brazier', verb: 'Light', label: 'Light the watch-fires round Tobin’s fold', secs: 1, spread: 5 },
+      { kind: 'hold', region: 'thornvale', at: 'tobins-farm', secs: 30, waves: [['hill-wolf', 'hill-wolf'], ['hill-wolf', 'hill-wolf', 'hill-wolf'], ['hill-wolf', 'hill-wolf', 'hill-wolf']], label: 'Hold the fold until the pack breaks off' },
+    ],
     after: ['tobins-fields'],
     zone: 'thornvale',
     reward: { xp: 170, gold: 75 },
@@ -122,8 +177,14 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     id: 'hunt-old-greymane',
     name: 'Old Greymane',
     giver: 'tobin',
-    text: 'The wolves follow Old Greymane, the oldest wolf in the hills. He dens in the Wolfrun Hills, south of Tobin’s farm. Kill him, and the hills will be safe. Tobin will reward you.',
-    objective: { kind: 'kill', region: 'thornvale', count: 1, enemies: ['old-greymane'], label: 'Defeat Old Greymane in the Wolfrun Hills' },
+    text: 'The wolves follow Old Greymane, the oldest wolf in the hills. He dens in the Wolfrun Hills, south of Tobin’s farm. Tobin has a sack of mutton to draw him out: lay it, kill him, and see what is in that den.',
+    // (it was one kill. The old wolf is drawn out with bait, fought, and his den searched: the whistle is found by
+    // looking, not handed over)
+    objective: { kind: 'use', region: 'thornvale', at: 'wolfrun', count: 1, thing: 'sack', verb: 'Lay the bait', label: 'Lay Tobin’s bait in the Wolfrun Hills', secs: 1.2, spread: 3, notes: ['The bait is down. Something big moves in the rocks.'] },
+    then: [
+      { kind: 'kill', region: 'thornvale', count: 1, enemies: ['old-greymane'], label: 'Defeat Old Greymane', lair: { at: 'wolfrun', enemies: ['old-greymane'] } },
+      { kind: 'use', region: 'thornvale', at: 'wolfrun', count: 1, thing: 'bones', verb: 'Search', label: 'Search Old Greymane’s den', secs: 1.2, spread: 3, notes: ['Butcher’s scraps no wolf killed. And a red cord.'] },
+    ],
     after: ['wolf-pelts'],
     zone: 'thornvale',
     level: 11,
@@ -141,8 +202,10 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     id: 'tobins-letter',
     name: 'A Letter for Hanna',
     giver: 'tobin',
-    text: 'Tobin has written a letter to Hanna, who runs Millbrook’s inn. He rewrote it six times. Take it to her before he loses his nerve.',
-    objective: { kind: 'talk', npc: 'hanna', label: 'Deliver Tobin’s letter to Hanna' },
+    text: 'Tobin has written a letter to Hanna, who runs Millbrook’s inn. He rewrote it six times, and he won’t send it without flowers. Pick some from the meadow round the village, and take them and the letter to her before he loses his nerve.',
+    // (it was a letter carried across a square. Tobin's nerve needs flowers first)
+    objective: { kind: 'use', region: 'thornvale', at: 'tobin', count: 3, thing: 'herb', verb: 'Pick', label: 'Pick meadow flowers to go with Tobin’s letter', secs: 0.5, spread: 10 },
+    then: [{ kind: 'talk', npc: 'hanna', label: 'Deliver Tobin’s letter and the flowers to Hanna' }],
     after: ['south-road'],
     zone: 'thornvale',
     level: 9,
@@ -194,7 +257,7 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'tobins-letter', state: 'active' },
-        lines: ['A letter from Tobin? Let me read it.', 'Oh. He’s asking me to dinner. Tell him yes. Tuesday, here at the inn.'],
+        lines: ['A letter from Tobin? And flowers. Let me read it.', 'Oh. He’s asking me to dinner. Tell him yes. Tuesday, here at the inn.'],
       },
       { lines: ['Welcome to the Wayfarer’s Rest. Potions on the shelf, stew in the pot.', 'Catch your breath between fights. Save potions for when something is still hitting you.'] },
     ],
@@ -211,13 +274,13 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'wolf-pelts', state: 'active' },
-        lines: ['Bring me six wolf pelts. They’ll keep my new lambs warm.', 'The pack’s leader is an old wolf called Greymane. We’ll deal with him next.'],
+        lines: ['Bring me four wolf pelts. They’ll keep my new lambs warm.', 'Then light the watch-fires round my fold, and stay by them. The pack will come down at the light, once. If they’re beaten off, they won’t try a lit fold again.', 'The pack’s leader is an old wolf called Greymane. We’ll deal with him next.'],
       },
       {
         when: { quest: 'hunt-old-greymane', state: 'active' },
         lines: ['The pack follows Old Greymane, the oldest wolf in the hills.', 'He dens in the Wolfrun Hills, south of my farm. Kill him, and I’ll give you my granddad’s flask.'],
       },
-      { when: { quest: 'tobins-letter', state: 'active' }, lines: ['Will you take this letter to Hanna at the inn? Please don’t read it.', 'I wrote it six times. I think this one is good enough.'] },
+      { when: { quest: 'tobins-letter', state: 'active' }, lines: ['Will you take this letter to Hanna at the inn? Please don’t read it.', 'I wrote it six times. I think this one is good enough.', 'Flowers. It needs flowers. The meadow round the village is full of them, and my hands are shaking too much to pick any.'] },
       { when: { quest: 'hunt-old-greymane', state: 'done' }, lines: ['The hills are quiet. I slept through the night for the first time in weeks.', 'The Reeve is taking that whistle round every farm. Nobody is calling it a bad winter now.', 'Use that flask well. My granddad carried it for forty years.'] },
       { when: { quest: 'tobins-letter', state: 'done' }, lines: ['She said yes! Dinner on Tuesday!'] },
       { lines: ['Thornvale is good farmland. The gang and the wolves make it hard to live here.'] },

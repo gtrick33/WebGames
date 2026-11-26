@@ -1,0 +1,143 @@
+{
+  "boss": "ossa-the-founder",
+  "file": "boss_ossa",
+  "form": "ossa",
+  "float": 0,
+  "walked": {
+    "samples": 184,
+    "moving": 83,
+    "walking": 78,
+    "clips": {
+      "walk": 77,
+      "smash": 1,
+      "chop2": 2,
+      "run": 1,
+      "slice": 2
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "run",
+        "slice",
+        "idle",
+        "walk"
+      ],
+      "readings": 61
+    },
+    {
+      "phase": 1,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 59
+    },
+    {
+      "phase": 1,
+      "id": "spell:pools",
+      "clips": [
+        "smash",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 56
+    },
+    {
+      "phase": 1,
+      "id": "throne:likeness",
+      "clips": [
+        "cast",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 48
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "cast",
+        "bash",
+        "chop2",
+        "smash",
+        "slice"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "walk",
+        "run",
+        "idle"
+      ],
+      "readings": 43
+    },
+    {
+      "phase": 2,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle",
+        "walk"
+      ],
+      "readings": 48
+    },
+    {
+      "phase": 2,
+      "id": "spell:pools",
+      "clips": [
+        "smash",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 55
+    },
+    {
+      "phase": 2,
+      "id": "throne:likeness",
+      "clips": [
+        "cast",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 42
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "bash",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 44
+    },
+    {
+      "phase": 2,
+      "id": "roar",
+      "clips": [
+        "taunt",
+        "idle"
+      ],
+      "readings": 34
+    }
+  ],
+  "found": [],
+  "errors": []
+}

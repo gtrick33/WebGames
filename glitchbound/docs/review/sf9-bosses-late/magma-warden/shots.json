@@ -1,0 +1,204 @@
+{
+ "boss": "magma-warden",
+ "shots": [
+  {
+   "state": "entrance",
+   "close": "01-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "02-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "03-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "04-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "05-entrance-close.jpg"
+  },
+  {
+   "state": "line-up",
+   "file": "06-line-up.jpg",
+   "close": "06-line-up-close.jpg"
+  },
+  {
+   "state": "portrait",
+   "file": "07-portrait.jpg"
+  },
+  {
+   "state": "phase-1-cleave-windup",
+   "file": "08-phase-1-cleave-windup.jpg",
+   "close": "08-phase-1-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-cleave-strike",
+   "file": "09-phase-1-cleave-strike.jpg",
+   "close": "09-phase-1-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-throne-eruption-windup",
+   "file": "10-phase-1-throne-eruption-windup.jpg",
+   "close": "10-phase-1-throne-eruption-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-throne-eruption-strike",
+   "file": "11-phase-1-throne-eruption-strike.jpg",
+   "close": "11-phase-1-throne-eruption-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-throne-pour-windup",
+   "file": "12-phase-1-throne-pour-windup.jpg",
+   "close": "12-phase-1-throne-pour-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-throne-pour-strike",
+   "file": "13-phase-1-throne-pour-strike.jpg",
+   "close": "13-phase-1-throne-pour-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-slamRings-windup",
+   "file": "14-phase-1-slamRings-windup.jpg",
+   "close": "14-phase-1-slamRings-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-slamRings-strike",
+   "file": "15-phase-1-slamRings-strike.jpg",
+   "close": "15-phase-1-slamRings-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-barrage-windup",
+   "file": "16-phase-1-barrage-windup.jpg",
+   "close": "16-phase-1-barrage-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-barrage-strike",
+   "file": "17-phase-1-barrage-strike.jpg",
+   "close": "17-phase-1-barrage-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-change",
+   "file": "18-phase-2-change.jpg",
+   "close": "18-phase-2-change-close.jpg"
+  },
+  {
+   "state": "phase-2-cleave-windup",
+   "file": "19-phase-2-cleave-windup.jpg",
+   "close": "19-phase-2-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-cleave-strike",
+   "file": "20-phase-2-cleave-strike.jpg",
+   "close": "20-phase-2-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-throne-eruption-windup",
+   "file": "21-phase-2-throne-eruption-windup.jpg",
+   "close": "21-phase-2-throne-eruption-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-throne-eruption-strike",
+   "file": "22-phase-2-throne-eruption-strike.jpg",
+   "close": "22-phase-2-throne-eruption-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-throne-pour-windup",
+   "file": "23-phase-2-throne-pour-windup.jpg",
+   "close": "23-phase-2-throne-pour-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-throne-pour-strike",
+   "file": "24-phase-2-throne-pour-strike.jpg",
+   "close": "24-phase-2-throne-pour-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-throne-core-windup",
+   "file": "25-phase-2-throne-core-windup.jpg",
+   "close": "25-phase-2-throne-core-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-throne-core-strike",
+   "file": "26-phase-2-throne-core-strike.jpg",
+   "close": "26-phase-2-throne-core-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-barrage-windup",
+   "file": "27-phase-2-barrage-windup.jpg",
+   "close": "27-phase-2-barrage-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-barrage-strike",
+   "file": "28-phase-2-barrage-strike.jpg",
+   "close": "28-phase-2-barrage-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-summon-windup",
+   "file": "29-phase-2-summon-windup.jpg",
+   "close": "29-phase-2-summon-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-summon-strike",
+   "file": "30-phase-2-summon-strike.jpg",
+   "close": "30-phase-2-summon-strike-close.jpg"
+  },
+  {
+   "state": "dazed",
+   "close": "31-dazed-close.jpg"
+  },
+  {
+   "state": "struck",
+   "file": "32-struck.jpg",
+   "close": "32-struck-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "33-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "34-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "35-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "36-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "37-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "38-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "39-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "40-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "41-death-close.jpg"
+  }
+ ],
+ "errors": [],
+ "cost": {
+  "file": "boss_magmawarden",
+  "tris": 9566,
+  "frame": {
+   "calls": 33,
+   "tris": 120926,
+   "quality": 0.7
+  }
+ }
+}

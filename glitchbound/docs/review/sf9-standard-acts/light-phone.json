@@ -1,0 +1,572 @@
+[
+ {
+  "size": "phone",
+  "preset": "lantern-vigil",
+  "light": 21
+ },
+ {
+  "size": "phone",
+  "preset": "lantern-relit",
+  "light": 71
+ },
+ {
+  "size": "phone",
+  "preset": "crown-city",
+  "light": 107
+ },
+ {
+  "size": "phone",
+  "preset": "night-of-knives",
+  "light": 77
+ },
+ {
+  "size": "phone",
+  "preset": "after-knives",
+  "light": 112
+ },
+ {
+  "size": "phone",
+  "preset": "the-tear",
+  "light": 68
+ },
+ {
+  "size": "phone",
+  "preset": "fernstead-falls",
+  "light": 117
+ },
+ {
+  "size": "phone",
+  "preset": "elyra-gone",
+  "light": 121
+ },
+ {
+  "size": "phone",
+  "preset": "fern-again",
+  "light": 119
+ },
+ {
+  "size": "phone",
+  "preset": "fern-home",
+  "light": 109
+ },
+ {
+  "size": "phone",
+  "preset": "highwall",
+  "light": 71
+ },
+ {
+  "size": "phone",
+  "preset": "the-sortie",
+  "light": 81
+ },
+ {
+  "size": "phone",
+  "preset": "highwall-holds",
+  "light": 119
+ },
+ {
+  "size": "phone",
+  "preset": "nyx-returns",
+  "light": 79
+ },
+ {
+  "size": "phone",
+  "preset": "gloam-cells",
+  "light": 73
+ },
+ {
+  "size": "phone",
+  "preset": "elyra-free",
+  "light": 60
+ },
+ {
+  "size": "phone",
+  "preset": "ysane-echo",
+  "light": 68
+ },
+ {
+  "size": "phone",
+  "preset": "orren-shore",
+  "light": 75
+ },
+ {
+  "size": "phone",
+  "preset": "every-banner",
+  "light": 134
+ },
+ {
+  "size": "phone",
+  "preset": "last-march",
+  "light": 118
+ },
+ {
+  "size": "phone",
+  "preset": "siege-mages",
+  "light": 140
+ },
+ {
+  "size": "phone",
+  "preset": "keep-the-door",
+  "light": 140
+ },
+ {
+  "size": "phone",
+  "preset": "crownfall-throne",
+  "light": 28
+ },
+ {
+  "size": "phone",
+  "preset": "crownfall-memory",
+  "light": 63
+ },
+ {
+  "size": "phone",
+  "preset": "crownfall-ash-crown",
+  "light": 76
+ },
+ {
+  "size": "phone",
+  "preset": "the-bell",
+  "light": 119
+ },
+ {
+  "size": "phone",
+  "preset": "v3-lantern-the-lamps-dim",
+  "light": 72
+ },
+ {
+  "size": "phone",
+  "preset": "v3-lantern-orren",
+  "light": 77
+ },
+ {
+  "size": "phone",
+  "preset": "v3-lantern-wat",
+  "light": 77
+ },
+ {
+  "size": "phone",
+  "preset": "v3-lantern-the-mound",
+  "light": 77
+ },
+ {
+  "size": "phone",
+  "preset": "v3-lantern-the-barrow-king",
+  "light": 77
+ },
+ {
+  "size": "phone",
+  "preset": "v3-barrow-corvane",
+  "light": 35
+ },
+ {
+  "size": "phone",
+  "preset": "v4-barrow-corvane-falls",
+  "light": 37
+ },
+ {
+  "size": "phone",
+  "preset": "v3-lantern-the-order",
+  "light": 72
+ },
+ {
+  "size": "phone",
+  "preset": "v3-ember-the-ledgers",
+  "light": 112
+ },
+ {
+  "size": "phone",
+  "preset": "v3-ember-the-roads",
+  "light": 112
+ },
+ {
+  "size": "phone",
+  "preset": "v3-ember-the-festival",
+  "light": 82
+ },
+ {
+  "size": "phone",
+  "preset": "v3-ember-the-stair",
+  "light": 82
+ },
+ {
+  "size": "phone",
+  "preset": "v3-ember-the-map",
+  "light": 82
+ },
+ {
+  "size": "phone",
+  "preset": "v3-sun-the-oasis",
+  "light": 101
+ },
+ {
+  "size": "phone",
+  "preset": "v3-sun-the-sandscribe",
+  "light": 120
+ },
+ {
+  "size": "phone",
+  "preset": "v3-sun-the-obelisk",
+  "light": 121
+ },
+ {
+  "size": "phone",
+  "preset": "v3-sun-the-dig",
+  "light": 121
+ },
+ {
+  "size": "phone",
+  "preset": "v3-sun-the-gate",
+  "light": 120
+ },
+ {
+  "size": "phone",
+  "preset": "v3-tomb-the-warden",
+  "light": 26
+ },
+ {
+  "size": "phone",
+  "preset": "v3-tomb-the-sun-king",
+  "light": 55
+ },
+ {
+  "size": "phone",
+  "preset": "v3-vision-sun",
+  "light": 103
+ },
+ {
+  "size": "phone",
+  "preset": "v3-glimmer-the-glade",
+  "light": 91
+ },
+ {
+  "size": "phone",
+  "preset": "v3-glimmer-the-ring",
+  "light": 100
+ },
+ {
+  "size": "phone",
+  "preset": "v3-glimmer-the-pavilion",
+  "light": 100
+ },
+ {
+  "size": "phone",
+  "preset": "v3-glimmer-the-court",
+  "light": 101
+ },
+ {
+  "size": "phone",
+  "preset": "v3-vision-thorns",
+  "light": 82
+ },
+ {
+  "size": "phone",
+  "preset": "v3-glimmer-the-clans",
+  "light": 83
+ },
+ {
+  "size": "phone",
+  "preset": "v3-rime-frostgate",
+  "light": 137
+ },
+ {
+  "size": "phone",
+  "preset": "v3-rime-the-hearth",
+  "light": 138
+ },
+ {
+  "size": "phone",
+  "preset": "v3-rime-the-door",
+  "light": 138
+ },
+ {
+  "size": "phone",
+  "preset": "v3-vault-the-traitor",
+  "light": 35
+ },
+ {
+  "size": "phone",
+  "preset": "v3-vault-the-wyrm",
+  "light": 71
+ },
+ {
+  "size": "phone",
+  "preset": "v3-vision-frost",
+  "light": 137
+ },
+ {
+  "size": "phone",
+  "preset": "v3-vale-shardwatch",
+  "light": 55
+ },
+ {
+  "size": "phone",
+  "preset": "v3-vale-the-singers",
+  "light": 69
+ },
+ {
+  "size": "phone",
+  "preset": "v3-vale-the-cipher",
+  "light": 57
+ },
+ {
+  "size": "phone",
+  "preset": "v3-vale-the-lip",
+  "light": 57
+ },
+ {
+  "size": "phone",
+  "preset": "v3-vale-after-the-herald",
+  "light": 56
+ },
+ {
+  "size": "phone",
+  "preset": "v3-vale-the-crack",
+  "light": 57
+ },
+ {
+  "size": "phone",
+  "preset": "v3-briar-fernstead-burns",
+  "light": 117
+ },
+ {
+  "size": "phone",
+  "preset": "v3-fern-ours",
+  "light": 111
+ },
+ {
+  "size": "phone",
+  "preset": "v3-highwall-the-camp",
+  "light": 73
+ },
+ {
+  "size": "phone",
+  "preset": "v3-highwall-the-captain",
+  "light": 71
+ },
+ {
+  "size": "phone",
+  "preset": "v3-highwall-ashby",
+  "light": 32
+ },
+ {
+  "size": "phone",
+  "preset": "v3-highwall-the-map",
+  "light": 80
+ },
+ {
+  "size": "phone",
+  "preset": "v4-highwall-the-riders",
+  "light": 75
+ },
+ {
+  "size": "phone",
+  "preset": "v3-highwall-the-breach",
+  "light": 80
+ },
+ {
+  "size": "phone",
+  "preset": "v3-siege-the-breaker",
+  "light": 16
+ },
+ {
+  "size": "phone",
+  "preset": "v3-siege-morvain",
+  "light": 48
+ },
+ {
+  "size": "phone",
+  "preset": "v3-highwall-relieved",
+  "light": 79
+ },
+ {
+  "size": "phone",
+  "preset": "v3-gloam-lastlight",
+  "light": 61
+ },
+ {
+  "size": "phone",
+  "preset": "v3-gloam-the-dark-mile",
+  "light": 59
+ },
+ {
+  "size": "phone",
+  "preset": "v3-gloam-the-jetty",
+  "light": 56
+ },
+ {
+  "size": "phone",
+  "preset": "v3-vision-veil",
+  "light": 75
+ },
+ {
+  "size": "phone",
+  "preset": "v3-gloam-the-gatewarden",
+  "light": 74
+ },
+ {
+  "size": "phone",
+  "preset": "v3-gloam-the-fire",
+  "light": 75
+ },
+ {
+  "size": "phone",
+  "preset": "v4-gloam-the-forgetting",
+  "light": 75
+ },
+ {
+  "size": "phone",
+  "preset": "v3-wood-into-vaelmoor",
+  "light": 67
+ },
+ {
+  "size": "phone",
+  "preset": "v3-wood-candlewick",
+  "light": 61
+ },
+ {
+  "size": "phone",
+  "preset": "v3-wood-the-rest",
+  "light": 68
+ },
+ {
+  "size": "phone",
+  "preset": "v3-wood-the-hollow",
+  "light": 68
+ },
+ {
+  "size": "phone",
+  "preset": "v3-wood-the-tree",
+  "light": 68
+ },
+ {
+  "size": "phone",
+  "preset": "v3-wood-the-lord",
+  "light": 68
+ },
+ {
+  "size": "phone",
+  "preset": "v3-wood-at-rest",
+  "light": 60
+ },
+ {
+  "size": "phone",
+  "preset": "v3-ember-cinderhold",
+  "light": 63
+ },
+ {
+  "size": "phone",
+  "preset": "v3-ember-the-forges",
+  "light": 53
+ },
+ {
+  "size": "phone",
+  "preset": "v3-ember-the-reading",
+  "light": 53
+ },
+ {
+  "size": "phone",
+  "preset": "v3-ember-the-chains",
+  "light": 53
+ },
+ {
+  "size": "phone",
+  "preset": "v3-ember-the-throne-gate",
+  "light": 53
+ },
+ {
+  "size": "phone",
+  "preset": "v3-throne-the-warden",
+  "light": 31
+ },
+ {
+  "size": "phone",
+  "preset": "v3-throne-ashkar",
+  "light": 28
+ },
+ {
+  "size": "phone",
+  "preset": "v3-ember-the-voice",
+  "light": 67
+ },
+ {
+  "size": "phone",
+  "preset": "v3-mere-the-ferryman",
+  "light": 63
+ },
+ {
+  "size": "phone",
+  "preset": "v3-mere-the-shore",
+  "light": 75
+ },
+ {
+  "size": "phone",
+  "preset": "v3-mere-the-causeway",
+  "light": 76
+ },
+ {
+  "size": "phone",
+  "preset": "v3-mere-the-lich",
+  "light": 76
+ },
+ {
+  "size": "phone",
+  "preset": "v3-vision-tides",
+  "light": 75
+ },
+ {
+  "size": "phone",
+  "preset": "v3-reach-dawns-rest",
+  "light": 126
+ },
+ {
+  "size": "phone",
+  "preset": "v3-reach-vosk",
+  "light": 118
+ },
+ {
+  "size": "phone",
+  "preset": "v3-reach-the-empty-scarf",
+  "light": 118
+ },
+ {
+  "size": "phone",
+  "preset": "v3-vision-stone",
+  "light": 91
+ },
+ {
+  "size": "phone",
+  "preset": "v3-reach-the-voice",
+  "light": 127
+ },
+ {
+  "size": "phone",
+  "preset": "v3-dusk-the-guard",
+  "light": 62
+ },
+ {
+  "size": "phone",
+  "preset": "v3-dusk-the-king",
+  "light": 73
+ },
+ {
+  "size": "phone",
+  "preset": "v3-memory-the-crown",
+  "light": 74
+ },
+ {
+  "size": "phone",
+  "preset": "v4-dusk-the-crown-rises",
+  "light": 73
+ },
+ {
+  "size": "phone",
+  "preset": "v4-memory-unmade",
+  "light": 101
+ },
+ {
+  "size": "phone",
+  "preset": "v3-reach-seven-locks",
+  "light": 126
+ }
+]

@@ -1,0 +1,18 @@
+{
+  "foe": "the-gatewarden",
+  "errors": [],
+  "found": [],
+  "kit": {
+    "k": "boss_gatewarden",
+    "top": null,
+    "float": 0
+  },
+  "readings": 135,
+  "moving": 25,
+  "walking": 23,
+  "clips": {
+    "walk": 26,
+    "smash": 50,
+    "idle": 59
+  }
+}

@@ -380,6 +380,649 @@ FORMS.harlan = {
   fall: { clip: 'die', end: 'dead', kept: 2.8, sink: 0 },
 };
 
+/* ------------------------------------------------------------------ the Barrow of Kings (Act II) */
+
+// King Hrodric. A king's blows, wide and unhurried, from a man who has all the time the dead have: the sword goes
+// across for his cuts and down two-handed for his chops; he drives it into the mound's floor and the frost goes out
+// from it; he turns right round with it for his whirl. He lifts a hand and his court gets up. He is standing when the
+// hero comes, and says so. Struck dumb he stands behind his guard. He falls as a big man does and the mound keeps him.
+FORMS.hrodric = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'chop2', 'spin', 'slice', 'smash', 'cast', 'taunt', 'block'],
+  bend: (joint, clip, phase) => (joint === 'head' ? [0.1, 0, 0] : joint === 'chest' && clip === 'idle' ? [0.04 + Math.sin(phase * Math.PI * 2) * 0.02, 0, 0] : null),
+  moves: {
+    cleave: { clip: 'slice', rate: 0.9 },
+    chop: { clip: 'chop2', rate: 0.85 },
+    'barrow:frost-pulse': { clip: 'smash', rate: 0.85 },
+    'barrow:whirl': { clip: 'spin' },
+    summon: { clip: 'cast' },
+    roar: { clip: 'taunt' },
+  },
+  enter: { clip: 'taunt', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'block',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// Sir Corvane. A knight who was the best of his order and still fights like it: nothing wasted, everything through
+// the shield. He rides his passes down behind it; on foot he cuts, thrusts his lances of frost out along the blade,
+// and brings it down for the lines that split the floor. The doom he carries falls with a slow blow from overhead,
+// the rime grows where he points, his dead knights come at a lifted hand, and he stands behind his shield as the
+// cold gathers round him. He dies on his feet as long as he can, and lies under his banner.
+FORMS.corvane = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'chop', 'chop2', 'slice', 'smash', 'cast', 'taunt', 'bash', 'stab', 'block', 'dodge'],
+  bend: (joint, clip, phase) => (joint === 'head' ? [0.12, 0, 0] : joint === 'chest' && clip === 'idle' ? [0.03 + Math.sin(phase * Math.PI * 2) * 0.015, 0, 0] : null),
+  moves: {
+    'barrow:steed-charge': { clip: 'bash', rate: 1.2 },
+    tripleCharge: { clip: 'bash', rate: 1.4 },
+    cleave: { clip: 'slice' },
+    chop: { clip: 'chop2', rate: 0.9 },
+    'spell:lances': { clip: 'stab' },
+    'spell:halves': { clip: 'smash', rate: 0.85 },
+    'barrow:doom': { clip: 'chop', rate: 0.7 },
+    'barrow:rime': { clip: 'cast', rate: 0.8 },
+    'barrow:aura': { clip: 'block' },
+    'barrow:dismount': { clip: 'dodge' },
+    vanish: { clip: 'dodge', rate: 1.2 },
+    summon: { clip: 'taunt' },
+    roar: { clip: 'taunt', rate: 0.8 },
+  },
+  enter: { clip: 'block', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'block',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+/* ------------------------------------------------------------------ the Crown Catacombs (Act II) */
+
+// Silas Vey. A paymaster's moves: he has never needed to be strong. The ash-gold goes up out of both hands and comes
+// down all over the ossuary; the blades he sends out and calls back go with a flick; when the hero is on him he cuts,
+// once, quickly, and steps away. He steps out of the dark already smiling. He dies as a man does.
+FORMS.silas = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'throw', 'dodge', 'taunt', 'spawn', 'cheer'],
+  bend: (joint, clip, phase) => (joint === 'spine' ? [0.07, 0, 0] : joint === 'chest' && clip === 'idle' ? [0.03, Math.sin(phase * Math.PI * 2) * 0.04, 0] : joint === 'head' ? [0.05, 0, -0.05] : null),
+  moves: {
+    'crown:scatter': { clip: 'cheer', rate: 0.9 },
+    'spell:boomerang': { clip: 'throw', rate: 1.1 },
+    cleave: { clip: 'slice', rate: 1.2 },
+  },
+  enter: { clip: 'spawn', then: 'taunt' },
+  shift: { clip: 'taunt', rate: 1.2 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 2.8, sink: 0 },
+};
+
+// The Royal Auditor. A clerk's moves, exact and dry: he reads the ledger out with it held before him, flicks his
+// quills off the pen one after another, strikes with the back of the book when the hero stands too close, and for
+// the settling of accounts raises both arms and lets the page say what is owed. He gets up from where he died. Struck
+// dumb, he sits down where he is, as he did the day he died. He falls and lies among his papers.
+FORMS.auditor = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'channel', 'summon', 'throw', 'slice', 'rise', 'sitfloor', 'taunt'],
+  bend: (joint, clip, phase) => (joint === 'spine' ? [0.12, 0, 0] : joint === 'chest' ? [0.1 + (clip === 'idle' ? Math.sin(phase * Math.PI * 2) * 0.015 : 0), 0, 0] : joint === 'head' ? [0.06, 0, 0] : null),
+  moves: {
+    'crown:ledger': { clip: 'channel' },
+    'spell:quills': { clip: 'throw' },
+    cleave: { clip: 'slice', rate: 0.9 },
+    'crown:settle': { clip: 'summon', rate: 0.8 },
+  },
+  enter: { clip: 'rise', then: 'channel' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'sitfloor',
+  fall: { clip: 'die', end: 'dead', kept: 2.8, sink: 0 },
+};
+
+/* ------------------------------------------------------------------ the Tomb of the Sun King (Act III) */
+
+const SAND_GLASS = hex('#ffd27a');
+const BRASS = hex('#a8782a');
+
+/**
+ * The sand-glass Khepset turns (data/dungeons/tomb-of-the-sun-king.ts `tomb:hourglass`): two bulbs point to point in a
+ * brass frame, held up in his left hand, the sand in it alight. It is what the hero must break.
+ */
+function sandglass(m: MeshData, joints: readonly string[]): MeshData {
+  const hand = joints.indexOf('hand.l');
+  const box = hand >= 0 ? (boxOf(m, hand) as Box | null) : null;
+  if (!box) return m;
+  const cx = (box.min[0] + box.max[0]) / 2;
+  const cz = (box.min[2] + box.max[2]) / 2 + (box.max[2] - box.min[2]) * 0.3;
+  const y0 = box.max[1];
+  // (as tall as his forearm: any smaller and the game's camera never shows it)
+  const tall = (box.max[1] - box.min[1]) * 4.4;
+  const r = tall * 0.3;
+  const bits = new Bits();
+  const mid = [cx, y0 + tall / 2, cz];
+  // the two bulbs, each a point at the waist
+  post(bits, [cx, y0, cz], mid, r, 0.004, SAND_GLASS, [255, 255, 255], true);
+  post(bits, [cx, y0 + tall, cz], mid, r, 0.004, shade(SAND_GLASS, 0.9), SAND_GLASS, true);
+  // its frame: a plate under and over, and two posts
+  post(bits, [cx, y0 - tall * 0.06, cz], [cx, y0, cz], r * 1.25, r * 1.25, shade(BRASS, 0.7), BRASS);
+  post(bits, [cx, y0 + tall, cz], [cx, y0 + tall * 1.06, cz], r * 1.25, r * 1.25, BRASS, shade(BRASS, 1.2));
+  for (const side of [-1, 1]) post(bits, [cx + side * r * 1.05, y0, cz], [cx + side * r * 1.05, y0 + tall, cz], r * 0.14, r * 0.14, shade(BRASS, 0.8), BRASS);
+  return withBits(m, bits, hand);
+}
+
+// The Sun King. A king's gestures, each one an order: the beams and the pyre come when he holds the staff out and
+// keeps it there; he lifts both arms and the disc behind him answers; the scarabs come at a wave of his hand, the
+// spots of sun at a flick. He cuts with the staff when someone dares stand near. He rises from where he sealed
+// himself in. He dies as a man does, and the noon goes out of the room.
+FORMS.sunking = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'channel', 'summon', 'throw', 'wave', 'taunt', 'cast', 'cheer', 'rise'],
+  bend: (joint, clip, phase) => (joint === 'head' ? [-0.08, 0, 0] : joint === 'chest' && clip === 'idle' ? [-0.03 + Math.sin(phase * Math.PI * 2) * 0.015, 0, 0] : null),
+  moves: {
+    cleave: { clip: 'slice' },
+    volley: { clip: 'throw' },
+    roar: { clip: 'taunt' },
+    'tomb:sunbeam': { clip: 'channel' },
+    'tomb:pyre': { clip: 'channel', rate: 0.8 },
+    'tomb:sun-disc': { clip: 'summon', rate: 0.9 },
+    'tomb:scarabs': { clip: 'wave' },
+    'spell:orbit': { clip: 'cheer', rate: 0.9 },
+    'spell:sunspot': { clip: 'cast', rate: 1.2 },
+  },
+  enter: { clip: 'rise', then: 'taunt' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 2.8, sink: 0 },
+};
+
+// Vizier Khepset. A servant's economy: he does three things. He holds the glass up and turns it; he points, and the
+// floor opens; he calls the tomb's dead with both arms raised. He steps out from behind his king's door.
+FORMS.khepset = {
+  build: sandglass,
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'channel', 'cast', 'summon', 'taunt', 'spawn'],
+  bend: (joint, clip) => (joint === 'spine' ? [0.06, 0, 0] : joint === 'head' ? [0.05, 0, 0] : joint === 'upperarm.l' && (clip === null || clip === 'idle' || clip === 'walk' || clip === 'run') ? [-0.9, 0, 0.1] : joint === 'lowerarm.l' && (clip === null || clip === 'idle' || clip === 'walk' || clip === 'run') ? [-0.5, 0, 0] : null),
+  moves: {
+    'tomb:hourglass': { clip: 'channel' },
+    'spell:sinkhole': { clip: 'cast' },
+    summon: { clip: 'summon' },
+  },
+  enter: { clip: 'spawn', then: 'channel' },
+  shift: { clip: 'taunt', rate: 1.2 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 2.6, sink: 0 },
+};
+
+// The Sand Warden. A made thing has no flourish: the mace goes across, or down, or right round, and when it strikes
+// the floor the floor answers (the quicksand at a held-out hand, the falling stone at a blow with its shoulder). It is
+// standing in its hall when the hero comes, as it has stood for three hundred years. It breaks where it stands.
+FORMS.sandwarden = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'chop2', 'spin', 'smash', 'cast', 'bash', 'block', 'taunt'],
+  bend: (joint) => (joint === 'head' ? [0.1, 0, 0] : null),
+  moves: {
+    cleave: { clip: 'slice', rate: 0.85 },
+    chop: { clip: 'chop2', rate: 0.85 },
+    slamRings: { clip: 'smash', rate: 0.8 },
+    'tomb:quicksand': { clip: 'cast', rate: 0.8 },
+    'tomb:sandsweep': { clip: 'spin', rate: 0.9 },
+    'tomb:crumble': { clip: 'bash' },
+  },
+  enter: { clip: 'block', then: 'idle' },
+  shift: { clip: 'taunt', rate: 0.9 },
+  dazed: 'block',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+/* ------------------------------------------------------------------ the Vault of Rime (Act III) */
+
+// Jarl Hrimfang. A giant with a maul: the cut across, the blow down, the floor broken under it, a boulder flung
+// one-handed, his shoulder into the charge. He beats his chest for the war cry. He is at his longfire when the hero
+// comes, and gets to his feet. He falls like a tree.
+FORMS.hrimfang = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'chop2', 'smash', 'punch', 'taunt', 'bash', 'block'],
+  bend: (joint, clip, phase) => (joint === 'chest' && clip === 'idle' ? [0.04 + Math.sin(phase * Math.PI * 2) * 0.03, 0, 0] : null),
+  moves: {
+    cleave: { clip: 'slice', rate: 0.9 },
+    chop: { clip: 'chop2', rate: 0.85 },
+    tripleCharge: { clip: 'bash', rate: 1.3 },
+    'rime:shatter': { clip: 'smash', rate: 0.85 },
+    'rime:boulder': { clip: 'punch', rate: 0.9 },
+    'rime:warcry': { clip: 'taunt' },
+  },
+  enter: { clip: 'taunt', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.2 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// Hallvor. A bodyguard's moves, all of them made from behind the shield: she cuts over it, brings the halberd down,
+// thrusts to pin, and goes in shield-first. Her orders to the woken dead are a lifted arm. She thaws out of the ice
+// where she stood guard, and stands guard again. Struck dumb she holds her shield. She falls and the ice has her back.
+FORMS.hallvor = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'chop2', 'stab', 'bash', 'block', 'wave', 'summon', 'rise', 'taunt'],
+  bend: (joint, clip, phase) => (joint === 'head' ? [0.08, 0, 0] : joint === 'chest' && clip === 'idle' ? [Math.sin(phase * Math.PI * 2) * 0.015, 0, 0] : null),
+  moves: {
+    cleave: { clip: 'slice' },
+    chop: { clip: 'chop2', rate: 0.9 },
+    tripleCharge: { clip: 'bash', rate: 1.3 },
+    summon: { clip: 'summon' },
+    'rime:orders': { clip: 'wave' },
+    'spell:pin': { clip: 'stab' },
+  },
+  enter: { clip: 'rise', then: 'block' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'block',
+  fall: { clip: 'die', end: 'dead', kept: 2.8, sink: 0.4 },
+};
+
+/* ------------------------------------------------------------------ the Siege of Highwall, the Molten Throne, Duskspire */
+
+// Prior Vessant. A priest's gestures turned to the Host's use: he reads the fallen up out of the hymnal with both
+// arms raised, waves the woken on, draws the life out of the hero with the book held out, casts his mines with a
+// flick, and sings the dirge with his arms wide. He strikes with the staff only when cornered. He dies as a man does.
+FORMS.vessant = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'summon', 'wave', 'channel', 'throw', 'slice', 'cheer', 'taunt', 'spawn'],
+  bend: (joint, clip, phase) => (joint === 'spine' ? [0.05, 0, 0] : joint === 'chest' && clip === 'idle' ? [0.03 + Math.sin(phase * Math.PI * 2) * 0.02, 0, 0] : null),
+  moves: {
+    'siege:fallen': { clip: 'summon' },
+    summon: { clip: 'wave' },
+    'spell:drain': { clip: 'channel' },
+    'spell:mines': { clip: 'throw' },
+    cleave: { clip: 'slice' },
+    'siege:dirge': { clip: 'cheer', rate: 0.8 },
+  },
+  enter: { clip: 'spawn', then: 'channel' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 2.8, sink: 0 },
+};
+
+// General Morvain. A commander first: he plants the banner with one blow into the ground, calls his squad and his
+// archers with a lifted arm, and stands behind his guard while they work. When he fights himself it is the long
+// cut, the blow down, and his shoulder into the death-charge. He has never lost a siege, and stands like it.
+FORMS.morvain = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'chop2', 'smash', 'cast', 'taunt', 'bash', 'block'],
+  bend: (joint) => (joint === 'head' ? [0.1, 0, 0] : null),
+  moves: {
+    'siege:banner': { clip: 'smash', rate: 0.8 },
+    'siege:squad': { clip: 'taunt' },
+    'siege:arrows': { clip: 'cast' },
+    'siege:last-volley': { clip: 'cast', rate: 0.8 },
+    cleave: { clip: 'slice' },
+    chop: { clip: 'chop2', rate: 0.9 },
+    roar: { clip: 'taunt', rate: 0.8 },
+    'siege:deathcharge': { clip: 'bash', rate: 1.3 },
+    'siege:guard': { clip: 'block' },
+  },
+  enter: { clip: 'taunt', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'block',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// The Magma Warden. A forge's guardian works like a forge: the hammer across, the hammer down and the floor erupts,
+// the molten rock poured from a held-out hand, its core shut behind its arms. It was built standing at its post.
+FORMS.magmawarden = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'chop2', 'smash', 'cast', 'punch', 'taunt', 'block', 'bash'],
+  moves: {
+    cleave: { clip: 'slice', rate: 0.85 },
+    'throne:eruption': { clip: 'smash', rate: 0.85 },
+    'throne:pour': { clip: 'cast', rate: 0.8 },
+    slamRings: { clip: 'chop2', rate: 0.8 },
+    barrage: { clip: 'punch' },
+    roar: { clip: 'taunt' },
+    'throne:core': { clip: 'block' },
+    summon: { clip: 'bash' },
+  },
+  enter: { clip: 'block', then: 'idle' },
+  shift: { clip: 'taunt', rate: 0.9 },
+  dazed: 'block',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// Ossa the Founder. A founder at her work: she casts a likeness with a held-out hand, pours her pools with a blow
+// on the floor, and uses the hammer as a hammer. She looks up from the mould when the hero comes.
+FORMS.ossa = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'chop2', 'smash', 'cast', 'taunt', 'bash', 'block'],
+  moves: {
+    'throne:likeness': { clip: 'cast' },
+    cleave: { clip: 'slice' },
+    chop: { clip: 'chop2' },
+    'spell:pools': { clip: 'smash', rate: 0.8 },
+    roar: { clip: 'taunt' },
+    summon: { clip: 'bash' },
+  },
+  enter: { clip: 'cast', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// Ashkar the Bound. Everything he does he does against his chains: they shut on the hero when he closes his arms,
+// go taut when he throws his weight forward, come round as a flail when he turns, and tear when he wrenches at them.
+// He hammers at the crown he is made to forge, throws fire with his fists, and screams the inferno. He is chained to
+// his throne when the hero comes. Beaten, he goes to his knees, and the chains are what break.
+FORMS.ashkar = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'chop2', 'smash', 'cast', 'punch', 'taunt', 'bash', 'block', 'spin', 'stab', 'kick'],
+  moves: {
+    'throne:shackles': { clip: 'block' },
+    cleave: { clip: 'slice' },
+    'throne:taut': { clip: 'bash' },
+    volley: { clip: 'punch' },
+    barrage: { clip: 'punch', rate: 1.3 },
+    'throne:forge': { clip: 'chop2', rate: 1.1 },
+    roar: { clip: 'taunt' },
+    'throne:tear': { clip: 'kick' },
+    'throne:flail': { clip: 'spin', rate: 0.9 },
+    hook: { clip: 'stab' },
+    'throne:eruption': { clip: 'smash', rate: 0.85 },
+    'throne:crown': { clip: 'cast' },
+    'throne:lake': { clip: 'cast', rate: 0.7 },
+    'throne:inferno': { clip: 'taunt', rate: 0.7 },
+  },
+  enter: { clip: 'taunt', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// Lady Cendre. A mourner's gestures: she keeps her vigil with the candles held before her, draws the ring with a
+// slow hand, calls the grief up with both arms, and wards the hero off with the staff. She is at her vigil when the
+// hero comes and does not rise for them at first. She dies as a lady of the court does, and her candles go out.
+FORMS.cendre = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'channel', 'cast', 'summon', 'slice', 'taunt', 'sitfloor', 'rise'],
+  bend: (joint, clip, phase) => (joint === 'head' ? [0.12, 0, 0] : joint === 'chest' && clip === 'idle' ? [0.05 + Math.sin(phase * Math.PI * 2) * 0.015, 0, 0] : null),
+  moves: {
+    'dusk:vigil': { clip: 'channel', rate: 0.8 },
+    'spell:ring': { clip: 'cast' },
+    'spell:grief': { clip: 'summon' },
+    cleave: { clip: 'slice' },
+    roar: { clip: 'taunt' },
+  },
+  enter: { clip: 'rise', then: 'channel' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'sitfloor',
+  fall: { clip: 'die', end: 'dead', kept: 2.8, sink: 0 },
+};
+
+// Captain Ser Maltheus. A guardsman's fight, all of it from behind the shield: his oath is said from his guard, the
+// spear thrusts out for the hook, cuts across, comes down, and goes in behind the shield for his rushes. He has stood
+// at this door three hundred years and is standing at it now.
+FORMS.maltheus = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'chop2', 'stab', 'bash', 'block', 'taunt'],
+  moves: {
+    'dusk:oath': { clip: 'block' },
+    cleave: { clip: 'slice' },
+    chop: { clip: 'chop2' },
+    hook: { clip: 'stab' },
+    roar: { clip: 'taunt' },
+    tripleCharge: { clip: 'bash', rate: 1.3 },
+  },
+  enter: { clip: 'block', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'block',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+/* ------------------------------------------------------------------ the Rift's five other dungeons */
+
+// The Drowned Priestess. Everything she does she does with the sea: she holds the staff out and the wall of brine
+// rolls, draws the undertow in with a slow hand, lifts both arms for the flood, and rings her children up from the deep.
+FORMS.drowned = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'stab', 'throw', 'dodge', 'wave', 'taunt', 'spawn', 'cheer', 'cast', 'channel', 'summon', 'block', 'bash', 'chop2'],
+  bend: (joint, clip, phase) => (joint === 'head' ? [0.1, 0, 0] : joint === 'chest' && clip === 'idle' ? [0.04 + Math.sin(phase * Math.PI * 2) * 0.02, 0, 0] : null),
+  moves: {
+    'spell:wall': { clip: 'cast' },
+    'spell:undertow': { clip: 'channel', rate: 0.8 },
+    tide: { clip: 'wave' },
+    'grotto:flood': { clip: 'cheer', rate: 0.8 },
+    summon: { clip: 'summon' },
+  },
+  enter: { clip: 'spawn', then: 'channel' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// Captain Saltbeard. A brawler with a crew: he cuts, he throws (knives, kegs, whatever is to hand), he marks his
+// man with a pointed blade, and he waves the crew on.
+FORMS.saltbeard = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'stab', 'throw', 'dodge', 'wave', 'taunt', 'spawn', 'cheer', 'cast', 'channel', 'summon', 'block', 'bash', 'chop2'],
+  moves: {
+    cleave: { clip: 'slice' },
+    volley: { clip: 'throw' },
+    kegs: { clip: 'throw', rate: 0.8 },
+    barrage: { clip: 'wave' },
+    'grotto:black-spot': { clip: 'stab', rate: 0.8 },
+    summon: { clip: 'cheer' },
+  },
+  enter: { clip: 'taunt', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// Brother Pustule. A monk at his office: he swings the censer-staff, blesses the air foul with a held-out hand,
+// pours his leeches out, and splits himself with a shrug.
+FORMS.pustule = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'stab', 'throw', 'dodge', 'wave', 'taunt', 'spawn', 'cheer', 'cast', 'channel', 'summon', 'block', 'bash', 'chop2'],
+  bend: (joint) => (joint === 'spine' ? [0.08, 0, 0] : null),
+  moves: {
+    cleave: { clip: 'slice' },
+    'rot:miasma': { clip: 'channel', rate: 0.8 },
+    'rot:leeches': { clip: 'summon' },
+    hook: { clip: 'throw' },
+    summon: { clip: 'wave' },
+    'spell:split': { clip: 'dodge' },
+    'spell:sequence': { clip: 'cast' },
+  },
+  enter: { clip: 'cast', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// Old Sluicegut. A warden of drains: he opens the sluices with a heave of both arms, brings the rake down, and
+// stamps so the floor rings.
+FORMS.sluicegut = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'chop', 'chop2', 'spin', 'punch', 'smash', 'cast', 'taunt', 'kick', 'stab', 'bash', 'block', 'dodge', 'slice'],
+  moves: {
+    'rot:sluices': { clip: 'cast', rate: 0.8 },
+    slam: { clip: 'smash' },
+    chop: { clip: 'chop2' },
+    summon: { clip: 'taunt' },
+    slamRings: { clip: 'kick' },
+  },
+  enter: { clip: 'taunt', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// The Rot-Mother. She stirs: the ladle goes round for the bile, down for the pour, and she breathes the brew out
+// over it. She swells with her arms held wide and drags the hero in with the ladle's hook.
+FORMS.rotmother = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'chop', 'chop2', 'spin', 'punch', 'smash', 'cast', 'taunt', 'kick', 'stab', 'bash', 'block', 'dodge', 'slice'],
+  moves: {
+    'rot:bile': { clip: 'slice' },
+    'rot:breath': { clip: 'cast', rate: 0.8 },
+    'rot:pour': { clip: 'smash', rate: 0.8 },
+    'spell:bouncers': { clip: 'punch' },
+    summon: { clip: 'taunt' },
+    'rot:swell': { clip: 'block' },
+    tide: { clip: 'spin', rate: 0.8 },
+    roar: { clip: 'taunt', rate: 1.2 },
+    'rot:drag': { clip: 'stab', rate: 0.8 },
+  },
+  enter: { clip: 'cast', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// The Runewarden. A made thing doing what it was made for: it stands behind its guard while it is bound, strikes
+// the floor to wake the runes, and runs the hero down with its shoulder.
+FORMS.runewarden = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'chop', 'chop2', 'spin', 'punch', 'smash', 'cast', 'taunt', 'kick', 'stab', 'bash', 'block', 'dodge', 'slice'],
+  moves: {
+    'forge:bound': { clip: 'block' },
+    'forge:runes': { clip: 'cast' },
+    slam: { clip: 'smash' },
+    spearFan: { clip: 'punch' },
+    charge: { clip: 'bash', rate: 1.2 },
+    roar: { clip: 'taunt' },
+    slamRings: { clip: 'chop2' },
+    summon: { clip: 'kick' },
+  },
+  enter: { clip: 'block', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'block',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// The Slag Colossus. It has only its hands: it brings them down, stamps, shakes the slag off itself, and goes
+// still and hard behind its arms.
+FORMS.slag = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'chop', 'chop2', 'spin', 'punch', 'smash', 'cast', 'taunt', 'kick', 'stab', 'bash', 'block', 'dodge', 'slice'],
+  moves: {
+    chop: { clip: 'chop2' },
+    'forge:slag': { clip: 'smash' },
+    stomp: { clip: 'kick' },
+    'forge:shed': { clip: 'spin', rate: 0.8 },
+    'forge:harden': { clip: 'block' },
+    slamRings: { clip: 'punch' },
+  },
+  enter: { clip: 'smash', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// Forgemaster Grold. A smith's blows: the hammer across, the hammer down for the quake, a heave for the pour, a
+// thrown handful of blades, and the bellows worked with both arms.
+FORMS.grold = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'stab', 'throw', 'dodge', 'wave', 'taunt', 'spawn', 'cheer', 'cast', 'channel', 'summon', 'block', 'bash', 'chop2'],
+  moves: {
+    cleave: { clip: 'slice' },
+    'forge:quake': { clip: 'chop2' },
+    'forge:pour': { clip: 'channel', rate: 0.8 },
+    'forge:blades': { clip: 'throw' },
+    summon: { clip: 'wave' },
+    'forge:bellows': { clip: 'cheer', rate: 0.9 },
+    slamRings: { clip: 'bash' },
+    roar: { clip: 'taunt' },
+  },
+  enter: { clip: 'taunt', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// The Rotwood Colossus. A tree's slowness: it topples forward on the hero, drives a root down, sheds its pods with
+// a shake, and sweeps a bough.
+FORMS.rotwood = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'chop', 'chop2', 'spin', 'punch', 'smash', 'cast', 'taunt', 'kick', 'stab', 'bash', 'block', 'dodge', 'slice'],
+  moves: {
+    cleave: { clip: 'slice', rate: 0.85 },
+    'blight:topple': { clip: 'smash', rate: 0.8 },
+    'blight:pods': { clip: 'spin', rate: 0.7 },
+    slamRings: { clip: 'kick' },
+    chop: { clip: 'chop2', rate: 0.9 },
+    summon: { clip: 'cast' },
+    roar: { clip: 'taunt' },
+    'blight:taproot': { clip: 'punch', rate: 0.8 },
+  },
+  enter: { clip: 'taunt', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 3.4, sink: 0 },
+};
+
+// Elowen of the Dawn. A lamp-warden's gestures: she holds the lamp up and her twin steps out of its light, she
+// ties the hero to it with a slow hand, and wards them off with the staff.
+FORMS.elowen = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'stab', 'throw', 'dodge', 'wave', 'taunt', 'spawn', 'cheer', 'cast', 'channel', 'summon', 'block', 'bash', 'chop2'],
+  bend: (joint, clip, phase) => (joint === 'chest' && clip === 'idle' ? [-0.02 + Math.sin(phase * Math.PI * 2) * 0.015, 0, 0] : null),
+  moves: {
+    'blight:twins': { clip: 'summon' },
+    'spell:tether': { clip: 'channel', rate: 0.8 },
+    cleave: { clip: 'slice' },
+    roar: { clip: 'cheer' },
+  },
+  enter: { clip: 'wave', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// The Withered Queen. A queen's orders and a reaper's work: the scythe across and down, a kiss blown, the briars
+// and the garden raised with a lifted hand, the spores breathed out, the withering with an arm held out.
+FORMS.witheredqueen = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'stab', 'throw', 'dodge', 'wave', 'taunt', 'spawn', 'cheer', 'cast', 'channel', 'summon', 'block', 'bash', 'chop2'],
+  bend: (joint) => (joint === 'head' ? [-0.06, 0, 0] : null),
+  moves: {
+    summon: { clip: 'wave' },
+    'blight:briar': { clip: 'summon' },
+    'blight:kiss': { clip: 'throw', rate: 0.8 },
+    volley: { clip: 'throw' },
+    cleave: { clip: 'slice' },
+    roar: { clip: 'taunt' },
+    'blight:garden': { clip: 'cheer', rate: 0.8 },
+    'blight:spores': { clip: 'cast' },
+    'blight:wither': { clip: 'channel', rate: 0.8 },
+    chop: { clip: 'chop2' },
+  },
+  enter: { clip: 'taunt', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// The Veil Sentinel. A door-keeper: it turns the prism's light with its shield, pulls the hero down with a raised
+// hand, and runs them off the stair behind the shield.
+FORMS.veilsentinel = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'chop', 'chop2', 'spin', 'punch', 'smash', 'cast', 'taunt', 'kick', 'stab', 'bash', 'block', 'dodge', 'slice'],
+  moves: {
+    'spire:prism': { clip: 'block' },
+    cleave: { clip: 'slice' },
+    chop: { clip: 'chop2' },
+    'spire:gravity': { clip: 'cast', rate: 0.8 },
+    charge: { clip: 'bash', rate: 1.2 },
+    summon: { clip: 'taunt' },
+    roar: { clip: 'taunt', rate: 1.2 },
+    'spell:crossfire': { clip: 'punch' },
+  },
+  enter: { clip: 'block', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'block',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// Ilvane the Unmoored. A reader, adrift: she reads the stars down out of the book, draws the constellation with
+// a finger, and lets go of the floor with her arms wide.
+FORMS.ilvane = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'stab', 'throw', 'dodge', 'wave', 'taunt', 'spawn', 'cheer', 'cast', 'channel', 'summon', 'block', 'bash', 'chop2'],
+  bend: (joint, _clip, phase) => (joint === 'spine' ? [-0.05 + Math.sin(phase * Math.PI * 2) * 0.02, 0, 0] : null),
+  moves: {
+    'spell:meteors': { clip: 'summon' },
+    'spell:constellation': { clip: 'cast' },
+    cleave: { clip: 'slice' },
+    'spire:unmoor': { clip: 'cheer', rate: 0.8 },
+    roar: { clip: 'taunt' },
+  },
+  enter: { clip: 'channel', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
+// The Pale Herald. He announces: the bell is rung (his echoes come to it), the staff tears the air and sunders the
+// floor, and he is somewhere else between one sentence and the next.
+FORMS.herald = {
+  clips: ['idle', 'walk', 'run', 'hit', 'die', 'dead', 'slice', 'stab', 'throw', 'dodge', 'wave', 'taunt', 'spawn', 'cheer', 'cast', 'channel', 'summon', 'block', 'bash', 'chop2'],
+  bend: (joint) => (joint === 'head' ? [-0.08, 0, 0] : null),
+  moves: {
+    volley: { clip: 'throw' },
+    'spire:tear': { clip: 'slice' },
+    'spell:blink': { clip: 'dodge' },
+    'spire:echoes': { clip: 'summon' },
+    'spire:sunder': { clip: 'chop2' },
+  },
+  enter: { clip: 'wave', then: 'idle' },
+  shift: { clip: 'taunt', rate: 1.1 },
+  dazed: 'hit',
+  fall: { clip: 'die', end: 'dead', kept: 3, sink: 0 },
+};
+
 export const bossForm = (id: string | undefined): BossForm | undefined => (id ? FORMS[id] : undefined);
 export const BOSS_FORMS: Readonly<Record<string, BossForm>> = FORMS;
 

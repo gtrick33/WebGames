@@ -1,0 +1,144 @@
+{
+ "boss": "silas-vey",
+ "shots": [
+  {
+   "state": "entrance",
+   "close": "01-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "02-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "03-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "04-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "05-entrance-close.jpg"
+  },
+  {
+   "state": "line-up",
+   "file": "06-line-up.jpg",
+   "close": "06-line-up-close.jpg"
+  },
+  {
+   "state": "portrait",
+   "file": "07-portrait.jpg"
+  },
+  {
+   "state": "phase-1-spell-boomerang-windup",
+   "file": "08-phase-1-spell-boomerang-windup.jpg",
+   "close": "08-phase-1-spell-boomerang-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-spell-boomerang-strike",
+   "file": "09-phase-1-spell-boomerang-strike.jpg",
+   "close": "09-phase-1-spell-boomerang-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-cleave-windup",
+   "file": "10-phase-1-cleave-windup.jpg",
+   "close": "10-phase-1-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-cleave-strike",
+   "file": "11-phase-1-cleave-strike.jpg",
+   "close": "11-phase-1-cleave-strike-close.jpg"
+  },
+  {
+   "state": "phase-1-crown-scatter-windup",
+   "file": "12-phase-1-crown-scatter-windup.jpg",
+   "close": "12-phase-1-crown-scatter-windup-close.jpg"
+  },
+  {
+   "state": "phase-1-crown-scatter-strike",
+   "file": "13-phase-1-crown-scatter-strike.jpg",
+   "close": "13-phase-1-crown-scatter-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-change",
+   "file": "14-phase-2-change.jpg",
+   "close": "14-phase-2-change-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-boomerang-windup",
+   "file": "15-phase-2-spell-boomerang-windup.jpg",
+   "close": "15-phase-2-spell-boomerang-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-spell-boomerang-strike",
+   "file": "16-phase-2-spell-boomerang-strike.jpg",
+   "close": "16-phase-2-spell-boomerang-strike-close.jpg"
+  },
+  {
+   "state": "phase-2-cleave-windup",
+   "file": "17-phase-2-cleave-windup.jpg",
+   "close": "17-phase-2-cleave-windup-close.jpg"
+  },
+  {
+   "state": "phase-2-cleave-strike",
+   "file": "18-phase-2-cleave-strike.jpg",
+   "close": "18-phase-2-cleave-strike-close.jpg"
+  },
+  {
+   "state": "dazed",
+   "close": "19-dazed-close.jpg"
+  },
+  {
+   "state": "struck",
+   "file": "20-struck.jpg",
+   "close": "20-struck-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "21-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "22-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "23-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "24-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "25-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "26-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "27-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "28-death-close.jpg"
+  },
+  {
+   "state": "death",
+   "close": "29-death-close.jpg"
+  }
+ ],
+ "errors": [],
+ "cost": {
+  "file": "boss_silas",
+  "tris": 11179,
+  "frame": {
+   "calls": 38,
+   "tris": 210555,
+   "quality": 0.7
+  }
+ }
+}

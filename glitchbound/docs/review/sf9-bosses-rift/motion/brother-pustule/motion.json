@@ -1,0 +1,165 @@
+{
+  "boss": "brother-pustule",
+  "file": "boss_pustule",
+  "form": "pustule",
+  "float": 0,
+  "walked": {
+    "samples": 183,
+    "moving": 76,
+    "walking": 72,
+    "clips": {
+      "walk": 71,
+      "slice": 3,
+      "run": 1,
+      "summon": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "run",
+        "slice",
+        "idle",
+        "throw"
+      ],
+      "readings": 65
+    },
+    {
+      "phase": 1,
+      "id": "rot:miasma",
+      "clips": [
+        "channel",
+        "idle",
+        "walk",
+        "summon",
+        "wave"
+      ],
+      "readings": 71
+    },
+    {
+      "phase": 1,
+      "id": "rot:leeches",
+      "clips": [
+        "summon",
+        "idle",
+        "walk",
+        "throw"
+      ],
+      "readings": 47
+    },
+    {
+      "phase": 1,
+      "id": "hook",
+      "clips": [
+        "throw",
+        "idle",
+        "walk",
+        "summon",
+        "slice"
+      ],
+      "readings": 53
+    },
+    {
+      "phase": 1,
+      "id": "summon",
+      "clips": [
+        "wave",
+        "idle",
+        "walk",
+        "summon",
+        "throw"
+      ],
+      "readings": 50
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "dodge",
+        "wave",
+        "summon",
+        "channel",
+        "cast"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "run",
+        "slice",
+        "idle"
+      ],
+      "readings": 37
+    },
+    {
+      "phase": 2,
+      "id": "rot:miasma",
+      "clips": [
+        "channel",
+        "idle",
+        "walk",
+        "throw",
+        "summon"
+      ],
+      "readings": 34
+    },
+    {
+      "phase": 2,
+      "id": "rot:leeches",
+      "clips": [
+        "summon",
+        "idle",
+        "walk"
+      ],
+      "readings": 47
+    },
+    {
+      "phase": 2,
+      "id": "spell:split",
+      "clips": [
+        "dodge",
+        "idle",
+        "wave",
+        "summon"
+      ],
+      "readings": 44
+    },
+    {
+      "phase": 2,
+      "id": "spell:sequence",
+      "clips": [
+        "cast",
+        "idle",
+        "throw"
+      ],
+      "readings": 59
+    },
+    {
+      "phase": 2,
+      "id": "hook",
+      "clips": [
+        "throw",
+        "idle",
+        "slice"
+      ],
+      "readings": 45
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "wave",
+        "idle",
+        "summon"
+      ],
+      "readings": 35
+    }
+  ],
+  "found": [],
+  "errors": []
+}

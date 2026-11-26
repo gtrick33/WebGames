@@ -1,0 +1,18 @@
+{
+  "foe": "the-weeping-lord",
+  "errors": [],
+  "found": [],
+  "kit": {
+    "k": "boss_weepinglord",
+    "top": null,
+    "float": 0
+  },
+  "readings": 123,
+  "moving": 64,
+  "walking": 58,
+  "clips": {
+    "idle": 8,
+    "walk": 61,
+    "chop2": 54
+  }
+}

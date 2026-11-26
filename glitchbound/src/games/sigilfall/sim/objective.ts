@@ -6,6 +6,7 @@ import { activeQuests, currentObjective, questRegion, questState, readyQuests, H
 import { isMainQuest, turnInNpc } from '../progress/handin';
 import { TILE } from './map';
 import { bossRegion, nearestRegions, nextRegion, npcRegion, roadHops, spotRegion, wayHeading } from './routes';
+import { anchorOf, type Thing } from './tasks';
 import type { World } from './world';
 
 /**
@@ -199,6 +200,24 @@ export function questTarget(w: World, q: QuestDef, steady = false): Objective | 
     }
     return best;
   };
+  /** A place a step names (sim/tasks.ts anchorOf), and the nearest of this quest's things still to do. */
+  const at = (id: string): Objective | null => {
+    const a = anchorOf(w, id);
+    return a ? place(a.x, a.y) : null;
+  };
+  const thing = (pred: (t: Thing) => boolean): Objective | null => {
+    let best: Objective | null = null;
+    let bd = Infinity;
+    for (const x of w.tasks.things) {
+      if (x.used || x.quest !== q.id || !pred(x)) continue;
+      const d = dist(x.x, x.y, w.player.x, w.player.y);
+      if (d < bd) {
+        bd = d;
+        best = place(x.x, x.y);
+      }
+    }
+    return best;
+  };
   /** Where a foe the hero hunts camps while none of its kind are about (they come back there; the minimap shows the place). */
   const den = (ids: string[]): Objective | null => {
     const st = w.packs.find((s) => !s.gone && s.enemies.some((id) => ids.includes(id)));
@@ -238,7 +257,7 @@ export function questTarget(w: World, q: QuestDef, steady = false): Objective | 
       }
       break;
     case 'kill':
-      t = goTo(o.region, () => nearest((e) => !o.enemies || o.enemies.includes(e.def.id)) ?? (o.enemies ? den(o.enemies) : null));
+      t = goTo(o.region, () => nearest((e) => !o.enemies || o.enemies.includes(e.def.id)) ?? (o.enemies ? den(o.enemies) : null) ?? (o.lair ? at(o.lair.at) : null));
       break;
     case 'loot':
       t = goTo(o.region, () => nearest((e) => o.from.includes(e.def.id)) ?? den(o.from));
@@ -279,6 +298,24 @@ export function questTarget(w: World, q: QuestDef, steady = false): Objective | 
         const i = tiles[Math.floor(tiles.length / 2)];
         return i !== undefined ? place(((i % w.map.w) + 0.5) * TILE, (Math.floor(i / w.map.w) + 0.5) * TILE) : null;
       });
+      break;
+    case 'use':
+      // the nearest of its things still to do, else the place they are at
+      t = goTo(o.region, () => thing((x) => x.role === 'use') ?? at(o.at));
+      break;
+    case 'carry':
+      // to what is to be taken up, then to where it goes
+      t = goTo(o.region, () => (w.tasks.carrying ? at(o.to) : (thing((x) => x.role === 'take') ?? at(o.from))));
+      break;
+    case 'hold':
+      t = goTo(o.region, () => at(o.at));
+      break;
+    case 'trail':
+      // the mark the hero is at, else where the trail begins
+      t = goTo(o.region, () => thing((x) => x.role === 'mark') ?? at(o.from));
+      break;
+    case 'subdue':
+      t = goTo(o.region, () => nearest((e) => o.enemies.includes(e.def.id)) ?? den(o.enemies) ?? (o.lair ? at(o.lair.at) : null));
       break;
     case 'event': {
       // where the story happens; once it does, the fight (on the minimap) or the way to safety

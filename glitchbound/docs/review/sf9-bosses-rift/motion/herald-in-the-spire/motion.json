@@ -1,0 +1,181 @@
+{
+  "boss": "herald-in-the-spire",
+  "file": "boss_herald",
+  "form": "herald",
+  "float": 0.25,
+  "walked": {
+    "samples": 184,
+    "moving": 50,
+    "walking": 48,
+    "clips": {
+      "walk": 48,
+      "throw": 1,
+      "dodge": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "volley",
+      "clips": [
+        "throw",
+        "idle"
+      ],
+      "readings": 91
+    },
+    {
+      "phase": 1,
+      "id": "spire:tear",
+      "clips": [
+        "slice",
+        "idle",
+        "throw"
+      ],
+      "readings": 38
+    },
+    {
+      "phase": 1,
+      "id": "spell:blink",
+      "clips": [
+        "dodge",
+        "idle",
+        "throw"
+      ],
+      "readings": 41
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "summon"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "spire:echoes",
+      "clips": [
+        "idle",
+        "summon"
+      ],
+      "readings": 97
+    },
+    {
+      "phase": 2,
+      "id": "spire:tear",
+      "clips": [
+        "slice",
+        "idle"
+      ],
+      "readings": 27
+    },
+    {
+      "phase": 2,
+      "id": "volley",
+      "clips": [
+        "throw",
+        "idle"
+      ],
+      "readings": 77
+    },
+    {
+      "phase": 2,
+      "id": "spell:blink",
+      "clips": [
+        "dodge",
+        "idle"
+      ],
+      "readings": 30
+    },
+    {
+      "phase": 3,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "chop2",
+        "slice",
+        "summon"
+      ]
+    },
+    {
+      "phase": 3,
+      "id": "spire:sunder",
+      "clips": [
+        "chop2",
+        "idle"
+      ],
+      "readings": 32
+    },
+    {
+      "phase": 3,
+      "id": "spire:tear",
+      "clips": [
+        "idle",
+        "slice"
+      ],
+      "readings": 29
+    },
+    {
+      "phase": 3,
+      "id": "spire:echoes",
+      "clips": [
+        "summon",
+        "idle",
+        "walk"
+      ],
+      "readings": 91
+    },
+    {
+      "phase": 3,
+      "id": "volley",
+      "clips": [
+        "throw",
+        "idle"
+      ],
+      "readings": 89
+    },
+    {
+      "phase": 4,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "walk",
+        "slice",
+        "idle",
+        "chop2",
+        "throw"
+      ]
+    },
+    {
+      "phase": 4,
+      "id": "spire:sunder",
+      "clips": [
+        "chop2",
+        "idle"
+      ],
+      "readings": 28
+    },
+    {
+      "phase": 4,
+      "id": "spire:tear",
+      "clips": [
+        "idle",
+        "slice"
+      ],
+      "readings": 28
+    },
+    {
+      "phase": 4,
+      "id": "volley",
+      "clips": [
+        "throw",
+        "idle"
+      ],
+      "readings": 88
+    }
+  ],
+  "found": [],
+  "errors": []
+}

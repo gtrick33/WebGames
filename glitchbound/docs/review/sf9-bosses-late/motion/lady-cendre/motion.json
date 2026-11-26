@@ -1,0 +1,123 @@
+{
+  "boss": "lady-cendre",
+  "file": "boss_cendre",
+  "form": "cendre",
+  "float": 0,
+  "walked": {
+    "samples": 186,
+    "moving": 53,
+    "walking": 52,
+    "clips": {
+      "walk": 51,
+      "run": 1,
+      "slice": 1
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "spell:ring",
+      "clips": [
+        "idle",
+        "walk",
+        "cast"
+      ],
+      "readings": 59
+    },
+    {
+      "phase": 1,
+      "id": "spell:grief",
+      "clips": [
+        "summon",
+        "idle",
+        "walk"
+      ],
+      "readings": 54
+    },
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "walk",
+        "idle"
+      ],
+      "readings": 48
+    },
+    {
+      "phase": 1,
+      "id": "dusk:vigil",
+      "clips": [
+        "channel",
+        "idle",
+        "walk"
+      ],
+      "readings": 38
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "channel",
+        "slice",
+        "summon",
+        "cast"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "spell:ring",
+      "clips": [
+        "cast",
+        "idle",
+        "walk"
+      ],
+      "readings": 65
+    },
+    {
+      "phase": 2,
+      "id": "spell:grief",
+      "clips": [
+        "summon",
+        "idle",
+        "walk"
+      ],
+      "readings": 47
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "walk",
+        "idle"
+      ],
+      "readings": 59
+    },
+    {
+      "phase": 2,
+      "id": "dusk:vigil",
+      "clips": [
+        "channel",
+        "idle",
+        "walk"
+      ],
+      "readings": 33
+    },
+    {
+      "phase": 2,
+      "id": "roar",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk"
+      ],
+      "readings": 34
+    }
+  ],
+  "found": [],
+  "errors": []
+}

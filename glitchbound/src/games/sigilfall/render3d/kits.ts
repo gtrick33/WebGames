@@ -110,7 +110,7 @@ put('legion-overseer', { k: 'sk_golem', tint: ASH, size: 0.85, ...CASTER });
 put('legion-scout', { k: 'a_horse_white', tint: '#58545f', top: { k: 'sk_warrior', tint: ASH, clip: 'sit', y: 0.62, size: 0.74 } });
 put('legion-lancer', { k: 'a_horse_white', tint: '#6c6470', top: { k: 'sk_spear', tint: ASH, clip: 'sit', y: 0.62, size: 0.74 } });
 put('border-reaver', { k: 'a_horse_white', tint: '#47505a', top: { k: 'sk_warrior', tint: COLD, clip: 'sit', y: 0.62, size: 0.74 } });
-put('death-knight death-knight-initiate death-knight-squire pale-knight revenant-knight hollow-sentinel the-gatewarden the-headless-lord sir-corvane sir-corvane-foot general-morvain hollow-guard', { k: 'black_knight', tint: '#8a8698', atk: 'chop2' });
+put('death-knight death-knight-initiate death-knight-squire pale-knight revenant-knight hollow-sentinel the-headless-lord sir-corvane sir-corvane-foot general-morvain hollow-guard', { k: 'black_knight', tint: '#8a8698', atk: 'chop2' });
 // Vaelor, the Hallow King, last holder of the last sigil: black plate rimed over with three hundred winters, its old
 // gilding gone to pale silver, an ice greatsword alight in his hand; and the Ash Crown on his brow, his old circlet grown
 // into nine points of ice, his eyes two cold lights under it. No plume: nothing of his has had color for three centuries.
@@ -155,14 +155,12 @@ put('bone-weaver', { k: 'sk_mage', ...CASTER });
 put('pale-acolyte', { k: 'sk_mage', tint: PALE, atk: 'chop' });
 put('cistern-acolyte', { k: 'sk_mage', tint: ROT, ...CASTER });
 put('lich-acolyte morgrave', { k: 'sk_necro', ...CASTER });
-put('the-lich-of-hollowmere', { k: 'sk_necro', size: 1.18, ...CASTER });
 put('the-sun-king', { k: 'sk_necro', tint: GOLD, size: 1.16, ...CASTER });
 put('the-pale-crown', { k: 'sk_necro', tint: VOID, float: 0.45, ...CASTER });
 put('king-hrodric', { k: 'sk_king' });
 put('bone-golem bone-hauler', { k: 'sk_golem' });
 put('the-sand-warden', { k: 'sk_golem', tint: SAND });
 put('bone-giant the-bone-colossus', { k: 'sk_golem', size: 1.2 });
-put('forgemaster-grold', { k: 'sk_golem', tint: FIRE, ...SMASH });
 put('bone-catapult', { k: 'catapult', tint: BONE });
 put('throne-chain', { k: 'chain_post', tint: DARK });
 put('the-siege-breaker', { k: 'siege_ram', tint: ASH });
@@ -174,7 +172,7 @@ put('sun-mummy wrapped-dead', { k: 'sk_minion', tint: SAND, walk: 'skelwalk' });
 put('drowned-villager drowned-sailor drowned-dead', { k: 'sk_minion', tint: SEA });
 put('drowned-marine admiral-blackwake', { k: 'sk_warrior', tint: SEA });
 put('drowned-gunner', { k: 'sk_archer', tint: SEA, ...BOWMAN });
-put('drowned-chanter the-drowned', { k: 'sk_mage', tint: SEA, ...CASTER });
+put('drowned-chanter', { k: 'sk_mage', tint: SEA, ...CASTER });
 put('ushabti-guardian', { k: 'sk_guard', tint: GOLD });
 put('ashkar-cinderguard', { k: 'sk_warrior', tint: FIRE });
 put('crypt-stalker', { k: 'sk_minion', tint: DARK, float: 0.25 });
@@ -187,18 +185,13 @@ put('soul-reaver', { k: 'ghost', tint: VOID, float: 0.45, ghost: 0.82, walk: 'sk
 put('weeping-specter tear-wraith', { k: 'ghost', tint: '#bfd8f0', float: 0.45, ghost: 0.78, walk: 'skelidle' });
 // the Chapel Crypt's boss fights (sim/patterns/crypt.ts): the Matron of the Ossuary, a pale old witch of the dead, and Morgrave's soul-shards
 // the first of the Sigil-wardens, frozen at her post: rime-white plate, a helm of ice, the halberd of the watch
-put('hallvor-the-unthawed', { k: 'paladin', look: 'foe-hallvor', held: { kind: 'halberd', tint: '#d8f2ff' }, size: 1.38, atk: 'chop2' });
 // the Host's chaplain in Highwall's chapel: a prior's grey robe and hood, the censer-staff glowing with his dirge
-put('prior-vessant', { k: 'sk_necro', look: 'foe-prior-vessant', held: { kind: 'staff', tint: '#9cff9c' }, size: 1.3, ...CASTER });
 // Highwall's own dead, sung up again: grey-green, in what is left of their mail
 put('risen-defender', { k: 'sk_guard', tint: '#a8c0a0' });
 // the Faded Lights' lamp-wardens: Elowen in the morning's gold with her lamp-staff, her sister Merrin in the evening's violet
-put('elowen-of-the-dawn', { k: 'witch', look: 'foe-elowen', held: { kind: 'staff', tint: '#ffe08a' }, size: 1.3, ...CASTER });
 put('merrin-of-the-dusk', { k: 'witch', look: 'foe-merrin', held: { kind: 'wand', tint: '#b48aff' }, size: 1.22, float: 0.2, ...CASTER });
 // the Weightless Gallery's astronomer: a robe of night and starlight, a star-crowned hat, floating well off her floor
-put('ilvane-the-unmoored', { k: 'witch', look: 'foe-ilvane', held: { kind: 'staff', tint: '#c8b8ff' }, size: 1.3, float: 0.7, ...CASTER });
 // Duskspire's Last Mourner in black, veiled, her staff's light violet; and the dead she bids keep vigil, ash-grey
-put('lady-cendre', { k: 'witch', look: 'foe-cendre', held: { kind: 'staff', tint: '#c08aff' }, size: 1.3, ...CASTER });
 put('mourning-dead', { k: 'sk_minion', tint: '#c8c4d0' });
 // The Coffin Matron, Mother of the Ossuary: an old woman of the dead, pale as her charges, white-haired under a
 // mourner's veil, in grave linen and black; the dead's own arms; the coffin she hides in strapped to her back, a
@@ -227,13 +220,11 @@ put('coffin-matron', {
   ],
 });
 put('morgrave-soul', { k: 'ghost', tint: '#9cff9c', float: 0.6, size: 0.7, ghost: 0.7, walk: 'skelidle' });
-put('the-weeping-lord the-tearborn', { k: 'ghost', tint: '#bfd8f0', float: 0.45, size: 1.25, ghost: 0.82, walk: 'skelidle' });
 put('corpse-candle candle-wraith', { k: 'wisp', tint: FIRE, size: 0.7, float: 0.35 });
 put('marsh-light marsh-wisp', { k: 'wisp', tint: '#c8f0a0', size: 0.7, float: 0.35 });
 put('storm-wisp', { k: 'wisp', tint: ICE, size: 0.7, float: 0.35 });
 put('spire-mote', { k: 'wisp', tint: VOID, size: 0.7, float: 0.35 });
 put('spire-echo', { k: 'vampire', tint: VOID, ghost: 0.7, float: 0.3, ...CASTER });
-put('the-grey-lady', { k: 'witch', tint: PALE, ghost: 0.72, float: 0.3, ...CASTER });
 /*
  * The animals, each painted and dressed as its kind (render3d/beast.ts): a coat with its belly, back, socks and muzzle,
  * eyes, and what the plain model hasn't (tusks, a bristled ridge, a mane, curled horns). A model so made is no longer
@@ -317,34 +308,8 @@ put('rift-shardling spire-anchor', { k: 'golem', tint: VOID, size: 0.62 });
 put('shard-golem', { k: 'golem', tint: '#d6c6ff', ...SMASH });
 // the Deepforge's Runewarden: dwarven stone, the Host's pale binding-crown on its brow, the dwarves' great hammer on its
 // back, rune-stones glowing gold in its shoulders
-put('the-runewarden', {
-  k: 'golem',
-  tint: '#c8b48a',
-  gain: 1.1,
-  size: 1.6,
-  ...SMASH,
-  gear: [
-    { m: 'Necromancer_Crown', y: 0.93, z: 0.02, h: 0.2, tint: '#d8d0f0' },
-    { m: 'w_hammer_D', y: 0.25, z: -0.16, h: 0.75, tipZ: 0.5, tint: '#b8a888' },
-    { m: 'Rock_1_A', x: 0.3, y: 0.74, z: 0, h: 0.13, tint: '#ffd27a' },
-    { m: 'Rock_1_A', x: -0.3, y: 0.74, z: 0, h: 0.13, tint: '#ffd27a' },
-  ],
-});
 // the Host's founder in the Bone-Steel Foundry: a giant of fused bone, her anvil slung on her back, the founder's hammer
 // and her crucible white-hot
-put('ossa-the-founder', {
-  k: 'sk_golem',
-  tint: '#e8dcc8',
-  gain: 1.05,
-  size: 1.55,
-  ...SMASH,
-  gear: [
-    { m: 'anvil', y: 0.6, z: -0.17, h: 0.36, tint: '#6a6670' },
-    { m: 'w_hammer_C', x: 0.36, y: 0.28, z: 0.1, h: 0.6, tipZ: 0.35, tint: '#ffb070' },
-    { m: 'bucket', x: -0.36, y: 0.38, z: 0.14, h: 0.2, tint: '#ff8a3a' },
-  ],
-});
-put('veil-sentinel', { k: 'golem', tint: VOID, ...SMASH });
 
 /* ------------------------------------------------------------------ the living */
 put('cutthroat', { k: 'rogue_hooded', look: 'foe-cutthroat', held: { kind: 'dagger' } });
@@ -352,36 +317,15 @@ put('bandit-archer', { k: 'ranger', tint: '#b0a090', look: 'foe-bandit-archer', 
 put('enforcer', { k: 'barbarian', look: 'foe-enforcer', held: { kind: 'axe' }, atk: 'chop2' });
 put('hangman', { k: 'barbarian', tint: DARK, look: 'foe-hangman', held: { kind: 'greatsword' }, atk: 'chop2' });
 put('varric', { k: 'survivalist', size: 1.12, look: 'foe-varric', held: { kind: 'axe' } });
-put('saltbeard', { k: 'survivalist', tint: '#c9b48c', size: 1.14, look: 'foe-saltbeard', held: { kind: 'sword' } });
 put('smuggler', { k: 'rogue', look: 'foe-smuggler', held: { kind: 'sword' } });
 put('dune-raider', { k: 'rogue_hooded', tint: SAND, look: 'foe-dune-raider', held: { kind: 'sword' } });
 put('dune-javelineer', { k: 'ranger', tint: SAND, look: 'foe-dune-javelineer', held: { kind: 'spear' }, ...BOWMAN });
 put('serpent-cultist', { k: 'rogue_hooded', tint: '#8fc78a', look: 'foe-serpent-cultist', held: { kind: 'staff' }, ...CASTER });
 put('hedge-witch bog-hag rotbloom-matron', { k: 'witch', look: 'foe-hedge-witch', held: { kind: 'staff' }, ...CASTER });
 put('rot-sister blight-witch', { k: 'witch', tint: ROT, look: 'foe-blight-witch', held: { kind: 'staff' }, ...CASTER });
-put('the-withered-queen', { k: 'vampire', tint: ROT, size: 1.12, ...CASTER });
 // the Charnel Drain's warden: the cistern's own stone, the brew grown into every crack of him, the drain's valve-wheel on
 // his back
-put('old-sluicegut', {
-  k: 'frost_golem',
-  tint: '#8ab07a',
-  gain: 1.1,
-  size: 1.7,
-  ...SMASH,
-  gear: [
-    { m: 'w_shield_round', y: 0.42, z: -0.17, h: 0.5, turn: Math.PI, tint: '#9a6a4a' },
-    { m: 'mushroom_tanTall', x: 0.3, y: 0.72, z: -0.05, h: 0.2, tint: '#d8e0a0' },
-    { m: 'mushroom_tanTall', x: -0.32, y: 0.7, z: 0, h: 0.17, tint: '#c8d890' },
-    { m: 'mushroom_tanTall', x: 0.12, y: 0.82, z: -0.2, h: 0.14, tint: '#e0e8b0' },
-    { m: 'hanging_moss', x: 0.38, y: 0.35, z: 0, h: 0.42, tint: '#6a9a3a' },
-    { m: 'hanging_moss', x: -0.4, y: 0.32, z: -0.05, h: 0.4, tint: '#6a9a3a' },
-    { m: 'hanging_moss', x: 0.05, y: 0.5, z: -0.32, h: 0.35, tint: '#5a8a3a' },
-  ],
-});
-put('brother-pustule', { k: 'cleric', tint: ROT, look: 'foe-brother-pustule', held: { kind: 'staff' }, ...CASTER });
 // the catacombs: the Herald's spymaster in a dark hood and oiled leathers, daggers in hand; the old kings' Auditor, a clerk's ghost in ink-black and gold
-put('silas-vey', { k: 'rogue_hooded', look: 'foe-silas-vey', held: { kind: 'dagger', tint: '#d8d4e0' }, size: 1.2 });
-put('the-royal-auditor', { k: 'cleric', look: 'foe-royal-auditor', held: { kind: 'wand', tint: '#f0e0a0' }, size: 1.3, ...CASTER });
 put('maelis-crane', { k: 'cleric', look: 'chancellor-crane', ...CASTER });
 put('goblin', { k: 'ranger', tint: '#9aa878', look: 'foe-briar-poacher', held: { kind: 'bow' }, ...BOWMAN });
 put('ridge-kobold kobold-candler', { k: 'caveman', tint: '#d0a070', size: 0.72 });
@@ -456,7 +400,6 @@ put('scarab-swarm tomb-scarab', { k: 'scarab', size: 0.72 });
 put('marsh-strider', { k: 'strider' });
 put('blood-mosquito glimmer-moth rotwood-pod', { k: 'moth', size: 0.8, float: 0.4 });
 // the Tomb's Vizier Khepset: the dead king's vizier in the sun's gold, his crown of office on his brow, a gold staff
-put('vizier-khepset', { k: 'witch', look: 'foe-vizier-khepset', held: { kind: 'staff', tint: '#ffd27a' }, size: 1.35, ...CASTER });
 // the Barrow's Lamp-Eater: a drake built as the great drake mounts are, blacked out by a thousand years of devoured
 // lamplight: black plate, a crown of horns, wings veined with the pale fire of the lamps it has eaten
 put('gloomwing', {
@@ -490,7 +433,7 @@ put('naga-warrior', { k: 'naga_coil', top: { k: 'top_naga', clip: 'idle', y: 0.5
 put('the-coiled-queen', { k: 'naga_coil', size: 1.25, top: { k: 'top_naga', tint: GOLD, clip: 'cast', y: 0.52, size: 0.66 } });
 put('mirefin mirefin-oracle barnacle-brute deep-siren old-barnacle the-tide-lord', { k: 'monster', tint: SEA });
 // what grows
-put('treant old-rotbark rotwood-colossus', { k: 'treant', tint: BARK, ...SMASH });
+put('treant old-rotbark', { k: 'treant', tint: BARK, ...SMASH });
 put('blight-treant heartrot-treant', { k: 'treant', tint: MOSS, ...SMASH });
 put('mourning-willow', { k: 'treant', tint: '#9aa39a', ...CASTER });
 put('thornling', { k: 'plant_warrior', tint: MOSS, size: 0.72 });
@@ -498,12 +441,12 @@ put('blight-bloom rotspore-shambler', { k: 'slime', tint: '#b890d8' });
 put('blighted-dryad', { k: 'plant_warrior', tint: ROT, ...CASTER });
 put('briar-lasher vine-strangler', { k: 'plant_warrior', tint: MOSS, atk: 'stab' });
 put('thorn-archer', { k: 'plant_archer', ...BOWMAN });
-put('fey-knight thorn-court-knight prince-thistlemourn', { k: 'plant_warrior' });
+put('fey-knight thorn-court-knight', { k: 'plant_warrior' });
 put('sprite thorn-court-sprite', { k: 'wisp', tint: '#a8f0b0', size: 0.72, float: 0.35 });
-put('mother-mire the-rot-mother bloated-corpse cistern-bloat cistern-vatborn abomination mire-horror', { k: 'monstrosity', tint: ROT, ...SMASH });
+put('mother-mire bloated-corpse cistern-bloat cistern-vatborn abomination mire-horror', { k: 'monstrosity', tint: ROT, ...SMASH });
 put('bloated-drowned', { k: 'monstrosity', tint: SEA, size: 0.85, ...SMASH });
 // fire, frost and storm
-put('fire-elemental magma-sentry magma-warden slag-colossus furnace-warden infernal', { k: 'golem', tint: FIRE, ...SMASH });
+put('fire-elemental magma-sentry magma-warden furnace-warden infernal', { k: 'golem', tint: FIRE, ...SMASH });
 put('rime-elemental icebound-warden', { k: 'golem', tint: ICE, ...SMASH });
 put('storm-elemental', { k: 'golem', tint: '#bcd4ff', float: 0.3, ...SMASH });
 put('coral-golem', { k: 'golem', tint: '#f0a59a', ...SMASH });
@@ -511,7 +454,6 @@ put('cinder-imp slag-imp imp chained-emberkin', { k: 'tiefling', tint: FIRE, siz
 put('pyrebrand', { k: 'tiefling', tint: FIRE, float: 0.3, ...CASTER });
 put('felguard', { k: 'orc_brute', tint: FIRE, ...SMASH });
 put('voidwalker', { k: 'ghost', tint: VOID, float: 0.3, ghost: 0.85, walk: 'skelidle' });
-put('ashkar-the-bound', { k: 'golem', tint: FIRE, size: 1.3, ...SMASH });
 // a druid's shapes
 // (its own model, built in scripts/sigilfall-3d-assets.mjs bearKit: it was a werewolf in brown)
 put('bear', { k: 'bear', size: 1.2 });
@@ -528,7 +470,8 @@ put('farm-horse', { k: 'a_horse', tint: '#9a6844' });
 /** Those who fight under another's name, set apart from the creature they borrow. */
 const BY_ENEMY: Record<string, Kit> = {
   'captain-vosk': { k: 'a_horse_white', tint: '#3e3a44', top: { k: 'sk_guard', tint: DARK, clip: 'sit', y: 0.62, size: 0.76 } },
-  'vosk-the-hollowed': { k: 'a_horse_white', tint: '#3e3a44', top: { k: 'sk_warrior', tint: ASH, clip: 'sit', y: 0.62, size: 0.74 } },
+  // (his own rider: the captain's plate and cape with a bare skull in the helm's place, scripts/sigilfall-3d-assets.mjs boss_vosk)
+  'vosk-the-hollowed': { k: 'a_horse_white', tint: '#3e3a44', top: { k: 'boss_vosk', tint: '#a8a2b4', clip: 'sit', y: 0.62, size: 0.8 } },
   'the-pale-herald': TABLE['herald-in-the-spire']!,
   'the-heralds-voice': TABLE['herald-in-the-spire']!,
   'the-heralds-first-face': TABLE['herald-in-the-spire']!,
@@ -556,14 +499,6 @@ const BY_ENEMY: Record<string, Kit> = {
  * wears what its story gives it (a crown, horns, a disc of rays), built onto its head so it moves as its own; where its
  * model was one flat tint it is painted in two (render3d/repaint.ts).
  */
-const boss = (id: string, more: Partial<Kit>): void => {
-  TABLE[id] = { ...(TABLE[id] ?? { k: 'sk_minion' }), ...more };
-};
-/** Rock gone dark, the cracks in it alight from within: a thing of the forge, or of the rift. */
-const molten = (rock: string, hot: string): Kit['paint'] => [
-  { lum: [0, 0.36], to: hot, glow: true, keep: 0 },
-  { to: rock, keep: 0.8 },
-];
 // Warden Ossric, Keeper of the Crypt Gate: a warden of Aster who died at this gate three hundred years ago, woken by
 // the raiders' grieflight. His own plate gone to verdigris, the Regent's blue faded on his cape, his skull bare
 // with two grave candles burning gold on it (the candles of his fight), a halberd and a great shield.
@@ -648,27 +583,622 @@ TABLE.varric = {
     { joint: 'foot.r', to: '#3a2c24', keep: 0.9 },
   ],
 };
-boss('the-drowned', { size: 1.35, wears: [{ piece: 'eyes', b: '#9afff0' }] });
-boss('the-rot-mother', { size: 1.5, wears: [{ piece: 'horns', a: '#3a4a22', b: '#c8e070' }, { piece: 'eyes', b: '#e8ff70' }] });
-boss('slag-colossus', { size: 1.6, tint: undefined, paint: molten('#4a3a36', '#ff9a3a'), wears: [{ piece: 'eyes', b: '#fff0a0' }] });
-boss('magma-warden', { size: 1.5, tint: undefined, paint: molten('#3c2c2c', '#ff6a2a'), wears: [{ piece: 'horns', a: '#2a2020', b: '#ff8a3a', size: 0.8 }, { piece: 'eyes', b: '#ffe08a' }] });
-boss('ashkar-the-bound', { size: 1.65, tint: undefined, paint: molten('#2e2428', '#ff5a1e'), wears: [{ piece: 'horns', a: '#1e181a', b: '#ff9a3a', size: 1.15 }, { piece: 'eyes', b: '#fff0a0' }] });
-boss('veil-sentinel', { size: 1.5, tint: undefined, paint: molten('#3a2e58', '#d8a8ff'), wears: [{ piece: 'eyes', b: '#f4e0ff' }, { piece: 'halo', a: '#8a4ae0', b: '#f0d8ff', size: 0.85 }] });
-boss('the-runewarden', { tint: undefined, paint: molten('#6a5c44', '#ffd27a'), wears: [{ piece: 'eyes', b: '#fff2c0' }] });
-boss('forgemaster-grold', { size: 1.45, wears: [{ piece: 'horns', a: '#3a2a22', b: '#ff9a4a', size: 0.9 }, { piece: 'eyes', b: '#ffd27a' }] });
-boss('king-hrodric', { size: 1.35, wears: [{ piece: 'eyes', b: '#bfe8ff' }] });
-boss('the-sand-warden', { size: 1.45, wears: [{ piece: 'eyes', b: '#ffe08a' }] });
-boss('the-sun-king', { size: 1.4, wears: [{ piece: 'halo', a: '#e8a030', b: '#fff4c0', size: 1.1 }, { piece: 'ice-crown', a: '#d89a2a', b: '#fff6c8', band: '#b8862a' }, { piece: 'eyes', b: '#fff2a0' }] });
-boss('jarl-hrimfang', { size: 1.3, wears: [{ piece: 'horns', a: '#5a86b8', b: '#eefaff', size: 1.1 }, { piece: 'eyes', b: '#bfe8ff' }] });
-boss('rotwood-colossus', { size: 1.35, wears: [{ piece: 'horns', a: '#4a3a22', b: '#8ab04a', size: 1.2 }, { piece: 'eyes', b: '#c8ff70' }] });
-boss('the-withered-queen', { size: 1.35, wears: [{ piece: 'ice-crown', a: '#4a6a2a', b: '#d8ff8a', band: '#3a3a2a' }, { piece: 'eyes', b: '#e0ff9a' }] });
-boss('herald-in-the-spire', { size: 1.35, wears: [{ piece: 'halo', a: '#a03ae0', b: '#ffd0ff', size: 0.9 }, { piece: 'eyes', b: '#ff9af0' }] });
-boss('ossa-the-founder', { wears: [{ piece: 'eyes', b: '#fff6e0' }] });
+// Silas Vey, the Herald's Last Hand: the Pale Herald's spymaster in Aster for twenty years. Nobody in the city could
+// have described him: a grey hood, a grey mask, the purses of the Herald's payroll hung about him, and in his off
+// hand the ash-gold itself, the only thing on him with any light in it.
+TABLE['silas-vey'] = {
+  k: 'boss_silas',
+  form: 'silas',
+  size: 1.3,
+  atk: 'chop',
+  paint: [
+    // the ash-gold in his hand: pale, and alight
+    { joint: 'handslot.l', to: '#f0e0a0', glow: true, keep: 0.25 },
+    // the mask and what shows under the hood: dark
+    { joint: 'head', lum: [0, 0.45], to: '#1c1a22', keep: 0.85 },
+    // hood, cloak and leathers: the grey nobody remembers
+    { hue: [70, 200], sat: [0.18, 1], to: '#5c5a68', keep: 0.9 },
+    { hue: [200, 330], sat: [0.18, 1], to: '#4a4654', keep: 0.9 },
+    // the purses: worn leather
+    { joint: 'hips', hue: [10, 60], to: '#7a5a3a', keep: 0.85 },
+  ],
+};
+// The Royal Auditor, Keeper of the Old Kings' Accounts: dead at his desk after forty years and still at his sums. The
+// robes of the old kings' household gone the blue-black of old ink, his skull bare with his spectacles on it, the
+// ledger open in his hand with its page alight: every blow struck is being written there.
+TABLE['the-royal-auditor'] = {
+  k: 'boss_auditor',
+  form: 'auditor',
+  // (a gaunt figure in narrow robes: he is sized to stand on his circle, and so stands tall)
+  size: 1.66,
+  atk: 'cast',
+  paint: [
+    // the open ledger's page
+    { joint: 'handslot.l', lum: [0.8, 1], to: '#f0e0a0', glow: true, keep: 0.3 },
+    { joint: 'handslot.l', to: '#3a3040', keep: 0.9 },
+    // his skull
+    { joint: 'head', lum: [0.35, 1], sat: [0, 0.45], to: '#cfc6aa', keep: 0.9 },
+    // the robes: old ink, with what was bright on them left a dull gold
+    { hue: [25, 65], sat: [0.45, 1], to: '#b8963e', keep: 0.85 },
+    { hue: [65, 360], sat: [0.15, 1], to: '#2e3550', keep: 0.9 },
+    { hue: [0, 25], sat: [0.15, 1], to: '#2e3550', keep: 0.9 },
+  ],
+  wears: [{ piece: 'eyes', b: '#f0e0a0' }],
+};
+// King Hrodric, the Barrow King: "the first king buried on the downs", woken with his whole court. A king of the old
+// north, a head taller than the men of now, three hundred years in the cold: his hide gone the grey-blue of the frost
+// he strikes with, his skull bare under the crown he was buried in, the mound's cold alight in his eyes.
+TABLE['king-hrodric'] = {
+  k: 'boss_hrodric',
+  form: 'hrodric',
+  size: 1.76,
+  atk: 'chop2',
+  paint: [
+    // the great sword's bright edge: rimed, and alight with the cold he strikes the floor with
+    { joint: 'handslot.r', sat: [0, 0.2], lum: [0.4, 1], to: '#bfe8ff', glow: true, keep: 0.3 },
+    // the crown he was buried in: old gold
+    { joint: 'head', hue: [25, 65], sat: [0.4, 1], to: '#c9a24a', keep: 0.85 },
+    { joint: 'head', hue: [240, 330], sat: [0.2, 1], to: '#c9a24a', keep: 0.85 },
+    // his skull
+    { joint: 'head', lum: [0.3, 1], to: '#e6dfc8', keep: 0.9 },
+    // his hide: frost-grey, dead
+    { hue: [8, 42], sat: [0.25, 0.8], lum: [0.4, 1], to: '#8fa3b8', keep: 0.75 },
+    // what was bright in his gear: the tarnish of the mound
+    { hue: [330, 8], sat: [0.3, 1], to: '#4a5a78', keep: 0.9 },
+  ],
+  wears: [{ piece: 'ice-crown', a: '#8a6a22', b: '#f0d27a', band: '#c9a24a' }, { piece: 'eyes', b: '#bfe8ff' }],
+};
+/* The Tomb of the Sun King and the Vault of Rime (Act III) */
+// The Sun King, Risen Lord of the Old Kingdom: a warden of the seven, three hundred years sealed in with his sigil. A
+// king's long coat gone the white and gold of his house, his skull bare, the sun-disc behind his head alight, a crown
+// and a ring of light over it: the one boss of the game who is all noon.
+TABLE['the-sun-king'] = {
+  k: 'boss_sunking',
+  form: 'sunking',
+  size: 1.5,
+  atk: 'cast',
+  paint: [
+    // the sun-disc behind him: its bright face alight
+    { joint: 'chest', lum: [0.55, 1], sat: [0.3, 1], to: '#ffe9a0', glow: true, keep: 0.3 },
+    // the rest of the disc: beaten gold, not the grey steel of the shield it is made from
+    { joint: 'chest', lum: [0.5, 1], sat: [0, 0.3], to: '#e0b040', keep: 0.8 },
+    // his skull
+    { joint: 'head', lum: [0.35, 1], sat: [0, 0.45], to: '#e6dfc8', keep: 0.9 },
+    // the coat: what was red or dark on it, the old kingdom's white linen and gold
+    { hue: [330, 30], sat: [0.3, 1], to: '#d8a830', keep: 0.9 },
+    { lum: [0, 0.3], to: '#efe4c8', keep: 0.6 },
+    { hue: [190, 330], sat: [0.15, 1], to: '#c8a050', keep: 0.9 },
+  ],
+  wears: [{ piece: 'halo', a: '#e8a030', b: '#fff4c0', size: 1.1 }, { piece: 'ice-crown', a: '#d89a2a', b: '#fff6c8', band: '#b8862a' }, { piece: 'eyes', b: '#fff2a0' }],
+};
+// Vizier Khepset, Keeper of the Last Hour: buried with his king to serve him after death. Court robes of sand-white
+// and a cape of the house's gold on a hooded skull, and in his left hand the sand-glass whose turning undoes every
+// wound given him: the glass is the one thing on him with light in it, and the thing to break.
+TABLE['vizier-khepset'] = {
+  k: 'boss_khepset',
+  form: 'khepset',
+  size: 1.5,
+  atk: 'cast',
+  paint: [
+    // his skull: only the bone, which is the palest thing on his head
+    { joint: 'head', lum: [0.72, 1], sat: [0, 0.4], to: '#e6dfc8', keep: 0.9 },
+    // his hood: the house's gold. His robes and cape: the deep blue-green of the tomb's glazed tiles, so that he
+    // stands dark on the sand floor (in sand-white he was a pale heap on it)
+    { joint: 'head', to: '#c8962a', keep: 0.85 },
+    { hue: [330, 40], sat: [0.3, 1], to: '#d8a830', keep: 0.9 },
+    { hue: [190, 330], sat: [0.2, 1], to: '#1f5666', keep: 0.85 },
+  ],
+  wears: [{ piece: 'eyes', b: '#ffd27a' }],
+};
+// The Sand Warden, Guardian of the Sun King's Tomb: built, not buried. Red sandstone, the joints and the cut
+// lines of it dark, a mace of the house's gold, the sun-disc on its back alight and its eyes the same.
+TABLE['the-sand-warden'] = {
+  k: 'boss_sandwarden',
+  form: 'sandwarden',
+  size: 1.82,
+  atk: 'chop2',
+  paint: [
+    // the sun-disc in its chest
+    { joint: 'chest', hue: [0, 360], sat: [0.6, 1], lum: [0.35, 1], to: '#ffe08a', glow: true, keep: 0.3 },
+    // its mace: the house's gold
+    { joint: 'handslot.r', to: '#d8a830', keep: 0.9 },
+    // red sandstone, dark in the joints: it stands on a floor of pale sand, and in pale stone it was lost on it
+    { lum: [0.55, 1], to: '#b06c3c', keep: 0.9 },
+    { lum: [0.3, 0.55], to: '#7c4426', keep: 0.9 },
+    { to: '#2e1a10', keep: 0.85 },
+  ],
+  wears: [{ piece: 'eyes', b: '#ffe08a' }],
+};
+// Jarl Hrimfang, Jarl of the Rime Giants: two hundred years of treaty, sold for ash-gold. A frost giant's hide
+// ice-blue under a white bear's pelt, rime on his maul, and at his belt the pale gold he was paid in, alight as that
+// gold is: what he did is on him where everyone can see it.
+TABLE['jarl-hrimfang'] = {
+  k: 'boss_hrimfang',
+  form: 'hrimfang',
+  size: 1.82,
+  atk: 'chop2',
+  paint: [
+    // the ash-gold at his belt
+    { joint: 'hips', hue: [30, 65], sat: [0.6, 1], lum: [0.5, 1], to: '#f0e0a0', glow: true, keep: 0.25 },
+    // his hide: ice
+    { hue: [8, 42], sat: [0.25, 0.8], lum: [0.4, 1], to: '#a9c8e6', keep: 0.75 },
+    // the maul's color, and what else was bright: rime
+    { hue: [190, 260], sat: [0.3, 1], to: '#d8f2ff', keep: 0.85 },
+  ],
+  wears: [{ piece: 'horns', a: '#5a86b8', b: '#eefaff', size: 1.1 }, { piece: 'eyes', b: '#bfe8ff' }],
+};
+// Hallvor, Ingrith's Shield-Thane: she let the ice take her rather than leave her jarl. Her plate rimed pale blue
+// from helm to heel, the cape Frostgate's deep blue, the edge of her halberd alight with the cold that kept her.
+TABLE['hallvor-the-unthawed'] = {
+  k: 'boss_hallvor',
+  form: 'hallvor',
+  size: 1.45,
+  atk: 'chop2',
+  paint: [
+    // the halberd's bright edge
+    { joint: 'handslot.r', lum: [0.72, 1], sat: [0, 0.4], to: '#d8f2ff', glow: true, keep: 0.3 },
+    // the cape and what cloth she wears: Frostgate's blue
+    { hue: [330, 40], sat: [0.35, 1], to: '#2a5a8a', keep: 0.9 },
+    // the plate: rimed
+    { lum: [0.45, 1], to: '#cfe6f6', keep: 0.7 },
+    { to: '#7fa6c8', keep: 0.7 },
+  ],
+  wears: [{ piece: 'eyes', b: '#dff6ff' }],
+};
+/* The Siege of Highwall (Act IV) */
+// Prior Vessant, Chaplain of the Host: thirty years burying Highwall's dead, and then the Herald promised him his
+// brother back. Still a living man, in a chaplain's black habit; the hymnal he raises the dead from is open in his
+// hand, its page the grave's green.
+TABLE['prior-vessant'] = {
+  k: 'boss_vessant',
+  form: 'vessant',
+  size: 1.5,
+  atk: 'cast',
+  paint: [
+    { joint: 'handslot.l', lum: [0.7, 1], to: '#9cff9c', glow: true, keep: 0.3 },
+    { joint: 'handslot.l', to: '#2a2630', keep: 0.9 },
+    // the habit: black, its trim a tarnished silver
+    { hue: [60, 200], sat: [0.15, 1], to: '#26232c', keep: 0.9 },
+    { hue: [200, 360], sat: [0.2, 1], to: '#3a3442', keep: 0.9 },
+    { hue: [0, 25], sat: [0.45, 1], to: '#3a3442', keep: 0.9 },
+  ],
+};
+// General Morvain, Lieutenant of the Hallow King: a death knight who has never lost a siege. Black plate with the
+// Host's red at plume and cape, the war banner he plants on his back, and an ember's light along his blade.
+TABLE['general-morvain'] = {
+  k: 'boss_morvain',
+  form: 'morvain',
+  // (his banner stands over him: sized so that the man keeps his size)
+  size: 1.85,
+  atk: 'chop2',
+  paint: [
+    { joint: 'handslot.r', lum: [0.4, 1], sat: [0, 0.4], to: '#ff8a4a', glow: true, keep: 0.3 },
+    { hue: [320, 20], sat: [0.5, 1], to: '#c8242c' },
+    { hue: [190, 270], lum: [0.5, 1], to: '#7a7480' },
+    { hue: [190, 270], to: '#1e1c24', keep: 0.9 },
+  ],
+  wears: [{ piece: 'horns', a: '#1a181c', b: '#8a8490', size: 0.8 }, { piece: 'eyes', b: '#ff6a3a' }],
+};
+/* The Molten Throne (Act V) */
+// The Magma Warden, Keeper of the Host's Forges: bone-steel with molten rock for a heart. A body of dark rock with
+// its cracks alight, and on it a skull of the Host's pale bone-steel: nobody mistakes whose it is.
+TABLE['magma-warden'] = {
+  k: 'boss_magmawarden',
+  form: 'magmawarden',
+  size: 2.1,
+  atk: 'smash',
+  paint: [
+    { joint: 'head', lum: [0.3, 1], to: '#d8d0c0', keep: 0.9 },
+    // (the pack's golem is ice, and nothing of it is dark: what was its brightest is where the fire shows)
+    { lum: [0.935, 1], to: '#ff6a2a', glow: true, keep: 0 },
+    { lum: [0.6, 0.88], to: '#4a3432', keep: 0.9 },
+    { to: '#2c2224', keep: 0.9 },
+  ],
+  wears: [{ piece: 'horns', a: '#2a2020', b: '#ff8a3a', size: 0.8 }, { piece: 'eyes', b: '#ffe08a' }],
+};
+// Ossa the Founder, Mistress of the Bone-Steel Foundry: she pours the bone-steel for every blade and chain the Host
+// makes. Pale bone-steel herself from skull to heel, a founder's goggles over her eye-pits, and a hammer whose head
+// is still hot from the pour.
+TABLE['ossa-the-founder'] = {
+  k: 'boss_ossa',
+  form: 'ossa',
+  size: 1.95,
+  atk: 'smash',
+  paint: [
+    // the hammer's head: hot
+    { joint: 'handslot.r', hue: [25, 75], sat: [0.4, 1], to: '#ffb070', glow: true, keep: 0.3 },
+    // bone-steel
+    { lum: [0.5, 1], to: '#e8dcc8', keep: 0.8 },
+    { lum: [0, 0.5], to: '#8a8274', keep: 0.8 },
+  ],
+  wears: [{ piece: 'eyes', b: '#fff6e0' }],
+};
+// Ashkar the Bound, Fire Lord of Emberdeep: chained to his own throne and made to forge the Pale Crown. Rock near
+// black with the fire showing through every crack, great horns, and the Host's pale shackles on his wrists: the only
+// cold thing on him.
+TABLE['ashkar-the-bound'] = {
+  k: 'boss_ashkar',
+  form: 'ashkar',
+  size: 2.15,
+  atk: 'smash',
+  paint: [
+    // the shackles and chain: the Host's bone-steel
+    { joint: 'lowerarm.l', hue: [0, 360], sat: [0, 0.25], lum: [0.3, 1], to: '#d8d0c0', keep: 0.9 },
+    { joint: 'lowerarm.r', hue: [0, 360], sat: [0, 0.25], lum: [0.3, 1], to: '#d8d0c0', keep: 0.9 },
+    { lum: [0.935, 1], to: '#ff5a1e', glow: true, keep: 0 },
+    { lum: [0.6, 0.88], to: '#3a2a2c', keep: 0.9 },
+    { to: '#221a1e', keep: 0.9 },
+  ],
+  wears: [{ piece: 'horns', a: '#1e181a', b: '#ff9a3a', size: 1.15 }, { piece: 'eyes', b: '#fff0a0' }],
+};
+/* Duskspire (the finale) */
+// Lady Cendre, the Last Mourner: three hundred years keeping vigil over the King's dead. Mourning black gone violet
+// with age, a court cape, a face as pale as the dead she watches, and the vigil's three candles in her hand burning
+// the violet of the grief she casts.
+TABLE['lady-cendre'] = {
+  k: 'boss_cendre',
+  form: 'cendre',
+  size: 1.5,
+  atk: 'cast',
+  paint: [
+    { joint: 'handslot.l', lum: [0.6, 1], to: '#c08aff', glow: true, keep: 0.3 },
+    { joint: 'head', hue: [5, 45], sat: [0.15, 0.9], to: '#d8d0dc', keep: 0.8 },
+    { hue: [45, 200], sat: [0.15, 1], to: '#2a2233', keep: 0.9 },
+    { hue: [200, 360], sat: [0.15, 1], to: '#3a2a4a', keep: 0.9 },
+    { hue: [0, 5], sat: [0.3, 1], to: '#3a2a4a', keep: 0.9 },
+  ],
+};
+// Captain Ser Maltheus, First of the Ashen Guard: he held this court nine days and has not left his post since. Plate
+// the pale blue of Vaelor's court over its deep blue, no cape, the guard's great shield, and a spear with the court's cold light at its point.
+TABLE['hollow-guard'] = {
+  k: 'boss_maltheus',
+  form: 'maltheus',
+  // (his spear makes him longer than he is tall: sized so that he stands on his circle)
+  size: 1.95,
+  atk: 'chop2',
+  paint: [
+    { joint: 'handslot.r', lum: [0.36, 1], sat: [0, 0.35], to: '#cfe0ff', glow: true, keep: 0.3 },
+    // (his colors as they were: the court's pale blue over deep blue)
+    { hue: [320, 20], sat: [0.5, 1], to: '#e4ecfa' },
+    { hue: [190, 270], lum: [0.5, 1], to: '#a4b8d8' },
+    { hue: [190, 270], to: '#3a4a70', keep: 0.9 },
+  ],
+  wears: [{ piece: 'eyes', b: '#cfe0ff' }],
+};
 // the Host's knights: black plate, each with their own color where the pack's knight wears red
-boss('sir-corvane', { size: 1.3, tint: undefined, paint: [{ hue: [320, 20], sat: [0.5, 1], to: '#5a7ad8' }, { hue: [190, 270], lum: [0.5, 1], to: '#8a8ea8' }, { hue: [190, 270], to: '#2c2c3c', keep: 0.9 }], wears: [{ piece: 'eyes', b: '#a8c8ff' }] });
-boss('sir-corvane-foot', { size: 1.3, tint: undefined, paint: [{ hue: [320, 20], sat: [0.5, 1], to: '#5a7ad8' }, { hue: [190, 270], lum: [0.5, 1], to: '#8a8ea8' }, { hue: [190, 270], to: '#2c2c3c', keep: 0.9 }], wears: [{ piece: 'eyes', b: '#a8c8ff' }] });
-boss('general-morvain', { size: 1.4, tint: undefined, paint: [{ hue: [320, 20], sat: [0.5, 1], to: '#c8242c' }, { hue: [190, 270], lum: [0.5, 1], to: '#7a7480' }, { hue: [190, 270], to: '#1e1c24', keep: 0.9 }], wears: [{ piece: 'horns', a: '#1a181c', b: '#8a8490', size: 0.8 }, { piece: 'eyes', b: '#ff6a3a' }] });
-boss('hollow-guard', { size: 1.35, tint: undefined, paint: [{ hue: [320, 20], sat: [0.5, 1], to: '#e4ecfa' }, { hue: [190, 270], lum: [0.5, 1], to: '#a4b8d8' }, { hue: [190, 270], to: '#3a4a70', keep: 0.9 }], wears: [{ piece: 'eyes', b: '#dff6ff' }] });
+// Sir Corvane the Fallen, First Grave Knight of the Hallow King: he held the downs nine days for a relief that was
+// called off, then knelt to get his dead knights back. Black plate rimed pale at its edges, a plume gone from red to
+// the Host's cold blue, and on his back still the banner of the Ninefold Watch in Aster's faded blue: the one thing
+// of his old oath he would not put down. (Mounted and on foot he is the same figure.)
+const CORVANE: Kit = {
+  k: 'boss_corvane',
+  form: 'corvane',
+  // (his banner stands over him and a figure is sized by its greatest measure: this keeps the man his size)
+  size: 1.62,
+  atk: 'chop2',
+  paint: [
+    // the bright of his blade: the frost his lances are thrown from
+    { joint: 'handslot.r', lum: [0.52, 1], sat: [0, 0.4], to: '#a8c8ff', glow: true, keep: 0.3 },
+    // the Watch's banner on his back: Aster's blue, ten years faded
+    { joint: 'chest', hue: [190, 270], sat: [0.3, 1], lum: [0.3, 1], to: '#2e3c66', keep: 0.2 },
+    { hue: [320, 20], sat: [0.5, 1], to: '#5a7ad8' },
+    { hue: [190, 270], lum: [0.5, 1], to: '#8a8ea8' },
+    { hue: [190, 270], to: '#2c2c3c', keep: 0.9 },
+  ],
+  wears: [{ piece: 'eyes', b: '#a8c8ff' }],
+};
+TABLE['sir-corvane'] = CORVANE;
+TABLE['sir-corvane-foot'] = CORVANE;
+
+/* The Rift's bosses */
+// The Drowned Priestess, Voice of the Deep Tide: the sea's own colors on her, her skin gone the green of deep water,
+// the shrine's bell gone to verdigris in her hand, and the head of her staff alight.
+TABLE['the-drowned'] = {
+  k: 'boss_drowned',
+  form: 'drowned',
+  size: 1.62,
+  atk: 'cast',
+  paint: [
+    // (the bell is too finely made to be alight whole: a boss glows only where the magic is, and that is the staff's head)
+    { joint: 'handslot.r', lum: [0.75, 1], to: '#9afff0', glow: true, keep: 0.3 },
+    { joint: 'handslot.l', to: '#6aa8a0', keep: 0.9 },
+    { joint: 'head', hue: [5, 45], sat: [0.15, 0.9], to: '#9ad0c8', keep: 0.8 },
+    { joint: 'head', to: '#1c3a3c', keep: 0.9 },
+    { hue: [330, 60], sat: [0.3, 1], to: '#c8b070', keep: 0.9 },
+    { lum: [0.6, 1], to: '#7ab8b0', keep: 0.9 },
+    { to: '#1f4a52', keep: 0.9 },
+  ],
+  wears: [{ piece: 'eyes', b: '#9afff0' }],
+};
+// Captain Saltbeard, Master of the Smugglers' Grotto: his own colors, and his signal lantern lit.
+TABLE.saltbeard = {
+  k: 'boss_saltbeard',
+  form: 'saltbeard',
+  size: 1.75,
+  atk: 'chop',
+  paint: [
+    { joint: 'handslot.l', lum: [0.55, 1], to: '#ffd27a', glow: true, keep: 0.3 },
+    { joint: 'chest', hue: [10, 50], sat: [0.3, 1], lum: [0, 0.6], to: '#6a4a2a', keep: 0.9 },
+  ],
+};
+// Brother Pustule, Keeper of the Vats: sick greens and a stained habit, the brew alight in its bottle.
+TABLE['brother-pustule'] = {
+  k: 'boss_pustule',
+  form: 'pustule',
+  size: 1.68,
+  atk: 'cast',
+  paint: [
+    { joint: 'handslot.l', to: '#c8ff70', glow: true, keep: 0.3 },
+    { joint: 'head', hue: [5, 45], sat: [0.15, 0.9], to: '#a8b878', keep: 0.8 },
+    { hue: [330, 70], sat: [0.25, 1], to: '#6a7a3a', keep: 0.9 },
+    { lum: [0.6, 1], to: '#b8b890', keep: 0.9 },
+    { to: '#3a4424', keep: 0.9 },
+  ],
+  wears: [{ piece: 'eyes', b: '#e8ff70' }],
+};
+// Old Sluicegut, Warden of the Charnel Drain: the cistern's own wet stone, and her brew alight in every crack of him.
+TABLE['old-sluicegut'] = {
+  k: 'boss_sluicegut',
+  form: 'sluicegut',
+  size: 2.2,
+  atk: 'smash',
+  paint: [
+    { joint: 'chest', hue: [10, 50], sat: [0.3, 1], to: '#7a5a3a', keep: 0.9 },
+    { joint: 'upperarm.l', hue: [330, 50], sat: [0.3, 1], to: '#d8e0a0', keep: 0.9 },
+    { joint: 'handslot.r', to: '#5a5a50', keep: 0.9 },
+    { lum: [0.935, 1], to: '#c8ff70', glow: true, keep: 0 },
+    { lum: [0.6, 0.88], to: '#6a7a6a', keep: 0.9 },
+    { to: '#3a4a44', keep: 0.9 },
+  ],
+  wears: [{ piece: 'eyes', b: '#e8ff70' }],
+};
+// The Rot-Mother, Brewer of the Plague: the green of her own brew, the purple of what it does to flesh, her ladle
+// alight with it.
+TABLE['the-rot-mother'] = {
+  k: 'boss_rotmother',
+  form: 'rotmother',
+  size: 2.2,
+  atk: 'smash',
+  paint: [
+    { joint: 'handslot.r', lum: [0.9, 1], to: '#e8ff70', glow: true, keep: 0.3 },
+    { joint: 'handslot.r', to: '#6a5a3a', keep: 0.9 },
+    { hue: [330, 60], sat: [0.3, 1], to: '#8a3a5a', keep: 0.9 },
+    { hue: [60, 180], to: '#5a7a2a', keep: 0.9 },
+  ],
+  wears: [{ piece: 'horns', a: '#3a4a22', b: '#c8e070' }, { piece: 'eyes', b: '#e8ff70' }],
+};
+// The Runewarden, Bound Guardian of the Deepforge: sandstone with its runes alight, a brass helm, a brass hammer.
+TABLE['the-runewarden'] = {
+  k: 'boss_runewarden',
+  form: 'runewarden',
+  size: 2.2,
+  atk: 'smash',
+  paint: [
+    { joint: 'head', to: '#a8823a', keep: 0.9 },
+    { joint: 'handslot.r', to: '#a8823a', keep: 0.9 },
+    { lum: [0.935, 1], to: '#ffd27a', glow: true, keep: 0 },
+    { lum: [0.6, 0.88], to: '#8a7a60', keep: 0.9 },
+    { to: '#5a4c3a', keep: 0.9 },
+  ],
+  wears: [{ piece: 'eyes', b: '#fff2c0' }],
+};
+// The Slag Colossus, Poured in the Rendering Pit: dark slag, still alight where it has not set.
+TABLE['slag-colossus'] = {
+  k: 'boss_slag',
+  form: 'slag',
+  size: 2.15,
+  atk: 'smash',
+  paint: [
+    { joint: 'head', to: '#4a3a36', keep: 0.8 },
+    { lum: [0, 0.3], to: '#ff9a3a', glow: true, keep: 0 },
+    { to: '#4a3a36', keep: 0.8 },
+  ],
+  wears: [{ piece: 'eyes', b: '#fff0a0' }],
+};
+// Forgemaster Grold, Master of the Deepforge: leather and soot, and the head of his hammer straight from the fire.
+TABLE['forgemaster-grold'] = {
+  k: 'boss_grold',
+  form: 'grold',
+  size: 1.62,
+  atk: 'chop2',
+  paint: [
+    { joint: 'handslot.r', lum: [0.5, 1], sat: [0, 0.35], to: '#ff9a4a', glow: true, keep: 0.3 },
+    { hue: [190, 270], to: '#3a2a22', keep: 0.9 },
+    { hue: [330, 10], sat: [0.4, 1], to: '#8a3a22', keep: 0.9 },
+  ],
+  wears: [{ piece: 'eyes', b: '#ffd27a' }],
+};
+// The Rotwood Colossus, Warden of the Hollow Bole: bark, the blight green in the grain of it, its mushrooms alight.
+TABLE['rotwood-colossus'] = {
+  k: 'boss_rotwood',
+  form: 'rotwood',
+  size: 2.35,
+  atk: 'smash',
+  paint: [
+    { joint: 'upperarm.l', hue: [330, 60], sat: [0.3, 1], to: '#c8ff70', glow: true, keep: 0.3 },
+    { joint: 'upperarm.r', hue: [330, 60], sat: [0.3, 1], to: '#c8ff70', glow: true, keep: 0.3 },
+    { hue: [10, 60], sat: [0.25, 1], to: '#4a3a22', keep: 0.9 },
+    { lum: [0.935, 1], to: '#8ab04a', keep: 0.5 },
+    { lum: [0.6, 0.88], to: '#5a4630', keep: 0.9 },
+    { to: '#3a2c1c', keep: 0.9 },
+  ],
+  wears: [{ piece: 'horns', a: '#4a3a22', b: '#8ab04a', size: 1.2 }, { piece: 'eyes', b: '#c8ff70' }],
+};
+// Elowen of the Dawn, Lamp-Warden of the Faded Lights: a warden's white and gold, fair hair, and the one lamp in the
+// wood that is still lit.
+TABLE['elowen-of-the-dawn'] = {
+  k: 'boss_elowen',
+  form: 'elowen',
+  size: 1.78,
+  atk: 'cast',
+  paint: [
+    { joint: 'handslot.l', hue: [25, 70], sat: [0.35, 1], lum: [0.8, 1], to: '#ffe08a', glow: true, keep: 0.3 },
+    { joint: 'head', hue: [5, 45], sat: [0.15, 0.9], lum: [0.6, 1], to: '#f0d8c0', keep: 0.8 },
+    { joint: 'head', to: '#e8c060', keep: 0.9 },
+    { hue: [190, 270], to: '#e8dcc0', keep: 0.9 },
+    { hue: [330, 5], sat: [0.3, 1], to: '#d8a030', keep: 0.9 },
+    { lum: [0, 0.35], to: '#8a6a3a', keep: 0.9 },
+  ],
+  wears: [{ piece: 'halo', a: '#e8a030', b: '#fff4c0', size: 0.8 }],
+};
+// The Withered Queen, Lieutenant of the Hallow King: a court dress gone the colors of dead leaves, a crown of moss
+// green, the edge of her scythe alight.
+TABLE['the-withered-queen'] = {
+  k: 'boss_witheredqueen',
+  form: 'witheredqueen',
+  size: 1.95,
+  atk: 'chop',
+  paint: [
+    { joint: 'handslot.r', lum: [0.6, 1], sat: [0, 0.35], to: '#d8ff8a', glow: true, keep: 0.3 },
+    { joint: 'head', hue: [30, 70], sat: [0.3, 1], to: '#8aa04a', keep: 0.9 },
+    { joint: 'head', lum: [0.6, 1], to: '#c8c8a0', keep: 0.9 },
+    { hue: [330, 20], sat: [0.3, 1], to: '#5a6a2a', keep: 0.9 },
+    { lum: [0, 0.4], to: '#2a2a1c', keep: 0.9 },
+    { to: '#6a6a4a', keep: 0.9 },
+  ],
+  wears: [{ piece: 'eyes', b: '#e0ff9a' }],
+};
+// The Veil Sentinel, Warden of the Stair: plate the dark of the rift, a great pale skull, the edge of its axe alight.
+TABLE['veil-sentinel'] = {
+  k: 'boss_veilsentinel',
+  form: 'veilsentinel',
+  size: 2.2,
+  atk: 'chop2',
+  paint: [
+    { joint: 'head', lum: [0.3, 1], to: '#d8c8f0', keep: 0.9 },
+    { joint: 'handslot.r', lum: [0.6, 1], sat: [0, 0.35], to: '#d8a8ff', glow: true, keep: 0.3 },
+    { hue: [320, 20], sat: [0.5, 1], to: '#a060e0', keep: 0.9 },
+    { hue: [190, 270], lum: [0.5, 1], to: '#6a5a90', keep: 0.9 },
+    { to: '#2a2040', keep: 0.9 },
+  ],
+  wears: [{ piece: 'eyes', b: '#f4e0ff' }, { piece: 'halo', a: '#8a4ae0', b: '#f0d8ff', size: 0.85 }],
+};
+// Ilvane the Unmoored, Keeper of the Weightless Gallery: the Spire's violet, and her book alight. She is off the
+// floor: it is her name and her fight.
+TABLE['ilvane-the-unmoored'] = {
+  k: 'boss_ilvane',
+  form: 'ilvane',
+  size: 1.78,
+  float: 0.7,
+  atk: 'cast',
+  paint: [
+    { joint: 'handslot.l', lum: [0.6, 1], to: '#c8b8ff', glow: true, keep: 0.3 },
+    { joint: 'head', hue: [5, 45], sat: [0.15, 0.9], lum: [0.6, 1], to: '#e8dcf0', keep: 0.8 },
+    { joint: 'head', to: '#b8a8e8', keep: 0.9 },
+    { hue: [190, 330], to: '#4a3a7a', keep: 0.9 },
+    { hue: [330, 60], sat: [0.3, 1], to: '#c8b8ff', keep: 0.9 },
+  ],
+};
+// The Pale Herald, Voice of the Hallow King: pale all over, as his name says; the King's white banner; a silver bell;
+// the head of his staff alight. He is not wholly here, and drifts.
+TABLE['herald-in-the-spire'] = {
+  k: 'boss_herald',
+  form: 'herald',
+  size: 2.0,
+  float: 0.25,
+  atk: 'cast',
+  paint: [
+    { joint: 'handslot.r', lum: [0.8, 1], to: '#ffd0ff', glow: true, keep: 0.3 },
+    { joint: 'handslot.l', to: '#c8c0d8', keep: 0.9 },
+    { joint: 'head', lum: [0.5, 1], to: '#e8e4f0', keep: 0.9 },
+    { hue: [330, 20], sat: [0.3, 1], to: '#8a4ac0', keep: 0.9 },
+    { lum: [0, 0.4], to: '#d8d4e4', keep: 0.5 },
+    { to: '#b8b0cc', keep: 0.9 },
+  ],
+  wears: [{ piece: 'halo', a: '#a03ae0', b: '#ffd0ff', size: 0.9 }, { piece: 'eyes', b: '#ff9af0' }],
+};
+
+/* The lands' named foes of the story: a figure of their own each (scripts/sigilfall-3d-assets.mjs), no form, since
+   theirs is not a dungeon boss's fight: they walk and strike with the shared skeleton's own clips. */
+// The Grey Lady: grave-pale and half there, her shroud the grey of her name, the lantern she was buried with alight.
+TABLE['the-grey-lady'] = {
+  k: 'boss_greylady',
+  size: 1.1,
+  ghost: 0.8,
+  atk: 'cast',
+  paint: [
+    { joint: 'handslot.l', lum: [0.6, 1], to: '#c8b0ff', glow: true, keep: 0.3 },
+    { joint: 'head', hue: [5, 45], sat: [0.15, 0.9], to: '#d8d4e8', keep: 0.8 },
+    { joint: 'head', to: '#9a96b0', keep: 0.8 },
+    { lum: [0.55, 1], to: '#c4c0d8', keep: 0.6 },
+    { to: '#6e6a88', keep: 0.6 },
+  ],
+  wears: [{ piece: 'eyes', b: '#c8b0ff' }],
+};
+// Prince Thistlemourn: summer's green and gold gone to thorn: a briar coat, a bramble cape, the crown and the bough
+// on his back the brown of old thorn, his skin the pale green of the court.
+TABLE['prince-thistlemourn'] = {
+  k: 'boss_thistlemourn',
+  size: 1.12,
+  atk: 'cast',
+  paint: [
+    { joint: 'handslot.r', lum: [0.7, 1], to: '#d8ff8a', glow: true, keep: 0.3 },
+    { joint: 'head', hue: [5, 45], sat: [0.1, 0.9], lum: [0.45, 1], to: '#cfe8b0', keep: 0.8 },
+    { joint: 'head', to: '#4a3a22', keep: 0.7 },
+    { hue: [330, 60], sat: [0.3, 1], to: '#c8a83a', keep: 0.8 },
+    { lum: [0.5, 1], to: '#6a9a3a', keep: 0.7 },
+    { to: '#2e4a22', keep: 0.7 },
+  ],
+  wears: [{ piece: 'eyes', b: '#d8ff8a' }],
+};
+// The Tearborn: the Tear's own violet glass, its bright parts the pink of the wound's lightning.
+TABLE['the-tearborn'] = {
+  k: 'boss_tearborn',
+  size: 1.2,
+  atk: 'cast',
+  paint: [
+    { lum: [0.78, 1], to: '#ff7fe0', glow: true, keep: 0.3 },
+    { lum: [0.45, 0.78], to: '#8a4ab8', keep: 0.7 },
+    { to: '#32204e', keep: 0.7 },
+  ],
+  wears: [{ piece: 'eyes', b: '#ff7fe0' }],
+};
+// The Gatewarden: plate blackened by three hundred years at the gate, the key in his hand old gold.
+TABLE['the-gatewarden'] = {
+  k: 'boss_gatewarden',
+  size: 1.25,
+  atk: 'smash',
+  paint: [
+    { joint: 'handslot.r', to: '#c8a040', keep: 0.6 },
+    { joint: 'handslot.l', lum: [0.5, 1], to: '#6a6878', keep: 0.7 },
+    { hue: [330, 30], sat: [0.35, 1], to: '#5a2a6a', keep: 0.6 },
+    { lum: [0.5, 1], to: '#5c5a6c', keep: 0.7 },
+    { to: '#24222e', keep: 0.7 },
+  ],
+  wears: [{ piece: 'eyes', b: '#a87aff' }],
+};
+// The Weeping Lord: a warden's silver gone to frost, his cape and the Watch's banner the pale blue of old ice.
+TABLE['the-weeping-lord'] = {
+  k: 'boss_weepinglord',
+  size: 1.18,
+  ghost: 0.86,
+  atk: 'chop2',
+  paint: [
+    { joint: 'chest', hue: [190, 270], sat: [0.3, 1], to: '#a8c8e8', keep: 0.3 },
+    { hue: [330, 60], sat: [0.3, 1], to: '#bfe8ff', keep: 0.6 },
+    { lum: [0.55, 1], to: '#d4e4f4', keep: 0.7 },
+    { to: '#5c7896', keep: 0.7 },
+  ],
+  wears: [{ piece: 'eyes', b: '#bfe8ff' }],
+};
+// The Lich of Hollowmere: robes the green-black of the lake's bottom, bone gone grey-green, the crown coral red, and
+// the head of his staff alight with grave-cold.
+TABLE['the-lich-of-hollowmere'] = {
+  k: 'boss_lich',
+  size: 1.2,
+  atk: 'cast',
+  paint: [
+    { joint: 'handslot.r', lum: [0.72, 1], to: '#b8a8ff', glow: true, keep: 0.3 },
+    { joint: 'head', hue: [330, 60], sat: [0.35, 1], to: '#d86a5a', keep: 0.7 },
+    { joint: 'head', sat: [0, 0.35], lum: [0.5, 1], to: '#b8c8b0', keep: 0.8 },
+    { hue: [330, 60], sat: [0.35, 1], to: '#d86a5a', keep: 0.7 },
+    { lum: [0.55, 1], to: '#4a7a72', keep: 0.7 },
+    { to: '#16302e', keep: 0.7 },
+  ],
+  wears: [{ piece: 'eyes', b: '#b8a8ff' }],
+};
+// (he is one man wherever the story meets him)
+for (const id of ['the-pale-herald', 'the-heralds-voice', 'the-heralds-first-face']) BY_ENEMY[id] = TABLE['herald-in-the-spire'];
 
 const FALLBACK: Kit = { k: 'sk_minion', tint: ASH };
 

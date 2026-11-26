@@ -1,0 +1,134 @@
+{
+  "boss": "jarl-hrimfang",
+  "file": "boss_hrimfang",
+  "form": "hrimfang",
+  "float": 0,
+  "walked": {
+    "samples": 185,
+    "moving": 52,
+    "walking": 49,
+    "clips": {
+      "walk": 49,
+      "slice": 3
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle",
+        "punch"
+      ],
+      "readings": 56
+    },
+    {
+      "phase": 1,
+      "id": "rime:shatter",
+      "clips": [
+        "smash",
+        "idle",
+        "walk",
+        "punch"
+      ],
+      "readings": 48
+    },
+    {
+      "phase": 1,
+      "id": "rime:boulder",
+      "clips": [
+        "punch",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 67
+    },
+    {
+      "phase": 1,
+      "id": "rime:warcry",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "slice"
+      ],
+      "readings": 42
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "chop2",
+        "bash",
+        "walk",
+        "hit",
+        "smash"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle",
+        "hit"
+      ],
+      "readings": 70
+    },
+    {
+      "phase": 2,
+      "id": "rime:shatter",
+      "clips": [
+        "smash",
+        "idle",
+        "slice"
+      ],
+      "readings": 66
+    },
+    {
+      "phase": 2,
+      "id": "rime:boulder",
+      "clips": [
+        "punch",
+        "idle"
+      ],
+      "readings": 62
+    },
+    {
+      "phase": 2,
+      "id": "tripleCharge",
+      "clips": [
+        "bash",
+        "hit",
+        "idle",
+        "slice"
+      ],
+      "readings": 34
+    },
+    {
+      "phase": 2,
+      "id": "chop",
+      "clips": [
+        "idle",
+        "chop2"
+      ],
+      "readings": 58
+    },
+    {
+      "phase": 2,
+      "id": "rime:warcry",
+      "clips": [
+        "taunt",
+        "idle",
+        "hit"
+      ],
+      "readings": 41
+    }
+  ],
+  "found": [],
+  "errors": []
+}

@@ -1,0 +1,243 @@
+{
+  "boss": "sir-corvane",
+  "file": "boss_corvane",
+  "form": "corvane",
+  "float": 0,
+  "walked": {
+    "samples": 184,
+    "moving": 65,
+    "walking": 59,
+    "clips": {
+      "walk": 49,
+      "bash": 6,
+      "run": 10
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "barrow:steed-charge",
+      "clips": [
+        "idle",
+        "bash"
+      ],
+      "readings": 71
+    },
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle"
+      ],
+      "readings": 47
+    },
+    {
+      "phase": 1,
+      "id": "spell:lances",
+      "clips": [
+        "stab",
+        "idle"
+      ],
+      "readings": 61
+    },
+    {
+      "phase": 1,
+      "id": "spell:halves",
+      "clips": [
+        "smash",
+        "idle"
+      ],
+      "readings": 57
+    },
+    {
+      "phase": 1,
+      "id": "summon",
+      "clips": [
+        "taunt",
+        "idle"
+      ],
+      "readings": 40
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "slice",
+        "chop2",
+        "chop"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "run",
+        "slice",
+        "idle"
+      ],
+      "readings": 60
+    },
+    {
+      "phase": 2,
+      "id": "barrow:doom",
+      "clips": [
+        "chop",
+        "idle",
+        "walk"
+      ],
+      "readings": 26
+    },
+    {
+      "phase": 2,
+      "id": "barrow:rime",
+      "clips": [
+        "cast",
+        "idle",
+        "walk"
+      ],
+      "readings": 33
+    },
+    {
+      "phase": 2,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle",
+        "walk"
+      ],
+      "readings": 49
+    },
+    {
+      "phase": 2,
+      "id": "spell:lances",
+      "clips": [
+        "stab",
+        "idle"
+      ],
+      "readings": 68
+    },
+    {
+      "phase": 2,
+      "id": "summon",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk"
+      ],
+      "readings": 42
+    },
+    {
+      "phase": 2,
+      "id": "barrow:dismount",
+      "clips": [
+        "dodge",
+        "idle",
+        "walk"
+      ],
+      "readings": 38
+    },
+    {
+      "phase": 3,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "block",
+        "chop",
+        "slice",
+        "dodge",
+        "chop2"
+      ]
+    },
+    {
+      "phase": 3,
+      "id": "cleave",
+      "clips": [
+        "run",
+        "slice",
+        "idle",
+        "walk"
+      ],
+      "readings": 49
+    },
+    {
+      "phase": 3,
+      "id": "vanish",
+      "clips": [
+        "dodge",
+        "idle",
+        "walk",
+        "run"
+      ],
+      "readings": 40
+    },
+    {
+      "phase": 3,
+      "id": "barrow:doom",
+      "clips": [
+        "walk",
+        "chop",
+        "idle",
+        "run"
+      ],
+      "readings": 21
+    },
+    {
+      "phase": 3,
+      "id": "barrow:rime",
+      "clips": [
+        "cast",
+        "idle",
+        "walk",
+        "run"
+      ],
+      "readings": 26
+    },
+    {
+      "phase": 3,
+      "id": "tripleCharge",
+      "clips": [
+        "walk",
+        "bash",
+        "run",
+        "idle"
+      ],
+      "readings": 40
+    },
+    {
+      "phase": 3,
+      "id": "chop",
+      "clips": [
+        "chop2",
+        "idle",
+        "walk",
+        "run"
+      ],
+      "readings": 49
+    },
+    {
+      "phase": 3,
+      "id": "roar",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk",
+        "run"
+      ],
+      "readings": 25
+    },
+    {
+      "phase": 3,
+      "id": "barrow:aura",
+      "clips": [],
+      "note": "never began"
+    }
+  ],
+  "found": [],
+  "errors": []
+}

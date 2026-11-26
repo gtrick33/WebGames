@@ -6,7 +6,7 @@ import { questState, type Character } from '../src/games/sigilfall/progress/char
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { TILE } from '../src/games/sigilfall/sim/map';
 import type { World } from '../src/games/sigilfall/sim/world';
-import { newWorld, readyHero } from './sigilfall-bot';
+import { doSteps, newWorld, readyHero } from './sigilfall-bot';
 
 /**
  * Rimeheld's turn played, not told (the five-beat audit, QUEST_REWRITE_MAP.md): the sledge drivers led home
@@ -41,6 +41,8 @@ describe('Sigilfall: Rimeheld, the sledge road', () => {
     const fire = w.places['sledge-fire']!;
     // the camp's own packs first
     for (const e of w.enemies) if (Math.hypot(e.x - fire.x, e.y - fire.y) < 200) e.dead = true;
+    // (the sledges' ruts are followed out to the camp first: that step's own test plays it)
+    doSteps(w, 'the-last-sledges');
     w.player.x = fire.x;
     w.player.y = fire.y + 8;
     run(w, 0.3);

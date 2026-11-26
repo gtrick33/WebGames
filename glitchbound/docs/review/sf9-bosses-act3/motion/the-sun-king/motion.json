@@ -1,0 +1,215 @@
+{
+  "boss": "the-sun-king",
+  "file": "boss_sunking",
+  "form": "sunking",
+  "float": 0,
+  "walked": {
+    "samples": 184,
+    "moving": 52,
+    "walking": 50,
+    "clips": {
+      "walk": 50,
+      "channel": 2
+    }
+  },
+  "attacks": [
+    {
+      "phase": 1,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle"
+      ],
+      "readings": 47
+    },
+    {
+      "phase": 1,
+      "id": "tomb:sunbeam",
+      "clips": [
+        "channel",
+        "walk",
+        "idle"
+      ],
+      "readings": 76
+    },
+    {
+      "phase": 1,
+      "id": "tomb:sun-disc",
+      "clips": [
+        "idle",
+        "summon",
+        "walk"
+      ],
+      "readings": 65
+    },
+    {
+      "phase": 1,
+      "id": "volley",
+      "clips": [
+        "throw",
+        "idle",
+        "walk"
+      ],
+      "readings": 57
+    },
+    {
+      "phase": 1,
+      "id": "tomb:scarabs",
+      "clips": [
+        "wave",
+        "idle",
+        "walk",
+        "channel"
+      ],
+      "readings": 46
+    },
+    {
+      "phase": 2,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "walk"
+      ]
+    },
+    {
+      "phase": 2,
+      "id": "cleave",
+      "clips": [
+        "run",
+        "slice",
+        "idle",
+        "walk"
+      ],
+      "readings": 54
+    },
+    {
+      "phase": 2,
+      "id": "tomb:sunbeam",
+      "clips": [
+        "idle",
+        "channel",
+        "walk"
+      ],
+      "readings": 50
+    },
+    {
+      "phase": 2,
+      "id": "tomb:sun-disc",
+      "clips": [
+        "summon",
+        "idle",
+        "walk"
+      ],
+      "readings": 21
+    },
+    {
+      "phase": 2,
+      "id": "tomb:scarabs",
+      "clips": [
+        "wave",
+        "idle",
+        "walk"
+      ],
+      "readings": 31
+    },
+    {
+      "phase": 2,
+      "id": "spell:orbit",
+      "clips": [
+        "cheer",
+        "idle",
+        "channel"
+      ],
+      "readings": 59
+    },
+    {
+      "phase": 2,
+      "id": "roar",
+      "clips": [
+        "taunt",
+        "idle"
+      ],
+      "readings": 40
+    },
+    {
+      "phase": 3,
+      "id": "(phase change)",
+      "clips": [
+        "taunt",
+        "idle",
+        "channel",
+        "summon",
+        "wave",
+        "slice"
+      ]
+    },
+    {
+      "phase": 3,
+      "id": "cleave",
+      "clips": [
+        "slice",
+        "idle"
+      ],
+      "readings": 28
+    },
+    {
+      "phase": 3,
+      "id": "tomb:sunbeam",
+      "clips": [
+        "channel",
+        "idle"
+      ],
+      "readings": 59
+    },
+    {
+      "phase": 3,
+      "id": "tomb:sun-disc",
+      "clips": [
+        "summon",
+        "idle"
+      ],
+      "readings": 19
+    },
+    {
+      "phase": 3,
+      "id": "spell:sunspot",
+      "clips": [
+        "cast",
+        "idle",
+        "channel",
+        "slice"
+      ],
+      "readings": 57
+    },
+    {
+      "phase": 3,
+      "id": "tomb:scarabs",
+      "clips": [
+        "wave",
+        "idle"
+      ],
+      "readings": 17
+    },
+    {
+      "phase": 3,
+      "id": "roar",
+      "clips": [
+        "taunt",
+        "idle"
+      ],
+      "readings": 18
+    },
+    {
+      "phase": 3,
+      "id": "tomb:pyre",
+      "clips": [
+        "channel",
+        "idle"
+      ],
+      "readings": 19
+    }
+  ],
+  "found": [],
+  "errors": []
+}

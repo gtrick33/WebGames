@@ -20,6 +20,11 @@ export function objectiveRegion(q: QuestDef, o: Objective): RegionId | undefined
     case 'kill':
     case 'loot':
     case 'clear':
+    case 'use':
+    case 'carry':
+    case 'hold':
+    case 'trail':
+    case 'subdue':
       return o.region;
     case 'boss':
       return bossRegion(o.boss) ?? q.zone;

@@ -1,0 +1,44 @@
+{
+ "boss": "elowen-of-the-dawn",
+ "shots": [
+  {
+   "state": "entrance",
+   "close": "01-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "02-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "03-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "04-entrance-close.jpg"
+  },
+  {
+   "state": "entrance",
+   "close": "05-entrance-close.jpg"
+  },
+  {
+   "state": "line-up",
+   "file": "06-line-up.jpg",
+   "close": "06-line-up-close.jpg"
+  },
+  {
+   "state": "portrait",
+   "file": "07-portrait.jpg"
+  }
+ ],
+ "errors": [],
+ "cost": {
+  "file": "boss_elowen",
+  "tris": 8541,
+  "frame": {
+   "calls": 30,
+   "tris": 103950,
+   "quality": 0.85
+  }
+ }
+}
