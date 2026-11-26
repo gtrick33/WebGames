@@ -39,10 +39,10 @@ import { updateEscort } from './escort';
 import { spawnFolk, updateFolk, type Folk } from './folk';
 import { herdOf, letOut, updateCritters, type Critter } from './critters';
 import { castPace, echoCast, updateCasting, updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
-import { blowFloor, healPlayer, hurtPlayer, playerSlow, playerStunned, runProcs, tickPlayerStatuses } from './combat';
+import { blowFloor, GHOST_SLACK, healPlayer, hurtPlayer, playerSlow, playerStunned, runProcs, tickPlayerStatuses } from './combat';
 import { breakWall, circleHitsWall, flowField, K, markerPos, moveCircle, parseRegion, pushOut, setDoors, TILE, tileAt, type PlacedMarker, type TileMap } from './map';
 import { roomBannerSub, updateRooms, type RoomPlay } from './rooms';
-import type { Chest, CoopSide, Drop, Enemy, Field, FloatText, Fx, Ghost, Interactable, NpcActor, Pet, Player, Projectile, Telegraph, Trap, Wave, WorldEvent, Callout } from './types';
+import type { Chest, CoopSide, Drop, Enemy, Field, FloatText, Fx, Ghost, HitShape, Interactable, NpcActor, Pet, Player, Projectile, Telegraph, Trap, Wave, WorldEvent, Callout } from './types';
 import { newTasks, stepTasks, thingInReach, yieldedInReach, type Tasks } from './tasks';
 import { inCone, inLine } from '../core/math';
 
@@ -143,6 +143,9 @@ const POTION_HEAL = 40;
 /** Seconds without fighting before the fast out-of-combat regeneration starts. */
 const CALM_AFTER = 3;
 /** Enemies further than this from the hero (and not fighting) sleep. */
+const ghostSlack = (g: Ghost): number => (g.confirms ? GHOST_SLACK : 0);
+const r1 = (v: number): number => Math.round(v * 10) / 10;
+const r2 = (v: number): number => Math.round(v * 100) / 100;
 const SLEEP_X = 460;
 const SLEEP_Y = 320;
 /** A wiped-out pack comes back only out of sight. */
@@ -2011,9 +2014,10 @@ export class World {
       // the host's attacks strike the other heroes too (their games take the hit)
       if (this.coop?.role === 'host' && t.tone !== 'player' && t.dmg > 0 && (t.kind ?? 'danger') === 'danger' && (t.t - dt < t.dur || t.linger > 0) && !t.dead)
         for (const g of this.coop.ghosts) {
-          if (g.dead || t.struck?.includes(g.n) || !inside(t, g.x, g.y, g.r)) continue;
+          // (`inside` counts half the hero's size: twice the leeway, so the copy is caught that much further out)
+          if (g.dead || t.struck?.includes(g.n) || !inside(t, g.x, g.y, g.r + 2 * ghostSlack(g))) continue;
           (t.struck ??= []).push(g.n);
-          this.ghostHit(g, t.dmg, { fromX: t.x, fromY: t.y, knock: t.knock, ...(t.status ? { status: t.status } : {}), ...(t.owner >= 0 ? { src: t.owner } : {}) });
+          this.ghostHit(g, t.dmg, { fromX: t.x, fromY: t.y, knock: t.knock, ...(t.status ? { status: t.status } : {}), ...(t.owner >= 0 ? { src: t.owner } : {}), at: ['t', t.shape, r1(t.x), r1(t.y), r1(t.r), r1(t.r2), r2(t.angle), r1(t.len)] });
         }
       if (t.tone !== 'player' && !t.remote && t.dmg > 0 && (t.kind ?? 'danger') === 'danger' && !p.dead && (t.t - dt < t.dur || t.linger > 0) && !t.dead) {
         if (inside(t, p.x, p.y, p.r)) {
@@ -2043,9 +2047,9 @@ export class World {
       if (w.r > w.max) w.dead = true;
       if (this.coop?.role === 'host')
         for (const g of this.coop.ghosts) {
-          if (g.dead || w.struck?.includes(g.n) || Math.abs(dist(g.x, g.y, w.x, w.y) - w.r) >= w.width / 2 + g.r * 0.6) continue;
+          if (g.dead || w.struck?.includes(g.n) || Math.abs(dist(g.x, g.y, w.x, w.y) - w.r) >= w.width / 2 + g.r * 0.6 + ghostSlack(g)) continue;
           (w.struck ??= []).push(g.n);
-          this.ghostHit(g, w.dmg, { fromX: w.x, fromY: w.y, knock: 120 });
+          this.ghostHit(g, w.dmg, { fromX: w.x, fromY: w.y, knock: 120, at: ['w', r1(w.x), r1(w.y), r1(w.r), r1(w.width), r1(w.speed)] });
         }
       if (w.hitPlayer || w.remote || p.dead) continue;
       const d = dist(p.x, p.y, w.x, w.y);
@@ -2442,8 +2446,11 @@ export class World {
 
   /* ------------------------------------------------------------ co-op */
 
-  /** On the host: one of the enemies' attacks struck another player's hero (their game takes the hit). */
-  ghostHit(g: Ghost, dmg: number, o: { fromX?: number; fromY?: number; knock?: number; status?: { status: StatusId; dur: number; power: number }; src?: number } = {}): void {
+  /**
+   * On the host: one of the enemies' attacks struck another player's hero (their game takes the hit). `at` is what
+   * struck, for a game that checks it against where its hero really is (Ghost.confirms).
+   */
+  ghostHit(g: Ghost, dmg: number, o: { fromX?: number; fromY?: number; knock?: number; status?: { status: StatusId; dur: number; power: number }; src?: number; at?: HitShape } = {}): void {
     if (!this.coop || g.dead || g.untouchable || dmg <= 0) return;
     this.coop.out.push({ t: 'hit', n: g.n, dmg: Math.round(dmg), ...o });
   }

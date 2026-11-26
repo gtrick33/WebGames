@@ -2,7 +2,7 @@ import { angleDiff, dist, dist2, inCone, TAU } from '../core/math';
 import { CLASSES } from '../data/classes';
 import type { GroundSpec, SkillSpec, SlotKey, BuffDef } from '../data/types';
 import { bossHidden } from './boss';
-import { applyEffects, applyStatus, enemiesIn, gainPoints, gainResource, healPlayer, hitEnemy, hurtPlayer, playerStunned, runProcs, empowerFull, empowerOf, spendEmpower } from './combat';
+import { applyEffects, applyStatus, enemiesIn, gainPoints, GHOST_SLACK, gainResource, healPlayer, hitEnemy, hurtPlayer, playerStunned, runProcs, empowerFull, empowerOf, spendEmpower } from './combat';
 import { hurtPet } from './pets';
 import { blocksAt, castRay, lineOfSight, moveCircle } from './map';
 import type { Enemy, Projectile } from './types';
@@ -1176,7 +1176,7 @@ export function updateProjectiles(w: World, dt: number): void {
         const g = w.coop?.role === 'host' ? w.coop.ghosts.find((x) => !x.dead && dist2(pr.x, pr.y, x.x, x.y) < (pr.r + x.r) ** 2) : undefined;
         if (g) {
           if (!g.untouchable) {
-            w.ghostHit(g, pr.dmg, { fromX: pr.x - pr.vx * 0.05, fromY: pr.y - pr.vy * 0.05, knock: 40, ...(pr.status ? { status: pr.status } : {}) });
+            w.ghostHit(g, pr.dmg, { fromX: pr.x - pr.vx * 0.05, fromY: pr.y - pr.vy * 0.05, knock: 40, ...(pr.status ? { status: pr.status } : {}), at: ['s', Math.round(pr.x), Math.round(pr.y), Math.round(pr.vx), Math.round(pr.vy), pr.r] });
             pr.dead = true;
           }
           continue;
@@ -1303,7 +1303,8 @@ export function updateFields(w: World, dt: number): void {
     if (f.tickT <= 0) {
       f.tickT += f.tick;
       if (f.hostile) {
-        if (w.coop?.role === 'host') for (const g of w.coop.ghosts) if (!g.dead && dist2(g.x, g.y, f.x, f.y) < (f.r + g.r * 0.5) ** 2) w.ghostHit(g, f.dmg, f.status ? { status: f.status } : {});
+        // (a hero whose game checks the blow itself is caught a little further out: Ghost.confirms)
+        if (w.coop?.role === 'host') for (const g of w.coop.ghosts) if (!g.dead && dist2(g.x, g.y, f.x, f.y) < (f.r + g.r * 0.5 + (g.confirms ? GHOST_SLACK : 0)) ** 2) w.ghostHit(g, f.dmg, { ...(f.status ? { status: f.status } : {}), at: ['f', Math.round(f.x), Math.round(f.y), Math.round(f.r)] });
         if (!f.remote && !p.dead && dist2(p.x, p.y, f.x, f.y) < (f.r + p.r * 0.5) ** 2) hurtPlayer(w, f.dmg, { status: f.status });
       } else {
         // (a grove that mends; a well's drag is every frame, below)

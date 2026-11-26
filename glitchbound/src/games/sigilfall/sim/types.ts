@@ -482,12 +482,31 @@ export interface Ghost {
   act: { n: number; skill: string; angle: number; kind: 'swing' | 'cast' | 'shoot' | 'heavy' | 'spin'; big: boolean } | null;
   /** World time of their last message. */
   seen: number;
+  /**
+   * Their game checks every blow the host's game sends them against where their hero really is (net/coop.ts): the
+   * host's copy of them is a round trip behind, so the host sends what may have struck them, and their game decides.
+   */
+  confirms?: boolean;
 }
+
+/**
+ * What struck another player's hero on the host's side, for that player's own game to check against where their hero
+ * really is (net/coop.ts). A circle, ring, line or cone on the ground (`t`: its shape, place, radii, angle and length);
+ * a shockwave (`w`: its middle, radius, width and speed); a shot (`s`: where, its velocity and radius); burning ground
+ * (`f`: its middle and radius); or a blow (`m`: where the foe stood, its reach, its aim, how wide either side of it (0:
+ * all round) and how much of the hero's own size counts).
+ */
+export type HitShape =
+  | ['t', Telegraph['shape'], number, number, number, number, number, number]
+  | ['w', number, number, number, number, number]
+  | ['s', number, number, number, number, number]
+  | ['f', number, number, number]
+  | ['m', number, number, number, number, number, number];
 
 /** What the world asks the co-op session to send (net/coop.ts drains `World.coop.out`). */
 export type CoopOut =
-  /** Host: something of the enemies' struck another player's hero. */
-  | { t: 'hit'; n: number; dmg: number; fromX?: number; fromY?: number; knock?: number; status?: { status: StatusId; dur: number; power: number }; src?: number }
+  /** Host: something of the enemies' struck another player's hero (`at`: what struck, for their game to check). */
+  | { t: 'hit'; n: number; dmg: number; fromX?: number; fromY?: number; knock?: number; status?: { status: StatusId; dur: number; power: number }; src?: number; at?: HitShape }
   /** Host: an enemy died (everyone takes its experience and rolls its loot). */
   | { t: 'kill'; id: number }
   /** Host: a boss's fall played out (its rewards, the way out). */

@@ -2968,7 +2968,8 @@ export class Match {
   }
 
   /** A player's own copy takes the host's word for everything. */
-  restore(s: Snapshot, mine: number | null = null): void {
+  /** `keepMine`: the player's own hero is placed by their own game (net/selfSync.ts), not by the host's word. */
+  restore(s: Snapshot, mine: number | null = null, keepMine = false): void {
     this.phase = s.p;
     this.t = s.t;
     this.gateAt = s.ga;
@@ -2991,7 +2992,9 @@ export class Match {
       if (f.pet && pt) Object.assign(f.pet, { life: pt.l, next: pt.n, hits: pt.h, end: pt.e });
       // your own feet are yours between messages, unless the host disagrees by more than a stride
       const far = Math.hypot(f.x - n.x, f.y - n.y) > 26;
-      if (i !== mine || far) {
+      if (i === mine && keepMine) {
+        /* (set right by the player's own game, against where it had them when the host's word was true) */
+      } else if (i !== mine || far) {
         f.x = n.x;
         f.y = n.y;
       } else {
@@ -3009,9 +3012,15 @@ export class Match {
       f.dead = n.d;
       f.target = n.tg;
       f.friend = n.fr;
-      f.gcd = n.g;
+      // a press shown at once on the player's own screen stands until the host's word has it (or it lapses)
+      const told = i === mine ? this.foretold : null;
+      const had = !!told && ((n.c?.ab ?? '') === told.ab || (n.cd?.[told.ab] ?? 0) > 0);
+      if (told && (had || told.left <= 0)) this.foretold = null;
+      if (!told || had || told.left <= 0) {
+        f.gcd = n.g;
+        f.cast = n.c;
+      }
       f.cds = n.cd;
-      f.cast = n.c;
       f.auras = n.a;
       f.locks = n.l;
       f.score = n.sc;
@@ -3021,9 +3030,30 @@ export class Match {
     });
   }
 
+  /**
+   * A guest's press, shown at once on its own screen: the global cooldown, and the cast bar of an ability with a cast,
+   * until the host's word has it (restore) or `left` seconds go by. The host's game decides what it does; this only
+   * keeps a far-away player's press from looking dropped for a round trip.
+   */
+  private foretold: { ab: string; left: number } | null = null;
+
+  foretell(id: number, abId: string, point: { x: number; y: number } | undefined, left: number): void {
+    const f = this.fighters[id];
+    const ab = ABILITIES[abId];
+    if (!f || !ab || f.dead || this.phase !== 'fight') return;
+    if (!ab.free) f.gcd = GCD;
+    const cast = this.castOf(f, ab);
+    if ((cast > 0 || ab.channel) && !(f.cast && ab.free)) {
+      const t = this.aimOf(f, ab) ?? f;
+      f.cast = { ab: ab.id, target: t.id, at: point ?? (ab.aim === 'ground' && cast > 0 ? { x: t.x, y: t.y } : undefined), t: 0, dur: ab.channel ?? cast, channel: !!ab.channel, next: ab.tick ?? 0, pushed: 0 };
+    }
+    this.foretold = { ab: ab.id, left };
+  }
+
   /** Between a host's messages, a player's own copy moves their hero and everything else along in straight lines. */
   coast(dt: number, mine: number | null, m: MoveInput | null): void {
     if (this.phase === 'over' || !(dt > 0)) return;
+    if (this.foretold) this.foretold.left -= dt;
     if (this.phase === 'gates') {
       this.t += dt;
       const me = mine === null ? null : this.fighters[mine];

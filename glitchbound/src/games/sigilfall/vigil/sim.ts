@@ -889,7 +889,11 @@ export class Vigil {
    * On a player's game who isn't the host, the night is run elsewhere and heard about a few times a second
    * (vigil/snapshot.ts). In between, their own hero moves at once and everything else slides to where it last was.
    */
-  follow(dt: number, meId: number, input: VigilInput): void {
+  /**
+   * `keepMine`: the guest's own game sets its hero right against where it had them when the host's word was true
+   * (net/selfSync.ts), so the hero isn't pulled toward the host's place for them, which is a round trip old.
+   */
+  follow(dt: number, meId: number, input: VigilInput, keepMine = false): void {
     if (!(dt > 0)) return;
     const k = Math.min(1, dt * 10);
     const stopped = this.choosing || this.over;
@@ -900,8 +904,10 @@ export class Vigil {
         const dx = h.tx - h.x;
         const dy = h.ty - h.y;
         const far = Math.hypot(dx, dy) > 48;
-        h.x += far ? dx : dx * Math.min(1, dt * 3);
-        h.y += far ? dy : dy * Math.min(1, dt * 3);
+        if (!keepMine) {
+          h.x += far ? dx : dx * Math.min(1, dt * 3);
+          h.y += far ? dy : dy * Math.min(1, dt * 3);
+        }
       } else {
         h.x += (h.tx - h.x) * k;
         h.y += (h.ty - h.y) * k;

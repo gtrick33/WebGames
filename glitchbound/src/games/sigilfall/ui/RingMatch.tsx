@@ -29,9 +29,15 @@ import { TitleFx } from '../../../components/TitleFx';
 import { classEmblem } from './classEmblem';
 import { Coach, useLabels, useSpot } from './RingCoach';
 import { frameOf } from '../arena/record';
+import { ackFor, SeatInputs, SelfSync } from '../net/selfSync';
+import { showPing } from '../net/ping';
 
 /** `skill`: how sharp the computer plays (arena/ladder.ts skillAt); `mates`, in solo: the player's own side's, when not the same. */
-export type Role = { kind: 'solo'; skill: number; mates?: number } | { kind: 'host'; skill: number; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void } | { kind: 'client'; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void };
+export type Role =
+  | { kind: 'solo'; skill: number; mates?: number }
+  /** `rtt`: this player's own round trip to the room, in ms (net/link.ts), for the match's ping. */
+  | { kind: 'host'; skill: number; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void; rtt?: () => number }
+  | { kind: 'client'; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void; rtt?: () => number };
 
 /** What the room's traffic is handed to (one per match). */
 export type RingInbox = (seat: number, d: unknown) => void;
@@ -55,8 +61,15 @@ export interface MatchStakes {
 const STEP = 1 / 60;
 /** The longest piece of time the fight is moved by at once. */
 const MAX_STEP = 1 / 45;
-/** A host speaks ten times a second: plenty for frames that coast between. */
-const SEND_EVERY = 0.1;
+/**
+ * A host speaks fifteen times a second (ten until 2026-11-26: others' places jumped between words from far away). A 3v3
+ * word is about 2.5 KB, so twenty would have doubled what a phone spends on a match for little more.
+ */
+const SEND_EVERY = 1 / 15;
+/** A guest says where it is pushing at most this often, the moment it changes (fifteen a second until 2026-11-26). */
+const MOVE_EVERY = 1 / 30;
+/** And says it again this often while it doesn't change (the host's word keeps saying which it last had). */
+const MOVE_AGAIN = 0.5;
 /** The thumb cluster's places (Game.css .rb-ring-thumbs .rb-cluster): the bar's first, the basic ability, in the corner,
  * its other three on one arc round it, then the super outside it. (Four on the arc while a bar held five, until
  * 2026-11-16; a Swift Step had its own place, low on the left, until 2026-11-15.) */
@@ -326,6 +339,9 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   const [help, setHelp] = useState(false);
   const [tip, setTip] = useState<Ability | null>(null);
   const errAt = useRef(0);
+  /** The round trip to the host's game, beside the clock in a match with friends (net/ping.ts). */
+  const pingEl = useRef<HTMLElement | null>(null);
+  const pingRef = useRef(0);
   const stick = useRef<MoveInput>({ mx: 0, my: 0 });
   // the titles over the fighters' heads (the owner: "the titles in the banner that are rolling up and down are cut off
   // ... i was thinking of adding the titles above the hp bar on the actual characters with the respective shader"):
@@ -364,7 +380,11 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       const why = ab ? m.blocked(me, ab, undefined, ab.aim === 'ground' ? at : undefined) : null;
       if (closeIn(ab, why)) return;
       if (why && why !== 'Not ready yet') say(why, ab);
-      else role.send(at ? { p: id, at: [Math.round(at.x), Math.round(at.y)] } : { p: id });
+      else {
+        role.send(at ? { p: id, at: [Math.round(at.x), Math.round(at.y)] } : { p: id });
+        // (shown going at once on this screen, for as long as the host's word could take to have it)
+        if (!why) m.foretell(myId, id, ab?.aim === 'ground' ? at : undefined, Math.min(1, 0.25 + (pingRef.current * 1.5) / 1000));
+      }
       return;
     }
     const why = m.press(myId, id, at);
@@ -750,14 +770,39 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
 
     /* --------------------------------------------------- the room's traffic */
     const others: Record<number, MoveInput> = {};
+    // a guest's own hero: moved at once on its own screen, set right only where the host's game really differs (the
+    // host's word is a round trip old: net/selfSync.ts); the host says which of each guest's moves it last had
+    const sync = role.kind === 'client' ? new SelfSync() : null;
+    const heard = role.kind === 'host' ? new SeatInputs() : null;
+    // each player's round trip to the room, as they said (ms), by fighter: the match's ping
+    const rtts = new Map<number, number>();
+    const ownRtt = (): number => (role.kind === 'solo' ? 0 : (role.rtt?.() ?? 0));
+    const hostRtt = { ms: 0 };
+    const pingNow = (): number => {
+      const own = ownRtt();
+      if (!own) return 0;
+      if (role.kind === 'client') return own + (hostRtt.ms || own);
+      let worst = 0;
+      for (const ms of rtts.values()) worst = Math.max(worst, ms);
+      return worst ? own + worst : 0;
+    };
+    const hostWord = (events: Match['events']): unknown => {
+      const now = performance.now();
+      const own = ownRtt();
+      return { s: m.snapshot(), e: events, ak: heard!.acks(now), ...(own ? { rt: Math.round(own) } : {}) };
+    };
     if (role.kind === 'host') {
       role.listen((seat, d) => {
         const f = m.fighters.find((x) => x.seat === seat);
         if (!f || !d || typeof d !== 'object') return;
-        const q = d as { mx?: unknown; my?: unknown; p?: unknown; at?: unknown; tg?: unknown; eq?: { bar?: unknown; talents?: unknown; ult?: unknown } };
+        const q = d as { mx?: unknown; my?: unknown; p?: unknown; at?: unknown; tg?: unknown; q?: unknown; rt?: unknown; eq?: { bar?: unknown; talents?: unknown; ult?: unknown } };
+        if (typeof q.rt === 'number' && Number.isFinite(q.rt)) rtts.set(f.id, Math.max(0, Math.min(10_000, q.rt)));
         const eq = q.eq;
         if (eq && Array.isArray(eq.bar) && eq.bar.length <= 12 && eq.bar.every((b) => typeof b === 'string')) m.equip(f.id, { bar: eq.bar as string[], talents: Array.isArray(eq.talents) ? (eq.talents.filter((b) => typeof b === 'string').slice(0, 4) as string[]) : [], ult: typeof eq.ult === 'string' ? eq.ult : undefined });
-        if (typeof q.mx === 'number' && typeof q.my === 'number' && Number.isFinite(q.mx) && Number.isFinite(q.my)) others[f.id] = { mx: Math.max(-1, Math.min(1, q.mx)), my: Math.max(-1, Math.min(1, q.my)) };
+        if (typeof q.mx === 'number' && typeof q.my === 'number' && Number.isFinite(q.mx) && Number.isFinite(q.my)) {
+          others[f.id] = { mx: Math.max(-1, Math.min(1, q.mx)), my: Math.max(-1, Math.min(1, q.my)) };
+          heard!.heard(f.id, q.q, performance.now());
+        }
         // (press checks it's on their bar, and the rules, as for anyone)
         // (a placed ability comes with where: two plain numbers, which the rules bring into reach and sight)
         const at = Array.isArray(q.at) && q.at.length === 2 && q.at.every((n) => typeof n === 'number' && Number.isFinite(n)) ? { x: q.at[0] as number, y: q.at[1] as number } : undefined;
@@ -766,9 +811,15 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       });
     } else if (role.kind === 'client') {
       role.listen((_seat, d) => {
-        const q = d as { s?: Snapshot; e?: Match['events'] };
+        const q = d as { s?: Snapshot; e?: Match['events']; ak?: unknown; rt?: unknown };
         if (!q?.s || !Array.isArray(q.s.f)) return;
-        m.restore(q.s, myId);
+        if (typeof q.rt === 'number' && Number.isFinite(q.rt)) hostRtt.ms = Math.max(0, Math.min(10_000, q.rt));
+        // (a host from before this says nothing of our moves: its place for our hero is eased toward, as it was)
+        const ack = sync ? ackFor(q.ak, myId) : null;
+        m.restore(q.s, myId, !!ack);
+        const mine = m.fighters[myId];
+        const said = q.s.f[myId];
+        if (ack && mine && said) sync!.correct(ack[1], ack[2], said.x, said.y, mine);
         if (Array.isArray(q.e)) m.events.push(...q.e);
       });
     }
@@ -900,21 +951,24 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           if (sendT >= SEND_EVERY) {
             sendT = 0;
             sent = [...m.events];
-            role.send({ s: m.snapshot(), e: sent });
+            role.send(hostWord(sent));
           }
         }
       } else {
         // (by the host's clock: it runs the fight at PACE, and a guest's copy that ran at the wall's ran everyone a
         // little ahead between its words, to be pulled back at each)
         m.coast(dt * PACE, myId, mine);
+        const self = m.fighters[myId];
+        if (self && sync) sync.frame(now, dt, self);
         keepLog(log.current, m, me, dt * PACE, circles, m.events.slice(logged));
         logged = m.events.length;
         sendT += dt;
         const said = `${mine.mx.toFixed(2)},${mine.my.toFixed(2)}`;
-        if (sendT >= 1 / 15 && said !== lastSent) {
+        if ((sendT >= MOVE_EVERY && said !== lastSent) || sendT >= MOVE_AGAIN) {
           sendT = 0;
           lastSent = said;
-          role.send({ mx: mine.mx, my: mine.my });
+          const own = ownRtt();
+          role.send({ mx: mine.mx, my: mine.my, q: sync!.stamp(now), ...(own ? { rt: Math.round(own) } : {}) });
         }
       }
       react();
@@ -946,6 +1000,10 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       }
       if (hudT > 0.066) {
         hudT = 0;
+        if (role.kind !== 'solo') {
+          pingRef.current = pingNow();
+          showPing(pingEl.current, pingRef.current);
+        }
         if (errAt.current && now - errAt.current > 1400) {
           errAt.current = 0;
           setErr('');
@@ -971,7 +1029,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         const myTeam = m.fighters[myId]?.team;
         sound(m.winner === myTeam ? 'victory' : 'playerDie');
         // the last word goes out at once, then a moment to see the last blow land
-        if (role.kind === 'host') role.send({ s: m.snapshot(), e: [] });
+        if (role.kind === 'host') role.send(hostWord([]));
         const won = m.winner === myTeam;
         const lesson = !won && me ? lessonOf(log.current, me, hintKeys()) : null;
         window.setTimeout(() => onDone({ won, draw: m.draw, match: m, myId, dolls: m.fighters.map((f) => heroDollUrl(looks[f.id]!.look, 'down', 3, looks[f.id]!.held)), lesson }), 1300);
@@ -1161,6 +1219,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 ) : (
                   <span className="rb-ring-rating is-friendly">{tut ? 'Tutorial' : 'Friendly'}</span>
                 )}
+                {role.kind !== 'solo' && <small className="rb-ping" ref={pingEl} hidden />}
                 {m.suddenAt !== null ? (
                   <small className="rb-ring-damp is-gone" title="Only healers are left: healing is gone and everything hits harder every second, until one side falls">
                     Sudden death: {damp >= 100 ? 'no healing' : `healing −${damp}%`}, damage +{Math.round((m.sudden - 1) * 100)}%

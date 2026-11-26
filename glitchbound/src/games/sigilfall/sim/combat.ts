@@ -890,6 +890,13 @@ export const BLOW_MOST = 0.6;
 /** The floor for a blow of `dmg` from a boss that hits for `base` (0 when it is not a boss's blow). */
 export const blowFloor = (dmg: number, base: number): number => (base > 0 ? Math.min(BLOW_MOST, (BLOW_FLOOR * dmg) / base) : 0);
 
+/**
+ * How much further out the host's copy of another hero is caught by what lands on the ground, when that hero's game
+ * checks every blow itself (Ghost.confirms): the copy is a round trip behind the hero, and their game has the last word
+ * (net/coop.ts), so the host sends what might have struck them rather than miss what did.
+ */
+export const GHOST_SLACK = 24;
+
 export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: number; knock?: number; status?: { status: StatusId; dur: number; power: number }; source?: Enemy; pierce?: boolean; floor?: number } = {}): boolean {
   const p = w.player;
   if (p.dead || dmg <= 0) return false;
