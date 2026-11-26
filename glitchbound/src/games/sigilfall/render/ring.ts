@@ -121,6 +121,19 @@ const SUPER_SOUND: Record<string, string> = { physical: 'quake', fire: 'meteor',
 /** An ability with a sound of its own as it leaves the hand (Frostfang is thrown, with a whistle, not cast). */
 const LEAVES_OWN: Record<string, string> = { 'm-fang': 'spear' };
 /**
+ * The ranger sounds as the campaign's ranger does, by the campaign's recordings, not by sounds made for the Ring (the
+ * owner, 2026-11-26: "fix the ring's ranger sounds, theyre real shit, use the ones from the campaign if possible"): a
+ * shot is the bow loosed and lands as the arrow's blow with the thud of what it meets; a volley is loosed and rains
+ * down; a trap's steel is set and springs; a dash is cloth; the hawk dives with a rush. None of these is in
+ * RING_SOUNDS, so ringSound leaves each the campaign's own.
+ */
+const RANGER_LEAVES: Record<string, string> = { 'r-leap': 'dash', 'r-trap': 'trapSet', 'r-super2': 'trapSet', 'r-wind': 'volley', 'r-hawk': 'rush' };
+const RANGER_LANDS: Record<string, string> = { 'r-trap': 'trapSpring', 'r-super2': 'trapSpring', 'r-wind': 'arrowRain' };
+/** What a ranger's ability sounds like leaving the hand and landing: a shot unless it has its own. */
+export const rangerSounds = (id: string): { leave: string; land: string } => ({ leave: RANGER_LEAVES[id] ?? 'bow', land: RANGER_LANDS[id] ?? 'arrow' });
+/** Every sound the ranger's abilities make (a test holds them to the campaign's). */
+export const rangerSoundIds = (): string[] => [...new Set(['bow', 'arrow', 'hitFlesh', ...Object.values(RANGER_LEAVES), ...Object.values(RANGER_LANDS)])];
+/**
  * The Ring's own sound for a sound asked for by its usual name (audio/samples.ts RING_SOUNDS): its own where it has one,
  * else the usual.
  */
@@ -294,12 +307,16 @@ export class RingFx {
         // (what it is made of, as it leaves the hand: your own a little louder than the rest)
         const vol = e.id === myId ? 0.7 : 0.4;
         const melee = ab.range > 0 && ab.range <= 40;
-        if (ab.super) sound(SUPER_SOUND[ab.school] ?? 'nova', 0.9);
+        if (ab.cls === 'ranger') {
+          // (the campaign's own: a quick shot comes every second, so it sits a little under the rest)
+          const { leave } = rangerSounds(ab.id);
+          sound(leave, ab.super ? 0.9 : leave === 'bow' && ab.role !== 'burst' ? vol * 0.7 : vol);
+        } else if (ab.super) sound(SUPER_SOUND[ab.school] ?? 'nova', 0.9);
         else if (ab.role === 'heal' || ab.aim === 'friend') sound('buff', vol * 0.8);
         // (the ground torn open for the dead)
         else if (ab.role === 'summon') sound('rift', vol);
         else if (ab.aim === 'self') sound(ab.role === 'defense' ? 'shield' : ab.role === 'mobility' ? 'blink' : 'buff', vol);
-        else if (ab.school === 'physical') sound(melee ? (ab.role === 'burst' ? 'swingBig' : 'swing') : ab.cls === 'ranger' ? 'bow' : 'swingBig', ab.cls === 'ranger' && ab.role !== 'burst' ? vol * 0.7 : vol);
+        else if (ab.school === 'physical') sound(melee ? (ab.role === 'burst' ? 'swingBig' : 'swing') : 'swingBig', vol);
         else sound(LEAVES_OWN[ab.id] ?? LEAVES[ab.school] ?? 'bolt', vol);
       } else if (e.k === 'land') {
         const ab = ABILITIES[e.ab];
@@ -312,9 +329,14 @@ export class RingFx {
         // (and as it lands: steel for a blow, the school's own for a spell, a soft chime for a heal)
         const mine = e.id === myId;
         if (ab.role === 'heal' || ab.aim === 'friend') sound('heal', mine ? 0.6 : 0.35);
-        // (an arrow lands with a knock of its own, not steel on steel: the owner, 2026-11-22, "fix the sound of rangers arrows")
-        else if (ab.cls === 'ranger' && ab.school === 'physical' && ab.range > 40) sound('arrow', mine ? 0.55 : 0.35);
-        else if (ab.aim === 'enemy' || ab.aim === 'near' || ab.aim === 'ground') sound(ab.school === 'physical' ? (ab.role === 'burst' ? 'critBlade' : 'clash') : ab.role === 'burst' && ab.school !== 'frost' ? 'explode' : (LANDS[ab.school] ?? 'hit'), mine ? 0.75 : 0.5);
+        // (the ranger's land as the campaign's do: an arrow's blow with the thud of what it meets under it, a volley's rain,
+        // a trap springing; a sprung trap lands on whoever stepped in it)
+        else if (ab.cls === 'ranger' && (RANGER_LANDS[ab.id] || ab.aim === 'enemy' || ab.aim === 'near' || ab.aim === 'ground')) {
+          const { land } = rangerSounds(ab.id);
+          const loud = land !== 'arrow' || ab.role === 'burst';
+          sound(land, loud ? (mine ? 0.75 : 0.5) : mine ? 0.55 : 0.35);
+          if (land === 'arrow') sound('hitFlesh', loud ? (mine ? 0.6 : 0.4) : mine ? 0.45 : 0.28);
+        } else if (ab.aim === 'enemy' || ab.aim === 'near' || ab.aim === 'ground') sound(ab.school === 'physical' ? (ab.role === 'burst' ? 'critBlade' : 'clash') : ab.role === 'burst' && ab.school !== 'frost' ? 'explode' : (LANDS[ab.school] ?? 'hit'), mine ? 0.75 : 0.5);
         // (its own look as it lands, in place of its school's burst; with it, for the few that keep both)
         const from0 = this.by.get(ab.id);
         const src = from0 === undefined ? undefined : m.fighters[from0];

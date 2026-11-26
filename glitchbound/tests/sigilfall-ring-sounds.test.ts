@@ -11,7 +11,7 @@ import { MAPS } from '../src/games/sigilfall/arena/maps';
 import { RING_SOUNDS, SAMPLES } from '../src/games/sigilfall/audio/samples';
 import { SONGS } from '../src/games/sigilfall/audio/songs';
 import { MUSIC_CREDITS, RING_MUSIC, SEAM, TRACKS } from '../src/games/sigilfall/audio/tracks';
-import { ringSchoolSounds, ringSound } from '../src/games/sigilfall/render/ring';
+import { rangerSoundIds, rangerSounds, ringSchoolSounds, ringSound } from '../src/games/sigilfall/render/ring';
 
 const read = (p: string): string => readFileSync(join(process.cwd(), p), 'utf8');
 
@@ -19,7 +19,9 @@ describe('The Ring sounds like itself', () => {
   it('every sound a match asks for is the Ring’s own, made for it, and its file ships', () => {
     const asked = new Set<string>(['victory', 'playerDie', 'checkpoint', ...ringSchoolSounds()]);
     for (const file of ['src/games/sigilfall/render/ring.ts', 'src/games/sigilfall/ui/RingMatch.tsx']) for (const m of read(file).matchAll(/\bsound\(\s*'([a-zA-Z-]+)'/g)) asked.add(m[1]!);
-    for (const m of read('src/games/sigilfall/render/ring.ts').matchAll(/'(swing|swingBig|bow|shield|blink|buff|rift|heal|critBlade|clash|explode|hit)'/g)) asked.add(m[1]!);
+    for (const m of read('src/games/sigilfall/render/ring.ts').matchAll(/'(swing|swingBig|shield|blink|buff|rift|heal|critBlade|clash|explode|hit)'/g)) asked.add(m[1]!);
+    // (the ranger's are the campaign's: the next test)
+    for (const id of rangerSoundIds()) asked.delete(id);
     expect(asked.size).toBeGreaterThan(30);
     for (const id of asked) {
       expect(ringSound(id), id).toBe(`ring-${id}`);
@@ -36,6 +38,26 @@ describe('The Ring sounds like itself', () => {
     expect(script).not.toMatch(/function (bell|marimba|kalimba|tinkle)\b|\b(bell|marimba|kalimba|tinkle|brass)\(/);
     const sounds = script.slice(script.indexOf('const SOUNDS = {'));
     for (const id of ['freeze', 'shatter', 'shard', 'spear']) expect(sounds).toMatch(new RegExp(`\\b${id}: \\(\\) => [^\\n]*(crunch|frostHiss)`));
+  });
+
+  it('the ranger sounds as in the campaign, by its recordings (the owner, 2026-11-26)', () => {
+    // "fix the ring's ranger sounds, theyre real shit, use the ones from the campaign if possible"
+    expect(rangerSounds('r-swift')).toEqual({ leave: 'bow', land: 'arrow' });
+    expect(rangerSounds('r-super').leave).toBe('bow');
+    expect(rangerSounds('r-trap')).toEqual({ leave: 'trapSet', land: 'trapSpring' });
+    expect(rangerSounds('r-wind')).toEqual({ leave: 'volley', land: 'arrowRain' });
+    expect(rangerSounds('r-leap').leave).toBe('dash');
+    for (const id of rangerSoundIds()) {
+      expect(ringSound(id), id).toBe(id);
+      expect(SAMPLES[id], id).toBeTruthy();
+      for (const f of SAMPLES[id]!.files) {
+        expect(f.startsWith('ring-'), `${id}: ${f}`).toBe(false);
+        expect(existsSync(join(process.cwd(), `public/games/sigilfall/audio/${f}.mp3`)), f).toBe(true);
+      }
+    }
+    // (the campaign's own bow and blow)
+    expect(SAMPLES.bow!.files).toEqual(SAMPLES.volley!.files);
+    expect(SAMPLES.arrow!.files).toEqual(SAMPLES.hit!.files);
   });
 
   it('the campaign keeps its own sounds', () => {

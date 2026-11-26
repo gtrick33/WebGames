@@ -349,8 +349,10 @@
     background: var(--cyan);
     box-shadow: var(--hard-sm);
   }
+  /* the room kept for the floating tabs (the footer runs down under them: Footer.css) */
   body {
-    padding-bottom: calc(88px + env(safe-area-inset-bottom));
+    --tabs-room: calc(88px + env(safe-area-inset-bottom));
+    padding-bottom: var(--tabs-room);
   }
 }
 @media (max-width: 400px) {
@@ -367,7 +369,8 @@
     display: none;
   }
   body {
-    padding-bottom: calc(60px + env(safe-area-inset-bottom));
+    --tabs-room: calc(60px + env(safe-area-inset-bottom));
+    padding-bottom: var(--tabs-room);
   }
 }
 /* A phone on its side on a game page: the floating tabs, and the settings button docked in them, would sit
@@ -378,7 +381,8 @@
     display: none;
   }
   body:has(.game-layout) {
-    padding-bottom: env(safe-area-inset-bottom);
+    --tabs-room: env(safe-area-inset-bottom);
+    padding-bottom: var(--tabs-room);
   }
 }
 @media (max-width: 420px) {

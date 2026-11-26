@@ -1,6 +1,11 @@
 .site-footer {
   position: relative;
   margin-top: clamp(72px, 10vw, 140px);
+  /* Phones: down to the bottom of the page, under the floating tabs. The room kept for them below it (body's padding,
+     Header.css --tabs-room) showed the light page color: a pale band under the dark footer at the end of every page (the
+     owner, 2026-11-26: "some white line on portrait on my iphone at the bottom when i scroll"). */
+  margin-bottom: calc(-1 * var(--tabs-room, 0px));
+  padding-bottom: var(--tabs-room, 0px);
   background: var(--ink);
   color: var(--fg);
   border-top: 1px solid var(--line);

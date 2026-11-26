@@ -2270,6 +2270,13 @@ const tr: string[] = [
   'şu an çevrimiçi',
   '{game} oyununda',
   'Oyunda nerede olduğunu ekleyeceğiz:',
+  'Safari çubuğunda Paylaş’a dokun (ya da önce •••, sonra Paylaş’a)',
+  'Tarayıcının Paylaş menüsünü aç',
+  'Tarayıcı menüsünü aç (⋮)',
+  '“Uygulamayı yükle” ya da “Ana ekrana ekle”yi seç',
+  'Safari’nin menü çubuğunda “Dosya”yı, ardından “Dock’a Ekle”yi seç',
+  'Adres çubuğundaki yükle simgesine tıkla ya da tarayıcı menüsünden “GlitchBound’u yükle”yi seç',
+  'Bu tarayıcı GlitchBound’u uygulama olarak yükleyemez: Chrome, Edge ve Safari yükleyebilir.',
 ];
 
 export default tr;

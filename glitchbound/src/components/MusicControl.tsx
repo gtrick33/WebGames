@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { LANGS, setLang, useLang, useT } from '../i18n';
-import { promptInstall, useInstall } from '../platform/install';
+import { promptInstall, useInstall, type InstallHow } from '../platform/install';
 import { music, useMusic } from '../platform/music';
 import { setTheme, useTheme, type ThemeChoice } from '../platform/theme';
 import { Flag } from './Flag';
@@ -69,15 +69,7 @@ export function MusicControl() {
               >
                 <Icon name="expand" size={18} /> {t('Full screen app')}
               </button>
-              {!install.canPrompt && guide && (
-                <ol className="set-steps">
-                  <li>
-                    {t('Tap Safari’s Share button')} <Icon name="share" size={16} />
-                  </li>
-                  <li>{t('Choose Add to Home Screen')}</li>
-                  <li>{t('Open GlitchBound from your Home Screen: full screen, no browser bars')}</li>
-                </ol>
-              )}
+              {!install.canPrompt && guide && <InstallSteps how={install.how} />}
               {!install.canPrompt && !guide && <p className="set-note">{install.ios ? t('Tap Share, then Add to Home Screen: GlitchBound opens full screen, without Safari’s bars.') : t('Install GlitchBound to play full screen, without the browser’s bars.')}</p>}
             </section>
           )}
@@ -117,4 +109,36 @@ export function MusicControl() {
       )}
     </div>
   );
+}
+
+/**
+ * The steps to put the arcade on the Home Screen when the browser gives no install dialog to open (platform/install.ts
+ * installHow): Safari's Share sheet on an iPhone or iPad (no site can add itself there), the browser menu on Android,
+ * the address bar's install icon on a computer.
+ */
+function InstallSteps({ how }: { how: InstallHow }) {
+  const t = useT();
+  const share = <Icon name="share" size={16} />;
+  const home = t('Open GlitchBound from your Home Screen: full screen, no browser bars');
+  if (how === 'ios-safari' || how === 'ios-safari-26' || how === 'ios-browser') {
+    return (
+      <ol className="set-steps">
+        <li>
+          {how === 'ios-safari' ? t('Tap Safari’s Share button') : how === 'ios-safari-26' ? t('Tap Share in Safari’s bar (or ••• first, then Share)') : t('Open your browser’s Share menu')} {share}
+        </li>
+        <li>{t('Choose Add to Home Screen')}</li>
+        <li>{home}</li>
+      </ol>
+    );
+  }
+  if (how === 'android') {
+    return (
+      <ol className="set-steps">
+        <li>{t('Open the browser menu (⋮)')}</li>
+        <li>{t('Choose Install app or Add to Home screen')}</li>
+        <li>{home}</li>
+      </ol>
+    );
+  }
+  return <p className="set-note">{how === 'mac-safari' ? t('In Safari’s menu bar, choose File, then Add to Dock') : how === 'none' ? t('This browser can’t install GlitchBound as an app: Chrome, Edge and Safari can.') : t('Click the install icon in the address bar, or choose Install GlitchBound in the browser menu')}</p>;
 }

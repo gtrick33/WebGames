@@ -21,6 +21,11 @@ const MUSIC_BASE = '/games/sigilfall/music/';
 const MUSIC_VERSION = '2';
 /** A piece that comes in at this level sits where the procedural score does. */
 const TRACK_GAIN = 1;
+/**
+ * The music's share of the music volume, in every mode (the lands, the Ring, the Vigil all play through this one bus):
+ * 0.55 until the owner, 2026-11-26, asked for it "increased base by 25% higher".
+ */
+const MUSIC_LEVEL = 0.55 * 1.25;
 /** How long one land's music takes to give way to the next, in seconds. */
 const CROSSFADE = 1.5;
 /** How loud the air of a place is under everything (it follows the effects volume), and how long it takes to change. */
@@ -192,7 +197,7 @@ export class Sound {
     const t = this.ctx.currentTime;
     this.master.gain.setTargetAtTime(this.volumes.muted ? 0 : this.volumes.master, t, 0.05);
     this.sfxBus.gain.setTargetAtTime(this.volumes.sfx, t, 0.05);
-    this.musicBus.gain.setTargetAtTime(this.volumes.music * 0.55, t, 0.05);
+    this.musicBus.gain.setTargetAtTime(this.volumes.music * MUSIC_LEVEL, t, 0.05);
     this.ambBus?.gain.setTargetAtTime(this.volumes.sfx * AMBIENCE_GAIN, t, 0.05);
   }
 

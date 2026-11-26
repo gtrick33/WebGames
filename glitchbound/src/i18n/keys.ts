@@ -2281,6 +2281,14 @@ export const KEYS: string[] = [
   "in {game}",
   // the Report a bug page: a game says where its player was (src/platform/bugContext.ts)
   "We’ll attach where you were in the game:",
+  // Full screen app: the steps for a browser that gives no install dialog (src/platform/install.ts installHow)
+  "Tap Share in Safari’s bar (or ••• first, then Share)",
+  "Open your browser’s Share menu",
+  "Open the browser menu (⋮)",
+  "Choose Install app or Add to Home screen",
+  "In Safari’s menu bar, choose File, then Add to Dock",
+  "Click the install icon in the address bar, or choose Install GlitchBound in the browser menu",
+  "This browser can’t install GlitchBound as an app: Chrome, Edge and Safari can.",
 ];
 
 export const UI_COUNT = 311;

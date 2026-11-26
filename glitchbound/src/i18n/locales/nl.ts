@@ -2270,6 +2270,13 @@ const nl: string[] = [
   'nu online',
   'in {game}',
   'We voegen toe waar je in het spel was:',
+  'Tik op Deel in de balk van Safari (of eerst op •••, dan op Deel)',
+  'Open het Deel-menu van je browser',
+  'Open het browsermenu (⋮)',
+  'Kies ‘App installeren’ of ‘Toevoegen aan startscherm’',
+  'Kies in de menubalk van Safari ‘Archief’ en dan ‘Voeg toe aan Dock’',
+  'Klik op het installatie-icoon in de adresbalk, of kies ‘GlitchBound installeren’ in het browsermenu',
+  'Deze browser kan GlitchBound niet als app installeren: Chrome, Edge en Safari wel.',
 ];
 
 export default nl;
