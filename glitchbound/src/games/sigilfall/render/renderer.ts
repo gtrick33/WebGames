@@ -807,8 +807,13 @@ export class Renderer {
     if (st) this.g = st.beginDecals();
     const dg = this.g;
     this.flat(p.x, p.y);
-    if (!w.scene) this.drawAim(w);
-    this.drawFacing(w, time);
+    // (a scene is a clean picture: neither the aim nor touch's arrow and ring round the enemy a tap would hit. Those are
+    // laid at the hero, and a scene's camera can look far from them: a mark near where the camera stands came out
+    // dozens of times its size, a wide yellow band across the picture, the owner's iPhone, 2026-11-27)
+    if (!w.scene) {
+      this.drawAim(w);
+      this.drawFacing(w, time);
+    }
     if (!this.landOnly) this.drawEntrances(w, time);
     this.flat(cx, cy);
     this.layer?.under?.(dg, time, view);
