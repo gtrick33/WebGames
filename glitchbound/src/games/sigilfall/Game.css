@@ -3478,6 +3478,23 @@ html.rb-touch-playing textarea {
   margin-bottom: 6px;
   flex-wrap: wrap;
 }
+/* Sell all (2026-11-27): the whole bag at once, in the bag's head and over a vendor's Sell list; asked first, on a line
+   of its own with the finer pieces it would take */
+.rb-sellall-ask {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+.rb-sellall-ask .rb-warn {
+  flex-basis: 100%;
+}
+.rb-shop-sellall {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+}
 .rb-bag-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
@@ -4505,6 +4522,11 @@ html.rb-touch-playing textarea {
 .rb-receipt-icon {
   width: 34px;
   image-rendering: pixelated;
+}
+.rb-receipt > svg {
+  flex: none;
+  width: 34px;
+  height: 34px;
 }
 .rb-receipt-text {
   display: grid;

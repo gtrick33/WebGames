@@ -38,6 +38,7 @@ import { questRewards } from '../progress/rewards';
 import { FOG_CELL, fogSeen, loadFog, type Fog } from '../progress/fog';
 import { RiftGuide } from './RiftGuide';
 import { ShopPanel } from './Shop';
+import { SellAll } from './SellAll';
 import { RING_LOOKS } from '../arena/rewards';
 import { MUSIC_CREDITS } from '../audio/tracks';
 import { allTitles, earnedTitles, RING_RECORD_TITLES, RING_TITLES, titleName, titleShown, wornTitleShown, type TitleDef } from '../progress/titles';
@@ -289,6 +290,14 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
               </button>
             ))}
           </div>
+          <SellAll
+            engine={engine}
+            onSold={(got) => {
+              setSel((s) => (s?.where === 'worn' ? s : null));
+              setConfirm(null);
+              engine.toast(`Sold ${got.n} item${got.n === 1 ? '' : 's'}`, 'loot', undefined, `for ${fmt(got.gold)} gold`);
+            }}
+          />
         </div>
         <div className="rb-bag-grid">
           {bag.map((it) => {
