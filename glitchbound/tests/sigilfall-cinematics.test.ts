@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ACTS } from '../src/games/sigilfall/data/acts';
 import { EVENTS } from '../src/games/sigilfall/data/events';
@@ -96,5 +97,16 @@ describe('Sigilfall: cinematics', () => {
     w.coop = { role: 'host', ghosts: [], out: [] };
     w.slowmo(2, { x: 0, y: 0 });
     expect(w.slowT).toBe(0);
+  });
+});
+
+describe('Sigilfall: a scene is a clean picture', () => {
+  it("touch's marks at the hero are not drawn in a scene: the ring round a tap's enemy came out a wide yellow band", () => {
+    // (a scene's camera can look far from the hero, and a mark laid on the ground near where the camera stands is
+    // blown up dozens of times: the owner's iPhone, 2026-11-27)
+    const src = readFileSync('src/games/sigilfall/render/renderer.ts', 'utf8');
+    expect(src).toContain('if (!w.scene) {\n      this.drawAim(w);\n      this.drawFacing(w, time);\n    }');
+    expect(src.match(/this\.drawFacing\(/g)).toHaveLength(1);
+    expect(src.match(/this\.drawAim\(/g)).toHaveLength(1);
   });
 });
