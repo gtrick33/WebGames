@@ -20,8 +20,9 @@ import * as sigilfall from '../src/games/sigilfall/net/room';
 import * as sigilfallRing from '../src/games/sigilfall/net/ringRoom';
 import * as sigilfallVigil from '../src/games/sigilfall/net/vigilRoom';
 import * as craterCrew from '../src/games/crater-crew/room';
+import * as prismPals from '../src/games/prism-pals/room';
 
-export type GameId = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'dial' | 'unique' | 'hues' | 'drag' | 'belot' | 'backgammon' | 'scribble' | 'sigilfall' | 'sigilfall-ring' | 'sigilfall-vigil' | 'crater-crew';
+export type GameId = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'dial' | 'unique' | 'hues' | 'drag' | 'belot' | 'backgammon' | 'scribble' | 'sigilfall' | 'sigilfall-ring' | 'sigilfall-vigil' | 'crater-crew' | 'prism-pals';
 
 /** What every room engine provides (`State` stays opaque to the server). */
 export interface Engine {
@@ -78,6 +79,7 @@ export const ENGINES: Record<GameId, Engine> = {
   'sigilfall-ring': sigilfallRing as unknown as Engine,
   'sigilfall-vigil': sigilfallVigil as unknown as Engine,
   'crater-crew': craterCrew as unknown as Engine,
+  'prism-pals': prismPals as unknown as Engine,
 };
 
 /**
@@ -106,6 +108,8 @@ export const QUICK: Record<GameId, { min: number; full: number; seats: number; s
   'sigilfall-ring': { min: 2, full: 6, seats: 6, start: false },
   'sigilfall-vigil': { min: 2, full: 4, seats: 4, start: false },
   'crater-crew': { min: 2, full: 4, seats: 8 },
+  // a level for two to four: the host picks one with a critter for everyone
+  'prism-pals': { min: 2, full: 4, seats: 4 },
 };
 
 export const isGameId = (v: unknown): v is GameId => typeof v === 'string' && Object.hasOwn(ENGINES, v);

@@ -103,6 +103,7 @@ const GAMES: Record<string, { slug: string; title: (host: string) => string; pit
   sigilfall: { slug: 'sigilfall', title: (h) => (h ? `${h} wants you in their Sigilfall party` : 'Join my Sigilfall party'), pitch: 'Riftstone runs and questing together, every hero on their own device.', busy: 'In a Riftstone run right now' },
   'crater-crew': { slug: 'crater-crew', title: (h) => (h ? `${h} wants you in a Crater Crew battle` : 'Join my Crater Crew battle'), pitch: 'Turn-based artillery for 2 to 6 crews, live on your own phone.' },
   'crass-act': { slug: 'crass-act', title: (h) => (h ? `${h} wants you in a Crass Act room` : 'Join my Crass Act room'), pitch: 'Fill-in-the-blank party cards for adults. 18+, free in your browser.' },
+  'prism-pals': { slug: 'prism-pals', title: (h) => (h ? `${h} wants you on their Prism Pals team` : 'Join my Prism Pals team'), pitch: 'A co-op color platformer for 2 to 4, live on your own phone.' },
 };
 
 /** Phases where a room's game is over and the next one has not started (anything else but the lobby is a game in progress). */

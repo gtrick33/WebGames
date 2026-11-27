@@ -82,6 +82,8 @@ describe('score limits', () => {
       ['belot', 220, { margin: 120 }, 300],
       ['crass-act', 10, { wins: 1 }, 600],
       ['wing-it', 70, { pillars: 40, feathers: 10 }, 50],
+      // First Steps solo, every gem, both pals to the exit in 4 s (a real dash takes 6)
+      ['prism-pals', 2100, { levels: 1, gems: 4 }, 4],
     ];
     for (const [slug, s, stats, seconds] of real) expect(refusal(game(slug), s, stats, seconds), `${slug} ${s} in ${seconds} s`).toBe('');
     // A new game adds its best real round here, so its limits are tested before it ships.

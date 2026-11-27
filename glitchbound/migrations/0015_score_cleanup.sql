@@ -125,6 +125,11 @@ FROM (
       WHEN game = 'sigilfall' AND score > 1500 * ((ended_at - started_at) / 1000.0) + 50 THEN 'implausible_score'
       WHEN game = 'crater-crew' AND ((ended_at - started_at) / 1000.0) < 1 THEN 'too_fast'
       WHEN game = 'crater-crew' AND score > 300 * ((ended_at - started_at) / 1000.0) + 50 THEN 'implausible_score'
+      WHEN game = 'prism-pals' AND ((ended_at - started_at) / 1000.0) < 2 THEN 'too_fast'
+      WHEN game = 'prism-pals' AND score > 2700 THEN 'above_max'
+      WHEN game = 'prism-pals' AND score > 600 * ((ended_at - started_at) / 1000.0) + 50 THEN 'implausible_score'
+      WHEN game = 'prism-pals' AND json_extract(stats, '$.gems') > 8 THEN 'bad_stats'
+      WHEN game = 'prism-pals' AND json_extract(stats, '$.levels') > 24 THEN 'bad_stats'
     END AS reason
   FROM runs WHERE status = 'ok'
 ) WHERE reason IS NOT NULL;
@@ -164,6 +169,9 @@ FROM (
         WHEN game = 'belot' AND score > 3000 THEN 'above_max'
         WHEN game = 'backgammon' AND score > 1000 THEN 'above_max'
         WHEN game = 'backgammon' AND json_extract(stats, '$.points') > 9 THEN 'bad_stats'
+        WHEN game = 'prism-pals' AND score > 2700 THEN 'above_max'
+        WHEN game = 'prism-pals' AND json_extract(stats, '$.gems') > 8 THEN 'bad_stats'
+        WHEN game = 'prism-pals' AND json_extract(stats, '$.levels') > 24 THEN 'bad_stats'
       END,
     (SELECT 'run_removed' FROM removed_scores r
       WHERE r.source = 'runs' AND r.user_id = b.user_id AND r.game = b.game AND r.score = b.score AND r.ended_at = b.at)) AS reason

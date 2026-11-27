@@ -134,6 +134,11 @@ export const GAME_PINS: PinDef[] = [
     ['Close Shave', 'Chain 12 near misses in a run', { stat: 'nearMisses', min: 12 }],
     ['Long Haul', 'Drive 2,600 meters in a run', { stat: 'meters', min: 2600 }],
     ['Neon Ghost', 'Score 8,000 in a run', { score: 8000 }]),
+  ...board('prism-pals',
+    ['Pal Up', 'Clear a level', { rounds: 1 }],
+    ['Gem Pocket', 'Collect 6 gems in a level', { stat: 'gems', min: 6 }],
+    ['Halfway Prism', 'Clear 12 different levels', { stat: 'levels', min: 12 }],
+    ['Whole Spectrum', 'Clear all 24 levels', { stat: 'levels', min: 24 }]),
 ];
 
 const arcade = (id: string, name: string, hint: string, tier: PinTier, need: PinNeed): PinDef => ({ id: `${ARCADE}:${id}`, board: ARCADE, name, hint, tier, need });

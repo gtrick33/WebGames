@@ -43,6 +43,7 @@ export const ROOM_GAME_INFO: Record<RoomGame, { title: string; emoji: string }> 
   'sigilfall-ring': { title: 'Sigilfall: The Ring', emoji: '⚔️' },
   'sigilfall-vigil': { title: 'Sigilfall: The Vigil', emoji: '🔥' },
   'crater-crew': { title: 'Crater Crew', emoji: '💥' },
+  'prism-pals': { title: 'Prism Pals', emoji: '🔷' },
 };
 
 const OPEN = new Set(['lobby', 'waiting', 'over', 'result']);

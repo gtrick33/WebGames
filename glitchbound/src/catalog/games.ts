@@ -1132,4 +1132,40 @@ export const GAMES: GameEntry[] = [
     // One shot can win a 1v1 (600 points) 2.6-7 s after the start (CC-03).
     limits: { scorePerSecond: 300, minSeconds: 1 },
   },
+  {
+    slug: 'prism-pals',
+    title: 'Prism Pals',
+    tagline: 'A co-op color platformer: each pal stands on its own color. Play live with up to four.',
+    description:
+      'Color blocks hold up only their own pal, goo is safe only for its own color, and plates open gates for the others. Get every pal to the exit together. ' +
+      'Play live with 2 to 4 friends, solo by switching pals across 24 levels, or today’s daily level.',
+    categories: ['puzzle', 'party', 'arcade'],
+    moods: ['friends', 'brainy'],
+    tags: ['platformer', 'co-op', 'colors', 'multiplayer', 'online', 'live', 'friends', 'critters', 'daily'],
+    released: '2026-11-27',
+    accent: 'violet',
+    emoji: '🔷',
+    art: { tile: '/games/prism-pals/tile.webp', wide: '/games/prism-pals/wide.webp', alt: 'Four round critters in tangerine, mint, lilac and lemon on glowing color blocks by a prism door', bg: '#2b1f52' },
+    runtime: { kind: 'module' },
+    aspect: 'landscape',
+    live: { players: '2–4' },
+    controls: {
+      keyboard: ['← → or A D: walk, ↑ W or Space: jump', 'Tab or Q: switch pal, E or ↓: pull a lever', 'R: restart, Esc: pause'],
+      touch: ['◀ ▶ to walk, the big button to jump', '⇄ to switch pal, ✋ to pull a lever'],
+    },
+    stats: [
+      { key: 'score', label: 'Best level score' },
+      { key: 'levels', label: 'Levels cleared' },
+      { key: 'gems', label: 'Most gems in a level' },
+    ],
+    highlights: ['Live co-op rooms for 2 to 4', '24 levels for two, three and four pals', 'One daily level for everyone'],
+    ownDaily: { label: 'Today’s level' },
+    challenge: { label: 'One level for everyone: highest score wins.' },
+    daily: [
+      { metric: 'gems', targets: [3, 4, 5], label: 'Collect {n} gems in one Prism Pals level' },
+      { metric: 'score', targets: [1500, 1800], label: 'Score {n} in one Prism Pals level' },
+    ],
+    // A level is 1000 + 150 a gem + up to 500 for time: 2,100 in a 6 s solo dash at most (twice that rate allowed).
+    limits: { scorePerSecond: 600, minSeconds: 2, maxScore: 2700, stats: { gems: { max: 8 }, levels: { max: 24 } } },
+  },
 ];

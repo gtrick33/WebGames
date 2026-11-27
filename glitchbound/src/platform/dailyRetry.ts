@@ -19,6 +19,7 @@ const STORES: Record<string, string> = {
   belot: 'glitchbound.belot',
   backgammon: 'glitchbound.backgammon',
   'crater-crew': 'glitchbound.crater-crew',
+  'prism-pals': 'glitchbound.prism-pals',
 };
 
 const USED = 'glitchbound.dailyRetries';

@@ -36,6 +36,7 @@ export const GAME_MODULES: Record<string, GameModuleLoader> = {
   backgammon: () => import('../games/backgammon/Game'),
   'crater-crew': () => import('../games/crater-crew/Game'),
   sigilfall: () => import('../games/sigilfall/Game'),
+  'prism-pals': () => import('../games/prism-pals/Game'),
 };
 
 /**
