@@ -535,6 +535,24 @@ export function salvage(c: Character, uid: string): number {
   return value;
 }
 
+/** What the whole bag melts down or sells for: each piece's own price, added up (worn gear isn't in the bag). */
+export const bagWorth = (c: Character): number => c.bag.reduce((sum, it) => sum + salvageValue(it), 0);
+
+/**
+ * Sell all: the whole bag melted down at once, each piece for what it fetches alone (salvage, so a look it carried is
+ * kept). How many pieces went, and the gold they came to. (The owner, 2026-11-27: "calculates the whole amount of
+ * every item in the bag and salvages them".)
+ */
+export function salvageAll(c: Character): { n: number; gold: number } {
+  let n = 0;
+  let gold = 0;
+  for (const it of [...c.bag]) {
+    gold += salvage(c, it.uid);
+    n++;
+  }
+  return { n, gold };
+}
+
 /* ----------------------------------------------------------------- quests */
 
 export function questState(c: Character, id: string): QuestState {

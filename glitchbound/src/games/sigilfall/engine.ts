@@ -29,7 +29,7 @@ import { SKILLS } from './data/skills';
 import type { ClassId, Item, RegionId, SigilId, SkillIndex, SlotId, SlotKey } from './data/types';
 import { KeyboardMouse, TouchState, type UiKey } from './input/input';
 import { holds } from './sim/story';
-import { SIGILS, abandonQuest, acceptQuest, activeQuests, currentObjective, handInQuest, handInsFor, offeredBy, trackQuest, allItems, bagSize, HOME, chooseSpec, cantEquip, equip, learnedSkills, learnTalent, newCharacter, questState, respec, swapPick, type Body, type Face, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
+import { SIGILS, abandonQuest, acceptQuest, activeQuests, currentObjective, handInQuest, handInsFor, offeredBy, trackQuest, allItems, bagSize, HOME, chooseSpec, cantEquip, equip, learnedSkills, learnTalent, newCharacter, questState, respec, swapPick, type Body, type Face, salvage, salvageAll, setSkill, startQuests, unequip, type Character } from './progress/character';
 import { itemName } from './progress/items';
 import { compareGear } from './progress/compare';
 import { canRide, chooseMount, FIRST_RIDE, grantMounts, grantWarden, hasMount, setShelfPoints, syncRift, learnLooks, wearLook, type LookSlot } from './progress/wardrobe';
@@ -2031,6 +2031,14 @@ export class SigilEngine {
     const g = salvage(this.hero, uid);
     if (g) this.changed('coin');
     return g;
+  }
+
+  /** Sell all (the bag's own tab and a vendor's Sell tab): the whole bag sold, each piece for its own price. */
+  salvageAll(): { n: number; gold: number } {
+    if (!this.hero?.bag.length) return { n: 0, gold: 0 };
+    const got = salvageAll(this.hero);
+    this.changed('coin');
+    return got;
   }
 
   markSeen(uid: string): void {

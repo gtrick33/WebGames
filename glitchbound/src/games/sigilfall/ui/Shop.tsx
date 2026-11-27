@@ -11,6 +11,7 @@ import { cantWager, FORGED_LEVEL, WAGER_PRICE, WAGER_SLOTS, wagerOdds } from '..
 import { cantBuy, potionPrice, stockFor, type ShopItem } from '../progress/shop';
 import { fmt, Frame, ItemIcon, Portrait } from './common';
 import { CoinIcon, isUpgrade, ItemDetail, MarkIcon, SLOT_LABEL } from './Panels';
+import { SellAll } from './SellAll';
 import { uiIcon } from './uiIcons';
 
 /** A vendor: buy their stock (or potions at the inn), sell what is in your bag. */
@@ -63,7 +64,7 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
       <div className="rb-shop">
         {receipt && (
           <div className="rb-receipt" key={receipt.id} role="status" aria-live="polite" style={receipt.item ? { ['--rc' as string]: rarityColor(receipt.item.r) } : undefined}>
-            {receipt.item ? <ItemIcon item={receipt.item} size={34} /> : <img src={uiIcon('potion', 4)} alt="" className="rb-receipt-icon" />}
+            {receipt.item ? <ItemIcon item={receipt.item} size={34} /> : receipt.coin ? <CoinIcon /> : <img src={uiIcon('potion', 4)} alt="" className="rb-receipt-icon" />}
             <span className="rb-receipt-text">
               <strong>{receipt.text}</strong>
               {receipt.sub && <span className="rb-gold">{receipt.sub}</span>}
@@ -154,15 +155,28 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
                 <p className="rb-dim">Sold out. New stock arrives after your next expedition.</p>
               )
             ) : h.bag.length ? (
-              <div className="rb-shop-grid">
-                {h.bag.map((it) => (
-                  <button key={it.uid} className={`rb-ware${sel === it.uid ? ' is-sel' : ''}`} onClick={() => pick(it.uid)} aria-label={`${itemName(it)}, sells for ${salvageValue(it)} gold`}>
-                    <ItemIcon item={it} size={42} />
-                    <span className="rb-ware-name">{itemName(it)}</span>
-                    <span className="rb-ware-price">{fmt(salvageValue(it))} g</span>
-                  </button>
-                ))}
-              </div>
+              <>
+                <div className="rb-shop-sellall">
+                  <SellAll
+                    engine={engine}
+                    onSold={(got) => {
+                      setSel(null);
+                      setInspect(null);
+                      setConfirm(null);
+                      show({ text: `Sold ${got.n} item${got.n === 1 ? '' : 's'}`, sub: `for ${fmt(got.gold)} gold`, coin: true });
+                    }}
+                  />
+                </div>
+                <div className="rb-shop-grid">
+                  {h.bag.map((it) => (
+                    <button key={it.uid} className={`rb-ware${sel === it.uid ? ' is-sel' : ''}`} onClick={() => pick(it.uid)} aria-label={`${itemName(it)}, sells for ${salvageValue(it)} gold`}>
+                      <ItemIcon item={it} size={42} />
+                      <span className="rb-ware-name">{itemName(it)}</span>
+                      <span className="rb-ware-price">{fmt(salvageValue(it))} g</span>
+                    </button>
+                  ))}
+                </div>
+              </>
             ) : (
               <p className="rb-dim">Your bag is empty. Worn gear isn’t for sale.</p>
             )}
@@ -328,6 +342,8 @@ interface Receipt {
   text: string;
   sub?: string;
   item?: Item;
+  /** Gold came in for more than one piece (Sell all): a coin for its picture. */
+  coin?: boolean;
 }
 
 function priceText(s: ShopItem): string {
